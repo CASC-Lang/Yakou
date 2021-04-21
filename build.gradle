@@ -1,0 +1,39 @@
+plugins {
+    id 'antlr'
+    id 'org.jetbrains.kotlin.jvm' version '1.4.32'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    implementation "org.ow2.asm:asm-all:5.2"
+
+    antlr group: 'org.antlr', name: 'antlr4', version: '4.7.2'
+    compile group: 'org.antlr', name: 'antlr4-runtime', version: '4.7.2'
+}
+
+generateGrammarSource {
+    maxHeapSize = "64m"
+
+    // Keep a copy of generated sources
+    doLast {
+        println "Copying generated grammar lexer/parser files to main directory."
+        copy {
+            from "${buildDir}/generated-src/antlr/main"
+            into "src/main/java/io/github/chaosunity/antlr"
+        }
+        println "Deleting Generated files in build directory."
+        delete "${buildDir}/generated-src"
+        println "Done!"
+    }
+}
+
+clean.doLast {
+    file('generated-src').deleteDir()
+}
