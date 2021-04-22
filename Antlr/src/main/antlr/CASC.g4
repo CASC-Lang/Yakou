@@ -10,9 +10,10 @@ compilationUnit     : classDeclaration EOF;
 classDeclaration    : CLASS className superClassName* '{' classBody '}';
 className           : ID;
 superClassName      : ':' className;
-classBody           : ( variable | print )* ;
+classBody           : ( variable | print | println)* ;
 variable            : VARIABLE ID EQUALS value;
 print               : PRINT '(' ID ')' ;
+println             : PRINTLN '(' ID ')';
 value               : op=NUMBER
                     | op=STRING;
 

@@ -5,7 +5,7 @@ import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.*
 
-class PrintVariable(private val variable: Variable) : Instruction, Opcodes {
+class PrintlnVariable(private val variable: Variable) : Instruction, Opcodes {
     override fun apply(mv: MethodVisitor) {
         val type = variable.type
         val id = variable.id
@@ -15,11 +15,11 @@ class PrintVariable(private val variable: Variable) : Instruction, Opcodes {
         when (type) {
             io.github.chaosunity.antlr.CASCLexer.NUMBER -> {
                 mv.visitVarInsn(ILOAD, id)
-                mv.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(I)V", false)
+                mv.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(I)V", false)
             }
             io.github.chaosunity.antlr.CASCLexer.STRING -> {
                 mv.visitVarInsn(ALOAD, id)
-                mv.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/String;)V", false)
+                mv.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false)
             }
         }
     }

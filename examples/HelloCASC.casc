@@ -1,2 +1,4 @@
-變數 甲 賦 "Hello CASC!"
-印出(甲)
+類別 CASC {
+    變數 甲 賦 "Hello CASC!"
+    印出行(甲)
+}

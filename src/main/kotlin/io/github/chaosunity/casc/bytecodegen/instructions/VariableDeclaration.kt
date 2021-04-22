@@ -1,7 +1,6 @@
 package io.github.chaosunity.casc.bytecodegen.instructions
 
-import io.github.chaosunity.antlr.CASCLexer
-import io.github.chaosunity.casc.parse.symbol.Variable
+import io.github.chaosunity.casc.parsing.symbol.Variable
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.*

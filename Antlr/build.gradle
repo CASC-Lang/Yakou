@@ -17,3 +17,21 @@ dependencies {
     antlr group: 'org.antlr', name: 'antlr4', version: '4.7.2'
     compile group: 'org.antlr', name: 'antlr4-runtime', version: '4.7.2'
 }
+
+generateGrammarSource {
+    maxHeapSize = "64m"
+
+    // Keep a copy of generated sources
+    doLast {
+        println "Copying generated grammar lexer/parser files to main directory."
+        copy {
+            from "${buildDir}/generated-src/antlr/main"
+            into "src/main/java/io/github/chaosunity/antlr"
+        }
+        delete "${buildDir}/generated-src/antlr/main"
+    }
+}
+
+clean.doLast {
+    file('generated-src').deleteDir()
+}

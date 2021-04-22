@@ -1,7 +1,7 @@
 package io.github.chaosunity.casc
 
 import io.github.chaosunity.casc.bytecodegen.instructions.BytecodeGenerator
-import io.github.chaosunity.casc.parse.SyntaxTreeTraverser
+import io.github.chaosunity.casc.parsing.SyntaxTreeTraverser
 import java.io.File
 
 
