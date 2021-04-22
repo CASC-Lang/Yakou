@@ -119,12 +119,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_compilationUnit; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterCompilationUnit(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitCompilationUnit(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitCompilationUnit(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -170,12 +167,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_classDeclaration; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterClassDeclaration(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitClassDeclaration(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitClassDeclaration(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -230,12 +224,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_className; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterClassName(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitClassName(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitClassName(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -269,12 +260,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_superClassName; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterSuperClassName(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitSuperClassName(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitSuperClassName(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -313,12 +301,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_classBody; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterClassBody(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitClassBody(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitClassBody(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -371,12 +356,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_function; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterFunction(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitFunction(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitFunction(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -438,12 +420,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_functionDeclaration; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterFunctionDeclaration(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitFunctionDeclaration(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitFunctionDeclaration(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -504,12 +483,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_functionName; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterFunctionName(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitFunctionName(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitFunctionName(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -547,12 +523,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_functionArgument; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterFunctionArgument(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitFunctionArgument(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitFunctionArgument(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -599,12 +572,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_functionParamdefaultValue; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterFunctionParamdefaultValue(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitFunctionParamdefaultValue(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitFunctionParamdefaultValue(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -643,12 +613,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_type; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterType(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitType(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitType(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -703,12 +670,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_primitiveType; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterPrimitiveType(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitPrimitiveType(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitPrimitiveType(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -972,12 +936,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_classType; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterClassType(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitClassType(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitClassType(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1034,12 +995,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_blockStatement; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterBlockStatement(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitBlockStatement(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitBlockStatement(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1100,12 +1058,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_variableDeclaration; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterVariableDeclaration(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitVariableDeclaration(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitVariableDeclaration(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1146,12 +1101,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_printStatement; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterPrintStatement(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitPrintStatement(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitPrintStatement(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1188,12 +1140,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_printlnStatement; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterPrintlnStatement(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitPrintlnStatement(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitPrintlnStatement(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1232,12 +1181,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_functionCall; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterFunctionCall(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitFunctionCall(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitFunctionCall(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1275,12 +1221,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_name; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterName(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitName(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitName(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1317,12 +1260,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_expressionList; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterExpressionList(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitExpressionList(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitExpressionList(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1379,12 +1319,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_expression; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterExpression(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitExpression(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitExpression(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1436,12 +1373,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_varReference; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterVarReference(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitVarReference(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitVarReference(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1474,12 +1408,9 @@ public class CASCParser extends Parser {
 		}
 		@Override public int getRuleIndex() { return RULE_value; }
 		@Override
-		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).enterValue(this);
-		}
-		@Override
-		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof CASCListener ) ((CASCListener)listener).exitValue(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitValue(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 

@@ -1,5 +1,6 @@
 package io.github.chaosunity.casc.parsing.scope
 
+import java.util.List
 import io.github.chaosunity.casc.parsing.`type`.Type
 import io.github.chaosunity.casc.parsing.expression.FunctionParameter
 

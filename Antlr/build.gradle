@@ -24,6 +24,7 @@ dependencies {
 
 generateGrammarSource {
     maxHeapSize = "64m"
+    arguments += ["-visitor", "-no-listener"]
 
     // Keep a copy of generated sources
     doLast {
