@@ -1,1 +1,3 @@
 rootProject.name = 'CASC-Kotlin'
+include 'Antlr'
+

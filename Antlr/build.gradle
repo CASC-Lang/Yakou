@@ -1,0 +1,19 @@
+plugins {
+    id 'antlr'
+    id 'groovy'
+    id 'java'
+}
+
+group 'io.github.chaosunity'
+version '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.codehaus.groovy:groovy-all:3.0.5'
+
+    antlr group: 'org.antlr', name: 'antlr4', version: '4.7.2'
+    compile group: 'org.antlr', name: 'antlr4-runtime', version: '4.7.2'
+}

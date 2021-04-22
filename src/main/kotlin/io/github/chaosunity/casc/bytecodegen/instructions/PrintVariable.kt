@@ -14,11 +14,11 @@ class PrintVariable(private val variable: Variable) : Instruction, Opcodes {
         mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
 
         when (type) {
-            CASCLexer.NUMBER -> {
+            io.github.chaosunity.antlr.CASCLexer.NUMBER -> {
                 mv.visitVarInsn(ILOAD, id)
                 mv.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(I)V", false)
             }
-            CASCLexer.STRING -> {
+            io.github.chaosunity.antlr.CASCLexer.STRING -> {
                 mv.visitVarInsn(ALOAD, id)
                 mv.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false)
             }

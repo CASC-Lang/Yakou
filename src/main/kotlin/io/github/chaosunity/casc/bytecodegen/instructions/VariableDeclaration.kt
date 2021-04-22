@@ -11,12 +11,12 @@ class VariableDeclaration(val variable: Variable) : Instruction, Opcodes {
         val type = variable.type
 
         when (type) {
-            CASCLexer.NUMBER -> {
+            io.github.chaosunity.antlr.CASCLexer.NUMBER -> {
                 val value = variable.value.toInt()
                 mv.visitIntInsn(BIPUSH, value)
                 mv.visitVarInsn(ISTORE, variable.id)
             }
-            CASCLexer.STRING -> {
+            io.github.chaosunity.antlr.CASCLexer.STRING -> {
                 mv.visitLdcInsn(variable.value)
                 mv.visitVarInsn(ASTORE, variable.id)
             }

@@ -9,9 +9,9 @@ import org.antlr.v4.runtime.CommonTokenStream
 class SyntaxTreeTraverser {
     fun getInstructions(fileAbsolutePath: String): ArrayDeque<Instruction> {
         val fileStream = ANTLRFileStream(fileAbsolutePath, "utf-8")
-        val lexer = CASCLexer(fileStream)
+        val lexer = io.github.chaosunity.antlr.CASCLexer(fileStream)
         val tokenStream = CommonTokenStream(lexer)
-        val parser = CASCParser(tokenStream)
+        val parser = io.github.chaosunity.antlr.CASCParser(tokenStream)
         val listener = CASCTreeWalkListener()
 
         parser.addParseListener(listener)
