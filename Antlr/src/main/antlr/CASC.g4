@@ -6,16 +6,49 @@ package io.github.chaosunity.antlr;
 }
 
 //RULES
-compilationUnit     : classDeclaration EOF;
-classDeclaration    : CLASS className superClassName* '{' classBody '}';
-className           : ID;
-superClassName      : ':' className;
-classBody           : ( variable | print | println)* ;
-variable            : VARIABLE ID EQUALS value;
-print               : PRINT '(' ID ')' ;
-println             : PRINTLN '(' ID ')';
-value               : op=NUMBER
-                    | op=STRING;
+compilationUnit             : classDeclaration EOF;
+classDeclaration            : CLASS className superClassName* '{' classBody '}';
+className                   : ID;
+superClassName              : ':' className;
+classBody                   :  function* ;
+function                    : functionDeclaration '{' (blockStatement)* '}' ;
+functionDeclaration         : (type)? functionName '('(functionArgument)*')' ;
+functionName                : ID ;
+functionArgument            : type ID functionParamdefaultValue? ;
+functionParamdefaultValue   : '=' expression ;
+type                        : primitiveType
+                            | classType ;
+
+primitiveType   :  'boolean' ('[' ']')*
+                |   'string' ('[' ']')*
+                |   'char' ('[' ']')*
+                |   'byte' ('[' ']')*
+                |   'short' ('[' ']')*
+                |   'int' ('[' ']')*
+                |   'long' ('[' ']')*
+                |   'float' ('[' ']')*
+                |   'double' ('[' ']')*
+                | 'void' ('[' ']')* ;
+
+classType       : QUALIFIED_NAME ('[' ']')* ;
+
+blockStatement          : variableDeclaration
+                        | printStatement
+                        | functionCall ;
+
+variableDeclaration     : VARIABLE name EQUALS expression;
+printStatement          : PRINT expression;
+printlnStatement        : PRINTLN expression;
+functionCall            : functionName '('expressionList ')';
+name                    : ID ;
+expressionList          : expression (',' expression)* ;
+expression              : varReference
+                        | value
+                        | functionCall ;
+
+varReference : ID ;
+value : NUMBER
+      | STRING ;
 
 //TOKENS
 fragment CHAR     :  ('A'..'Z') | ('a'..'z');
@@ -30,4 +63,5 @@ EQUALS          : '=' | '\u8ce6' ;
 NUMBER          : [0-9]+ ;
 STRING          : '"'.*'"' ;
 ID              : (CHAR|DIGIT|UNICODE)+ ;
+QUALIFIED_NAME  : ID ('.' ID)+;
 WS              : [ \t\n\r]+ -> skip ;

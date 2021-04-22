@@ -1,7 +1,8 @@
 plugins {
     id 'antlr'
-    id 'groovy'
+    id 'scala'
     id 'java'
+    id 'java-library'
 }
 
 group 'io.github.chaosunity'
@@ -12,7 +13,10 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.codehaus.groovy:groovy-all:3.0.5'
+    implementation 'org.scala-lang:scala-library:2.13.3'
+
+    implementation 'com.google.guava:guava:30.0-jre'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
 
     antlr group: 'org.antlr', name: 'antlr4', version: '4.7.2'
     compile group: 'org.antlr', name: 'antlr4-runtime', version: '4.7.2'
