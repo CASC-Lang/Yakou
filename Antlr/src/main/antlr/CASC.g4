@@ -11,23 +11,23 @@ classDeclaration            : CLASS className '{' classBody '}';
 className                   : ID;
 classBody                   : function* ;
 function                    : functionDeclaration '{' (blockStatement)* '}' ;
-functionDeclaration         : FUNC (type)? functionName '('(functionArgument)*')' ;
+functionDeclaration         : FUNC functionName '('(functionArgument)*')' (':' type)? ;
 functionName                : ID ;
-functionArgument            : type ID functionParamdefaultValue? ;
+functionArgument            : ID ':' type functionParamdefaultValue? ;
 functionParamdefaultValue   : '=' expression ;
 type                        : primitiveType
                             | classType ;
 
-primitiveType   :  'boolean' ('[' ']')*
-                |  'string' ('[' ']')*
-                |  'char' ('[' ']')*
-                |  'byte' ('[' ']')*
-                |  'short' ('[' ']')*
-                |  'int' ('[' ']')*
-                |  'long' ('[' ']')*
-                |  'float' ('[' ']')*
-                |  'double' ('[' ']')*
-                |  'void' ('[' ']')* ;
+primitiveType   :  ('boolean'   | '\u5e03\u6797') ('[' ']')*
+                |  ('string'    | '\u5b57\u4e32') ('[' ']')*
+                |  ('char'      | '\u5b57\u5143') ('[' ']')*
+                |  ('byte') ('[' ']')*
+                |  ('short') ('[' ']')*
+                |  ('int') ('[' ']')*
+                |  ('long') ('[' ']')*
+                |  ('float') ('[' ']')*
+                |  ('double') ('[' ']')*
+                |  ('void') ('[' ']')* ;
 
 classType       : QUALIFIED_NAME ('[' ']')* ;
 

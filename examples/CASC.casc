@@ -1,5 +1,5 @@
 類別 CASC {
-    func void main(string[] args) {
-        println("hi")
+    函式 main(args: string[]): void {
+        印出行("hi")
     }
 }
