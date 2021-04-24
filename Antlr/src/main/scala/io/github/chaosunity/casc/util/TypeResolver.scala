@@ -11,6 +11,8 @@ object TypeResolver {
         val typeName = typeContext.getText
         val builtInType = getBuiltInType(typeName)
 
+        if (typeName.equals("java.lang.String")) return BuiltInType.STRING
+
         if (builtInType.isDefined) return builtInType.get
 
         new ClassType(typeName)

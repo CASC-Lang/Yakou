@@ -8,7 +8,7 @@ import io.github.chaosunity.casc.parsing.type.Type
 object DescriptorFactory {
     fun getMethodDescriptor(function: Function): String? {
         val arguments = function.parameters()
-        val returnType = function.type()
+        val returnType = function.returnType()
 
         return getMethodDescriptor(arguments, returnType)
     }

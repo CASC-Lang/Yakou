@@ -2,6 +2,7 @@ package io.github.chaosunity.casc
 
 import io.github.chaosunity.antlr.CASCLexer
 import io.github.chaosunity.antlr.CASCParser
+import io.github.chaosunity.casc.antlr.CASCTreeWalkErrorListener
 import io.github.chaosunity.casc.parsing.global.CompilationUnit
 import io.github.chaosunity.casc.visitor.CompilationUnitVisitor
 import org.antlr.v4.runtime.CharStreams
@@ -13,6 +14,9 @@ class Parser {
         val lexer = CASCLexer(charStream)
         val tokenStream = CommonTokenStream(lexer)
         val parser = CASCParser(tokenStream)
+
+        val errorListener = CASCTreeWalkErrorListener()
+        parser.addErrorListener(errorListener)
 
         val compilationUnitVisitor = CompilationUnitVisitor()
         return parser.compilationUnit().accept(compilationUnitVisitor)

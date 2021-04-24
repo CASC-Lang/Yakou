@@ -35,21 +35,16 @@ class StatementFactory(private val mv: MethodVisitor) {
         val expression = declaration.expression()
         val variableName = declaration.name()
         val index = scope.getLocalVariableIndex(variableName)
+        val type = expression.type()
 
-        if (expression is Value) {
-            val type = expression.type()
-            var stringValue = expression.value()
+        ef.generate(expression, scope)
 
-            if (type == BuiltInType.INT()) {
-                mv.visitIntInsn(BIPUSH, stringValue.toInt())
-                mv.visitVarInsn(ISTORE, index)
-            } else if (type == BuiltInType.STRING()) {
-                stringValue = stringValue.removePrefix("\"").removeSuffix("\"")
-
-                mv.visitLdcInsn(stringValue)
-                mv.visitVarInsn(ASTORE, index)
-            }
+        if (type == BuiltInType.INT()) {
+            mv.visitVarInsn(ISTORE, index)
+        } else if (type == BuiltInType.STRING()) {
+            mv.visitVarInsn(ASTORE, index)
         }
+
 
         scope.addLocalVariable(LocalVariable(expression.type(), variableName))
     }
@@ -63,7 +58,7 @@ class StatementFactory(private val mv: MethodVisitor) {
         val type = expression.type()
         val descriptor = "(${type.descriptor()})V"
         val owner = ClassType("java.io.PrintStream")
-        val fieldDescriptor = owner.descriptor()
+        val fieldDescriptor = owner.internalName()
 
         mv.visitMethodInsn(INVOKEVIRTUAL, fieldDescriptor, actualFunctionName, descriptor, false)
     }

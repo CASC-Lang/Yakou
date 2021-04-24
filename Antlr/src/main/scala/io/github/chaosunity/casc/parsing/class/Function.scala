@@ -9,12 +9,14 @@ import java.util
 
 class Function(private var _scope: Scope,
                private val _name: String,
-               retType: Type,
+               private val _retType: Type,
                private val _params: util.List[FunctionParameter],
-               private val _statements: util.List[Statement]) extends Expression(retType) {
+               private val _statements: util.List[Statement]) {
     def scope: Scope = _scope
 
     def name: String = _name
+
+    def returnType: Type = _retType
 
     def parameters: util.List[FunctionParameter] = _params
 

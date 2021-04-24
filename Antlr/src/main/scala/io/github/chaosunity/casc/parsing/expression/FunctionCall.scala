@@ -2,12 +2,13 @@ package io.github.chaosunity.casc.parsing.expression
 
 import io.github.chaosunity.casc.parsing.`type`.Type
 import io.github.chaosunity.casc.parsing.scope.FunctionSignature
+import io.github.chaosunity.casc.parsing.statement.Statement
 
 import java.util
 
 class FunctionCall(private var _signature: FunctionSignature,
                    private var _params: util.List[Expression],
-                   private var _owner: Type) extends Expression(_signature.returnType) {
+                   private var _owner: Type) extends Expression(_signature.returnType) with Statement {
     def functionName: String = _signature.name
 
     def parameters: util.List[Expression] = _params

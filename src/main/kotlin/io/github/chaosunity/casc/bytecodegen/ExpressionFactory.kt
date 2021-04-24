@@ -2,6 +2,7 @@ package io.github.chaosunity.casc.bytecodegen
 
 import io.github.chaosunity.casc.exception.FunctionAbsenceException
 import io.github.chaosunity.casc.parsing.expression.*
+import io.github.chaosunity.casc.parsing.math.*
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.parsing.type.BuiltInType
 import io.github.chaosunity.casc.parsing.type.ClassType
@@ -17,6 +18,14 @@ class ExpressionFactory(private val mv: MethodVisitor) {
             is Value -> generate(expression, scope)
             is FunctionCall -> generate(expression, scope)
             is FunctionParameter -> generate(expression, scope)
+            is Addition -> generate(expression, scope)
+            is Subtraction -> generate(expression, scope)
+            is Multiplication -> generate(expression, scope)
+            is Division -> generate(expression, scope)
+            is ArithmeticExpression -> {
+                generate(expression.leftExpression(), scope)
+                generate(expression.rightExpression(), scope)
+            }
         }
     }
 
@@ -35,11 +44,12 @@ class ExpressionFactory(private val mv: MethodVisitor) {
 
     fun generate(value: Value, scope: Scope) {
         val type = value.type()
-        val stringValue = value.value()
+        var stringValue = value.value()
 
         if (type == BuiltInType.INT()) {
             mv.visitIntInsn(BIPUSH, stringValue.toInt())
         } else if (type == BuiltInType.STRING()) {
+            stringValue = stringValue.removePrefix("\"").removeSuffix("\"")
             mv.visitLdcInsn(stringValue)
         }
     }
@@ -66,6 +76,30 @@ class ExpressionFactory(private val mv: MethodVisitor) {
         } else if (type == BuiltInType.STRING()) {
             mv.visitVarInsn(ALOAD, index)
         }
+    }
+
+    fun generate(addition: Addition, scope: Scope) {
+        generate(addition.leftExpression(), scope)
+        generate(addition.rightExpression(), scope)
+        mv.visitInsn(IADD)
+    }
+
+    fun generate(subtraction: Subtraction, scope: Scope) {
+        generate(subtraction.leftExpression(), scope)
+        generate(subtraction.rightExpression(), scope)
+        mv.visitInsn(ISUB)
+    }
+
+    fun generate(multiplication: Multiplication, scope: Scope) {
+        generate(multiplication.leftExpression(), scope)
+        generate(multiplication.rightExpression(), scope)
+        mv.visitInsn(IMUL)
+    }
+
+    fun generate(division: Division, scope: Scope) {
+        generate(division.leftExpression(), scope)
+        generate(division.rightExpression(), scope)
+        mv.visitInsn(IDIV)
     }
 
     private fun getFunctionDescriptor(call: FunctionCall, scope: Scope): String =
