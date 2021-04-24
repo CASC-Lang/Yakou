@@ -11,7 +11,8 @@ class Scope(private val _metadata: Metadata) {
 
     def this(scope: Scope) {
         this(scope._metadata)
-        _functionSignatures = scope._functionSignatures
+        _functionSignatures = scope._functionSignatures.clone()
+        _localVariables = scope._localVariables.clone()
     }
 
     def addSignature(signature: FunctionSignature): Unit =

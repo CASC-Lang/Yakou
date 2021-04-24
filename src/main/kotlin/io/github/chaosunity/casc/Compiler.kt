@@ -10,7 +10,7 @@ class Compiler {
     private val LOGGER = LoggerFactory.getLogger(javaClass)
 
     fun compile(args: Array<String>) {
-        DEV_MODE = args.contains("dev")
+        DEV_MODE = args.contains("-dev")
 
         val problem = diagnoseProblem(args)
 

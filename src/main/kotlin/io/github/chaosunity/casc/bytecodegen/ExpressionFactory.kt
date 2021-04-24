@@ -1,52 +1,56 @@
 package io.github.chaosunity.casc.bytecodegen
 
 import io.github.chaosunity.casc.exception.FunctionAbsenceException
+import io.github.chaosunity.casc.exception.InvalidComparisonException
 import io.github.chaosunity.casc.parsing.expression.*
 import io.github.chaosunity.casc.parsing.math.*
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.parsing.type.BuiltInType
 import io.github.chaosunity.casc.parsing.type.ClassType
 import io.github.chaosunity.casc.util.DescriptorFactory
+import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.Type
 
-class ExpressionFactory(private val mv: MethodVisitor) {
-    fun generate(expression: Expression, scope: Scope) {
+class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope) {
+    fun generate(expression: Expression) {
         when (expression) {
-            is VarReference -> generate(expression, scope)
-            is Value -> generate(expression, scope)
-            is FunctionCall -> generate(expression, scope)
-            is FunctionParameter -> generate(expression, scope)
-            is Addition -> generate(expression, scope)
-            is Subtraction -> generate(expression, scope)
-            is Multiplication -> generate(expression, scope)
-            is Division -> generate(expression, scope)
+            is VarReference -> generate(expression)
+            is Value -> generate(expression)
+            is FunctionCall -> generate(expression)
+            is FunctionParameter -> generate(expression)
+            is Addition -> generate(expression)
+            is Subtraction -> generate(expression)
+            is Multiplication -> generate(expression)
+            is Division -> generate(expression)
+            is ConditionalExpression -> generate(expression)
+            is EmptyExpression -> generate(expression)
             is ArithmeticExpression -> {
-                generate(expression.leftExpression(), scope)
-                generate(expression.rightExpression(), scope)
+                generate(expression.leftExpression())
+                generate(expression.rightExpression())
             }
         }
     }
 
-    fun generate(reference: VarReference, scope: Scope) {
+    fun generate(reference: VarReference) {
         val variableName = reference.variableName()
         val index = scope.getLocalVariableIndex(variableName)
         val localVariable = scope.getLocalVariable(variableName)
         val type = localVariable.type()
 
-        if (type == BuiltInType.INT()) {
+        if (type == BuiltInType.INT() || type == BuiltInType.BOOLEAN()) {
             mv.visitVarInsn(ILOAD, index)
         } else if (type == BuiltInType.STRING()) {
             mv.visitVarInsn(ALOAD, index)
         }
     }
 
-    fun generate(value: Value, scope: Scope) {
+    fun generate(value: Value) {
         val type = value.type()
         var stringValue = value.value()
 
-        if (type == BuiltInType.INT()) {
+        if (type == BuiltInType.INT() || type == BuiltInType.BOOLEAN()) {
             mv.visitIntInsn(BIPUSH, stringValue.toInt())
         } else if (type == BuiltInType.STRING()) {
             stringValue = stringValue.removePrefix("\"").removeSuffix("\"")
@@ -54,20 +58,20 @@ class ExpressionFactory(private val mv: MethodVisitor) {
         }
     }
 
-    fun generate(call: FunctionCall, scope: Scope) {
+    fun generate(call: FunctionCall) {
         val parameters = call.parameters()
 
-        parameters.forEach { generate(it, scope) }
+        parameters.forEach { generate(it) }
 
         val owner = call.owner().getOrElse { ClassType(scope.className()) }
-        val methodDescriptor = getFunctionDescriptor(call, scope)
+        val methodDescriptor = getFunctionDescriptor(call)
         val ownerDescriptor = owner.internalName()
         val functionName = call.functionName()
 
         mv.visitMethodInsn(INVOKESTATIC, ownerDescriptor, functionName, methodDescriptor, false)
     }
 
-    fun generate(parameter: FunctionParameter, scope: Scope) {
+    fun generate(parameter: FunctionParameter) {
         val type = parameter.type()
         val index = scope.getLocalVariableIndex(parameter.name())
 
@@ -78,40 +82,64 @@ class ExpressionFactory(private val mv: MethodVisitor) {
         }
     }
 
-    fun generate(addition: Addition, scope: Scope) {
-        generate(addition.leftExpression(), scope)
-        generate(addition.rightExpression(), scope)
+    fun generate(addition: Addition) {
+        generate(addition.leftExpression())
+        generate(addition.rightExpression())
         mv.visitInsn(IADD)
     }
 
-    fun generate(subtraction: Subtraction, scope: Scope) {
-        generate(subtraction.leftExpression(), scope)
-        generate(subtraction.rightExpression(), scope)
+    fun generate(subtraction: Subtraction) {
+        generate(subtraction.leftExpression())
+        generate(subtraction.rightExpression())
         mv.visitInsn(ISUB)
     }
 
-    fun generate(multiplication: Multiplication, scope: Scope) {
-        generate(multiplication.leftExpression(), scope)
-        generate(multiplication.rightExpression(), scope)
+    fun generate(multiplication: Multiplication) {
+        generate(multiplication.leftExpression())
+        generate(multiplication.rightExpression())
         mv.visitInsn(IMUL)
     }
 
-    fun generate(division: Division, scope: Scope) {
-        generate(division.leftExpression(), scope)
-        generate(division.rightExpression(), scope)
+    fun generate(division: Division) {
+        generate(division.leftExpression())
+        generate(division.rightExpression())
         mv.visitInsn(IDIV)
     }
 
-    private fun getFunctionDescriptor(call: FunctionCall, scope: Scope): String =
-        getDescriptorForFunctionInScope(call, scope) ?: getDescriptorForFunctionOnClasspath(call, scope)
+    fun generate(conditional: ConditionalExpression) {
+        val left = conditional.left()
+        val right = conditional.right()
+        val type = left.type()
+        val opCode = conditional.opCode()
+
+        if (type != right.type())
+            throw InvalidComparisonException(left, right, opCode)
+
+        generate(left)
+        generate(right)
+
+        val endLabel = Label()
+        val falseLabel = Label()
+
+        mv.visitJumpInsn(opCode.opCode(), falseLabel)
+        mv.visitInsn(ICONST_1)
+        mv.visitJumpInsn(GOTO, endLabel)
+        mv.visitLabel(falseLabel)
+        mv.visitInsn(ICONST_0)
+        mv.visitLabel(endLabel)
+    }
+
+    fun generate(emptyExpression: EmptyExpression) {}
+
+    private fun getFunctionDescriptor(call: FunctionCall): String =
+        getDescriptorForFunctionInScope(call) ?: getDescriptorForFunctionOnClasspath(call)
         ?: throw FunctionAbsenceException(call)
 
-    private fun getDescriptorForFunctionInScope(call: FunctionCall, scope: Scope): String? =
+    private fun getDescriptorForFunctionInScope(call: FunctionCall): String? =
         DescriptorFactory.getMethodDescriptor(call.signature())
 
-    private fun getDescriptorForFunctionOnClasspath(call: FunctionCall, scope: Scope): String? = try {
+    private fun getDescriptorForFunctionOnClasspath(call: FunctionCall): String? = try {
         val functionName = call.functionName()
-        val parameters = call.parameters()
         val owner = call.owner()
         val className = owner.getOrElse { scope.className() }
         val clazz = Class.forName(className)

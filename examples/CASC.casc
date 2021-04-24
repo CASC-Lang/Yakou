@@ -1,6 +1,9 @@
-class CASC {
-    func main(args: string[]) {
-        var a = 2 * (2 + 2) + 3 * 4
-        print(a)
+類別 CASC {
+    函式 main(參數: 字串[]) {
+        print(加總(1, 2))
+    }
+
+    函式 加總(n: 整數, m: 整數): 整數 {
+        n + m
     }
 }

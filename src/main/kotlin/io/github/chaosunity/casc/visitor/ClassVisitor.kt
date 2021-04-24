@@ -1,6 +1,5 @@
 package io.github.chaosunity.casc.visitor
 
-import io.github.chaosunity.antlr.CASCBaseListener
 import io.github.chaosunity.antlr.CASCBaseVisitor
 import io.github.chaosunity.antlr.CASCParser
 import io.github.chaosunity.casc.parsing.global.ClassDeclaration
@@ -18,9 +17,9 @@ class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
 
         scope = Scope(metadata)
 
-        val signatures = methodsCtx?.map {
+        methodsCtx?.map {
             it.functionDeclaration().accept(functionSignatureVisitor)
-        }?.onEach(scope::addSignature)
+        }?.forEach(scope::addSignature)
 
         val methods = methodsCtx?.map {
             it.accept(FunctionVisitor(scope))

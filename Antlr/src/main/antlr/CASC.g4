@@ -11,7 +11,7 @@ classDeclaration            : CLASS className '{' classBody '}';
 className                   : ID;
 classBody                   : function* ;
 function                    : functionDeclaration block ;
-functionDeclaration         : FUNC functionName '('(functionArgument)*')' (':' type)? ;
+functionDeclaration         : FUNC functionName '('(functionArgument (',' functionArgument)*)?')' (':' type)? ;
 functionName                : ID ;
 functionArgument            : ID ':' type functionParamdefaultValue? ;
 functionParamdefaultValue   : '=' expression ;
@@ -40,14 +40,16 @@ statement       : block
                 | printStatement
                 | functionCall
                 | returnStatement
-                | ifStatement ;
+                | ifStatement
+                ;
 
 variableDeclaration     : VARIABLE name ('=' | '\u8ce6') expression;
 printStatement          : PRINT '('expression')';
 printlnStatement        : PRINTLN '('expression')';
 returnStatement         : RETURN                                #ReturnVoid
-                        | RETURN? expression                #ReturnWithValue;
-functionCall            : functionName '('expressionList ')';
+                        | RETURN? expression                    #ReturnWithValue
+                        ;
+functionCall            : functionName '('expressionList')';
 ifStatement             : IF ('(')? expression (')')? trueStatement=statement (ELSE falseStatement=statement)?;
 name                    : ID ;
 expressionList          : expression? (',' expression)* ;
@@ -73,6 +75,8 @@ expression              : varReference                          #VarRef
 varReference        : ID ;
 value               : NUMBER
                     | STRING
+                    | FALSE
+                    | TRUE
                     ;
 
 //TOKENS
@@ -106,5 +110,7 @@ NOT_EQ          : '!='      | '\u4e0d\u7b49\u65bc';     // !=, 不等於
 NUMBER          : [0-9]+ ;
 STRING          : '"'~('\r' | '\n' | '"')*'"' ;
 ID              : (CHAR|DIGIT|UNICODE)+ ;
-QUALIFIED_NAME  : ID ('.' ID)+;
+TRUE            : 'true' | '\u771f' ;
+FALSE           : 'false' | '\u5047' ;
+QUALIFIED_NAME  : ID ('.' ID)+ ;
 WS              : [ \t\n\r]+ -> skip ;

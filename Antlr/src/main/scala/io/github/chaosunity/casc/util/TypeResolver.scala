@@ -21,10 +21,11 @@ object TypeResolver {
     def getFromValue(value: String): Type = {
         if (StringUtils.isEmpty(value)) return BuiltInType.VOID
         if (StringUtils.isNumeric(value)) return BuiltInType.INT
+        if (value.equals("true") || value.equals("false")) return BuiltInType.BOOLEAN
 
         BuiltInType.STRING
     }
 
     private def getBuiltInType(typeName: String): Option[Type] =
-        BuiltInType.enumSet.find(_.name.equals(typeName))
+        BuiltInType.enumSet.find((t: BuiltInType.BuiltInType) => t.name.equals(typeName) || t.mandarinAlias.equals(typeName))
 }
