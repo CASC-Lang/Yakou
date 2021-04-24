@@ -1,6 +1,6 @@
-類別 CASC {
-    函式 main(args: string[]) {
-        var a = 2 + 3 * 4
+class CASC {
+    func main(args: string[]) {
+        var a = 2 * (2 + 2) + 3 * 4
         print(a)
     }
 }

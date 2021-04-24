@@ -48,7 +48,7 @@ expressionList          : expression (',' expression)* ;
 expression              : varReference                          #VarRef
                         | value                                 #Val
                         | functionCall                          #FuncCall
-                        |  '('expression STAR expression')'     #Multiply
+                        |  '('expression STAR expression')'     #Multiply       // The order of arithmetic expression are related to its actual operator precedence.
                         | expression STAR expression            #Multiply
                         | '(' expression SLASH expression ')'   #Divide
                         | expression SLASH expression           #Divide
