@@ -54,18 +54,6 @@ public class CASCBaseListener implements CASCListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterSuperClassName(CASCParser.SuperClassNameContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitSuperClassName(CASCParser.SuperClassNameContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterClassBody(CASCParser.ClassBodyContext ctx) { }
 	/**
 	 * {@inheritDoc}

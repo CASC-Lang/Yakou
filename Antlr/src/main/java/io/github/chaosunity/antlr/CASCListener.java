@@ -40,16 +40,6 @@ public interface CASCListener extends ParseTreeListener {
 	 */
 	void exitClassName(CASCParser.ClassNameContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link CASCParser#superClassName}.
-	 * @param ctx the parse tree
-	 */
-	void enterSuperClassName(CASCParser.SuperClassNameContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link CASCParser#superClassName}.
-	 * @param ctx the parse tree
-	 */
-	void exitSuperClassName(CASCParser.SuperClassNameContext ctx);
-	/**
 	 * Enter a parse tree produced by {@link CASCParser#classBody}.
 	 * @param ctx the parse tree
 	 */

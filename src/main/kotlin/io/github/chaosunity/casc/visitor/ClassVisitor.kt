@@ -4,14 +4,28 @@ import io.github.chaosunity.antlr.CASCBaseListener
 import io.github.chaosunity.antlr.CASCBaseVisitor
 import io.github.chaosunity.antlr.CASCParser
 import io.github.chaosunity.casc.parsing.global.ClassDeclaration
+import io.github.chaosunity.casc.parsing.global.Metadata
 import io.github.chaosunity.casc.parsing.scope.Scope
 
-// TODO
 class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
     private lateinit var scope: Scope
 
     override fun visitClassDeclaration(ctx: CASCParser.ClassDeclarationContext?): ClassDeclaration {
         val name = ctx?.className()?.text
-        val
+        val functionSignatureVisitor = FunctionSignatureVisitor()
+        val methodsCtx = ctx?.classBody()?.function()
+        val metadata = Metadata(ctx?.className()?.text)
+
+        scope = Scope(metadata)
+
+        val signatures = methodsCtx?.map {
+            it.functionDeclaration().accept(functionSignatureVisitor)
+        }?.onEach(scope::addSignature)
+
+        val methods = methodsCtx?.map {
+            it.accept(FunctionVisitor(scope))
+        }
+
+        return ClassDeclaration(name, methods)
     }
 }

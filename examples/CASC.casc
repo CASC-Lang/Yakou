@@ -1,0 +1,5 @@
+類別 CASC {
+    func void main(string[] args) {
+        println("hi")
+    }
+}

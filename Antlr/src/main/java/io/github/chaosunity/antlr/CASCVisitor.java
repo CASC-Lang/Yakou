@@ -31,12 +31,6 @@ public interface CASCVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitClassName(CASCParser.ClassNameContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CASCParser#superClassName}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitSuperClassName(CASCParser.SuperClassNameContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link CASCParser#classBody}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
