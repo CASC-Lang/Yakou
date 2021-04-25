@@ -47,8 +47,8 @@ statement       : block
 variableDeclaration     : VARIABLE name ('=' | '\u8ce6') expression;
 printStatement          : PRINT '('expression')';
 printlnStatement        : PRINTLN '('expression')';
-returnStatement         : RETURN                                #ReturnVoid
-                        | RETURN? expression                    #ReturnWithValue
+returnStatement         : RETURN? expression                    #ReturnWithValue
+                        | RETURN                                #ReturnVoid
                         ;
 functionCall            : functionName '('expressionList')';
 ifStatement             : IF ('(')? expression (')')? trueStatement=block (ELSE falseStatement=block)?;

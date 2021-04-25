@@ -68,18 +68,14 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
         ef.generate(condition)
 
         val trueLabel = Label()
+        val endLabel = Label()
 
         mv.visitJumpInsn(IFEQ, trueLabel)
         generate(ifStatement.trueStatement())
-
-        val falseLabel = Label()
-
-        mv.visitJumpInsn(GOTO, falseLabel)
+        mv.visitJumpInsn(GOTO, endLabel)
         mv.visitLabel(trueLabel)
-        mv.visitFrame(F_SAME, 0, null, 0, null)
         generate(ifStatement.falseStatement())
-        mv.visitLabel(falseLabel)
-        mv.visitFrame(F_SAME, 0, null, 0, null)
+        mv.visitLabel(endLabel)
     }
 
     fun generate(blockStatement: BlockStatement) {

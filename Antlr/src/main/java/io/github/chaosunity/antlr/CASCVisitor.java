@@ -115,19 +115,19 @@ public interface CASCVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitPrintlnStatement(CASCParser.PrintlnStatementContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code ReturnVoid}
-	 * labeled alternative in {@link CASCParser#returnStatement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitReturnVoid(CASCParser.ReturnVoidContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code ReturnWithValue}
 	 * labeled alternative in {@link CASCParser#returnStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitReturnWithValue(CASCParser.ReturnWithValueContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ReturnVoid}
+	 * labeled alternative in {@link CASCParser#returnStatement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitReturnVoid(CASCParser.ReturnVoidContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link CASCParser#functionCall}.
 	 * @param ctx the parse tree

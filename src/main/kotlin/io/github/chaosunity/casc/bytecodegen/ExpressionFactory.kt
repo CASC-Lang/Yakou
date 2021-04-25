@@ -25,7 +25,7 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
             is Multiplication -> generate(expression)
             is Division -> generate(expression)
             is ConditionalExpression -> generate(expression)
-            is EmptyExpression -> generate(expression)
+            is EmptyExpression -> {}
             is ArithmeticExpression -> {
                 generate(expression.leftExpression())
                 generate(expression.rightExpression())
@@ -119,17 +119,17 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
         generate(right)
 
         val endLabel = Label()
-        val falseLabel = Label()
+        val trueLabel = Label()
 
-        mv.visitJumpInsn(opCode.opCode(), falseLabel)
-        mv.visitInsn(ICONST_1)
-        mv.visitJumpInsn(GOTO, endLabel)
-        mv.visitLabel(falseLabel)
+        mv.visitJumpInsn(opCode.opCode(), trueLabel)
         mv.visitInsn(ICONST_0)
+        mv.visitJumpInsn(GOTO, endLabel)
+        mv.visitLabel(trueLabel)
+        mv.visitInsn(ICONST_1)
         mv.visitLabel(endLabel)
     }
 
-    private fun generate(emptyExpression: EmptyExpression) {}
+//    private fun generate(emptyExpression: EmptyExpression) {}         Not necessary.
 
     private fun getFunctionDescriptor(call: FunctionCall): String =
         getDescriptorForFunctionInScope(call) ?: getDescriptorForFunctionOnClasspath(call)

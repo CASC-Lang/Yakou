@@ -1372,29 +1372,29 @@ public class CASCParser extends Parser {
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,21,_ctx) ) {
 			case 1:
-				_localctx = new ReturnVoidContext(_localctx);
+				_localctx = new ReturnWithValueContext(_localctx);
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(226);
-				match(RETURN);
-				}
-				break;
-			case 2:
-				_localctx = new ReturnWithValueContext(_localctx);
-				enterOuterAlt(_localctx, 2);
-				{
-				setState(228);
+				setState(227);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 				if (_la==RETURN) {
 					{
-					setState(227);
+					setState(226);
 					match(RETURN);
 					}
 				}
 
-				setState(230);
+				setState(229);
 				expression(0);
+				}
+				break;
+			case 2:
+				_localctx = new ReturnVoidContext(_localctx);
+				enterOuterAlt(_localctx, 2);
+				{
+				setState(230);
+				match(RETURN);
 				}
 				break;
 			}
@@ -2160,7 +2160,7 @@ public class CASCParser extends Parser {
 		"\7\r\u00bf\n\r\f\r\16\r\u00c2\13\r\3\16\3\16\7\16\u00c6\n\16\f\16\16\16"+
 		"\u00c9\13\16\3\16\3\16\3\17\3\17\3\17\3\17\3\17\3\17\3\17\5\17\u00d4\n"+
 		"\17\3\20\3\20\3\20\3\20\3\20\3\21\3\21\3\21\3\21\3\21\3\22\3\22\3\22\3"+
-		"\22\3\22\3\23\3\23\5\23\u00e7\n\23\3\23\5\23\u00ea\n\23\3\24\3\24\3\24"+
+		"\22\3\22\3\23\5\23\u00e6\n\23\3\23\3\23\5\23\u00ea\n\23\3\24\3\24\3\24"+
 		"\3\24\3\24\3\25\3\25\5\25\u00f3\n\25\3\25\3\25\5\25\u00f7\n\25\3\25\3"+
 		"\25\3\25\5\25\u00fc\n\25\3\26\3\26\3\27\5\27\u0101\n\27\3\27\3\27\7\27"+
 		"\u0105\n\27\f\27\16\27\u0108\13\27\3\30\3\30\3\30\3\30\3\30\3\30\3\30"+
@@ -2224,9 +2224,9 @@ public class CASCParser extends Parser {
 		"\u00d7\u00d8\t\f\2\2\u00d8\u00d9\5.\30\2\u00d9\37\3\2\2\2\u00da\u00db"+
 		"\7\'\2\2\u00db\u00dc\7\5\2\2\u00dc\u00dd\5.\30\2\u00dd\u00de\7\7\2\2\u00de"+
 		"!\3\2\2\2\u00df\u00e0\7(\2\2\u00e0\u00e1\7\5\2\2\u00e1\u00e2\5.\30\2\u00e2"+
-		"\u00e3\7\7\2\2\u00e3#\3\2\2\2\u00e4\u00ea\7&\2\2\u00e5\u00e7\7&\2\2\u00e6"+
-		"\u00e5\3\2\2\2\u00e6\u00e7\3\2\2\2\u00e7\u00e8\3\2\2\2\u00e8\u00ea\5."+
-		"\30\2\u00e9\u00e4\3\2\2\2\u00e9\u00e6\3\2\2\2\u00ea%\3\2\2\2\u00eb\u00ec"+
+		"\u00e3\7\7\2\2\u00e3#\3\2\2\2\u00e4\u00e6\7&\2\2\u00e5\u00e4\3\2\2\2\u00e5"+
+		"\u00e6\3\2\2\2\u00e6\u00e7\3\2\2\2\u00e7\u00ea\5.\30\2\u00e8\u00ea\7&"+
+		"\2\2\u00e9\u00e5\3\2\2\2\u00e9\u00e8\3\2\2\2\u00ea%\3\2\2\2\u00eb\u00ec"+
 		"\5\16\b\2\u00ec\u00ed\7\5\2\2\u00ed\u00ee\5,\27\2\u00ee\u00ef\7\7\2\2"+
 		"\u00ef\'\3\2\2\2\u00f0\u00f2\7$\2\2\u00f1\u00f3\7\5\2\2\u00f2\u00f1\3"+
 		"\2\2\2\u00f2\u00f3\3\2\2\2\u00f3\u00f4\3\2\2\2\u00f4\u00f6\5.\30\2\u00f5"+
@@ -2261,7 +2261,7 @@ public class CASCParser extends Parser {
 		"\2\2\u0146\u0149\3\2\2\2\u0147\u0145\3\2\2\2\u0147\u0148\3\2\2\2\u0148"+
 		"/\3\2\2\2\u0149\u0147\3\2\2\2\u014a\u014b\7\66\2\2\u014b\61\3\2\2\2\u014c"+
 		"\u014d\t\r\2\2\u014d\63\3\2\2\2 BPSX`gnv~\u0086\u008e\u0096\u009e\u00a6"+
-		"\u00ae\u00b6\u00b9\u00c0\u00c7\u00d3\u00e6\u00e9\u00f2\u00f6\u00fb\u0100"+
+		"\u00ae\u00b6\u00b9\u00c0\u00c7\u00d3\u00e5\u00e9\u00f2\u00f6\u00fb\u0100"+
 		"\u0106\u0125\u0145\u0147";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
