@@ -6,5 +6,5 @@ class IfExpression(val condition: Expression,
                    val trueExpression: Expression,
                    val falseExpression: Expression)
     extends Expression(if (trueExpression.`type` == falseExpression.`type`) trueExpression.`type`
-                       else throw new TypeUnmatchedException(trueExpression.`type`, falseExpression.`type`)) {
+    else throw new TypeUnmatchedException(trueExpression.`type`, falseExpression.`type`), false) {
 }

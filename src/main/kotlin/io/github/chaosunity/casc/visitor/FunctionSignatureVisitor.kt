@@ -21,7 +21,7 @@ class FunctionSignatureVisitor(private val scope: Scope) : CASCBaseVisitor<Funct
             val name = arg.ID().text
             val type = TypeResolver.getFromTypeName(arg.type())
             val defaultValue = getParameterDefaultValue(arg)
-            val parameter = FunctionParameter(type, name, Option.apply(defaultValue))
+            val parameter = FunctionParameter(type, name, Option.apply(defaultValue), false)
 
             params += parameter
         }

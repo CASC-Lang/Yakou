@@ -3,6 +3,7 @@ package io.github.chaosunity.casc.bytecodegen
 import io.github.chaosunity.casc.exception.BadArgumentsToFunctionCallException
 import io.github.chaosunity.casc.exception.FunctionAbsenceException
 import io.github.chaosunity.casc.exception.InvalidComparisonException
+import io.github.chaosunity.casc.exception.InvalidNegativeException
 import io.github.chaosunity.casc.parsing.expression.*
 import io.github.chaosunity.casc.parsing.math.*
 import io.github.chaosunity.casc.parsing.scope.Scope
@@ -32,6 +33,13 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
                 generate(expression.leftExpression())
                 generate(expression.rightExpression())
             }
+        }
+
+        if (expression.negative()) {
+            if (expression.type() == BuiltInType.INT())
+                mv.visitInsn(INEG)
+            else
+                throw InvalidNegativeException(expression.type())
         }
     }
 

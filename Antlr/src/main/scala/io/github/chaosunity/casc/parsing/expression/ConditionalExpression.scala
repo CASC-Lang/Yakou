@@ -5,5 +5,5 @@ import io.github.chaosunity.casc.parsing.`type`.BuiltInType
 
 class ConditionalExpression(val left: Expression,
                             val right: Expression,
-                            val opCode: LogicalOp) extends Expression(BuiltInType.BOOLEAN) {
+                            val opCode: LogicalOp) extends Expression(BuiltInType.BOOLEAN, false) {
 }
