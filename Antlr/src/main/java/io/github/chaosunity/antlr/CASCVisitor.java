@@ -188,6 +188,13 @@ public interface CASCVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitDivide(CASCParser.DivideContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code IfExpr}
+	 * labeled alternative in {@link CASCParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIfExpr(CASCParser.IfExprContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code conditionalExpression}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree

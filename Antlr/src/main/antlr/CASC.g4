@@ -54,23 +54,24 @@ functionCall            : functionName '('expressionList')';
 ifStatement             : IF ('(')? expression (')')? trueStatement=block (ELSE falseStatement=block)?;
 name                    : ID ;
 expressionList          : expression? (',' expression)* ;
-expression              : varReference                          #VarRef
-                        | value                                 #Val
-                        | functionCall                          #FuncCall
-                        | '('expression STAR expression')'      #Multiply       // The order of arithmetic expression are related to its actual operator precedence.
-                        | expression STAR expression            #Multiply
-                        | '(' expression SLASH expression ')'   #Divide
-                        | expression SLASH expression           #Divide
-                        | '(' expression PLUS expression ')'    #Add
-                        | expression PLUS expression            #Add
-                        | '(' expression MINUS expression ')'   #Subtract
-                        | expression MINUS expression           #Subtract
-                        | expression cmp=GREATER expression     #conditionalExpression
-                        | expression cmp=LESS expression        #conditionalExpression
-                        | expression cmp=EQ expression          #conditionalExpression
-                        | expression cmp=NOT_EQ expression      #conditionalExpression
-                        | expression cmp=GREATER_EQ expression  #conditionalExpression
-                        | expression cmp=LESS_EQ expression     #conditionalExpression
+expression              : expression cmp=GREATER expression                                                     #conditionalExpression
+                        | expression cmp=LESS expression                                                        #conditionalExpression
+                        | expression cmp=EQ expression                                                          #conditionalExpression
+                        | expression cmp=NOT_EQ expression                                                      #conditionalExpression
+                        | expression cmp=GREATER_EQ expression                                                  #conditionalExpression
+                        | expression cmp=LESS_EQ expression                                                     #conditionalExpression
+                        | varReference                                                                          #VarRef
+                        | value                                                                                 #Val
+                        | functionCall                                                                          #FuncCall
+                        | condition=expression '?' trueExpression=expression ':' falseExpression=expression     #IfExpr
+                        | '('expression STAR expression')'                                                      #Multiply       // The order of arithmetic expression are related to its actual operator precedence.
+                        | expression STAR expression                                                            #Multiply
+                        | '(' expression SLASH expression ')'                                                   #Divide
+                        | expression SLASH expression                                                           #Divide
+                        | '(' expression PLUS expression ')'                                                    #Add
+                        | expression PLUS expression                                                            #Add
+                        | '(' expression MINUS expression ')'                                                   #Subtract
+                        | expression MINUS expression                                                           #Subtract
                         ;
 
 varReference        : ID ;

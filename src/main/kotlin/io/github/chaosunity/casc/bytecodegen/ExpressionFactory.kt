@@ -24,6 +24,7 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
             is Subtraction -> generate(expression)
             is Multiplication -> generate(expression)
             is Division -> generate(expression)
+            is IfExpression -> generate(expression)
             is ConditionalExpression -> generate(expression)
             is EmptyExpression -> {}
             is ArithmeticExpression -> {
@@ -104,6 +105,22 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
         generate(division.leftExpression())
         generate(division.rightExpression())
         mv.visitInsn(IDIV)
+    }
+
+    fun generate(ifExpression: IfExpression) {
+        val condition = ifExpression.condition()
+
+        generate(condition)
+
+        val trueLabel = Label()
+        val endLabel = Label()
+
+        mv.visitJumpInsn(IFEQ, trueLabel)
+        generate(ifExpression.trueExpression())
+        mv.visitJumpInsn(GOTO, endLabel)
+        mv.visitLabel(trueLabel)
+        generate(ifExpression.falseExpression())
+        mv.visitLabel(endLabel)
     }
 
     fun generate(conditional: ConditionalExpression) {
