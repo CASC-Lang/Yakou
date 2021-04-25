@@ -50,9 +50,12 @@ printlnStatement        : PRINTLN '('expression')';
 returnStatement         : RETURN? expression                    #ReturnWithValue
                         | RETURN                                #ReturnVoid
                         ;
-functionCall            : functionName '('expressionList')';
+functionCall            : functionName '('argument? (',' argument)*')';
 ifStatement             : IF ('(')? expression (')')? trueStatement=block (ELSE falseStatement=block)?;
 name                    : ID ;
+argument                : expression
+                        | name '=' expression ;
+
 expressionList          : expression? (',' expression)* ;
 expression              : expression cmp=GREATER expression                                                     #conditionalExpression
                         | expression cmp=LESS expression                                                        #conditionalExpression

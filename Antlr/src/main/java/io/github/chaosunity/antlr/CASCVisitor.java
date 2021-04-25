@@ -147,6 +147,12 @@ public interface CASCVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitName(CASCParser.NameContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link CASCParser#argument}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitArgument(CASCParser.ArgumentContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link CASCParser#expressionList}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

@@ -30,10 +30,17 @@ class ExpressionVisitor(private val scope: Scope) : CASCBaseVisitor<Expression>(
     override fun visitFunctionCall(ctx: CASCParser.FunctionCallContext?): Expression {
         val functionName = ctx?.functionName()?.text
         val signature = scope.getSignature(functionName)
-        val calledParameters = ctx?.expressionList()?.expression() ?: mutableListOf()
-        val args = calledParameters.map { it.accept(ExpressionVisitor(scope)) }
+        val argumentsCtx = ctx?.argument()
+        val arugments = argumentsCtx?.sortedWith(Comparator { o1, o2 ->
+            if (o1.name() == null) return@Comparator 0
 
-        return FunctionCall(signature, args, null)
+            val argName1 = o1.name().text
+            val argName2 = o2.name().text
+
+            signature.getIndexOfParameter(argName1) - signature.getIndexOfParameter(argName2)
+        })?.map { it.expression().accept(this) }
+
+        return FunctionCall(signature, arugments, null)
     }
 
     override fun visitAdd(ctx: CASCParser.AddContext?): Expression {
@@ -77,7 +84,8 @@ class ExpressionVisitor(private val scope: Scope) : CASCBaseVisitor<Expression>(
         val left = ctx?.expression(0)?.accept(this)
         val right = if (ctx?.expression(1) != null) ctx.expression(1)?.accept(this)
         else Value(BuiltInType.INT(), "0")
-        val logicalOp = if (ctx?.cmp != null) LogicalOp.enumSet().find { it.isAlias(ctx.cmp.text) } else LogicalOp.NOT_EQ()
+        val logicalOp =
+            if (ctx?.cmp != null) LogicalOp.enumSet().find { it.isAlias(ctx.cmp.text) } else LogicalOp.NOT_EQ()
 
         return ConditionalExpression(left, right, logicalOp)
     }
