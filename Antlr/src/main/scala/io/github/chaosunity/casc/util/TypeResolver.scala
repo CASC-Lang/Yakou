@@ -27,5 +27,5 @@ object TypeResolver {
     }
 
     private def getBuiltInType(typeName: String): Option[Type] =
-        BuiltInType.enumSet.find((t: BuiltInType.BuiltInType) => t.name.equals(typeName) || t.mandarinAlias.equals(typeName))
+        BuiltInType.enumSet.find(_.isAlias(typeName))
 }

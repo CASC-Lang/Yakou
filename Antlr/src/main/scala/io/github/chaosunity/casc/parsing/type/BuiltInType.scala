@@ -13,6 +13,9 @@ object BuiltInType extends Enumeration {
         override var `type`: Class[_] = _typeClass
         override var descriptor: String = _descriptor
         override var internalName: String = _descriptor
+
+        def isAlias(literal: String): Boolean =
+            name.equals(literal) || mandarinAlias.equals(literal)
     }
 
     final val BOOLEAN = BuiltInType("bool", "布林", classOf[Boolean], "Z")
