@@ -68,14 +68,14 @@ public class CASCBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements C
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitFunctionArgument(CASCParser.FunctionArgumentContext ctx) { return visitChildren(ctx); }
+	@Override public T visitFunctionParameter(CASCParser.FunctionParameterContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitFunctionParamdefaultValue(CASCParser.FunctionParamdefaultValueContext ctx) { return visitChildren(ctx); }
+	@Override public T visitFunctionParameterDefaultValue(CASCParser.FunctionParameterDefaultValueContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

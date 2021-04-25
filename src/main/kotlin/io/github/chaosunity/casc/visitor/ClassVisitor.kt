@@ -11,11 +11,12 @@ class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
 
     override fun visitClassDeclaration(ctx: CASCParser.ClassDeclarationContext?): ClassDeclaration {
         val name = ctx?.className()?.text
-        val functionSignatureVisitor = FunctionSignatureVisitor()
-        val methodsCtx = ctx?.classBody()?.function()
         val metadata = Metadata(ctx?.className()?.text)
 
         scope = Scope(metadata)
+
+        val functionSignatureVisitor = FunctionSignatureVisitor(scope)
+        val methodsCtx = ctx?.classBody()?.function()
 
         methodsCtx?.map {
             it.functionDeclaration().accept(functionSignatureVisitor)

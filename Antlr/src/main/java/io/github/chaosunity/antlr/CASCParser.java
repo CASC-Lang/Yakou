@@ -30,7 +30,7 @@ public class CASCParser extends Parser {
 	public static final int
 		RULE_compilationUnit = 0, RULE_classDeclaration = 1, RULE_className = 2, 
 		RULE_classBody = 3, RULE_function = 4, RULE_functionDeclaration = 5, RULE_functionName = 6, 
-		RULE_functionArgument = 7, RULE_functionParamdefaultValue = 8, RULE_type = 9, 
+		RULE_functionParameter = 7, RULE_functionParameterDefaultValue = 8, RULE_type = 9, 
 		RULE_primitiveType = 10, RULE_classType = 11, RULE_block = 12, RULE_statement = 13, 
 		RULE_variableDeclaration = 14, RULE_printStatement = 15, RULE_printlnStatement = 16, 
 		RULE_returnStatement = 17, RULE_functionCall = 18, RULE_ifStatement = 19, 
@@ -39,7 +39,7 @@ public class CASCParser extends Parser {
 	private static String[] makeRuleNames() {
 		return new String[] {
 			"compilationUnit", "classDeclaration", "className", "classBody", "function", 
-			"functionDeclaration", "functionName", "functionArgument", "functionParamdefaultValue", 
+			"functionDeclaration", "functionName", "functionParameter", "functionParameterDefaultValue", 
 			"type", "primitiveType", "classType", "block", "statement", "variableDeclaration", 
 			"printStatement", "printlnStatement", "returnStatement", "functionCall", 
 			"ifStatement", "name", "expressionList", "expression", "varReference", 
@@ -340,11 +340,11 @@ public class CASCParser extends Parser {
 		public FunctionNameContext functionName() {
 			return getRuleContext(FunctionNameContext.class,0);
 		}
-		public List<FunctionArgumentContext> functionArgument() {
-			return getRuleContexts(FunctionArgumentContext.class);
+		public List<FunctionParameterContext> functionParameter() {
+			return getRuleContexts(FunctionParameterContext.class);
 		}
-		public FunctionArgumentContext functionArgument(int i) {
-			return getRuleContext(FunctionArgumentContext.class,i);
+		public FunctionParameterContext functionParameter(int i) {
+			return getRuleContext(FunctionParameterContext.class,i);
 		}
 		public TypeContext type() {
 			return getRuleContext(TypeContext.class,0);
@@ -379,7 +379,7 @@ public class CASCParser extends Parser {
 			if (_la==ID) {
 				{
 				setState(73);
-				functionArgument();
+				functionParameter();
 				setState(78);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
@@ -389,7 +389,7 @@ public class CASCParser extends Parser {
 					setState(74);
 					match(T__3);
 					setState(75);
-					functionArgument();
+					functionParameter();
 					}
 					}
 					setState(80);
@@ -460,28 +460,28 @@ public class CASCParser extends Parser {
 		return _localctx;
 	}
 
-	public static class FunctionArgumentContext extends ParserRuleContext {
+	public static class FunctionParameterContext extends ParserRuleContext {
 		public TerminalNode ID() { return getToken(CASCParser.ID, 0); }
 		public TypeContext type() {
 			return getRuleContext(TypeContext.class,0);
 		}
-		public FunctionParamdefaultValueContext functionParamdefaultValue() {
-			return getRuleContext(FunctionParamdefaultValueContext.class,0);
+		public FunctionParameterDefaultValueContext functionParameterDefaultValue() {
+			return getRuleContext(FunctionParameterDefaultValueContext.class,0);
 		}
-		public FunctionArgumentContext(ParserRuleContext parent, int invokingState) {
+		public FunctionParameterContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_functionArgument; }
+		@Override public int getRuleIndex() { return RULE_functionParameter; }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitFunctionArgument(this);
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitFunctionParameter(this);
 			else return visitor.visitChildren(this);
 		}
 	}
 
-	public final FunctionArgumentContext functionArgument() throws RecognitionException {
-		FunctionArgumentContext _localctx = new FunctionArgumentContext(_ctx, getState());
-		enterRule(_localctx, 14, RULE_functionArgument);
+	public final FunctionParameterContext functionParameter() throws RecognitionException {
+		FunctionParameterContext _localctx = new FunctionParameterContext(_ctx, getState());
+		enterRule(_localctx, 14, RULE_functionParameter);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -498,7 +498,7 @@ public class CASCParser extends Parser {
 			if (_la==T__6) {
 				{
 				setState(93);
-				functionParamdefaultValue();
+				functionParameterDefaultValue();
 				}
 			}
 
@@ -515,24 +515,24 @@ public class CASCParser extends Parser {
 		return _localctx;
 	}
 
-	public static class FunctionParamdefaultValueContext extends ParserRuleContext {
+	public static class FunctionParameterDefaultValueContext extends ParserRuleContext {
 		public ExpressionContext expression() {
 			return getRuleContext(ExpressionContext.class,0);
 		}
-		public FunctionParamdefaultValueContext(ParserRuleContext parent, int invokingState) {
+		public FunctionParameterDefaultValueContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
-		@Override public int getRuleIndex() { return RULE_functionParamdefaultValue; }
+		@Override public int getRuleIndex() { return RULE_functionParameterDefaultValue; }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitFunctionParamdefaultValue(this);
+			if ( visitor instanceof CASCVisitor ) return ((CASCVisitor<? extends T>)visitor).visitFunctionParameterDefaultValue(this);
 			else return visitor.visitChildren(this);
 		}
 	}
 
-	public final FunctionParamdefaultValueContext functionParamdefaultValue() throws RecognitionException {
-		FunctionParamdefaultValueContext _localctx = new FunctionParamdefaultValueContext(_ctx, getState());
-		enterRule(_localctx, 16, RULE_functionParamdefaultValue);
+	public final FunctionParameterDefaultValueContext functionParameterDefaultValue() throws RecognitionException {
+		FunctionParameterDefaultValueContext _localctx = new FunctionParameterDefaultValueContext(_ctx, getState());
+		enterRule(_localctx, 16, RULE_functionParameterDefaultValue);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{

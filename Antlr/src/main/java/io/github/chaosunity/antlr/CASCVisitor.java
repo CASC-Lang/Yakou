@@ -55,17 +55,17 @@ public interface CASCVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitFunctionName(CASCParser.FunctionNameContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CASCParser#functionArgument}.
+	 * Visit a parse tree produced by {@link CASCParser#functionParameter}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitFunctionArgument(CASCParser.FunctionArgumentContext ctx);
+	T visitFunctionParameter(CASCParser.FunctionParameterContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CASCParser#functionParamdefaultValue}.
+	 * Visit a parse tree produced by {@link CASCParser#functionParameterDefaultValue}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitFunctionParamdefaultValue(CASCParser.FunctionParamdefaultValueContext ctx);
+	T visitFunctionParameterDefaultValue(CASCParser.FunctionParameterDefaultValueContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link CASCParser#type}.
 	 * @param ctx the parse tree

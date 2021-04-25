@@ -1,5 +1,6 @@
 package io.github.chaosunity.casc.bytecodegen
 
+import io.github.chaosunity.casc.exception.BadArgumentsToFunctionCallException
 import io.github.chaosunity.casc.exception.FunctionAbsenceException
 import io.github.chaosunity.casc.exception.InvalidComparisonException
 import io.github.chaosunity.casc.parsing.expression.*
@@ -60,14 +61,28 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
     }
 
     fun generate(call: FunctionCall) {
-        val parameters = call.params()
+        val functionName = call.functionName()
+        val signature = scope.getSignature(functionName)
+        val arguments = call.arguments()
+        val parameters = signature.parameters()
 
-        parameters.forEach { generate(it) }
+        if (arguments.size > parameters.size)
+            throw BadArgumentsToFunctionCallException(call)
+
+        arguments.forEach(::generate)
+
+        for (i in arguments.size until parameters.size) {
+            val defaultParameter = parameters[i].defaultValue()
+
+            if (defaultParameter.isEmpty)
+                throw BadArgumentsToFunctionCallException(call)
+
+            generate(defaultParameter.get())
+        }
 
         val owner = call.owner().getOrElse { ClassType(scope.className()) }
         val methodDescriptor = getFunctionDescriptor(call)
         val ownerDescriptor = owner.internalName()
-        val functionName = call.functionName()
 
         mv.visitMethodInsn(INVOKESTATIC, ownerDescriptor, functionName, methodDescriptor, false)
     }

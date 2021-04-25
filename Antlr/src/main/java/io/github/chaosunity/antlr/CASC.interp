@@ -126,8 +126,8 @@ classBody
 function
 functionDeclaration
 functionName
-functionArgument
-functionParamdefaultValue
+functionParameter
+functionParameterDefaultValue
 type
 primitiveType
 classType

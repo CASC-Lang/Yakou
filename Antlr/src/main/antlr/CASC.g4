@@ -6,18 +6,18 @@ package io.github.chaosunity.antlr;
 }
 
 //RULES
-compilationUnit             : classDeclaration EOF;
-classDeclaration            : CLASS className '{' classBody '}';
-className                   : ID;
-classBody                   : function* ;
-function                    : functionDeclaration block ;
-functionDeclaration         : FUNC functionName '('(functionArgument (',' functionArgument)*)?')' (':' type)? ;
-functionName                : ID ;
-functionArgument            : ID ':' type functionParamdefaultValue? ;
-functionParamdefaultValue   : '=' expression ;
-type                        : primitiveType
-                            | classType
-                            ;
+compilationUnit                 : classDeclaration EOF;
+classDeclaration                : CLASS className '{' classBody '}';
+className                       : ID;
+classBody                       : function* ;
+function                        : functionDeclaration block ;
+functionDeclaration             : FUNC functionName '('(functionParameter (',' functionParameter)*)?')' (':' type)? ;
+functionName                    : ID ;
+functionParameter               : ID ':' type functionParameterDefaultValue? ;
+functionParameterDefaultValue   : '=' expression ;
+type                            : primitiveType
+                                | classType
+                                ;
 
 primitiveType   :  ('boolean'   | '\u5e03\u6797') ('[' ']')*
                 |  ('string'    | '\u5b57\u4e32') ('[' ']')*
