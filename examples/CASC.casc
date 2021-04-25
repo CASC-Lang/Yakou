@@ -1,7 +1,10 @@
 類別 CASC {
     函式 主函式(參數: 字串[]) {
-        var a = 加總(m = 2, n = -1)
+        var a = -加總(m = -2, n = 1)
+        println(a)
         var b = 加總(1)
+        println(b)
+        println("Hello " + "CASC!")
     }
 
     函式 加總(n: 整數, m: 整數 = 2): 整數 {

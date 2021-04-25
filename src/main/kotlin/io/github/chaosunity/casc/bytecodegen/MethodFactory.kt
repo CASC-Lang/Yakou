@@ -37,6 +37,7 @@ class MethodFactory(private val cw: ClassWriter) {
         block: BlockStatement,
         statementFactory: StatementFactory
     ) {
+        if (block.statements().isEmpty()) return
         val lastStatement = block.statements().last()
 
         if (lastStatement !is ReturnStatement) {

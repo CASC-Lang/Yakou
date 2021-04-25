@@ -3,6 +3,7 @@ package io.github.chaosunity.casc.util
 import io.github.chaosunity.antlr.CASCParser
 import io.github.chaosunity.casc.parsing.`type`.{BuiltInType, ClassType, Type}
 import org.apache.commons.lang3.StringUtils
+import org.apache.commons.lang3.math.NumberUtils
 
 object TypeResolver {
     def getFromTypeName(typeContext: CASCParser.TypeContext): Type = {
@@ -20,7 +21,7 @@ object TypeResolver {
 
     def getFromValue(value: String): Type = {
         if (StringUtils.isEmpty(value)) return BuiltInType.VOID
-        if (StringUtils.isNumeric(value)) return BuiltInType.INT
+        if (NumberUtils.isCreatable(value)) return BuiltInType.INT
         if (value.equals("true") || value.equals("false")) return BuiltInType.BOOLEAN
 
         BuiltInType.STRING

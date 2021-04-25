@@ -13,24 +13,24 @@ import io.github.chaosunity.casc.parsing.type.BuiltInType
 import io.github.chaosunity.casc.util.TypeResolver
 
 class ExpressionVisitor(private val scope: Scope) : CASCBaseVisitor<Expression>() {
-    override fun visitVarReference(ctx: CASCParser.VarReferenceContext?): Expression {
+    override fun visitVarRef(ctx: CASCParser.VarRefContext?): Expression {
         val variableName = ctx?.text
         val localVariableDeclaration = scope.getLocalVariable(variableName)
 
-        return VarReference(localVariableDeclaration.type(), variableName, ctx?.NEG() != null)
+        return VarReference(localVariableDeclaration.type(), variableName, ctx?.NEG != null)
     }
 
     override fun visitVal(ctx: CASCParser.ValContext?): Expression {
         val value = ctx?.value()?.text
         val type = TypeResolver.getFromValue(value)
 
-        return Value(type, value, ctx?.NEG() != null)
+        return Value(type, value, ctx?.NEG != null)
     }
 
-    override fun visitFunctionCall(ctx: CASCParser.FunctionCallContext?): Expression {
-        val functionName = ctx?.functionName()?.text
+    override fun visitFuncCall(ctx: CASCParser.FuncCallContext?): Expression {
+        val functionName = ctx?.functionCall()?.functionName()?.text
         val signature = scope.getSignature(functionName)
-        val argumentsCtx = ctx?.argument()
+        val argumentsCtx = ctx?.functionCall()?.argument()
         val arugments = argumentsCtx?.sortedWith(Comparator { o1, o2 ->
             if (o1.name() == null) return@Comparator 0
 
@@ -40,14 +40,14 @@ class ExpressionVisitor(private val scope: Scope) : CASCBaseVisitor<Expression>(
             signature.getIndexOfParameter(argName1) - signature.getIndexOfParameter(argName2)
         })?.map { it.expression().accept(this) }
 
-        return FunctionCall(signature, arugments, null, ctx?.NEG() != null)
+        return FunctionCall(signature, arugments, null, ctx?.NEG != null)
     }
 
     override fun visitModAdd(ctx: CASCParser.ModAddContext?): Expression {
         val left = ctx?.expression(0)?.accept(this)
         val right = ctx?.expression(1)?.accept(this)
 
-        return Addition(left, right, ctx?.NEG() != null)
+        return Addition(left, right, ctx?.NEG != null)
     }
 
     override fun visitAdd(ctx: CASCParser.AddContext?): Expression {
@@ -61,7 +61,7 @@ class ExpressionVisitor(private val scope: Scope) : CASCBaseVisitor<Expression>(
         val left = ctx?.expression(0)?.accept(this)
         val right = ctx?.expression(1)?.accept(this)
 
-        return Addition(left, right, ctx?.NEG() != null)
+        return Addition(left, right, ctx?.NEG != null)
     }
 
     override fun visitSubtract(ctx: CASCParser.SubtractContext?): Expression {
@@ -75,7 +75,7 @@ class ExpressionVisitor(private val scope: Scope) : CASCBaseVisitor<Expression>(
         val left = ctx?.expression(0)?.accept(this)
         val right = ctx?.expression(1)?.accept(this)
 
-        return Addition(left, right, ctx?.NEG() != null)
+        return Addition(left, right, ctx?.NEG != null)
     }
 
     override fun visitMultiply(ctx: CASCParser.MultiplyContext?): Expression {
@@ -89,7 +89,7 @@ class ExpressionVisitor(private val scope: Scope) : CASCBaseVisitor<Expression>(
         val left = ctx?.expression(0)?.accept(this)
         val right = ctx?.expression(1)?.accept(this)
 
-        return Addition(left, right, ctx?.NEG() != null)
+        return Addition(left, right, ctx?.NEG != null)
     }
 
     override fun visitDivide(ctx: CASCParser.DivideContext?): Expression {

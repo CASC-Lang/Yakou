@@ -8,7 +8,7 @@ sealed abstract class ArithmeticExpression(`type`: Type,
                                            val leftExpression: Expression,
                                            val rightExpression: Expression,
                                            negative: Boolean) extends Expression(`type`, negative) {
-    if (`type` != BuiltInType.INT) {
+    if (`type` != BuiltInType.INT && `type` != BuiltInType.STRING) {
         throw new UnsupportedArithmeticOperationException(this)
     }
 }

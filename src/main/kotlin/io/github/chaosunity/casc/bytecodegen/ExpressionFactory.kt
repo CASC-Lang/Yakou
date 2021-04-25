@@ -28,7 +28,8 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
             is Division -> generate(expression)
             is IfExpression -> generate(expression)
             is ConditionalExpression -> generate(expression)
-            is EmptyExpression -> {}
+            is EmptyExpression -> {
+            }
             is ArithmeticExpression -> {
                 generate(expression.leftExpression())
                 generate(expression.rightExpression())
@@ -107,6 +108,12 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
     }
 
     fun generate(addition: Addition) {
+        if (addition.type() == BuiltInType.STRING()) {
+            generateStringAppend(addition)
+
+            return
+        }
+
         generate(addition.leftExpression())
         generate(addition.rightExpression())
         mv.visitInsn(IADD)
@@ -170,6 +177,35 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
     }
 
 //    private fun generate(emptyExpression: EmptyExpression) {}         Not necessary.
+
+    private fun generateStringAppend(addition: Addition) {
+        mv.visitTypeInsn(NEW, "java/lang/StringBuilder")
+        mv.visitInsn(DUP)
+        mv.visitMethodInsn(INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false)
+
+        val leftExpression = addition.leftExpression()
+
+        generate(leftExpression)
+
+        val leftExprDescriptor = leftExpression.type().descriptor()
+        var descriptor = "($leftExprDescriptor)Ljava/lang/StringBuilder;"
+        mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", descriptor, false)
+        val rightExpression = addition.rightExpression()
+
+        generate(rightExpression)
+
+        val rightExprDescriptor = rightExpression.type().descriptor()
+
+        descriptor = "($rightExprDescriptor)Ljava/lang/StringBuilder;"
+        mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", descriptor, false)
+        mv.visitMethodInsn(
+            INVOKEVIRTUAL,
+            "java/lang/StringBuilder",
+            "toString",
+            "()Ljava/lang/String;",
+            false
+        )
+    }
 
     private fun getFunctionDescriptor(call: FunctionCall): String =
         getDescriptorForFunctionInScope(call) ?: getDescriptorForFunctionOnClasspath(call)
