@@ -1,6 +1,6 @@
 package io.github.chaosunity.casc.parsing.`type`
 
-class ClassType(private var _name: String) extends Type {
+class ClassType(val _name: String) extends Type {
     def name: String = _name
 
     def name_=(name: String): Unit = {}

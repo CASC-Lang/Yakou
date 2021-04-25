@@ -65,7 +65,7 @@ class ExpressionVisitor(private val scope: Scope) : CASCBaseVisitor<Expression>(
     }
 
     override fun visitConditionalExpression(ctx: CASCParser.ConditionalExpressionContext?): Expression {
-        val expressionVisitor = ExpressionVisitor(scope)
+        // val expressionVisitor = ExpressionVisitor(scope)
         val left = ctx?.expression(0)?.accept(this)
         val right = if (ctx?.expression(1) != null) ctx.expression(1)?.accept(this)
         else Value(BuiltInType.INT(), "0")

@@ -5,10 +5,10 @@ import scala.collection.mutable
 object BuiltInType extends Enumeration {
     type BuiltInType = BuiltInTypes
 
-    case class BuiltInTypes(private val _name: String,
+    case class BuiltInTypes(_name: String,
                             mandarinAlias: String,
-                            private val _typeClass: Class[_],
-                            private val _descriptor: String) extends Val(_name) with Type {
+                            _typeClass: Class[_],
+                            _descriptor: String) extends Val(_name) with Type {
         override var name: String = _name
         override var `type`: Class[_] = _typeClass
         override var descriptor: String = _descriptor

@@ -59,7 +59,7 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
     }
 
     fun generate(call: FunctionCall) {
-        val parameters = call.parameters()
+        val parameters = call.params()
 
         parameters.forEach { generate(it) }
 
@@ -129,7 +129,7 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
         mv.visitLabel(endLabel)
     }
 
-    fun generate(emptyExpression: EmptyExpression) {}
+    private fun generate(emptyExpression: EmptyExpression) {}
 
     private fun getFunctionDescriptor(call: FunctionCall): String =
         getDescriptorForFunctionInScope(call) ?: getDescriptorForFunctionOnClasspath(call)

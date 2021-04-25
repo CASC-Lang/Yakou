@@ -6,15 +6,8 @@ import io.github.chaosunity.casc.parsing.statement.Statement
 
 import java.util
 
-class Function(private val _name: String,
-               private val _retType: Type,
-               private val _params: util.List[FunctionParameter],
-               private val _rootStatement: Statement) {
-    def name: String = _name
-
-    def returnType: Type = _retType
-
-    def parameters: util.List[FunctionParameter] = _params
-
-    def rootStatement: Statement = _rootStatement
+class Function(val name: String,
+               val returnType: Type,
+               val parameters: util.List[FunctionParameter],
+               val rootStatement: Statement) {
 }

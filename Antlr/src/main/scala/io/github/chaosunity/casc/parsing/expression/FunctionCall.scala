@@ -6,14 +6,10 @@ import io.github.chaosunity.casc.parsing.statement.Statement
 
 import java.util
 
-class FunctionCall(private var _signature: FunctionSignature,
-                   private var _params: util.List[Expression],
-                   private var _owner: Type) extends Expression(_signature.returnType) with Statement {
-    def functionName: String = _signature.name
-
-    def parameters: util.List[Expression] = _params
+class FunctionCall(val signature: FunctionSignature,
+                   val params: util.List[Expression],
+                   private val _owner: Type) extends Expression(signature.returnType) with Statement {
+    def functionName: String = signature.name
 
     def owner: Option[Type] = Option.apply(_owner)
-
-    def signature: FunctionSignature = _signature
 }

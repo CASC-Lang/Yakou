@@ -1,15 +1,11 @@
 package io.github.chaosunity.casc.parsing.scope
 
-import java.util.List
 import io.github.chaosunity.casc.parsing.`type`.Type
 import io.github.chaosunity.casc.parsing.expression.FunctionParameter
 
-class FunctionSignature(private val _name: String,
-                        private val _params: List[FunctionParameter],
-                        private val _retType: Type) {
-    def name: String = _name
+import java.util
 
-    def parameters: List[FunctionParameter] = _params
-
-    def returnType: Type = _retType
+class FunctionSignature(val name: String,
+                        val parameters: util.List[FunctionParameter],
+                        val returnType: Type) {
 }

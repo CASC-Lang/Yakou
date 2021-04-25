@@ -31,6 +31,6 @@ object LogicalOp extends Enumeration {
         GREATER_EQ
     )
 
-    def LogicalOp(literal: String, mandarinAlias: String, opCode: Int): LogicalOp =
+    protected def LogicalOp(literal: String, mandarinAlias: String, opCode: Int): LogicalOp =
         new LogicalOp(literal, mandarinAlias, opCode)
 }
