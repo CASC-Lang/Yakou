@@ -141,6 +141,18 @@ public interface CASCVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitIfStatement(CASCParser.IfStatementContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link CASCParser#forStatement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitForStatement(CASCParser.ForStatementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link CASCParser#forExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitForExpression(CASCParser.ForExpressionContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link CASCParser#name}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

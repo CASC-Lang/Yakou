@@ -63,6 +63,9 @@ class StatementVisitor(private val scope: Scope) : CASCBaseVisitor<Statement>() 
         return IfStatement(condition, trueStatement, falseStatement)
     }
 
+    override fun visitForStatement(ctx: CASCParser.ForStatementContext?): Statement =
+        ctx?.accept(ForStatementVisitor(scope))!!
+
     private fun getExpression(ctx: CASCParser.ExpressionContext?): Expression? {
         val expressionVisitor = ExpressionVisitor(scope)
         return ctx?.accept(expressionVisitor)

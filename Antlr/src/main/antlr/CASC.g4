@@ -41,6 +41,7 @@ statement       : block
                 | printlnStatement
                 | functionCall
                 | returnStatement
+                | forStatement
                 | ifStatement
                 ;
 
@@ -51,7 +52,9 @@ returnStatement         : RETURN? expression                    #ReturnWithValue
                         | RETURN                                #ReturnVoid
                         ;
 functionCall            : functionName '('argument? (',' argument)*')';
-ifStatement             : IF ('(')? expression (')')? trueStatement=block (ELSE falseStatement=block)?;
+ifStatement             : IF ('(')? expression (')')? trueStatement=statement (ELSE falseStatement=statement)?;
+forStatement            : FOR ('(')? forExpression (')')? statement ;
+forExpression           : iterator=varReference FROM startExpr=expression range=(TO | UNTIL) endExpr=expression ;
 name                    : ID ;
 argument                : expression
                         | name '=' expression ;
@@ -95,6 +98,10 @@ VARIABLE        : 'var'     | '\u8b8a\u6578'        ;       // var, 變數
 IF              : 'if'      | '\u5982\u679c'        ;       // if, 如果
 ELSE            : 'else'    | '\u5426\u5247'        ;       // else, 否則
 RETURN          : 'return'  | '\u8fd4\u56de'        ;       // return, 返回
+FOR             : 'for'     | '\u8fed\u4ee3'        ;       // for, 迭代
+FROM            : 'from'    | '\u5f9e'              ;       // from, 從
+TO              : 'to'      | '\u81f3'              ;       // to, 至
+UNTIL           : 'until'   | '\u76f4\u5230'        ;       // until, 直到
 
 PRINT           : 'print'   | '\u5370\u51fa'        ;       // print, 印出
 PRINTLN         : 'println' | '\u5370\u51fa\u884c'  ;       // println, 印出行

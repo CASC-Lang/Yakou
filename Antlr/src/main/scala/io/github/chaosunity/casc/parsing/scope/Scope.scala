@@ -29,6 +29,9 @@ class Scope(private val _metadata: Metadata) {
         _localVariables.find(_.name.equals(variableName))
             .getOrElse(throw new LocalVariableNotFoundException(this, variableName))
 
+    def localVariableExists(variableName: String): Boolean =
+        _localVariables.forall(_.name.equals(variableName))
+
     def getLocalVariableIndex(variableName: String): Int =
         _localVariables.indexOf(getLocalVariable(variableName))
 

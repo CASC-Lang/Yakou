@@ -1,6 +1,9 @@
 package io.github.chaosunity.casc.bytecodegen
 
+import io.github.chaosunity.casc.parsing.LogicalOp
+import io.github.chaosunity.casc.parsing.expression.ConditionalExpression
 import io.github.chaosunity.casc.parsing.expression.Expression
+import io.github.chaosunity.casc.parsing.expression.VarReference
 import io.github.chaosunity.casc.parsing.scope.LocalVariable
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.parsing.statement.*
@@ -21,6 +24,8 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
             is ReturnStatement -> generate(statement)
             is IfStatement -> generate(statement)
             is BlockStatement -> generate(statement)
+            is AssignmentStatement -> generate(statement)
+            is RangedForStatement -> generate(statement)
             is Expression -> ef.generate(statement)
         }
     }
@@ -33,20 +38,10 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
 
     fun generate(declaration: VariableDeclaration) {
         val expression = declaration.expression()
-        val variableName = declaration.name()
-        val index = scope.getLocalVariableIndex(variableName)
-        val type = expression.type()
 
         ef.generate(expression)
 
-        if (type == BuiltInType.INT() || type == BuiltInType.BOOLEAN()) {
-            mv.visitVarInsn(ISTORE, index)
-        } else if (type == BuiltInType.STRING()) {
-            mv.visitVarInsn(ASTORE, index)
-        }
-
-
-        scope.addLocalVariable(LocalVariable(expression.type(), variableName))
+        generate(AssignmentStatement(declaration))
     }
 
     fun generate(returnStatement: ReturnStatement) {
@@ -55,7 +50,7 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
 
         ef.generate(expression)
 
-        if(type == BuiltInType.VOID()) {
+        if (type == BuiltInType.VOID()) {
             mv.visitInsn(RETURN)
         } else if (type == BuiltInType.INT()) {
             mv.visitInsn(IRETURN)
@@ -84,6 +79,51 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
         val sf = StatementFactory(mv, innerScope)
 
         statements.forEach(sf::generate)
+    }
+
+    fun generate(forStatement: RangedForStatement) {
+        val innerScope = forStatement.scope()
+        val sf = StatementFactory(mv, innerScope)
+        val ef = ExpressionFactory(mv, innerScope)
+        val iterator = forStatement.iteratorVariableStatement()
+
+        val trueLabel = Label()
+        val endLabel = Label()
+
+        val iteratorVariableName = forStatement.iteratorVariableName()
+        val rightExpression = forStatement.endExpression()
+        val leftExpression = VarReference(forStatement.type(), iteratorVariableName, false)
+        val conditionalExpression = ConditionalExpression(
+            leftExpression,
+            rightExpression,
+            when (forStatement.forType()) {
+                ForType.TO() -> LogicalOp.LESS_EQ()
+                ForType.UNTIL() -> LogicalOp.LESS()
+                else -> LogicalOp.LESS()
+            }
+        )
+
+        sf.generate(iterator)
+        ef.generate(conditionalExpression)
+        mv.visitJumpInsn(IFEQ, endLabel)
+        mv.visitLabel(trueLabel)
+        sf.generate(forStatement.statement())
+        mv.visitIincInsn(innerScope.getLocalVariableIndex(iteratorVariableName), 1)
+        ef.generate(conditionalExpression)
+        mv.visitJumpInsn(IFNE, trueLabel)
+        mv.visitLabel(endLabel)
+    }
+
+    fun generate(assignment: AssignmentStatement) {
+        val variableName = assignment.variableName()
+        val type = assignment.expression().type()
+        val index = scope.getLocalVariableIndex(variableName)
+
+        if (type == BuiltInType.INT() || type == BuiltInType.BOOLEAN()) {
+            mv.visitVarInsn(ISTORE, index)
+        } else if (type == BuiltInType.STRING()) {
+            mv.visitVarInsn(ASTORE, index)
+        }
     }
 
     private fun generatePrintStreamCall(expression: Expression, actualFunctionName: String) {
