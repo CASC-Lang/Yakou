@@ -38,6 +38,7 @@ block           : '{' statement* '}' ;
 statement       : block
                 | variableDeclaration
                 | printStatement
+                | printlnStatement
                 | functionCall
                 | returnStatement
                 | ifStatement
@@ -50,7 +51,7 @@ returnStatement         : RETURN                                #ReturnVoid
                         | RETURN? expression                    #ReturnWithValue
                         ;
 functionCall            : functionName '('expressionList')';
-ifStatement             : IF ('(')? expression (')')? trueStatement=statement (ELSE falseStatement=statement)?;
+ifStatement             : IF ('(')? expression (')')? trueStatement=block (ELSE falseStatement=block)?;
 name                    : ID ;
 expressionList          : expression? (',' expression)* ;
 expression              : varReference                          #VarRef
@@ -64,12 +65,12 @@ expression              : varReference                          #VarRef
                         | expression PLUS expression            #Add
                         | '(' expression MINUS expression ')'   #Subtract
                         | expression MINUS expression           #Subtract
-                        | expression cmp=GREATER expression         #conditionalExpression
-                        | expression cmp=LESS expression         #conditionalExpression
-                        | expression cmp=EQ expression        #conditionalExpression
-                        | expression cmp=NOT_EQ expression        #conditionalExpression
-                        | expression cmp=GREATER_EQ expression        #conditionalExpression
-                        | expression cmp=LESS_EQ expression        #conditionalExpression
+                        | expression cmp=GREATER expression     #conditionalExpression
+                        | expression cmp=LESS expression        #conditionalExpression
+                        | expression cmp=EQ expression          #conditionalExpression
+                        | expression cmp=NOT_EQ expression      #conditionalExpression
+                        | expression cmp=GREATER_EQ expression  #conditionalExpression
+                        | expression cmp=LESS_EQ expression     #conditionalExpression
                         ;
 
 varReference        : ID ;
@@ -104,8 +105,8 @@ GREATER         : '>'       | '\u5927\u65bc';           // >, 大於
 LESS            : '<'       | '\u5c0f\u65bc';           // <, 小於
 GREATER_EQ      : '>='      | '\u5927\u7b49\u65bc';     // >=, 大等於
 LESS_EQ         : '<='      | '\u5c0f\u7b49\u65bc';     // <=, 小等於
-EQ              : '=='      | '\u7b49\u65bc';           // ==, 等於
-NOT_EQ          : '!='      | '\u4e0d\u7b49\u65bc';     // !=, 不等於
+EQ              : '=='      | '\u662f';                 // ==, 等於
+NOT_EQ          : '!='      | '\u4e0d\u662f';           // !=, 不等於
 
 NUMBER          : [0-9]+ ;
 STRING          : '"'~('\r' | '\n' | '"')*'"' ;

@@ -10,7 +10,7 @@ import org.objectweb.asm.Opcodes.*
 
 class MethodFactory(private val cw: ClassWriter) {
     fun generate(function: Function) {
-        val functionName = function.name()
+        val functionName = if (function.name().equals("主函式")) "main" else function.name()
         val descriptor = DescriptorFactory.getMethodDescriptor(function)
         val block = function.rootStatement() as BlockStatement
         val access = ACC_PUBLIC + ACC_STATIC

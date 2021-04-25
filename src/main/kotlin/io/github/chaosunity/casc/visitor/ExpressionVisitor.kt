@@ -69,7 +69,7 @@ class ExpressionVisitor(private val scope: Scope) : CASCBaseVisitor<Expression>(
         val left = ctx?.expression(0)?.accept(this)
         val right = if (ctx?.expression(1) != null) ctx.expression(1)?.accept(this)
         else Value(BuiltInType.INT(), "0")
-        val logicalOp = if (ctx?.cmp != null) LogicalOp.enumSet().find { it.literal().equals(ctx.cmp) } else LogicalOp.NOT_EQ()
+        val logicalOp = if (ctx?.cmp != null) LogicalOp.enumSet().find { it.isAlias(ctx.cmp.text) } else LogicalOp.NOT_EQ()
 
         return ConditionalExpression(left, right, logicalOp)
     }

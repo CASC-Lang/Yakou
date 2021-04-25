@@ -31,6 +31,7 @@ generateGrammarSource {
         println "Copying generated grammar lexer/parser files to main directory."
         copy {
             from "${buildDir}/generated-src/antlr/main"
+            mkdir "src/main/java/io/github/chaosunity/antlr"
             into "src/main/java/io/github/chaosunity/antlr"
         }
         delete "${buildDir}/generated-src/antlr/main"

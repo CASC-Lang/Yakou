@@ -4,19 +4,23 @@ object LogicalOp extends Enumeration {
     type LogicalOp = LogicalOps
 
     case class LogicalOps(literal: String,
-                          opCode: Int) extends Val(literal)
+                          mandarinAlias: String,
+                          opCode: Int) extends Val(literal) {
+        def isAlias(literal: String): Boolean =
+            this.literal.equals(literal) || mandarinAlias.equals(literal)
+    }
 
-    final val EQ = LogicalOp("=", 160)
+    final val EQ = LogicalOp("==", "是", 160)
 
-    final val NOT_EQ = LogicalOp("!=", 159)
+    final val NOT_EQ = LogicalOp("!=", "不是", 159)
 
-    final val LESS = LogicalOp("<", 162)
+    final val LESS = LogicalOp("<", "小於", 162)
 
-    final val GREATER = LogicalOp(">", 164)
+    final val GREATER = LogicalOp(">", "大於", 164)
 
-    final val LESS_EQ = LogicalOp("<=", 163)
+    final val LESS_EQ = LogicalOp("<=", "小等於", 163)
 
-    final val GREATER_EQ = LogicalOp(">=", 161)
+    final val GREATER_EQ = LogicalOp(">=", "大等於", 161)
 
     def enumSet(): Array[LogicalOp] = Array(
         EQ,
@@ -27,6 +31,6 @@ object LogicalOp extends Enumeration {
         GREATER_EQ
     )
 
-    def LogicalOp(literal: String, opCode: Int): LogicalOp =
-        new LogicalOp(literal, opCode)
+    def LogicalOp(literal: String, mandarinAlias: String, opCode: Int): LogicalOp =
+        new LogicalOp(literal, mandarinAlias, opCode)
 }

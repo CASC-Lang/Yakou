@@ -19,6 +19,8 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
             is PrintlnStatement -> generate(statement)
             is VariableDeclaration -> generate(statement)
             is ReturnStatement -> generate(statement)
+            is IfStatement -> generate(statement)
+            is BlockStatement -> generate(statement)
             is Expression -> ef.generate(statement)
         }
     }

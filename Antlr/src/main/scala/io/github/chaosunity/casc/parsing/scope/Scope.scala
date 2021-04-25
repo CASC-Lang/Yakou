@@ -9,7 +9,7 @@ class Scope(private val _metadata: Metadata) {
     private var _functionSignatures: ListBuffer[FunctionSignature] = ListBuffer()
     private var _localVariables: ListBuffer[LocalVariable] = ListBuffer()
 
-    def this(scope: Scope) {
+    def this(scope: Scope) = {
         this(scope._metadata)
         _functionSignatures = scope._functionSignatures.clone()
         _localVariables = scope._localVariables.clone()
