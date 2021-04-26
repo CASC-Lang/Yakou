@@ -15,8 +15,9 @@ repositories {
 dependencies {
     implementation 'org.scala-lang:scala-library:2.13.3'
 
-    implementation 'com.google.guava:guava:30.0-jre'
+    implementation "org.ow2.asm:asm-all:5.2"
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+    implementation group: 'commons-validator', name: 'commons-validator', version: '1.7'
 
     antlr group: 'org.antlr', name: 'antlr4', version: '4.7.2'
     compile group: 'org.antlr', name: 'antlr4-runtime', version: '4.7.2'

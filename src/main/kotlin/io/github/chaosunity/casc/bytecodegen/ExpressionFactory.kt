@@ -2,14 +2,15 @@ package io.github.chaosunity.casc.bytecodegen
 
 import io.github.chaosunity.casc.exception.BadArgumentsToFunctionCallException
 import io.github.chaosunity.casc.exception.FunctionAbsenceException
-import io.github.chaosunity.casc.exception.InvalidComparisonException
 import io.github.chaosunity.casc.exception.InvalidNegativeException
 import io.github.chaosunity.casc.parsing.expression.*
-import io.github.chaosunity.casc.parsing.math.*
+import io.github.chaosunity.casc.parsing.expression.math.ArithmeticExpression
+import io.github.chaosunity.casc.parsing.expression.math.ArithmeticExpression.*
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.parsing.type.BuiltInType
 import io.github.chaosunity.casc.parsing.type.ClassType
 import io.github.chaosunity.casc.util.DescriptorFactory
+import io.github.chaosunity.casc.util.TypeResolver
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes.*
@@ -59,14 +60,10 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
 
     fun generate(value: Value) {
         val type = value.type()
-        var stringValue = value.value()
+        val stringValue = value.value()
+        val actualValue = TypeResolver.getValueFromString(stringValue, type)
 
-        if (type == BuiltInType.INT() || type == BuiltInType.BOOLEAN()) {
-            mv.visitIntInsn(BIPUSH, stringValue.toInt())
-        } else if (type == BuiltInType.STRING()) {
-            stringValue = stringValue.removePrefix("\"").removeSuffix("\"")
-            mv.visitLdcInsn(stringValue)
-        }
+        mv.visitLdcInsn(actualValue)
     }
 
     fun generate(call: FunctionCall) {
@@ -100,11 +97,7 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
         val type = parameter.type()
         val index = scope.getLocalVariableIndex(parameter.name())
 
-        if (type == BuiltInType.INT()) {
-            mv.visitVarInsn(ILOAD, index)
-        } else if (type == BuiltInType.STRING()) {
-            mv.visitVarInsn(ALOAD, index)
-        }
+        mv.visitVarInsn(type.loadVariableOpcode(), index)
     }
 
     fun generate(addition: Addition) {
@@ -116,25 +109,29 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
 
         generate(addition.leftExpression())
         generate(addition.rightExpression())
-        mv.visitInsn(IADD)
+
+        mv.visitInsn(addition.type().addOpcode())
     }
 
     fun generate(subtraction: Subtraction) {
         generate(subtraction.leftExpression())
         generate(subtraction.rightExpression())
-        mv.visitInsn(ISUB)
+
+        mv.visitInsn(subtraction.type().subtractOpcode())
     }
 
     fun generate(multiplication: Multiplication) {
         generate(multiplication.leftExpression())
         generate(multiplication.rightExpression())
-        mv.visitInsn(IMUL)
+
+        mv.visitInsn(multiplication.type().multiplyOpcode())
     }
 
     fun generate(division: Division) {
         generate(division.leftExpression())
         generate(division.rightExpression())
-        mv.visitInsn(IDIV)
+
+        mv.visitInsn(division.type().divideOpcode())
     }
 
     fun generate(ifExpression: IfExpression) {
@@ -156,11 +153,7 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
     fun generate(conditional: ConditionalExpression) {
         val left = conditional.left()
         val right = conditional.right()
-        val type = left.type()
-        val opCode = conditional.opCode()
-
-        if (type != right.type())
-            throw InvalidComparisonException(left, right, opCode)
+        val opcode = conditional.opcode()
 
         generate(left)
         generate(right)
@@ -168,7 +161,7 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
         val endLabel = Label()
         val trueLabel = Label()
 
-        mv.visitJumpInsn(opCode.opCode(), trueLabel)
+        mv.visitJumpInsn(opcode.opcode(), trueLabel)
         mv.visitInsn(ICONST_0)
         mv.visitJumpInsn(GOTO, endLabel)
         mv.visitLabel(trueLabel)

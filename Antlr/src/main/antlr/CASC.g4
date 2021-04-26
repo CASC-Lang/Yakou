@@ -45,7 +45,7 @@ statement       : block
                 | ifStatement
                 ;
 
-variableDeclaration     : VARIABLE name ('=' | '\u8ce6') expression;
+variableDeclaration     : VARIABLE name (':' specType=type)? ('=' | '\u8ce6') expression;
 printStatement          : PRINT '('expression')';
 printlnStatement        : PRINTLN '('expression')';
 returnStatement         : RETURN? expression                    #ReturnWithValue
@@ -75,16 +75,15 @@ expression              : expression cmp=GREATER expression                     
                         | expression PLUS expression                                                            #Add
                         | NEG=MINUS? '(' expression MINUS expression ')'                                        #ModSubtract
                         | expression MINUS expression                                                           #Subtract
-                        | NEG=MINUS? varReference                                                               #VarRef
                         | NEG=MINUS? value                                                                      #Val
+                        | NEG=MINUS? varReference                                                               #VarRef
                         | NEG=MINUS? functionCall                                                               #FuncCall
                         ;
 
 varReference        : ID ;
 value               : NUMBER
+                    | BOOL
                     | STRING
-                    | FALSE
-                    | TRUE
                     ;
 
 //TOKENS
@@ -119,10 +118,9 @@ LESS_EQ         : '<='      | '\u5c0f\u7b49\u65bc'  ;       // <=, 小等於
 EQ              : '=='      | '\u662f'              ;       // ==, 等於
 NOT_EQ          : '!='      | '\u4e0d\u662f'        ;       // !=, 不等於
 
-NUMBER          : [0-9]+                        ;
-STRING          : '"'~('\r' | '\n' | '"')*'"'   ;
-ID              : (CHAR|DIGIT|UNICODE)+         ;
-TRUE            : 'true' | '\u771f'             ;
-FALSE           : 'false' | '\u5047'            ;
+NUMBER          : [0-9.]+                                   ;
+STRING          : '"'~('\r' | '\n' | '"')*'"'               ;
+BOOL            : 'true' | '\u771f' | 'false' | '\u5047'    ;
+ID              : (CHAR|DIGIT|UNICODE)+                     ;
 QUALIFIED_NAME  : ID ('.' ID)+                  ;
 WS              : [ \t\n\r]+ -> skip            ;

@@ -1,19 +1,28 @@
 package io.github.chaosunity.casc.parsing.`type`
 
-class ClassType(val _name: String) extends Type {
-    def name: String = _name
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.Opcodes._
 
-    def name_=(name: String): Unit = {}
+class ClassType(val _name: String) extends Type with Opcodes {
+    override val name: String = _name
 
-    def `type`: Class[_] = Class.forName(_name)
+    override val classType: Class[_] = Class.forName(_name)
 
-    def type_=(`class`: Class[_]): Unit = {}
+    override val internalName: String = name.replace(".", "/")
 
-    def descriptor: String = "L" + internalName + ";"
+    override val descriptor: String = s"L$internalName;"
 
-    def descriptor_=(name: String): Unit = {}
+    override def loadVariableOpcode: Int = ALOAD
 
-    def internalName: String = name.replace(".", "/")
+    override def storeVariableOpcode: Int = ASTORE
 
-    def internalName_=(name: String): Unit = {}
+    override def returnOpcode: Int = ARETURN
+
+    override def addOpcode: Int = throw new RuntimeException(s"Unknown addition operation for class '$name'")
+
+    override def subtractOpcode: Int = throw new RuntimeException(s"Unknown subtraction operation for class '$name'")
+
+    override def multiplyOpcode: Int = throw new RuntimeException(s"Unknown multiplication operation for class '$name'")
+
+    override def divideOpcode: Int = throw new RuntimeException(s"Unknown division operation for class '$name'")
 }

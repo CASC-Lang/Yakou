@@ -4,10 +4,7 @@ import io.github.chaosunity.antlr.CASCBaseVisitor
 import io.github.chaosunity.antlr.CASCParser
 import io.github.chaosunity.casc.parsing.LogicalOp
 import io.github.chaosunity.casc.parsing.expression.*
-import io.github.chaosunity.casc.parsing.math.Addition
-import io.github.chaosunity.casc.parsing.math.Division
-import io.github.chaosunity.casc.parsing.math.Multiplication
-import io.github.chaosunity.casc.parsing.math.Subtraction
+import io.github.chaosunity.casc.parsing.expression.math.ArithmeticExpression.*
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.parsing.type.BuiltInType
 import io.github.chaosunity.casc.util.TypeResolver

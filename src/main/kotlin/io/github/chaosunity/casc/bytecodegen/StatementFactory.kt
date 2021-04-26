@@ -49,11 +49,7 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
 
         ef.generate(expression)
 
-        if (type == BuiltInType.VOID()) {
-            mv.visitInsn(RETURN)
-        } else if (type == BuiltInType.INT()) {
-            mv.visitInsn(IRETURN)
-        }
+        mv.visitInsn(type.returnOpcode())
     }
 
     fun generate(ifStatement: IfStatement) {
@@ -86,42 +82,30 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
         val ef = ExpressionFactory(mv, innerScope)
         val iterator = forStatement.iteratorVariableStatement()
 
-        val incLabel = Label()
-        val decLabel = Label()
+        val trueLabel = Label()
         val endLabel = Label()
 
         val iteratorVariableName = forStatement.iteratorVariableName()
         val rightExpression = forStatement.endExpression()
         val leftExpression = VarReference(forStatement.type(), iteratorVariableName, false)
-
-        val eqConditional = ConditionalExpression(leftExpression, rightExpression, LogicalOp.EQ())
-        val lessConditional = ConditionalExpression(leftExpression, rightExpression, if (forStatement.forType() == ForType.UNTIL()) LogicalOp.LESS_EQ() else LogicalOp.LESS())
-        val greaterConditional = ConditionalExpression(leftExpression, rightExpression, if (forStatement.forType() == ForType.UNTIL()) LogicalOp.GREATER_EQ() else LogicalOp.GREATER())
+        val conditionalExpression = ConditionalExpression(
+            leftExpression,
+            rightExpression,
+            when (forStatement.forType()) {
+                ForType.TO() -> LogicalOp.LESS_EQ()
+                ForType.UNTIL() -> LogicalOp.LESS()
+                else -> LogicalOp.LESS()
+            }
+        )
 
         sf.generate(iterator)
-
-        ef.generate(eqConditional)
-        mv.visitJumpInsn(IFNE, endLabel)
-
-        ef.generate(lessConditional)
-        mv.visitJumpInsn(IFNE, incLabel)
-
-        ef.generate(greaterConditional)
-        mv.visitJumpInsn(IFNE, decLabel)
-
-        mv.visitLabel(incLabel)
+        ef.generate(conditionalExpression)
+        mv.visitJumpInsn(IFEQ, endLabel)
+        mv.visitLabel(trueLabel)
         sf.generate(forStatement.statement())
         mv.visitIincInsn(innerScope.getLocalVariableIndex(iteratorVariableName), 1)
-        ef.generate(greaterConditional)
-        mv.visitJumpInsn(IFEQ, incLabel)
-        mv.visitJumpInsn(GOTO, endLabel)
-
-        mv.visitLabel(decLabel)
-        sf.generate(forStatement.statement())
-        mv.visitIincInsn(innerScope.getLocalVariableIndex(iteratorVariableName), -1)
-        ef.generate(lessConditional)
-        mv.visitJumpInsn(IFEQ, decLabel)
-
+        ef.generate(conditionalExpression)
+        mv.visitJumpInsn(IFNE, trueLabel)
         mv.visitLabel(endLabel)
     }
 
@@ -130,11 +114,7 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
         val type = assignment.expression().type()
         val index = scope.getLocalVariableIndex(variableName)
 
-        if (type == BuiltInType.INT() || type == BuiltInType.BOOLEAN()) {
-            mv.visitVarInsn(ISTORE, index)
-        } else if (type == BuiltInType.STRING()) {
-            mv.visitVarInsn(ASTORE, index)
-        }
+        mv.visitVarInsn(type.storeVariableOpcode(), index)
     }
 
     private fun generatePrintStreamCall(expression: Expression, actualFunctionName: String) {
