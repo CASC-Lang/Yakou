@@ -4,17 +4,14 @@ import io.github.chaosunity.antlr.CASCBaseVisitor
 import io.github.chaosunity.antlr.CASCParser
 import io.github.chaosunity.casc.parsing.scope.LocalVariable
 import io.github.chaosunity.casc.parsing.scope.Scope
-import io.github.chaosunity.casc.parsing.statement.AssignmentStatement
-import io.github.chaosunity.casc.parsing.statement.ForType
-import io.github.chaosunity.casc.parsing.statement.RangedForStatement
-import io.github.chaosunity.casc.parsing.statement.VariableDeclaration
+import io.github.chaosunity.casc.parsing.statement.*
 
-class ForStatementVisitor(scope: Scope) : CASCBaseVisitor<RangedForStatement>() {
+class ForStatementVisitor(scope: Scope) : CASCBaseVisitor<ForStatement>() {
     private val scope = Scope(scope)
     private val ev = ExpressionVisitor(this.scope)
     private val sv = StatementVisitor(this.scope)
 
-    override fun visitForStatement(ctx: CASCParser.ForStatementContext?): RangedForStatement {
+    override fun visitForStatement(ctx: CASCParser.ForStatementContext?): ForStatement {
         val forExpressionCtx = ctx?.forExpression()
         val startExpression = forExpressionCtx?.startExpr?.accept(ev)
         val forType = if (forExpressionCtx?.TO() != null) ForType.TO() else ForType.UNTIL()

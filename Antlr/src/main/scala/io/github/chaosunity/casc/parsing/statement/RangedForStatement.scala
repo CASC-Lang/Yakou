@@ -12,7 +12,7 @@ class RangedForStatement(val iteratorVariableStatement: Statement,
                          val endExpression: Expression,
                          val statement: Statement,
                          val iteratorVariableName: String,
-                         val scope: Scope) extends Statement {
+                         val scope: Scope) extends ForStatement {
     if (startExpression.`type` != BuiltInType.INT ||
         endExpression.`type` != BuiltInType.INT)
         throw new UnsupportedRangedTypeException(startExpression.`type`, endExpression.`type`)

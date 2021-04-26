@@ -4,7 +4,6 @@ import io.github.chaosunity.casc.parsing.LogicalOp
 import io.github.chaosunity.casc.parsing.expression.ConditionalExpression
 import io.github.chaosunity.casc.parsing.expression.Expression
 import io.github.chaosunity.casc.parsing.expression.VarReference
-import io.github.chaosunity.casc.parsing.scope.LocalVariable
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.parsing.statement.*
 import io.github.chaosunity.casc.parsing.type.BuiltInType
@@ -87,30 +86,42 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
         val ef = ExpressionFactory(mv, innerScope)
         val iterator = forStatement.iteratorVariableStatement()
 
-        val trueLabel = Label()
+        val incLabel = Label()
+        val decLabel = Label()
         val endLabel = Label()
 
         val iteratorVariableName = forStatement.iteratorVariableName()
         val rightExpression = forStatement.endExpression()
         val leftExpression = VarReference(forStatement.type(), iteratorVariableName, false)
-        val conditionalExpression = ConditionalExpression(
-            leftExpression,
-            rightExpression,
-            when (forStatement.forType()) {
-                ForType.TO() -> LogicalOp.LESS_EQ()
-                ForType.UNTIL() -> LogicalOp.LESS()
-                else -> LogicalOp.LESS()
-            }
-        )
+
+        val eqConditional = ConditionalExpression(leftExpression, rightExpression, LogicalOp.EQ())
+        val lessConditional = ConditionalExpression(leftExpression, rightExpression, if (forStatement.forType() == ForType.UNTIL()) LogicalOp.LESS_EQ() else LogicalOp.LESS())
+        val greaterConditional = ConditionalExpression(leftExpression, rightExpression, if (forStatement.forType() == ForType.UNTIL()) LogicalOp.GREATER_EQ() else LogicalOp.GREATER())
 
         sf.generate(iterator)
-        ef.generate(conditionalExpression)
-        mv.visitJumpInsn(IFEQ, endLabel)
-        mv.visitLabel(trueLabel)
+
+        ef.generate(eqConditional)
+        mv.visitJumpInsn(IFNE, endLabel)
+
+        ef.generate(lessConditional)
+        mv.visitJumpInsn(IFNE, incLabel)
+
+        ef.generate(greaterConditional)
+        mv.visitJumpInsn(IFNE, decLabel)
+
+        mv.visitLabel(incLabel)
         sf.generate(forStatement.statement())
         mv.visitIincInsn(innerScope.getLocalVariableIndex(iteratorVariableName), 1)
-        ef.generate(conditionalExpression)
-        mv.visitJumpInsn(IFNE, trueLabel)
+        ef.generate(greaterConditional)
+        mv.visitJumpInsn(IFEQ, incLabel)
+        mv.visitJumpInsn(GOTO, endLabel)
+
+        mv.visitLabel(decLabel)
+        sf.generate(forStatement.statement())
+        mv.visitIincInsn(innerScope.getLocalVariableIndex(iteratorVariableName), -1)
+        ef.generate(lessConditional)
+        mv.visitJumpInsn(IFEQ, decLabel)
+
         mv.visitLabel(endLabel)
     }
 

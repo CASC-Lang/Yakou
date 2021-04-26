@@ -1,11 +1,11 @@
 類別 CASC {
     函式 主函式(參數: 字串[]) {
         for i from 0 until 5 {
-            println(i)
+            print(i)
         }
 
         for i from 0 to 5 {
-            println(i)
+            print(i)
         }
     }
 
