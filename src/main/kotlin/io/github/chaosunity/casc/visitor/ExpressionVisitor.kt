@@ -2,11 +2,13 @@ package io.github.chaosunity.casc.visitor
 
 import io.github.chaosunity.antlr.CASCBaseVisitor
 import io.github.chaosunity.antlr.CASCParser
+import io.github.chaosunity.casc.exception.FunctionNameSameAsClassNameException
 import io.github.chaosunity.casc.parsing.LogicalOp
 import io.github.chaosunity.casc.parsing.expression.*
 import io.github.chaosunity.casc.parsing.expression.math.ArithmeticExpression.*
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.parsing.type.BuiltInType
+import io.github.chaosunity.casc.parsing.type.ClassType
 import io.github.chaosunity.casc.util.TypeResolver
 
 class ExpressionVisitor(private val scope: Scope) : CASCBaseVisitor<Expression>() {
@@ -24,20 +26,41 @@ class ExpressionVisitor(private val scope: Scope) : CASCBaseVisitor<Expression>(
         return Value(type, value, ctx?.NEG != null)
     }
 
-    override fun visitFuncCall(ctx: CASCParser.FuncCallContext?): Expression {
-        val functionName = ctx?.functionCall()?.functionName()?.text
-        val signature = scope.getSignature(functionName)
-        val argumentsCtx = ctx?.functionCall()?.argument()
-        val arugments = argumentsCtx?.sortedWith(Comparator { o1, o2 ->
-            if (o1.name() == null) return@Comparator 0
+    override fun visitFunctionCall(ctx: CASCParser.FunctionCallContext?): Expression {
+        val functionName = ctx?.functionName()?.text
 
-            val argName1 = o1.name().text
-            val argName2 = o2.name().text
+        if (functionName.equals(scope.className())) {
+            throw FunctionNameSameAsClassNameException(functionName!!)
+        }
 
-            signature.getIndexOfParameter(argName1) - signature.getIndexOfParameter(argName2)
-        })?.map { it.expression().accept(this) }
+        val argumentCtx = ctx?.argument() ?: listOf()
+        val arguments = getArguments(argumentCtx, functionName)
+        val signature = scope.getMethodCallSignature(functionName)
 
-        return FunctionCall(signature, arugments, null, ctx?.NEG != null)
+        if (ctx?.owner != null) {
+            val owner = ctx.owner.accept(this)
+
+            return FunctionCall(signature, arguments, owner, false)
+        }
+
+        val thisType = ClassType(scope.className())
+
+        return FunctionCall(signature, arguments, VarReference(thisType, "this", false), ctx?.NEG != null)
+    }
+
+    override fun visitConstructorCall(ctx: CASCParser.ConstructorCallContext?): Expression {
+        val className = ctx?.className()?.text
+        val argumentCtx = ctx?.argument() ?: listOf()
+        val arguments = getArguments(argumentCtx, className)
+
+        return ConstructorCall(className, arguments)
+    }
+
+    override fun visitSuperCall(ctx: CASCParser.SuperCallContext?): Expression {
+        val argumentCtx = ctx?.argument() ?: listOf()
+        val arguments = getArguments(argumentCtx, SuperCall.SUPER_IDENTIFIER())
+
+        return SuperCall(arguments)
     }
 
     override fun visitModAdd(ctx: CASCParser.ModAddContext?): Expression {
@@ -113,5 +136,18 @@ class ExpressionVisitor(private val scope: Scope) : CASCBaseVisitor<Expression>(
             if (ctx?.cmp != null) LogicalOp.enumSet().find { it.isAlias(ctx.cmp.text) } else LogicalOp.NOT_EQ()
 
         return ConditionalExpression(left, right, logicalOp)
+    }
+
+    private fun getArguments(ctx: List<CASCParser.ArgumentContext?>, identifier: String?): List<Expression?> {
+        val signature = scope.getMethodCallSignature(identifier)
+
+        return ctx.sortedWith(Comparator { o1, o2 ->
+            if (o1?.name() == null || o2?.name() == null) return@Comparator 0
+
+            val argName1 = o1.name().text
+            val argName2 = o2.name().text
+
+            signature.getIndexOfParameter(argName1) - signature.getIndexOfParameter(argName2)
+        }).map { it?.expression()?.accept(this) }
     }
 }

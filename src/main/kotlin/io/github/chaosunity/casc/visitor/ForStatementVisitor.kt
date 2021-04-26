@@ -20,10 +20,10 @@ class ForStatementVisitor(scope: Scope) : CASCBaseVisitor<ForStatement>() {
         val variableName = iteratorCtx?.text
 
         return if (scope.localVariableExists(variableName)) {
-            val iteratorVariable = AssignmentStatement(variableName, startExpression)
+            val iteratorVariable = Assignment(variableName, startExpression)
             val statement = ctx?.statement()?.accept(sv)
 
-            RangedForStatement(
+            RangedFor(
                 iteratorVariable,
                 startExpression,
                 forType,
@@ -38,7 +38,7 @@ class ForStatementVisitor(scope: Scope) : CASCBaseVisitor<ForStatement>() {
             val iteratorVariable = VariableDeclaration(variableName, startExpression)
             val statement = ctx?.statement()?.accept(sv)
 
-            RangedForStatement(
+            RangedFor(
                 iteratorVariable,
                 startExpression,
                 forType,

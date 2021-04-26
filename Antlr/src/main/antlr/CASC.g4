@@ -62,7 +62,7 @@ expressionList          : expression? (',' expression)* ;
 expression              : owner=expression '.' function '('argument? (',' argument)*')'                         #functionCall
                         | NEG=MINUS? functionName '('argument? (',' argument)*')'                               #functionCall
                         | superCall='super' '('argument? (',' argument)*')'                                     #superCall
-                        | newCall='new' '('argument? (',' argument)*')'                                         #constructorCall
+                        | newCall='new' className '('argument? (',' argument)*')'                               #constructorCall
                         | expression cmp=GREATER expression                                                     #conditionalExpression
                         | expression cmp=LESS expression                                                        #conditionalExpression
                         | expression cmp=EQ expression                                                          #conditionalExpression

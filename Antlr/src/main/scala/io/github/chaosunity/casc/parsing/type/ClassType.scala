@@ -4,13 +4,13 @@ import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes._
 
 class ClassType(val _name: String) extends Type with Opcodes {
-    override val name: String = _name
+    override def name: String = _name
 
-    override val classType: Class[_] = Class.forName(_name)
+    override def classType: Class[_] = Class.forName(_name)
 
-    override val internalName: String = name.replace(".", "/")
+    override def internalName: String = name.replace(".", "/")
 
-    override val descriptor: String = s"L$internalName;"
+    override def descriptor: String = s"L$internalName;"
 
     override def loadVariableOpcode: Int = ALOAD
 

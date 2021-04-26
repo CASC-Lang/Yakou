@@ -2,11 +2,13 @@ package io.github.chaosunity.casc.parsing.scope
 
 import com.google.common.collect.Lists
 import io.github.chaosunity.casc.exceptions.{LocalVariableNotFoundException, MethodSignatureNotFoundException}
-import io.github.chaosunity.casc.parsing.`type`.BuiltInType
+import io.github.chaosunity.casc.parsing.`type`.{BuiltInType, ClassType, Type}
 import io.github.chaosunity.casc.parsing.global.Metadata
-import org.apache.commons.lang3.reflect.MethodUtils
-import org.apache.commons.lang3.{ClassUtils, RegExUtils, StringUtils}
+import io.github.chaosunity.casc.util.ReflectionMapper
+import org.apache.commons.lang3.reflect.{ConstructorUtils, MethodUtils}
+import org.apache.commons.lang3.{ClassUtils, RegExUtils}
 
+import java.util.Optional
 import scala.collection.mutable.ListBuffer
 
 class Scope(private val _metadata: Metadata) {
@@ -26,7 +28,7 @@ class Scope(private val _metadata: Metadata) {
         if (identifier.equals("super")) new FunctionSignature(identifier, Lists.newArrayList(), BuiltInType.VOID)
         else _functionSignatures.find(_.name.equals(identifier)).getOrElse(throw new MethodSignatureNotFoundException(this, identifier))
 
-    def getSignatureOnClassPath(fullMethodName: String): FunctionSignature = {
+    def getSignatureOnClassPath(fullMethodName: String): Optional[FunctionSignature] = {
         val methodName = RegExUtils.removePattern(fullMethodName, ".*\\.")
         val className = fullMethodName
 
@@ -34,15 +36,27 @@ class Scope(private val _metadata: Metadata) {
 
         try {
             methodOwnerClass = ClassUtils.getClass(className)
-        }catch {
+        } catch {
             case e: ClassNotFoundException => throw e
         }
 
         val accessibleMethod = MethodUtils.getAccessibleMethod(methodOwnerClass, methodName)
 
         if (accessibleMethod != null) {
-            val signature = ReflectionMappingFactory.
+            val signature = ReflectionMapper.fromMethod(accessibleMethod)
+
+            return Optional.of(signature)
         }
+
+        val accessibleConstructor = ConstructorUtils.getAccessibleConstructor(methodOwnerClass)
+
+        if (accessibleConstructor != null) {
+            val signature = ReflectionMapper.fromConstructor(accessibleConstructor)
+
+            return Optional.of(signature)
+        }
+
+        Optional.empty()
     }
 
 
@@ -61,5 +75,11 @@ class Scope(private val _metadata: Metadata) {
 
     def className: String = _metadata.className
 
-    private def getSuperClassName: String = _metadata.superClassName
+    def classInternalName: String = classType.internalName
+
+    def superClassInternalName: String = new ClassType(superClassName).internalName
+
+    def classType: Type = new ClassType(className)
+
+    private def superClassName: String = _metadata.superClassName
 }

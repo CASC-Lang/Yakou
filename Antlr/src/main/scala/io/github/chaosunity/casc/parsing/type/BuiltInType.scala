@@ -13,10 +13,10 @@ object BuiltInType extends Enumeration {
         def isAlias(literal: String): Boolean =
             name.equals(literal) || mandarinAlias.equals(literal)
 
-        override val name: String = _name
-        override val classType: Class[_] = _classType
-        override val descriptor: String = _descriptor
-        override val internalName: String = _descriptor
+        override def name: String = _name
+        override def classType: Class[_] = _classType
+        override def descriptor: String = _descriptor
+        override def internalName: String = _descriptor
         override def loadVariableOpcode: Int = opcodes.load
         override def storeVariableOpcode: Int = opcodes.store
         override def returnOpcode: Int = opcodes.ret

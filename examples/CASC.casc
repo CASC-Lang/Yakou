@@ -1,7 +1,11 @@
 類別 CASC {
-    函式 主函式(參數: 字串[]) {
-        for i from 0 until 5 {
-            println(i * i)
-        }
+    func CASC() {
+        print("Hey I am constructor")
+    }
+
+    func main(arg: string[]) {
+        print("Hey I am 'start' method. Am I static? hell no")
+
+        new CASC()
     }
 }

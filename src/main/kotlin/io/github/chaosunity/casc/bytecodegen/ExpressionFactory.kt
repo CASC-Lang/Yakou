@@ -1,20 +1,18 @@
 package io.github.chaosunity.casc.bytecodegen
 
 import io.github.chaosunity.casc.exception.BadArgumentsToFunctionCallException
-import io.github.chaosunity.casc.exception.FunctionAbsenceException
 import io.github.chaosunity.casc.exception.InvalidNegativeException
 import io.github.chaosunity.casc.parsing.expression.*
 import io.github.chaosunity.casc.parsing.expression.math.ArithmeticExpression
 import io.github.chaosunity.casc.parsing.expression.math.ArithmeticExpression.*
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.parsing.type.BuiltInType
-import io.github.chaosunity.casc.parsing.type.ClassType
 import io.github.chaosunity.casc.util.DescriptorFactory
 import io.github.chaosunity.casc.util.TypeResolver
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes.*
-import org.objectweb.asm.Type
+
 
 class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope) {
     fun generate(expression: Expression) {
@@ -22,6 +20,8 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
             is VarReference -> generate(expression)
             is Value -> generate(expression)
             is FunctionCall -> generate(expression)
+            is ConstructorCall -> generate(expression)
+            is SuperCall -> generate(expression)
             is FunctionParameter -> generate(expression)
             is Addition -> generate(expression)
             is Subtraction -> generate(expression)
@@ -67,8 +67,46 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
     }
 
     fun generate(call: FunctionCall) {
-        val functionName = call.functionName()
-        val signature = scope.getSignature(functionName)
+        generate(call.owner())
+        generateArguments(call)
+
+        val functionName = call.identifier()
+        val methodDescriptor = DescriptorFactory.getMethodDescriptor(call.signature())
+        val ownerDescriptor = call.ownerType().internalName()
+
+        mv.visitMethodInsn(INVOKEVIRTUAL, ownerDescriptor, functionName, methodDescriptor, false)
+    }
+
+    fun generate(constructor: ConstructorCall) {
+        val ownerDescriptor = scope.classInternalName()
+
+        mv.visitTypeInsn(NEW, ownerDescriptor)
+        mv.visitInsn(DUP)
+
+        val methodCallSignature = scope.getMethodCallSignature(constructor.identifier())
+        val methodDescriptor = DescriptorFactory.getMethodDescriptor(methodCallSignature)
+
+        generateArguments(constructor)
+        mv.visitMethodInsn(INVOKESPECIAL, ownerDescriptor, "<init>", methodDescriptor, false)
+    }
+
+    fun generate(superCall: SuperCall) {
+        mv.visitVarInsn(ALOAD, 0)
+        generateArguments(superCall)
+
+        val ownerDescriptor = scope.superClassInternalName()
+
+        mv.visitMethodInsn(
+            INVOKESPECIAL,
+            ownerDescriptor,
+            "<init>",
+            "()V",          /*TODO Handle super calls with arguments*/
+            false
+        )
+    }
+
+    fun generateArguments(call: Call) {
+        val signature = scope.getMethodCallSignature(call.identifier())
         val arguments = call.arguments()
         val parameters = signature.parameters()
 
@@ -78,19 +116,10 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
         arguments.forEach(::generate)
 
         for (i in arguments.size until parameters.size) {
-            val defaultParameter = parameters[i].defaultValue()
+            val defaultParameter = parameters[i].defaultValue().get() ?: throw BadArgumentsToFunctionCallException(call)
 
-            if (defaultParameter.isEmpty)
-                throw BadArgumentsToFunctionCallException(call)
-
-            generate(defaultParameter.get())
+            generate(defaultParameter)
         }
-
-        val owner = call.owner().getOrElse { ClassType(scope.className()) }
-        val methodDescriptor = getFunctionDescriptor(call)
-        val ownerDescriptor = owner.internalName()
-
-        mv.visitMethodInsn(INVOKESTATIC, ownerDescriptor, functionName, methodDescriptor, false)
     }
 
     fun generate(parameter: FunctionParameter) {
@@ -198,24 +227,5 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
             "()Ljava/lang/String;",
             false
         )
-    }
-
-    private fun getFunctionDescriptor(call: FunctionCall): String =
-        getDescriptorForFunctionInScope(call) ?: getDescriptorForFunctionOnClasspath(call)
-        ?: throw FunctionAbsenceException(call)
-
-    private fun getDescriptorForFunctionInScope(call: FunctionCall): String? =
-        DescriptorFactory.getMethodDescriptor(call.signature())
-
-    private fun getDescriptorForFunctionOnClasspath(call: FunctionCall): String? = try {
-        val functionName = call.functionName()
-        val owner = call.owner()
-        val className = owner.getOrElse { scope.className() }
-        val clazz = Class.forName(className)
-        val method = clazz.getMethod(functionName)
-
-        Type.getMethodDescriptor(method)
-    } catch (e: ReflectiveOperationException) {
-        null
     }
 }

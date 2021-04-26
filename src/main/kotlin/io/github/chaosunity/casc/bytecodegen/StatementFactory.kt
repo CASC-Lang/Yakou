@@ -1,38 +1,48 @@
 package io.github.chaosunity.casc.bytecodegen
 
 import io.github.chaosunity.casc.parsing.LogicalOp
-import io.github.chaosunity.casc.parsing.expression.ConditionalExpression
-import io.github.chaosunity.casc.parsing.expression.Expression
-import io.github.chaosunity.casc.parsing.expression.VarReference
+import io.github.chaosunity.casc.parsing.expression.*
+import io.github.chaosunity.casc.parsing.expression.math.ArithmeticExpression.*
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.parsing.statement.*
-import io.github.chaosunity.casc.parsing.type.BuiltInType
 import io.github.chaosunity.casc.parsing.type.ClassType
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes.*
+
 
 class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) {
     private val ef = ExpressionFactory(mv, scope)
 
     fun generate(statement: Statement) {
         when (statement) {
-            is PrintStatement -> generate(statement)
-            is PrintlnStatement -> generate(statement)
+            is Print -> generate(statement)
+            is Println -> generate(statement)
             is VariableDeclaration -> generate(statement)
             is ReturnStatement -> generate(statement)
             is IfStatement -> generate(statement)
-            is BlockStatement -> generate(statement)
-            is AssignmentStatement -> generate(statement)
-            is RangedForStatement -> generate(statement)
+            is Block -> generate(statement)
+            is Assignment -> generate(statement)
+            is RangedFor -> generate(statement)
+            is SuperCall -> generate(statement)
+            is ConstructorCall -> generate(statement)
+            is FunctionParameter -> generate(statement)
+            is ConditionalExpression -> generate(statement)
+            is Addition -> generate(statement)
+            is Subtraction -> generate(statement)
+            is Multiplication -> generate(statement)
+            is Division -> generate(statement)
+            is Value -> generate(statement)
+            is VarReference -> generate(statement)
+            is EmptyExpression -> generate(statement)
             is Expression -> ef.generate(statement)
         }
     }
 
-    fun generate(printStatement: PrintStatement) =
-        generatePrintStreamCall(printStatement.expression(), "print")
+    fun generate(print: Print) =
+        generatePrintStreamCall(print.expression(), "print")
 
-    fun generate(printlnStatement: PrintlnStatement) =
+    fun generate(printlnStatement: Println) =
         generatePrintStreamCall(printlnStatement.expression(), "println")
 
     fun generate(declaration: VariableDeclaration) {
@@ -40,7 +50,7 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
 
         ef.generate(expression)
 
-        generate(AssignmentStatement(declaration))
+        generate(Assignment(declaration))
     }
 
     fun generate(returnStatement: ReturnStatement) {
@@ -64,19 +74,19 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
         generate(ifStatement.trueStatement())
         mv.visitJumpInsn(GOTO, endLabel)
         mv.visitLabel(trueLabel)
-        generate(ifStatement.falseStatement())
+        ifStatement.falseStatement().exists { generate(it) }
         mv.visitLabel(endLabel)
     }
 
-    fun generate(blockStatement: BlockStatement) {
-        val innerScope = Scope(blockStatement.scope())
-        val statements = blockStatement.statements()
+    fun generate(block: Block) {
+        val innerScope = Scope(block.scope())
+        val statements = block.statements()
         val sf = StatementFactory(mv, innerScope)
 
         statements.forEach(sf::generate)
     }
 
-    fun generate(forStatement: RangedForStatement) {
+    fun generate(forStatement: RangedFor) {
         val innerScope = forStatement.scope()
         val sf = StatementFactory(mv, innerScope)
         val ef = ExpressionFactory(mv, innerScope)
@@ -109,13 +119,46 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
         mv.visitLabel(endLabel)
     }
 
-    fun generate(assignment: AssignmentStatement) {
+    fun generate(assignment: Assignment) {
         val variableName = assignment.variableName()
         val type = assignment.expression().type()
         val index = scope.getLocalVariableIndex(variableName)
 
         mv.visitVarInsn(type.storeVariableOpcode(), index)
     }
+
+    fun generate(superCall: SuperCall) =
+        ef.generate(superCall)
+
+    fun generate(constructorCall: ConstructorCall) =
+        ef.generate(constructorCall)
+
+    fun generate(addition: Addition) =
+        ef.generate(addition)
+
+    fun generate(subtraction: Subtraction) =
+        ef.generate(subtraction)
+
+    fun generate(multiplication: Multiplication) =
+        ef.generate(multiplication)
+
+    fun generate(division: Division) =
+        ef.generate(division)
+
+    fun generate(functionParameter: FunctionParameter) =
+        ef.generate(functionParameter)
+
+    fun generate(conditionalExpression: ConditionalExpression) =
+        ef.generate(conditionalExpression)
+
+    fun generate(value: Value) =
+        ef.generate(value)
+
+    fun generate(varReference: VarReference) =
+        ef.generate(varReference)
+
+    fun generate(emptyExpression: EmptyExpression) =
+        ef.generate(emptyExpression)
 
     private fun generatePrintStreamCall(expression: Expression, actualFunctionName: String) {
         val ef = ExpressionFactory(mv, scope)

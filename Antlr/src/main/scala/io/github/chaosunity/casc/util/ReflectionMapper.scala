@@ -3,10 +3,10 @@ package io.github.chaosunity.casc.util
 import io.github.chaosunity.casc.parsing.`type`.ClassType
 import io.github.chaosunity.casc.parsing.expression.FunctionParameter
 import io.github.chaosunity.casc.parsing.scope.FunctionSignature
+import scala.collection.JavaConverters._
 
 import java.lang.reflect.{Constructor, Executable, Method, Parameter}
 import java.util
-import java.util.Arrays.asList
 
 object ReflectionMapper {
     def fromMethod(method: Method): FunctionSignature = {
@@ -24,7 +24,7 @@ object ReflectionMapper {
     }
 
     private def fromExecutable(executable: Executable): (String, util.List[FunctionParameter]) =
-        (executable.getName, asList(executable.getParameters.map((param: Parameter) =>
+        (executable.getName, asJava(executable.getParameters.map((param: Parameter) =>
             new FunctionParameter(new ClassType(param.getType.getCanonicalName), param.getName, Option.empty, false)
         )))
 }

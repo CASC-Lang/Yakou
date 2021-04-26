@@ -1,13 +1,13 @@
 package io.github.chaosunity.casc.parsing.`type`
 
 trait Type {
-    val name: String
+    def name: String
 
-    val classType: Class[_]
+    def classType: Class[_]
 
-    val descriptor: String
+    def descriptor: String
 
-    val internalName: String
+    def internalName: String
 
     def loadVariableOpcode: Int
 

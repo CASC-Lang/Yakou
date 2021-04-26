@@ -14,12 +14,11 @@ class ClassFactory {
     fun generate(classDeclaration: ClassDeclaration): ClassWriter {
         val className = classDeclaration.name()
         val methods = classDeclaration.methods()
+        val mf = MethodFactory(cw)
 
         cw.visit(CLASS_VERSION, Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER, className, null, "java/lang/Object", null)
 
-        run {
-            methods.forEach { MethodFactory(cw).generate(it) }
-        }
+        methods.forEach { mf.generate(it) }
 
         cw.visitEnd()
 
