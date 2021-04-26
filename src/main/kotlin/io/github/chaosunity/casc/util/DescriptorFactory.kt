@@ -6,21 +6,21 @@ import io.github.chaosunity.casc.parsing.scope.FunctionSignature
 import io.github.chaosunity.casc.parsing.type.Type
 
 object DescriptorFactory {
-    fun getMethodDescriptor(function: Function): String? {
+    fun getMethodDescriptor(function: Function): String {
         val arguments = function.parameters()
         val returnType = function.returnType()
 
         return getMethodDescriptor(arguments, returnType)
     }
 
-    fun getMethodDescriptor(functionSignature: FunctionSignature): String? {
+    fun getMethodDescriptor(functionSignature: FunctionSignature): String {
         val arguments = functionSignature.parameters()
         val returnType = functionSignature.returnType()
 
         return getMethodDescriptor(arguments, returnType)
     }
 
-    private fun getMethodDescriptor(arguments: List<FunctionParameter>, returnType: Type): String? {
+    private fun getMethodDescriptor(arguments: List<FunctionParameter>, returnType: Type): String {
         val argumentDescriptor = arguments.joinToString("", "(", ")") {
             it.type().descriptor()
         }

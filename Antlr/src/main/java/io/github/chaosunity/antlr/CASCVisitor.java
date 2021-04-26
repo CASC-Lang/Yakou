@@ -129,12 +129,6 @@ public interface CASCVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitReturnVoid(CASCParser.ReturnVoidContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CASCParser#functionCall}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFunctionCall(CASCParser.FunctionCallContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link CASCParser#ifStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -206,19 +200,19 @@ public interface CASCVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitConditionalExpression(CASCParser.ConditionalExpressionContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code constructorCall}
+	 * labeled alternative in {@link CASCParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitConstructorCall(CASCParser.ConstructorCallContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code ModAdd}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitModAdd(CASCParser.ModAddContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code FuncCall}
-	 * labeled alternative in {@link CASCParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFuncCall(CASCParser.FuncCallContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code Divide}
 	 * labeled alternative in {@link CASCParser#expression}.
@@ -241,12 +235,26 @@ public interface CASCVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitModMultiply(CASCParser.ModMultiplyContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code functionCall}
+	 * labeled alternative in {@link CASCParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFunctionCall(CASCParser.FunctionCallContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code Multiply}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitMultiply(CASCParser.MultiplyContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code superCall}
+	 * labeled alternative in {@link CASCParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSuperCall(CASCParser.SuperCallContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code Subtract}
 	 * labeled alternative in {@link CASCParser#expression}.

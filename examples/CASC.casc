@@ -4,8 +4,4 @@
             println(i * i)
         }
     }
-
-    函式 加總(n: 整數, m: 整數 = 2): 整數 {
-        return n + m
-    }
 }

@@ -1,13 +1,15 @@
 package io.github.chaosunity.casc.parsing.expression.math
 
-import io.github.chaosunity.casc.exceptions.UnsupportedArithmeticOperationException
 import io.github.chaosunity.casc.parsing.`type`.{BuiltInType, Type}
 import io.github.chaosunity.casc.parsing.expression.Expression
 import io.github.chaosunity.casc.parsing.expression.math.ArithmeticExpression.getCommonType
 
 sealed abstract class ArithmeticExpression(val leftExpression: Expression,
                                            val rightExpression: Expression,
-                                           negative: Boolean) extends Expression(getCommonType(leftExpression, rightExpression), negative) {
+                                           _negative: Boolean) extends Expression {
+    override def `type`: Type = getCommonType(leftExpression, rightExpression)
+
+    override def negative: Boolean = _negative
 }
 
 object ArithmeticExpression {

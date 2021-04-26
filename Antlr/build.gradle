@@ -16,6 +16,8 @@ dependencies {
     implementation 'org.scala-lang:scala-library:2.13.3'
 
     implementation "org.ow2.asm:asm-all:5.2"
+
+    implementation "com.google.guava:guava:30.1.1-jre"
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
     implementation group: 'commons-validator', name: 'commons-validator', version: '1.7'
 

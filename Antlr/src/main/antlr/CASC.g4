@@ -39,20 +39,19 @@ statement       : block
                 | variableDeclaration
                 | printStatement
                 | printlnStatement
-                | functionCall
-                | returnStatement
                 | forStatement
+                | returnStatement
                 | ifStatement
+                | expression
                 ;
 
-variableDeclaration     : VARIABLE name (':' specType=type)? ('=' | '\u8ce6') expression;
-printStatement          : PRINT '('expression')';
-printlnStatement        : PRINTLN '('expression')';
-returnStatement         : RETURN? expression                    #ReturnWithValue
+variableDeclaration     : VARIABLE name (':' specType=type)? ('=' | '\u8ce6') NEG=MINUS? expression;
+printStatement          : PRINT '('NEG=MINUS? expression')';
+printlnStatement        : PRINTLN '('NEG=MINUS? expression')';
+returnStatement         : RETURN NEG=MINUS? expression                    #ReturnWithValue
                         | RETURN                                #ReturnVoid
                         ;
-functionCall            : functionName '('argument? (',' argument)*')';
-ifStatement             : IF ('(')? expression (')')? trueStatement=statement (ELSE falseStatement=statement)?;
+ifStatement             : IF ('(')? NEG=MINUS? expression (')')? trueStatement=statement (ELSE falseStatement=statement)?;
 forStatement            : FOR ('(')? forExpression (')')? statement ;
 forExpression           : iterator=varReference FROM startExpr=expression range=(TO | UNTIL) endExpr=expression ;
 name                    : ID ;
@@ -60,7 +59,11 @@ argument                : expression
                         | name '=' expression ;
 
 expressionList          : expression? (',' expression)* ;
-expression              : expression cmp=GREATER expression                                                     #conditionalExpression
+expression              : owner=expression '.' function '('argument? (',' argument)*')'                         #functionCall
+                        | NEG=MINUS? functionName '('argument? (',' argument)*')'                               #functionCall
+                        | superCall='super' '('argument? (',' argument)*')'                                     #superCall
+                        | newCall='new' '('argument? (',' argument)*')'                                         #constructorCall
+                        | expression cmp=GREATER expression                                                     #conditionalExpression
                         | expression cmp=LESS expression                                                        #conditionalExpression
                         | expression cmp=EQ expression                                                          #conditionalExpression
                         | expression cmp=NOT_EQ expression                                                      #conditionalExpression
@@ -77,7 +80,6 @@ expression              : expression cmp=GREATER expression                     
                         | expression MINUS expression                                                           #Subtract
                         | NEG=MINUS? value                                                                      #Val
                         | NEG=MINUS? varReference                                                               #VarRef
-                        | NEG=MINUS? functionCall                                                               #FuncCall
                         ;
 
 varReference        : ID ;
