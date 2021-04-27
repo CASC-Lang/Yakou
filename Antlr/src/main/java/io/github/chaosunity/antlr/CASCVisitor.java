@@ -165,19 +165,19 @@ public interface CASCVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExpressionList(CASCParser.ExpressionListContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code Val}
-	 * labeled alternative in {@link CASCParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitVal(CASCParser.ValContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code VarRef}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitVarRef(CASCParser.VarRefContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code Val}
+	 * labeled alternative in {@link CASCParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitVal(CASCParser.ValContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code Add}
 	 * labeled alternative in {@link CASCParser#expression}.

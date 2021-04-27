@@ -1,11 +1,11 @@
 類別 CASC {
-    func CASC() {
-        print("Hey I am constructor")
+    func hi() {
+        println("bruh")
     }
 
     func main(arg: string[]) {
-        print("Hey I am 'start' method. Am I static? hell no")
+        var b = new CASC()
 
-        new CASC()
+        b::hi()
     }
 }

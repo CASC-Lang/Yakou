@@ -59,7 +59,8 @@ argument                : expression
                         | name '=' expression ;
 
 expressionList          : expression? (',' expression)* ;
-expression              : owner=expression '.' function '('argument? (',' argument)*')'                         #functionCall
+expression              : NEG=MINUS? varReference                                                               #VarRef
+                        | owner=expression '::' functionName '('argument? (',' argument)*')'                     #functionCall
                         | NEG=MINUS? functionName '('argument? (',' argument)*')'                               #functionCall
                         | superCall='super' '('argument? (',' argument)*')'                                     #superCall
                         | newCall='new' className '('argument? (',' argument)*')'                               #constructorCall
@@ -79,7 +80,6 @@ expression              : owner=expression '.' function '('argument? (',' argume
                         | NEG=MINUS? '(' expression MINUS expression ')'                                        #ModSubtract
                         | expression MINUS expression                                                           #Subtract
                         | NEG=MINUS? value                                                                      #Val
-                        | NEG=MINUS? varReference                                                               #VarRef
                         ;
 
 varReference        : ID ;

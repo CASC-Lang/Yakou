@@ -51,11 +51,7 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
         val localVariable = scope.getLocalVariable(variableName)
         val type = localVariable.type()
 
-        if (type == BuiltInType.INT() || type == BuiltInType.BOOLEAN()) {
-            mv.visitVarInsn(ILOAD, index)
-        } else if (type == BuiltInType.STRING()) {
-            mv.visitVarInsn(ALOAD, index)
-        }
+        mv.visitVarInsn(type.loadVariableOpcode(), index)
     }
 
     fun generate(value: Value) {

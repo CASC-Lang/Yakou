@@ -26,6 +26,7 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
             is RangedFor -> generate(statement)
             is SuperCall -> generate(statement)
             is ConstructorCall -> generate(statement)
+            is FunctionCall -> generate(statement)
             is FunctionParameter -> generate(statement)
             is ConditionalExpression -> generate(statement)
             is Addition -> generate(statement)
@@ -132,6 +133,9 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
 
     fun generate(constructorCall: ConstructorCall) =
         ef.generate(constructorCall)
+
+    fun generate(functionCall: FunctionCall) =
+        ef.generate(functionCall)
 
     fun generate(addition: Addition) =
         ef.generate(addition)

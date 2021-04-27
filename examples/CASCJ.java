@@ -1,7 +1,11 @@
 public class CASCJ {
+    public void hi() {
+        System.out.println("bruh");
+    }
+
     public static void main(String[] args) {
-        for(int i = 0; i < 5; i++) {
-            System.out.println(i);
-        }
+        CASCJ c = new CASCJ();
+
+        c.hi();
     }
 }
