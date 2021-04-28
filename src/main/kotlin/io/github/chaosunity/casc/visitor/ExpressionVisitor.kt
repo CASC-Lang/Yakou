@@ -40,7 +40,7 @@ class ExpressionVisitor(private val scope: Scope) : CASCBaseVisitor<Expression>(
         if (ctx?.owner != null) {
             val owner = ctx.owner.accept(this)
 
-            return FunctionCall(signature, arguments, owner, false)
+            return FunctionCall(signature, arguments, owner, owner.negative())
         }
 
         val thisType = ClassType(scope.className())

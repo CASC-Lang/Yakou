@@ -17,13 +17,13 @@ class StatementVisitor(private val scope: Scope) : CASCBaseVisitor<Statement>() 
     override fun visitPrintStatement(ctx: CASCParser.PrintStatementContext?): Statement {
         val expression = getExpression(ctx?.expression())
 
-        return Print(expression)
+        return Print(expression, ctx?.NEG != null)
     }
 
     override fun visitPrintlnStatement(ctx: CASCParser.PrintlnStatementContext?): Statement {
         val expression = getExpression(ctx?.expression())
 
-        return Println(expression)
+        return Println(expression, ctx?.NEG != null)
     }
 
     override fun visitVariableDeclaration(ctx: CASCParser.VariableDeclarationContext?): Statement {

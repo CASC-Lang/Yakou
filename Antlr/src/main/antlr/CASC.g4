@@ -45,7 +45,7 @@ statement       : block
                 | forStatement
                 | returnStatement
                 | ifStatement
-                | expression
+                | NEG=MINUS? expression
                 ;
 
 variableDeclaration     : name (':' specType=type)? ':=' NEG=MINUS? expression      ;

@@ -41,10 +41,10 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
     }
 
     fun generate(print: Print) =
-        generatePrintStreamCall(print.expression(), "print")
+        generatePrintStreamCall(print.expression(), print.neg(), "print")
 
-    fun generate(printlnStatement: Println) =
-        generatePrintStreamCall(printlnStatement.expression(), "println")
+    fun generate(println: Println) =
+        generatePrintStreamCall(println.expression(), println.neg(), "println")
 
     fun generate(declaration: VariableDeclaration) {
         val expression = declaration.expression()
@@ -164,11 +164,14 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
     fun generate(emptyExpression: EmptyExpression) =
         ef.generate(emptyExpression)
 
-    private fun generatePrintStreamCall(expression: Expression, actualFunctionName: String) {
+    private fun generatePrintStreamCall(expression: Expression, negative: Boolean, actualFunctionName: String) {
         val ef = ExpressionFactory(mv, scope)
 
         mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
         ef.generate(expression)
+
+        if (negative)
+            mv.visitInsn(INEG)
 
         val type = expression.type()
         val descriptor = "(${type.descriptor()})V"

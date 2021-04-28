@@ -7,9 +7,15 @@ class CASC {
         println("bruh")
     }
 
+    fn getNum(): int {
+        return 1
+    }
+
     fn main(arg: string[]) {
         b := CASC("ChAoS")
 
         b.hi()
+
+        println(-b.getNum())
     }
 }
