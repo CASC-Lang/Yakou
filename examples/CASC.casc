@@ -4,8 +4,8 @@ class CASC {
     }
 
     fn main(arg: string[]) {
-        b := new CASC()
+        b := CASC()
 
-        b::hi()
+        b.hi()
     }
 }

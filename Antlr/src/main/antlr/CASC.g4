@@ -45,11 +45,11 @@ statement       : block
                 | expression
                 ;
 
-variableDeclaration     : name (':' specType=type)? ':=' NEG=MINUS? expression;
-printStatement          : PRINT '('NEG=MINUS? expression')';
-printlnStatement        : PRINTLN '('NEG=MINUS? expression')';
-returnStatement         : RETURN NEG=MINUS? expression                    #ReturnWithValue
-                        | RETURN                                #ReturnVoid
+variableDeclaration     : name (':' specType=type)? ':=' NEG=MINUS? expression      ;
+printStatement          : PRINT '('NEG=MINUS? expression')'                         ;
+printlnStatement        : PRINTLN '('NEG=MINUS? expression')'                       ;
+returnStatement         : RETURN NEG=MINUS? expression                      #ReturnWithValue
+                        | RETURN                                            #ReturnVoid
                         ;
 ifStatement             : IF ('(')? NEG=MINUS? expression (')')? trueStatement=statement (ELSE falseStatement=statement)?;
 forStatement            : FOR ('(')? forExpression (')')? statement ;
@@ -60,10 +60,10 @@ argument                : expression
 
 expressionList          : expression? (',' expression)* ;
 expression              : NEG=MINUS? varReference                                                               #VarRef
-                        | owner=expression '::' functionName '('argument? (',' argument)*')'                     #functionCall
+                        | superCall='this' '('argument? (',' argument)*')'                                      #superCall
+                        | className '('argument? (',' argument)*')'                                             #constructorCall
+                        | owner=expression '\u002E' functionName '('argument? (',' argument)*')'                     #functionCall
                         | NEG=MINUS? functionName '('argument? (',' argument)*')'                               #functionCall
-                        | superCall='super' '('argument? (',' argument)*')'                                     #superCall
-                        | newCall='new' className '('argument? (',' argument)*')'                               #constructorCall
                         | expression cmp=GREATER expression                                                     #conditionalExpression
                         | expression cmp=LESS expression                                                        #conditionalExpression
                         | expression cmp=EQ expression                                                          #conditionalExpression
@@ -124,5 +124,4 @@ NUMBER          : [0-9.]+                                   ;
 STRING          : '"'~('\r' | '\n' | '"')*'"'               ;
 BOOL            : 'true' | '\u771f' | 'false' | '\u5047'    ;
 ID              : (CHAR|DIGIT|UNICODE)+                     ;
-QUALIFIED_NAME  : ID ('.' ID)+                  ;
-WS              : [ \t\n\r]+ -> skip            ;
+WS              : [ \t\n\r]+ -> skip                        ;
