@@ -21,14 +21,6 @@ class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
 
         scope = Scope(metadata)
 
-        val constructorExists = ctx?.classBody()?.constructor()?.isNotEmpty() ?: false
-
-        if (!constructorExists) {
-            val constructorSignature = FunctionSignature(name, listOf(), BuiltInType.VOID())
-
-            scope.addSignature(constructorSignature)
-        }
-
         val functionSignatureVisitor = FunctionSignatureVisitor(scope)
         val ctorCtx = ctx?.classBody()?.constructor()
         val methodsCtx = ctx?.classBody()?.function()
@@ -36,6 +28,14 @@ class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
         ctorCtx?.map {
             it.constructorDeclaration().accept(functionSignatureVisitor)
         }?.forEach(scope::addSignature)
+
+        val constructorExists = ctx?.classBody()?.constructor()?.isNotEmpty() ?: false
+
+        if (!constructorExists) {
+            val constructorSignature = FunctionSignature(name, listOf(), BuiltInType.VOID())
+
+            scope.addSignature(constructorSignature)
+        }
 
         methodsCtx?.map {
             it.functionDeclaration().accept(functionSignatureVisitor)
@@ -57,7 +57,7 @@ class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
     }
 
     private fun getDefaultConstructor(): Constructor {
-        val signature = scope.getMethodCallSignature(scope.className())
+        val signature = scope.getMethodCallSignatureWithoutParameters(scope.className())
 
         return Constructor(signature, Block.empty(scope))
     }

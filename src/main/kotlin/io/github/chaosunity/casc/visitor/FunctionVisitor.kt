@@ -9,12 +9,16 @@ import io.github.chaosunity.casc.parsing.scope.LocalVariable
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.parsing.statement.Block
 import io.github.chaosunity.casc.parsing.statement.Statement
+import io.github.chaosunity.casc.util.TypeResolver
 
 class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function>() {
     private val scope = Scope(scope)
 
     override fun visitFunction(ctx: CASCParser.FunctionContext?): Function {
-        val signature = scope.getMethodCallSignature(ctx?.functionDeclaration()?.functionName()?.text)
+        val signature = scope.getMethodCallSignature(
+            ctx?.functionDeclaration()?.functionName()?.text,
+            ctx?.functionDeclaration()?.functionParameter()?.map { TypeResolver.getFromTypeName(it.type()) }
+        )
         scope.addLocalVariable(LocalVariable(scope.classType(), "this"))
 
         addParametersAsLocalVariable(signature)
@@ -25,7 +29,10 @@ class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function>() {
     }
 
     override fun visitConstructor(ctx: CASCParser.ConstructorContext?): Function {
-        val signature = scope.getMethodCallSignature((ctx?.parent?.parent as CASCParser.ClassDeclarationContext?)?.className()?.text)
+        val signature = scope.getMethodCallSignature(
+            (ctx?.parent?.parent as CASCParser.ClassDeclarationContext?)?.className()?.text,
+            ctx?.constructorDeclaration()?.functionParameter()?.map { TypeResolver.getFromTypeName(it.type()) }
+        )
         scope.addLocalVariable(LocalVariable(scope.classType(), "this"))
 
         addParametersAsLocalVariable(signature)

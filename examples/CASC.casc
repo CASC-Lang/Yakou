@@ -1,6 +1,6 @@
 class CASC {
-    ctor() {
-        println("I'm CASC!")
+    ctor(msg: string) {
+        println("Hi! " + msg + "I'm CASC!")
     }
 
     fn hi() {
@@ -8,7 +8,7 @@ class CASC {
     }
 
     fn main(arg: string[]) {
-        b := CASC()
+        b := CASC("ChAoS")
 
         b.hi()
     }

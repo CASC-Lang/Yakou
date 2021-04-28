@@ -79,7 +79,7 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
         mv.visitTypeInsn(NEW, ownerDescriptor)
         mv.visitInsn(DUP)
 
-        val methodCallSignature = scope.getMethodCallSignature(constructor.identifier())
+        val methodCallSignature = scope.getMethodCallSignature(constructor.identifier(), constructor.arguments())
         val methodDescriptor = DescriptorFactory.getMethodDescriptor(methodCallSignature)
 
         generateArguments(constructor)
@@ -102,7 +102,7 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
     }
 
     fun generateArguments(call: Call) {
-        val signature = scope.getMethodCallSignature(call.identifier())
+        val signature = scope.getMethodCallSignature(call.identifier(), call.arguments())
         val arguments = call.arguments()
         val parameters = signature.parameters()
 

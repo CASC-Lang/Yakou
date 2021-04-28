@@ -3,13 +3,16 @@ package io.github.chaosunity.casc.parsing.scope
 import com.google.common.collect.Lists
 import io.github.chaosunity.casc.exceptions.{LocalVariableNotFoundException, MethodSignatureNotFoundException}
 import io.github.chaosunity.casc.parsing.`type`.{BuiltInType, ClassType, Type}
+import io.github.chaosunity.casc.parsing.expression.Expression
 import io.github.chaosunity.casc.parsing.global.Metadata
 import io.github.chaosunity.casc.util.ReflectionMapper
 import org.apache.commons.lang3.reflect.{ConstructorUtils, MethodUtils}
 import org.apache.commons.lang3.{ClassUtils, RegExUtils}
 
-import java.util.Optional
+import java.util
+import java.util.{Collections, Optional}
 import scala.collection.mutable.ListBuffer
+import scala.jdk.CollectionConverters.{CollectionHasAsScala, SeqHasAsJava}
 
 class Scope(private val _metadata: Metadata) {
     private var _functionSignatures: ListBuffer[FunctionSignature] = ListBuffer()
@@ -24,9 +27,23 @@ class Scope(private val _metadata: Metadata) {
     def addSignature(signature: FunctionSignature): Unit =
         _functionSignatures += signature
 
-    def getMethodCallSignature(identifier: String): FunctionSignature =
+    def parameterLessSignatureExists(identifier: String): Boolean =
+        signatureExists(identifier, Collections.emptyList())
+
+    def signatureExists(identifier: String, parameters: util.List[Type]): Boolean = {
+        if (identifier.equals("super")) return true
+        _functionSignatures.forall(_.matches(identifier, parameters))
+    }
+
+    def getMethodCallSignatureWithoutParameters(identifier: String): FunctionSignature =
+        getMethodCallSignature(identifier, new util.ArrayList[Type]())
+
+    def getMethodCallSignature(identifier: String, arguments: util.Collection[Expression]): FunctionSignature =
+        getMethodCallSignature(identifier, arguments.asScala.map(_.`type`).toList.asJava)
+
+    def getMethodCallSignature(identifier: String, parameterTypes: util.List[Type]): FunctionSignature =
         if (identifier.equals("super")) new FunctionSignature(identifier, Lists.newArrayList(), BuiltInType.VOID)
-        else _functionSignatures.find(_.name.equals(identifier)).getOrElse(throw new MethodSignatureNotFoundException(this, identifier))
+        else _functionSignatures.find(_.matches(identifier, parameterTypes)).getOrElse(throw new MethodSignatureNotFoundException(this, identifier, parameterTypes))
 
     def getSignatureOnClassPath(fullMethodName: String): Optional[FunctionSignature] = {
         val methodName = RegExUtils.removePattern(fullMethodName, ".*\\.")

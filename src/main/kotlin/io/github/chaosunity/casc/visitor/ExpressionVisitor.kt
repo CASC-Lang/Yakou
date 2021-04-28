@@ -35,7 +35,7 @@ class ExpressionVisitor(private val scope: Scope) : CASCBaseVisitor<Expression>(
 
         val argumentCtx = ctx?.argument() ?: listOf()
         val arguments = getArguments(argumentCtx, functionName)
-        val signature = scope.getMethodCallSignature(functionName)
+        val signature = scope.getMethodCallSignature(functionName, arguments)
 
         if (ctx?.owner != null) {
             val owner = ctx.owner.accept(this)
@@ -139,7 +139,7 @@ class ExpressionVisitor(private val scope: Scope) : CASCBaseVisitor<Expression>(
     }
 
     private fun getArguments(ctx: List<CASCParser.ArgumentContext?>, identifier: String?): List<Expression?> {
-        val signature = scope.getMethodCallSignature(identifier)
+        val signature = scope.getMethodCallSignature(identifier, ctx.map { it?.accept(this) })
 
         return ctx.sortedWith(Comparator { o1, o2 ->
             if (o1?.name() == null || o2?.name() == null) return@Comparator 0

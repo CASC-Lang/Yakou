@@ -1,3 +1,5 @@
+package examples;
+
 public class jvm {
     public void hi() {
         System.out.println("bruh");

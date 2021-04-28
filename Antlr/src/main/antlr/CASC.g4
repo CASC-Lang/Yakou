@@ -33,7 +33,8 @@ primitiveType   :  ('boolean'   | '\u5e03\u6797') ('[' ']')*
                 |  ('void'      | '\u7a7a') ('[' ']')*
                 ;
 
-classType       : QUALIFIED_NAME ('[' ']')* ;
+classType       : qualifiedName ('[' ']')* ;
+qualifiedName   : ID ('::' ID)+ ;
 
 block           : '{' statement* '}' ;
 
@@ -126,5 +127,4 @@ NUMBER          : [0-9.]+                                   ;
 STRING          : '"'~('\r' | '\n' | '"')*'"'               ;
 BOOL            : 'true' | '\u771f' | 'false' | '\u5047'    ;
 ID              : (CHAR|DIGIT|UNICODE)+                     ;
-QUALIFIED_NAME  : ID ('::' ID)+                              ;
 WS              : [ \t\n\r]+ -> skip                        ;
