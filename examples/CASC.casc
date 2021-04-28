@@ -1,5 +1,7 @@
 class CASC {
-    ctor() {}
+    ctor() {
+        println("I'm CASC!")
+    }
 
     fn hi() {
         println("bruh")

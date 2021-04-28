@@ -7,6 +7,7 @@ import io.github.chaosunity.casc.parsing.`class`.Function
 import io.github.chaosunity.casc.parsing.scope.FunctionSignature
 import io.github.chaosunity.casc.parsing.scope.LocalVariable
 import io.github.chaosunity.casc.parsing.scope.Scope
+import io.github.chaosunity.casc.parsing.statement.Block
 import io.github.chaosunity.casc.parsing.statement.Statement
 
 class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function>() {
@@ -29,7 +30,7 @@ class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function>() {
 
         addParametersAsLocalVariable(signature)
 
-        val block = getBlock(ctx)
+        val block = if (ctx?.block()?.isEmpty == false) getBlock(ctx) else Block(scope, listOf())
 
         return Constructor(signature, block)
     }
