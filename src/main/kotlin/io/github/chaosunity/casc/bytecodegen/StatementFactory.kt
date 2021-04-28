@@ -1,11 +1,14 @@
 package io.github.chaosunity.casc.bytecodegen
 
+import io.github.chaosunity.casc.exception.CompilationException
+import io.github.chaosunity.casc.exception.InvalidNegativeException
 import io.github.chaosunity.casc.parsing.LogicalOp
 import io.github.chaosunity.casc.parsing.expression.*
 import io.github.chaosunity.casc.parsing.expression.math.ArithmeticExpression.*
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.parsing.statement.*
 import io.github.chaosunity.casc.parsing.type.ClassType
+import io.github.chaosunity.casc.util.TypeChecker
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes.*
@@ -165,6 +168,9 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
         ef.generate(emptyExpression)
 
     private fun generatePrintStreamCall(expression: Expression, negative: Boolean, actualFunctionName: String) {
+        if (!TypeChecker.canBeNegative(expression.type()) && negative)
+            throw InvalidNegativeException(expression.type())
+
         val ef = ExpressionFactory(mv, scope)
 
         mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")

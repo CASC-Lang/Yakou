@@ -8,6 +8,7 @@ import io.github.chaosunity.casc.parsing.expression.math.ArithmeticExpression.*
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.parsing.type.BuiltInType
 import io.github.chaosunity.casc.util.DescriptorFactory
+import io.github.chaosunity.casc.util.TypeChecker
 import io.github.chaosunity.casc.util.TypeResolver
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
@@ -38,7 +39,7 @@ class ExpressionFactory(private val mv: MethodVisitor, private val scope: Scope)
         }
 
         if (expression.negative()) {
-            if (expression.type() == BuiltInType.INT())
+            if (TypeChecker.canBeNegative(expression.type()))
                 mv.visitInsn(INEG)
             else
                 throw InvalidNegativeException(expression.type())

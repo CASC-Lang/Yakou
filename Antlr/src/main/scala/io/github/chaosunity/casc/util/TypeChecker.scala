@@ -14,4 +14,7 @@ object TypeChecker {
 
     def isDouble(`type`: Type): Boolean =
         `type` == BuiltInType.INT
+
+    def canBeNegative(`type`: Type): Boolean =
+        isInteger(`type`) || isFloat(`type`) || isDouble(`type`)
 }
