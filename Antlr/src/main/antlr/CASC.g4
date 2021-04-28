@@ -45,7 +45,7 @@ statement       : block
                 | expression
                 ;
 
-variableDeclaration     : VARIABLE name (':' specType=type)? ('=' | '\u8ce6') NEG=MINUS? expression;
+variableDeclaration     : name (':' specType=type)? ':=' NEG=MINUS? expression;
 printStatement          : PRINT '('NEG=MINUS? expression')';
 printlnStatement        : PRINTLN '('NEG=MINUS? expression')';
 returnStatement         : RETURN NEG=MINUS? expression                    #ReturnWithValue
@@ -94,7 +94,7 @@ fragment DIGIT    :  ('0'..'9')                     ;
 fragment UNICODE  :  '\u0080'..'\uFFFF'             ;
 
 CLASS           : 'class'   | '\u985e\u5225'        ;       // class, 類別
-FUNC            : 'func'    | '\u51fd\u5f0f'        ;       // func, 函式
+FUNC            : 'fn'      | '\u51fd\u5f0f'        ;       // fn, 函式
 VARIABLE        : 'var'     | '\u8b8a\u6578'        ;       // var, 變數
 IF              : 'if'      | '\u5982\u679c'        ;       // if, 如果
 ELSE            : 'else'    | '\u5426\u5247'        ;       // else, 否則

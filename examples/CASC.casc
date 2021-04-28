@@ -1,10 +1,10 @@
-類別 CASC {
-    func hi() {
+class CASC {
+    fn hi() {
         println("bruh")
     }
 
-    func main(arg: string[]) {
-        var b = new CASC()
+    fn main(arg: string[]) {
+        b := new CASC()
 
         b::hi()
     }
