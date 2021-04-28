@@ -9,9 +9,11 @@ package io.github.chaosunity.antlr;
 compilationUnit                 : classDeclaration EOF;
 classDeclaration                : CLASS className '{' classBody '}';
 className                       : ID;
-classBody                       : function* ;
+classBody                       : (function | constructor)* ;
+constructor                     : constructorDeclaration block? ;
+constructorDeclaration          : ('ctor') '('(functionParameter (',' functionParameter)*)?')' ;
 function                        : functionDeclaration block ;
-functionDeclaration             : FUNC functionName '('(functionParameter (',' functionParameter)*)?')' (':' type)? ;
+functionDeclaration             : 'fn' functionName '('(functionParameter (',' functionParameter)*)?')' (':' type)? ;
 functionName                    : ID ;
 functionParameter               : ID ':' type functionParameterDefaultValue? ;
 functionParameterDefaultValue   : '=' expression ;
@@ -62,7 +64,7 @@ expressionList          : expression? (',' expression)* ;
 expression              : NEG=MINUS? varReference                                                               #VarRef
                         | superCall='this' '('argument? (',' argument)*')'                                      #superCall
                         | className '('argument? (',' argument)*')'                                             #constructorCall
-                        | owner=expression '\u002E' functionName '('argument? (',' argument)*')'                     #functionCall
+                        | owner=expression '.' functionName '('argument? (',' argument)*')'                     #functionCall
                         | NEG=MINUS? functionName '('argument? (',' argument)*')'                               #functionCall
                         | expression cmp=GREATER expression                                                     #conditionalExpression
                         | expression cmp=LESS expression                                                        #conditionalExpression
@@ -124,4 +126,5 @@ NUMBER          : [0-9.]+                                   ;
 STRING          : '"'~('\r' | '\n' | '"')*'"'               ;
 BOOL            : 'true' | '\u771f' | 'false' | '\u5047'    ;
 ID              : (CHAR|DIGIT|UNICODE)+                     ;
+QUALIFIED_NAME  : ID ('::' ID)+                              ;
 WS              : [ \t\n\r]+ -> skip                        ;

@@ -6,6 +6,7 @@ import io.github.chaosunity.casc.parsing.expression.Expression
 import io.github.chaosunity.casc.parsing.expression.FunctionParameter
 import io.github.chaosunity.casc.parsing.scope.FunctionSignature
 import io.github.chaosunity.casc.parsing.scope.Scope
+import io.github.chaosunity.casc.parsing.type.BuiltInType
 import io.github.chaosunity.casc.util.TypeResolver
 import scala.Option
 
@@ -29,6 +30,23 @@ class FunctionSignatureVisitor(private val scope: Scope) : CASCBaseVisitor<Funct
         val retType = TypeResolver.getFromTypeName(ctx?.type())
 
         return FunctionSignature(funcName, params, retType)
+    }
+
+    override fun visitConstructorDeclaration(ctx: CASCParser.ConstructorDeclarationContext?): FunctionSignature {
+        val ctorName = (ctx?.parent?.parent?.parent as CASCParser.ClassDeclarationContext?)?.className()?.text
+        val args = ctx?.functionParameter() ?: listOf()
+        val params = mutableListOf<FunctionParameter>()
+
+        for (arg in args) {
+            val name = arg.ID().text
+            val type = TypeResolver.getFromTypeName(arg.type())
+            val defaultValue = getParameterDefaultValue(arg)
+            val parameter = FunctionParameter(type, name, Option.apply(defaultValue), false)
+
+            params += parameter
+        }
+
+        return FunctionSignature(ctorName, params, BuiltInType.VOID())
     }
 
     private fun getParameterDefaultValue(ctx: CASCParser.FunctionParameterContext?): Expression? =

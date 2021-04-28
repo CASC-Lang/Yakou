@@ -20,15 +20,31 @@ class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function>() {
 
         val block = getBlock(ctx)
 
-        return if (signature.name() == scope.className()) {
-            Constructor(signature, block)
-        } else Function(signature, block)
+        return Function(signature, block)
+    }
+
+    override fun visitConstructor(ctx: CASCParser.ConstructorContext?): Function {
+        val signature = scope.getMethodCallSignature((ctx?.parent?.parent as CASCParser.ClassDeclarationContext?)?.className()?.text)
+        scope.addLocalVariable(LocalVariable(scope.classType(), "this"))
+
+        addParametersAsLocalVariable(signature)
+
+        val block = getBlock(ctx)
+
+        return Constructor(signature, block)
     }
 
     private fun addParametersAsLocalVariable(signature: FunctionSignature) =
         signature.parameters().forEach { scope.addLocalVariable(LocalVariable(it.type(), it.name())) }
 
     private fun getBlock(ctx: CASCParser.FunctionContext?): Statement? {
+        val statementVisitor = StatementVisitor(scope)
+        val block = ctx?.block()
+
+        return block?.accept(statementVisitor)
+    }
+
+    private fun getBlock(ctx: CASCParser.ConstructorContext?): Statement? {
         val statementVisitor = StatementVisitor(scope)
         val block = ctx?.block()
 

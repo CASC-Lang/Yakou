@@ -37,6 +37,18 @@ public interface CASCVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitClassBody(CASCParser.ClassBodyContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link CASCParser#constructor}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitConstructor(CASCParser.ConstructorContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link CASCParser#constructorDeclaration}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitConstructorDeclaration(CASCParser.ConstructorDeclarationContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link CASCParser#function}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

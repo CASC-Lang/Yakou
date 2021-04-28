@@ -1,4 +1,6 @@
 class CASC {
+    ctor() {}
+
     fn hi() {
         println("bruh")
     }
