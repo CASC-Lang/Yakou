@@ -9,9 +9,9 @@ import io.github.chaosunity.casc.parsing.statement.*
 class ForStatementVisitor(scope: Scope) : CASCBaseVisitor<ForStatement>() {
     private val scope = Scope(scope)
     private val ev = ExpressionVisitor(this.scope)
-    private val sv = StatementVisitor(this.scope)
 
     override fun visitForStatement(ctx: CASCParser.ForStatementContext?): ForStatement {
+        val sv = StatementVisitor(scope)
         val forExpressionCtx = ctx?.forExpression()
         val startExpression = forExpressionCtx?.startExpr?.accept(ev)
         val forType = if (forExpressionCtx?.TO() != null) ForType.TO() else ForType.UNTIL()

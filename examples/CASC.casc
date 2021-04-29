@@ -3,8 +3,8 @@ class CASC {
         println("Hi! " + msg + "I'm CASC!")
     }
 
-    fn hi() {
-        println("bruh")
+    fn pow(base: int): int {
+        base * base
     }
 
     fn getNum(): int {
@@ -14,7 +14,10 @@ class CASC {
     fn main(arg: string[]) {
         b := CASC("ChAoS")
 
-        b.hi()
+        for i from 0 to 10 {
+            a := b.pow(i)
+            println(a)
+        }
 
         println(-b.getNum())
     }

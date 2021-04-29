@@ -12,7 +12,7 @@ import io.github.chaosunity.casc.parsing.type.BuiltInType
 import scala.Option
 
 class StatementVisitor(private val scope: Scope) : CASCBaseVisitor<Statement>() {
-    private val ev: ExpressionVisitor = ExpressionVisitor(scope)
+    private val ev = ExpressionVisitor(scope)
 
     override fun visitPrintStatement(ctx: CASCParser.PrintStatementContext?): Statement {
         val expression = getExpression(ctx?.expression())
@@ -108,6 +108,9 @@ class StatementVisitor(private val scope: Scope) : CASCBaseVisitor<Statement>() 
 
     override fun visitConditionalExpression(ctx: CASCParser.ConditionalExpressionContext?): Statement =
         ev.visitConditionalExpression(ctx)
+
+    override fun visitForStatement(ctx: CASCParser.ForStatementContext?): Statement =
+        ForStatementVisitor(scope).visitForStatement(ctx)
 
     private fun getExpression(ctx: CASCParser.ExpressionContext?): Expression? {
         val expressionVisitor = ExpressionVisitor(scope)
