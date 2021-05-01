@@ -51,8 +51,8 @@ returnStatement         : RETURN NEG=MINUS? expression                      #Ret
                         | RETURN                                            #ReturnVoid
                         ;
 ifStatement             : IF ('(')? NEG=MINUS? expression (')')? trueStatement=statement (ELSE falseStatement=statement)?;
-forStatement            : FOR ('(')? forExpression (')')? statement ;
-forExpression           : iterator=varReference FROM startExpr=expression range=(TO | UNTIL) endExpr=expression ;
+forStatement            : FOR ('(')? forRangedExpression (')')? statement ;
+forRangedExpression           : iterator=varReference ':' startExpr=expression down=DOWN? range=(TO | UNTIL) endExpr=expression ;
 name                    : ID ;
 argument                : expression
                         | name '=' expression ;
@@ -99,7 +99,7 @@ IF              : 'if'      | '\u5982\u679c'        ;       // if, 如果
 ELSE            : 'else'    | '\u5426\u5247'        ;       // else, 否則
 RETURN          : 'return'  | '\u8fd4\u56de'        ;       // return, 返回
 FOR             : 'for'     | '\u8fed\u4ee3'        ;       // for, 迭代
-FROM            : 'from'    | '\u5f9e'              ;       // from, 從
+DOWN            : 'down'                            ;       // down
 TO              : 'to'      | '\u81f3'              ;       // to, 至
 UNTIL           : 'until'   | '\u76f4\u5230'        ;       // until, 直到
 

@@ -158,11 +158,11 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitForStatement(ctx : CASCParser.ForStatementContext) : T
 	/**
-	 * Visit a parse tree produced by {@link CASCParser#forExpression}.
+	 * Visit a parse tree produced by {@link CASCParser#forRangedExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	fun visitForExpression(ctx : CASCParser.ForExpressionContext) : T
+	fun visitForRangedExpression(ctx : CASCParser.ForRangedExpressionContext) : T
 	/**
 	 * Visit a parse tree produced by {@link CASCParser#name}.
 	 * @param ctx the parse tree

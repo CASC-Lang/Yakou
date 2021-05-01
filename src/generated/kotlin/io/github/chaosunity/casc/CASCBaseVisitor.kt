@@ -186,7 +186,7 @@ open class CASCBaseVisitor<T> : AbstractParseTreeVisitor<T>(), CASCVisitor<T> {
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	override fun visitForExpression(ctx : CASCParser.ForExpressionContext ) : T { return this!!.visitChildren(ctx)!! }
+	override fun visitForRangedExpression(ctx : CASCParser.ForRangedExpressionContext ) : T { return this!!.visitChildren(ctx)!! }
 	/**
 	 * {@inheritDoc}
 	 *
