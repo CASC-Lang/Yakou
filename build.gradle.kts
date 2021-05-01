@@ -26,6 +26,7 @@ dependencies {
     implementation(kotlin("reflect"))
 
     implementation("com.strumenta.antlr-kotlin:antlr-kotlin-runtime-jvm:0951069063")
+    implementation(group = "org.ow2.asm", name = "asm", version = "7.0")
 }
 
 tasks.register<com.strumenta.antlrkotlin.gradleplugin.AntlrKotlinTask>("generateKotlinGrammarSource") {
