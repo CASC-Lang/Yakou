@@ -7,12 +7,11 @@ classDeclaration                : CLASS className '{' classBody '}';
 className                       : ID;
 classBody                       : (function | constructor)* ;
 constructor                     : constructorDeclaration block? ;
-constructorDeclaration          : ('ctor') '('(parametersList (',' parametersList)*)?')' ;
+constructorDeclaration          : ('ctor') '('(parameter (',' parameter)*)?')' ;
 function                        : functionDeclaration block ;
-functionDeclaration             : 'fn' functionName '('(parametersList (',' parametersList)*)?')' (':' type)? ;
+functionDeclaration             : 'fn' functionName '('(parameter (',' parameter)*)?')' (':' type)? ;
 functionName                    : ID ;
-parametersList                  : parameter (',' parameter)* ;
-parameter                       : ID ':' type ;
+parameter                       : ID ':' type ('=' expression)? ;
 type                            : primitiveType
                                 | classType
                                 ;
@@ -50,9 +49,9 @@ printlnStatement        : PRINTLN '('expression')'                       ;
 returnStatement         : RETURN expression                                 #ReturnWithValue
                         | RETURN                                            #ReturnVoid
                         ;
-ifStatement             : IF ('(')? expression (')')? trueStatement=statement (ELSE falseStatement=statement)?;
+ifStatement             : IF ('(')? condition=expression (')')? trueStatement=statement (ELSE falseStatement=statement)?;
 forStatement            : FOR ('(')? forRangedExpression (')')? statement ;
-forRangedExpression           : iterator=varReference ':' startExpr=expression down=DOWN? range=(TO | UNTIL) endExpr=expression ;
+forRangedExpression     : iterator=varReference ':' startExpr=expression down=DOWN? range=(TO | UNTIL) endExpr=expression ;
 name                    : ID ;
 argument                : expression
                         | name '=' expression ;
@@ -70,7 +69,7 @@ expression              : NEG=('\u8ca0' | '-') expression                       
                         | expression cmp=NOT_EQ expression                                                      #conditionalExpression
                         | expression cmp=GREATER_EQ expression                                                  #conditionalExpression
                         | expression cmp=LESS_EQ expression                                                     #conditionalExpression
-                        | condition=expression '?' trueExpression=expression ':' falseExpression=expression     #ifExpr
+                        | condition=expression '?' trueExpression=expression ':' falseExpression=expression     #ifExpression
                         | expression STAR expression                                                            #multiply               // The order of arithmetic expression are related to its actual operator precedence.
                         | expression SLASH expression                                                           #divide
                         | expression PLUS expression                                                            #add

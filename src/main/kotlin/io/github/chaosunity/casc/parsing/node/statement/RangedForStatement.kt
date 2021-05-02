@@ -10,7 +10,7 @@ data class RangedForStatement(
     val statement: Statement<*>,
     val iteratorVarName: String,
     val scope: Scope
-) : Statement<RangedForStatement> {
+) : ForStatement<RangedForStatement>() {
     init {
         if (!startExpression.isInt() || !endExpression.isInt()) throw RuntimeException("For statement only supports integer range.s")
     }

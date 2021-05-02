@@ -66,12 +66,6 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitFunctionName(ctx : CASCParser.FunctionNameContext) : T
 	/**
-	 * Visit a parse tree produced by {@link CASCParser#parametersList}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	fun visitParametersList(ctx : CASCParser.ParametersListContext) : T
-	/**
 	 * Visit a parse tree produced by {@link CASCParser#parameter}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -232,19 +226,19 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitSuperCall(ctx : CASCParser.SuperCallContext) : T
 	/**
-	 * Visit a parse tree produced by the {@code ifExpr}
-	 * labeled alternative in {@link CASCParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	fun visitIfExpr(ctx : CASCParser.IfExprContext) : T
-	/**
 	 * Visit a parse tree produced by the {@code divide}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	fun visitDivide(ctx : CASCParser.DivideContext) : T
+	/**
+	 * Visit a parse tree produced by the {@code ifExpression}
+	 * labeled alternative in {@link CASCParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitIfExpression(ctx : CASCParser.IfExpressionContext) : T
 	/**
 	 * Visit a parse tree produced by the {@code multiply}
 	 * labeled alternative in {@link CASCParser#expression}.

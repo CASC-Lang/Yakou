@@ -6,7 +6,7 @@ import io.github.chaosunity.casc.parsing.node.expression.*
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.visitor.expression.ExpressionVisitor
 
-class CallExpressionVisitor(private val ev: ExpressionVisitor, private val scope: Scope) : CASCBaseVisitor<Call<*>>() {
+class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) : CASCBaseVisitor<Call<*>>() {
     override fun visitFunctionCall(ctx: CASCParser.FunctionCallContext): Call<*> {
         val functionName = ctx.findFunctionName()!!.text
 
@@ -41,7 +41,7 @@ class CallExpressionVisitor(private val ev: ExpressionVisitor, private val scope
     }
 
     private fun collectArguments(list: List<CASCParser.ArgumentContext>): List<Argument> {
-        val aev = ArgumentExpressionVisitor(ev)
+        val aev = ArgumentVisitor(ev)
 
         return list.map { it.accept(aev) }
     }

@@ -81,13 +81,6 @@ open class CASCBaseVisitor<T> : AbstractParseTreeVisitor<T>(), CASCVisitor<T> {
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	override fun visitParametersList(ctx : CASCParser.ParametersListContext ) : T { return this!!.visitChildren(ctx)!! }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
 	override fun visitParameter(ctx : CASCParser.ParameterContext ) : T { return this!!.visitChildren(ctx)!! }
 	/**
 	 * {@inheritDoc}
@@ -263,14 +256,14 @@ open class CASCBaseVisitor<T> : AbstractParseTreeVisitor<T>(), CASCVisitor<T> {
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	override fun visitIfExpr(ctx : CASCParser.IfExprContext ) : T { return this!!.visitChildren(ctx)!! }
+	override fun visitDivide(ctx : CASCParser.DivideContext ) : T { return this!!.visitChildren(ctx)!! }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	override fun visitDivide(ctx : CASCParser.DivideContext ) : T { return this!!.visitChildren(ctx)!! }
+	override fun visitIfExpression(ctx : CASCParser.IfExpressionContext ) : T { return this!!.visitChildren(ctx)!! }
 	/**
 	 * {@inheritDoc}
 	 *

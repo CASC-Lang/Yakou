@@ -6,6 +6,9 @@ import io.github.chaosunity.casc.parsing.CompilationUnit
 
 class CompilationUnitVisitor : CASCBaseVisitor<CompilationUnit>() {
     override fun visitCompilationUnit(ctx: CASCParser.CompilationUnitContext): CompilationUnit {
-        return super.visitCompilationUnit(ctx)
+        val cv = ClassVisitor()
+        val classDeclaration = ctx.findClassDeclaration()!!.accept(cv)
+
+        return CompilationUnit(classDeclaration)
     }
 }
