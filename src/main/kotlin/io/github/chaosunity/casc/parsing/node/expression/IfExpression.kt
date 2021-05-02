@@ -10,5 +10,4 @@ data class IfExpression(
     override val type: Type
         get() = if (trueExpression.type == falseExpression.type) trueExpression.type else
             throw RuntimeException("Type unmatched for type '${trueExpression.type.internalName}' and type '${falseExpression.type.internalName}'")
-    override val negative: Boolean = false
 }

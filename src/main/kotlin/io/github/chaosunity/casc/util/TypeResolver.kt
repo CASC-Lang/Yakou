@@ -1,4 +1,4 @@
-package io.github.chaosunity.casc.utils
+package io.github.chaosunity.casc.util
 
 import io.github.chaosunity.casc.CASCParser
 import io.github.chaosunity.casc.parsing.type.BuiltInType

@@ -7,7 +7,6 @@ import io.github.chaosunity.casc.parsing.type.Type
 
 interface Expression<T> : Statement<Expression<T>> where T : Expression<T> {
     val type: Type
-    val negative: Boolean
 
     fun accept(factory: ExpressionFactory) = factory.generate(this as T)
 

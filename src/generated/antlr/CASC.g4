@@ -41,51 +41,44 @@ statement       : block
                 | forStatement
                 | returnStatement
                 | ifStatement
-                | NEG=MINUS? expression
+                | expression
                 ;
 
-variableDeclaration     : name ':=' NEG=MINUS? expression                           ;
-printStatement          : PRINT '('NEG=MINUS? expression')'                         ;
-printlnStatement        : PRINTLN '('NEG=MINUS? expression')'                       ;
-returnStatement         : RETURN NEG=MINUS? expression                      #ReturnWithValue
+variableDeclaration     : name ':=' expression                           ;
+printStatement          : PRINT '('expression')'                         ;
+printlnStatement        : PRINTLN '('expression')'                       ;
+returnStatement         : RETURN expression                                 #ReturnWithValue
                         | RETURN                                            #ReturnVoid
                         ;
-ifStatement             : IF ('(')? NEG=MINUS? expression (')')? trueStatement=statement (ELSE falseStatement=statement)?;
+ifStatement             : IF ('(')? expression (')')? trueStatement=statement (ELSE falseStatement=statement)?;
 forStatement            : FOR ('(')? forRangedExpression (')')? statement ;
 forRangedExpression           : iterator=varReference ':' startExpr=expression down=DOWN? range=(TO | UNTIL) endExpr=expression ;
 name                    : ID ;
 argument                : expression
                         | name '=' expression ;
 
-expressionList          : expression? (',' expression)* ;
-expression              : NEG=MINUS? varReference                                                               #VarRef
+expression              : NEG=('\u8ca0' | '-') expression                                                       #negativeExpression
+                        | '(' expression ')'                                                                    #wrappedExpression
+                        | varReference                                                                          #varRef
                         | superCall='this' '('argument? (',' argument)*')'                                      #superCall
                         | className '('argument? (',' argument)*')'                                             #constructorCall
                         | owner=expression '.' functionName '('argument? (',' argument)*')'                     #functionCall
-                        | NEG=MINUS? functionName '('argument? (',' argument)*')'                               #functionCall
+                        | functionName '('argument? (',' argument)*')'                                          #functionCall
                         | expression cmp=GREATER expression                                                     #conditionalExpression
                         | expression cmp=LESS expression                                                        #conditionalExpression
                         | expression cmp=EQ expression                                                          #conditionalExpression
                         | expression cmp=NOT_EQ expression                                                      #conditionalExpression
                         | expression cmp=GREATER_EQ expression                                                  #conditionalExpression
                         | expression cmp=LESS_EQ expression                                                     #conditionalExpression
-                        | condition=expression '?' trueExpression=expression ':' falseExpression=expression     #IfExpr
-                        | NEG=MINUS? '('expression STAR expression')'                                           #ModMultiply       // The order of arithmetic expression are related to its actual operator precedence.
-                        | expression STAR expression                                                            #Multiply
-                        | NEG=MINUS? '(' expression SLASH expression ')'                                        #ModDivide
-                        | expression SLASH expression                                                           #Divide
-                        | NEG=MINUS? '(' expression PLUS expression ')'                                         #ModAdd
-                        | expression PLUS expression                                                            #Add
-                        | NEG=MINUS? '(' expression MINUS expression ')'                                        #ModSubtract
-                        | expression MINUS expression                                                           #Subtract
-                        | NEG=MINUS? value                                                                      #Val
+                        | condition=expression '?' trueExpression=expression ':' falseExpression=expression     #ifExpr
+                        | expression STAR expression                                                            #multiply               // The order of arithmetic expression are related to its actual operator precedence.
+                        | expression SLASH expression                                                           #divide
+                        | expression PLUS expression                                                            #add
+                        | expression MINUS expression                                                           #subtract
+                        | (NUMBER | BOOL | STRING)                                                              #value
                         ;
 
 varReference        : ID ;
-value               : NUMBER
-                    | BOOL
-                    | STRING
-                    ;
 
 //TOKENS
 fragment CHAR     :  ('A'..'Z') | ('a'..'z')        ;
@@ -107,7 +100,7 @@ PRINT           : 'print'   | '\u5370\u51fa'        ;       // print, 印出
 PRINTLN         : 'println' | '\u5370\u51fa\u884c'  ;       // println, 印出行
 
 PLUS            : '+' | '\u52a0'                    ;       // +, 加
-MINUS           : '-' | '\u6e1b' | '\u8ca0'         ;       // -, 減, 負        (負 can only be applied to unary part but binary part)
+MINUS           : '-' | '\u6e1b'                    ;       // -, 減, 負        (負 can only be applied to unary part but binary part)
 STAR            : '*' | '\u4e58'                    ;       // *, 乘
 SLASH           : '/' | '\u9664'                    ;       // /, 除
 EQUALS          : '=' | '\u8ce6'                    ;       // =, 賦           THIS EQUALS IS NOT WORKING PROPERLY SOMEHOW

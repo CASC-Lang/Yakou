@@ -8,5 +8,4 @@ data class ConstructorCall(private val className: String, override val arguments
 
     override val identifier: String = className
     override val type: Type = ClassType(className)
-    override val negative: Boolean = false
 }

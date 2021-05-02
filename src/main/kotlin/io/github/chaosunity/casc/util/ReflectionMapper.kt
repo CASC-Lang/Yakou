@@ -1,4 +1,4 @@
-package io.github.chaosunity.casc.utils
+package io.github.chaosunity.casc.util
 
 import io.github.chaosunity.casc.parsing.node.expression.Parameter
 import io.github.chaosunity.casc.parsing.scope.FunctionSignature

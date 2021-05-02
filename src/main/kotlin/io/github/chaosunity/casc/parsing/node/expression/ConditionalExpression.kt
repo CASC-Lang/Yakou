@@ -6,5 +6,4 @@ import io.github.chaosunity.casc.parsing.type.Type
 
 data class ConditionalExpression(val leftExpression: Expression<*>, val rightExpression: Expression<*>, val logicalOp: LogicalOp) : Expression<ConditionalExpression> {
     override val type: Type = BuiltInType.BOOLEAN
-    override val negative: Boolean = false
 }

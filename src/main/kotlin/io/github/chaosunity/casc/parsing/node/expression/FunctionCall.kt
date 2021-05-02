@@ -16,5 +16,4 @@ data class FunctionCall(
 
     override val type: Type = signature.returnType
     override val identifier: String = signature.name
-    override val negative: Boolean = false
 }

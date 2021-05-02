@@ -16,25 +16,21 @@ sealed class ArithmeticExpression<T>(val leftExpression: Expression<*>, val righ
     override val type: Type = getCompanionType(leftExpression, rightExpression)
 
     class Addition(
-        override val negative: Boolean,
         leftExpression: Expression<*>,
         rightExpression: Expression<*>
     ) : ArithmeticExpression<Addition>(leftExpression, rightExpression)
 
     class Subtraction(
-        override val negative: Boolean,
         leftExpression: Expression<*>,
         rightExpression: Expression<*>
     ) : ArithmeticExpression<Subtraction>(leftExpression, rightExpression)
 
     class Multiplication(
-        override val negative: Boolean,
         leftExpression: Expression<*>,
         rightExpression: Expression<*>
     ) : ArithmeticExpression<Multiplication>(leftExpression, rightExpression)
 
     class Division(
-        override val negative: Boolean,
         leftExpression: Expression<*>,
         rightExpression: Expression<*>
     ) : ArithmeticExpression<Division>(leftExpression, rightExpression)

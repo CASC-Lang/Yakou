@@ -10,6 +10,12 @@ enum class LogicalOp(val sign: String, val mandarinAlias: String, val opcode: In
     LESS_EQ("<=", "小等於", IF_ICMPLE),
     GRATER_EQ(">=", "大等於", IF_ICMPGE);
 
-    fun alias(literal: String): Boolean =
+    companion object {
+        fun fromString(literal: String?): LogicalOp =
+            values().find { it.alias(literal) }
+                ?: throw RuntimeException("Operator '$literal' is not a valid compare operator.")
+    }
+
+    fun alias(literal: String?): Boolean =
         sign == literal || mandarinAlias == literal
 }

@@ -176,39 +176,19 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitArgument(ctx : CASCParser.ArgumentContext) : T
 	/**
-	 * Visit a parse tree produced by {@link CASCParser#expressionList}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	fun visitExpressionList(ctx : CASCParser.ExpressionListContext) : T
-	/**
-	 * Visit a parse tree produced by the {@code VarRef}
-	 * labeled alternative in {@link CASCParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	fun visitVarRef(ctx : CASCParser.VarRefContext) : T
-	/**
-	 * Visit a parse tree produced by the {@code Val}
-	 * labeled alternative in {@link CASCParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	fun visitVal(ctx : CASCParser.ValContext) : T
-	/**
-	 * Visit a parse tree produced by the {@code Add}
+	 * Visit a parse tree produced by the {@code add}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	fun visitAdd(ctx : CASCParser.AddContext) : T
 	/**
-	 * Visit a parse tree produced by the {@code IfExpr}
+	 * Visit a parse tree produced by the {@code negativeExpression}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	fun visitIfExpr(ctx : CASCParser.IfExprContext) : T
+	fun visitNegativeExpression(ctx : CASCParser.NegativeExpressionContext) : T
 	/**
 	 * Visit a parse tree produced by the {@code conditionalExpression}
 	 * labeled alternative in {@link CASCParser#expression}.
@@ -217,6 +197,13 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitConditionalExpression(ctx : CASCParser.ConditionalExpressionContext) : T
 	/**
+	 * Visit a parse tree produced by the {@code subtract}
+	 * labeled alternative in {@link CASCParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitSubtract(ctx : CASCParser.SubtractContext) : T
+	/**
 	 * Visit a parse tree produced by the {@code constructorCall}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree
@@ -224,33 +211,12 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitConstructorCall(ctx : CASCParser.ConstructorCallContext) : T
 	/**
-	 * Visit a parse tree produced by the {@code ModAdd}
+	 * Visit a parse tree produced by the {@code varRef}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	fun visitModAdd(ctx : CASCParser.ModAddContext) : T
-	/**
-	 * Visit a parse tree produced by the {@code Divide}
-	 * labeled alternative in {@link CASCParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	fun visitDivide(ctx : CASCParser.DivideContext) : T
-	/**
-	 * Visit a parse tree produced by the {@code ModDivide}
-	 * labeled alternative in {@link CASCParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	fun visitModDivide(ctx : CASCParser.ModDivideContext) : T
-	/**
-	 * Visit a parse tree produced by the {@code ModMultiply}
-	 * labeled alternative in {@link CASCParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	fun visitModMultiply(ctx : CASCParser.ModMultiplyContext) : T
+	fun visitVarRef(ctx : CASCParser.VarRefContext) : T
 	/**
 	 * Visit a parse tree produced by the {@code functionCall}
 	 * labeled alternative in {@link CASCParser#expression}.
@@ -259,13 +225,6 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitFunctionCall(ctx : CASCParser.FunctionCallContext) : T
 	/**
-	 * Visit a parse tree produced by the {@code Multiply}
-	 * labeled alternative in {@link CASCParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	fun visitMultiply(ctx : CASCParser.MultiplyContext) : T
-	/**
 	 * Visit a parse tree produced by the {@code superCall}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree
@@ -273,29 +232,44 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitSuperCall(ctx : CASCParser.SuperCallContext) : T
 	/**
-	 * Visit a parse tree produced by the {@code Subtract}
+	 * Visit a parse tree produced by the {@code ifExpr}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	fun visitSubtract(ctx : CASCParser.SubtractContext) : T
+	fun visitIfExpr(ctx : CASCParser.IfExprContext) : T
 	/**
-	 * Visit a parse tree produced by the {@code ModSubtract}
+	 * Visit a parse tree produced by the {@code divide}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	fun visitModSubtract(ctx : CASCParser.ModSubtractContext) : T
+	fun visitDivide(ctx : CASCParser.DivideContext) : T
+	/**
+	 * Visit a parse tree produced by the {@code multiply}
+	 * labeled alternative in {@link CASCParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitMultiply(ctx : CASCParser.MultiplyContext) : T
+	/**
+	 * Visit a parse tree produced by the {@code value}
+	 * labeled alternative in {@link CASCParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitValue(ctx : CASCParser.ValueContext) : T
+	/**
+	 * Visit a parse tree produced by the {@code wrappedExpression}
+	 * labeled alternative in {@link CASCParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitWrappedExpression(ctx : CASCParser.WrappedExpressionContext) : T
 	/**
 	 * Visit a parse tree produced by {@link CASCParser#varReference}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	fun visitVarReference(ctx : CASCParser.VarReferenceContext) : T
-	/**
-	 * Visit a parse tree produced by {@link CASCParser#value}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	fun visitValue(ctx : CASCParser.ValueContext) : T
 }

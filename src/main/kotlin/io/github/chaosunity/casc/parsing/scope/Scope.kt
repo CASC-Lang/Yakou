@@ -5,7 +5,7 @@ import io.github.chaosunity.casc.parsing.node.expression.Argument
 import io.github.chaosunity.casc.parsing.node.expression.SuperCall
 import io.github.chaosunity.casc.parsing.type.BuiltInType
 import io.github.chaosunity.casc.parsing.type.ClassType
-import io.github.chaosunity.casc.utils.ReflectionMapper
+import io.github.chaosunity.casc.util.ReflectionMapper
 import org.apache.commons.lang3.ClassUtils
 import org.apache.commons.lang3.RegExUtils
 import org.apache.commons.lang3.reflect.ConstructorUtils

@@ -12,5 +12,4 @@ data class SuperCall(override val arguments: List<Argument>) : Call<SuperCall> {
 
     override val identifier: String = SUPER_CALL_ID
     override val type: Type = BuiltInType.VOID
-    override val negative: Boolean = false
 }
