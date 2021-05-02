@@ -3,7 +3,6 @@ package io.github.chaosunity.casc.parsing.node.statement
 import io.github.chaosunity.casc.bytecode.statement.StatementFactory
 import io.github.chaosunity.casc.parsing.node.Node
 
-@FunctionalInterface
-interface Statement : Node {
-    fun accept(factory: StatementFactory)
+interface Statement<T> : Node where T:Statement<T> {
+    fun accept(factory: StatementFactory) = factory.generate(this as T)
 }
