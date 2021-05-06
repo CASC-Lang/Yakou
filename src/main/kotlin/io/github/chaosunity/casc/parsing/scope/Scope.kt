@@ -63,7 +63,7 @@ class Scope(private val metadata: MetaData) {
     fun isLocalVariableExists(variableName: String): Boolean =
         localVariables.any { it.name == variableName }
 
-    fun getIndexOfLocalVariable(variableName: String): Int =
+    fun getLocalVariableIndex(variableName: String): Int =
         localVariables.indexOf(getLocalVariable(variableName))
 
     fun getSignatureFromClassPath(fullMethodName: String): FunctionSignature? {

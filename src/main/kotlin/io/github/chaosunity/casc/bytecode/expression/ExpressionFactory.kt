@@ -10,6 +10,7 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
     private val vrf = VariableReferenceFactory(mv, scope)
     private val vf = ValueFactory(mv)
     private val pf = ParameterFactory(mv, scope)
+    private val iff = IfFactory(this, mv)
     private val conditionalFactory = ConditionalFactory(this, mv)
     private val callFactory = CallFactory(this, scope, mv)
     private val af = ArithmeticFactory(this, mv)
@@ -27,8 +28,9 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
             is Multiplication -> generate(expression)
             is Division -> generate(expression)
             is Conditional -> generate(expression)
+            is IfExpression -> generate(expression)
             is EmptyExpression -> {}
-            else -> throw RuntimeException("Invalid expression")
+            else -> throw RuntimeException("Invalid syntax feature.\nDetail: $expression")
         }
 
     fun generate(variableReference: VariableReference) =
@@ -63,4 +65,7 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
 
     fun generate(conditional: Conditional) =
         conditionalFactory.generate(conditional)
+
+    fun generate(ifExpression: IfExpression) =
+        iff.generate(ifExpression)
 }

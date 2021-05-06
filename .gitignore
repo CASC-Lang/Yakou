@@ -5,3 +5,5 @@
 *.iml
 
 build/*
+
+eq/*

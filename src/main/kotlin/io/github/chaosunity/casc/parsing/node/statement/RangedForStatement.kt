@@ -6,6 +6,8 @@ import io.github.chaosunity.casc.parsing.scope.Scope
 data class RangedForStatement(
     val iteratorVariable: Statement<*>,
     val startExpression: Expression<*>,
+    val backward: Boolean,
+    val stopAt: StopAt,
     val endExpression: Expression<*>,
     val statement: Statement<*>,
     val iteratorVarName: String,

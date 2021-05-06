@@ -7,7 +7,7 @@ import jdk.internal.org.objectweb.asm.MethodVisitor
 class VariableReferenceFactory(private val mv: MethodVisitor, private val scope: Scope) {
     fun generate(ref: VariableReference) {
         val name = ref.variableName
-        val index = scope.getIndexOfLocalVariable(name)
+        val index = scope.getLocalVariableIndex(name)
         val type = scope.getLocalVariable(name).type
 
         mv.visitVarInsn(type.loadVariableOpcode, index)
