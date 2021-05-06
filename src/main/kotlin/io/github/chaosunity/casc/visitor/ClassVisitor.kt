@@ -15,11 +15,13 @@ class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
 
     override fun visitClassDeclaration(ctx: CASCParser.ClassDeclarationContext): ClassDeclaration {
         val name = ctx.findClassName()!!.text
-        val methodsCtx = ctx.findClassBody()!!.findFunction()
-        val fsv = FunctionSignatureVisitor(scope)
         val metaData = MetaData(name, "java.lang.Object")
 
         scope = Scope(metaData)
+
+        val methodsCtx = ctx.findClassBody()!!.findFunction()
+        val fsv = FunctionSignatureVisitor(scope)
+
         methodsCtx.map {
             it.findFunctionDeclaration()!!.accept(fsv)
         }.forEach(scope::addSignature)

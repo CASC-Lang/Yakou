@@ -2,7 +2,7 @@ package io.github.chaosunity.casc.parsing.type
 
 interface Type {
     val typeName: String
-    val classType: Class<*>?
+    fun classType(): Class<*>?
     val descriptor: String
     val internalName: String
 

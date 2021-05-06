@@ -8,7 +8,7 @@ import jdk.internal.org.objectweb.asm.Opcodes.*
 
 class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, private val mv: MethodVisitor) {
     fun generate(constructor: ConstructorCall) {
-        val ownerDescriptor = scope.classInternalName
+        val ownerDescriptor = scope.classType.internalName
 
         mv.visitTypeInsn(NEW, ownerDescriptor)
         mv.visitInsn(DUP)

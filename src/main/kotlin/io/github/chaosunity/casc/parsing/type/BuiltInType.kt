@@ -2,7 +2,7 @@ package io.github.chaosunity.casc.parsing.type
 
 enum class BuiltInType(
     override val typeName: String,
-    override val classType: Class<*>?,
+    val classType: Class<*>?,
     override val descriptor: String,
     opcodes: PredefTypeOpcode
 ) : Type {
@@ -26,6 +26,9 @@ enum class BuiltInType(
     STRING_ARR("string[]", Array<String>::class.java, "[Ljava/lang/String;", PredefTypeOpcode.OBJECT),
     NONE("", null, "", PredefTypeOpcode.OBJECT),
     VOID("void", Void.TYPE, "V", PredefTypeOpcode.VOID);
+
+    override fun classType(): Class<*>? =
+        classType
 
     override val internalName: String = descriptor
     override val loadVariableOpcode: Int = opcodes.load

@@ -10,5 +10,5 @@ open class Function<T>(val signature: FunctionSignature, val rootStatement: Stat
     open val returnType: Type = signature.returnType
 
     fun generate(factory: MethodFactory) =
-        factory.generate(this as T)
+        factory.generate(this)
 }

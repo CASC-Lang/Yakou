@@ -1,0 +1,5 @@
+class HelloWorld {
+    fn main() {
+        println("Hello World!")
+    }
+}

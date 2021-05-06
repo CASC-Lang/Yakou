@@ -16,10 +16,10 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
 
         val arguments = collectArguments(ctx.findArgument())
         val signature = scope.getMethodCallSignature(functionName, arguments)
-        val owner = ctx.owner
+        val ownerCtx = ctx.owner
 
-        if (owner != null) {
-            val owner = owner.accept(ev)
+        if (ownerCtx != null) {
+            val owner = ownerCtx.accept(ev)
 
             return FunctionCall(signature, arguments, owner)
         }
