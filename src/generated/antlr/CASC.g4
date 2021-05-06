@@ -118,6 +118,6 @@ NOT_EQ          : '!='      | '\u4e0d\u662f'        ;       // !=, 不等於
 
 NUMBER          : [0-9.]+                                   ;
 STRING          : '"'~('\r' | '\n' | '"')*'"'               ;
-BOOL            : 'true' | '\u771f' | 'false' | '\u5047'    ;
+BOOL            : 'true' | 'false' | '\u771f' | '\u5047'    ;
 ID              : (CHAR|DIGIT|UNICODE)+                     ;
 WS              : [ \t\n\r]+ -> skip                        ;

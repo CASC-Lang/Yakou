@@ -31,7 +31,7 @@ object TypeResolver {
                 value.toFloatOrNull() != null -> return BuiltInType.FLOAT
                 value.toDoubleOrNull() != null -> return BuiltInType.DOUBLE
             }
-        } else if (BooleanUtils.toBoolean(value)) return BuiltInType.BOOLEAN
+        } else if (value == "true" || value == "false") return BuiltInType.BOOLEAN
 
         return BuiltInType.STRING
     }
