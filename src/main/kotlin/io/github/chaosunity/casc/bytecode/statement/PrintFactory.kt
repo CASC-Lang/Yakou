@@ -30,7 +30,7 @@ class PrintFactory(private val ef: ExpressionFactory, private val mv: MethodVisi
 
         val descriptor = "(${expression.type.descriptor})V"
         val owner = ClassType("java.io.PrintStream")
-        val fieldDescriptor = owner.descriptor
+        val fieldDescriptor = owner.internalName
 
         return fieldDescriptor to descriptor
     }

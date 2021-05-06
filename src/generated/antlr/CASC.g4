@@ -69,6 +69,12 @@ expression              : NEG=('\u8ca0' | '-') expression                       
                         | expression cmp=NOT_EQ expression                                                      #conditionalExpression
                         | expression cmp=GREATER_EQ expression                                                  #conditionalExpression
                         | expression cmp=LESS_EQ expression                                                     #conditionalExpression
+                        | left=expression cmp=GREATER right=expression '?' trueExpression=expression ':' falseExpression=expression     #ifExpression
+                        | left=expression cmp=LESS right=expression '?' trueExpression=expression ':' falseExpression=expression        #ifExpression
+                        | left=expression cmp=EQ right=expression '?' trueExpression=expression ':' falseExpression=expression          #ifExpression
+                        | left=expression cmp=NOT_EQ right=expression '?' trueExpression=expression ':' falseExpression=expression      #ifExpression
+                        | left=expression cmp=GREATER_EQ right=expression '?' trueExpression=expression ':' falseExpression=expression  #ifExpression
+                        | left=expression cmp=LESS_EQ right=expression '?' trueExpression=expression ':' falseExpression=expression     #ifExpression
                         | condition=expression '?' trueExpression=expression ':' falseExpression=expression     #ifExpression
                         | expression STAR expression                                                            #multiply               // The order of arithmetic expression are related to its actual operator precedence.
                         | expression SLASH expression                                                           #divide
@@ -102,7 +108,6 @@ PLUS            : '+' | '\u52a0'                    ;       // +, 加
 MINUS           : '-' | '\u6e1b'                    ;       // -, 減, 負        (負 can only be applied to unary part but binary part)
 STAR            : '*' | '\u4e58'                    ;       // *, 乘
 SLASH           : '/' | '\u9664'                    ;       // /, 除
-EQUALS          : '=' | '\u8ce6'                    ;       // =, 賦           THIS EQUALS IS NOT WORKING PROPERLY SOMEHOW
 
 GREATER         : '>'       | '\u5927\u65bc'        ;       // >, 大於
 LESS            : '<'       | '\u5c0f\u65bc'        ;       // <, 小於

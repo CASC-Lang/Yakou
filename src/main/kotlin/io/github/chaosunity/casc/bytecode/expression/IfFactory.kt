@@ -14,11 +14,16 @@ class IfFactory(private val ef: ExpressionFactory, private val mv: MethodVisitor
         val trueExpression = ifExpression.trueExpression
         val falseExpression = ifExpression.falseExpression
 
-        val elseLabel = Label()
+        val trueLabel = Label()
+        val endLabel = Label()
 
-        trueExpression.accept(ef)
-        mv.visitJumpInsn(GOTO, elseLabel)
+        mv.visitJumpInsn(IFNE, trueLabel)
+
         falseExpression.accept(ef)
-        mv.visitLabel(elseLabel)
+
+        mv.visitJumpInsn(GOTO, endLabel)
+        mv.visitLabel(trueLabel)
+        trueExpression.accept(ef)
+        mv.visitLabel(endLabel)
     }
 }
