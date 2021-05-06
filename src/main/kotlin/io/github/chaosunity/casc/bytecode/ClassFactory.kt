@@ -1,6 +1,7 @@
 package io.github.chaosunity.casc.bytecode
 
 import io.github.chaosunity.casc.parsing.ClassDeclaration
+import io.github.chaosunity.casc.parsing.Constructor
 import jdk.internal.org.objectweb.asm.ClassWriter
 import jdk.internal.org.objectweb.asm.Opcodes.*
 

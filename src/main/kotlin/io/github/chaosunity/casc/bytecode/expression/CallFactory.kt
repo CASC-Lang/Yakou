@@ -35,7 +35,7 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
 
         val functionName = function.identifier
         val methodDescriptor = DescriptorFactory.getMethodDescriptor(function.signature)
-        val ownerDescriptor = function.type.internalName
+        val ownerDescriptor = function.owner.type.internalName
 
         mv.visitMethodInsn(INVOKEVIRTUAL, ownerDescriptor, functionName, methodDescriptor, false)
     }

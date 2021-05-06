@@ -13,6 +13,11 @@ import jdk.internal.org.objectweb.asm.Opcodes.*
 
 class MethodFactory(private val cw: ClassWriter) {
     fun generate(function: Function<*>) {
+        if (function is Constructor) {
+            generate(function)
+            return
+        }
+
         val name = function.name
         val isMain = name == "main" || name == "主函式"
         val descriptor = DescriptorFactory.getMethodDescriptor(function)

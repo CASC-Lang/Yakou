@@ -14,33 +14,41 @@ class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
     private lateinit var scope: Scope
 
     override fun visitClassDeclaration(ctx: CASCParser.ClassDeclarationContext): ClassDeclaration {
-        val name = ctx.findClassName()!!.text
-        val metaData = MetaData(name, "java.lang.Object")
+        val name = ctx.findClassName()?.text!!
+        val metadata = MetaData(name, "java.lang.Object")
 
-        scope = Scope(metaData)
+        scope = Scope(metadata)
 
-        val methodsCtx = ctx.findClassBody()!!.findFunction()
-        val fsv = FunctionSignatureVisitor(scope)
+        val functionSignatureVisitor = FunctionSignatureVisitor(scope)
+        val ctorCtx = ctx.findClassBody()?.findConstructor()
+        val methodsCtx = ctx.findClassBody()?.findFunction()
 
-        methodsCtx.map {
-            it.findFunctionDeclaration()!!.accept(fsv)
-        }.forEach(scope::addSignature)
+        ctorCtx?.map {
+            it.findConstructorDeclaration()?.accept(functionSignatureVisitor)!!
+        }?.forEach(scope::addSignature)
 
-        val constructorsCtx = ctx.findClassBody()!!.findConstructor()
-        val methods = methodsCtx.map {
+        val constructorExists = ctx.findClassBody()?.findConstructor()?.isNotEmpty() ?: false
+
+        if (!constructorExists) {
+            val constructorSignature = FunctionSignature(name, listOf(), BuiltInType.VOID)
+
+            scope.addSignature(constructorSignature)
+        }
+
+        methodsCtx?.map {
+            it.findFunctionDeclaration()?.accept(functionSignatureVisitor)!!
+        }?.forEach(scope::addSignature)
+
+        val methods = methodsCtx?.map {
             it.accept(FunctionVisitor(scope))
-        }.toMutableList()
+        }?.toMutableList() ?: mutableListOf()
 
-        if (constructorsCtx.isEmpty()) {
-            scope.addSignature(FunctionSignature(name, listOf(), BuiltInType.VOID))
+        ctorCtx?.forEach {
+            methods += it.accept(FunctionVisitor(scope))
+        }
+
+        if (!constructorExists) {
             methods += getDefaultConstructor()
-        } else {
-            constructorsCtx.map {
-                it.findConstructorDeclaration()!!.accept(fsv)
-            }.forEach(scope::addSignature)
-            constructorsCtx.map {
-                it.accept(FunctionVisitor(scope))
-            }.forEach(methods::add)
         }
 
         return ClassDeclaration(name, methods)

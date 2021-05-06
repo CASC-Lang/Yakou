@@ -1,6 +1,8 @@
 class HelloWorld {
     fn main(arg: string[]) {
-        println(false ? 3 : 4)
+        a := HelloWorld()
+
+        println(a.getBool() ? 3 : 4)
     }
 
     fn getBool(): boolean {

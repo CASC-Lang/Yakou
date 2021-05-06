@@ -6,7 +6,7 @@ enum class BuiltInType(
     override val descriptor: String,
     opcodes: PredefTypeOpcode
 ) : Type {
-    BOOLEAN("bool", Boolean::class.java, "Z", PredefTypeOpcode.INT),
+    BOOLEAN("boolean", Boolean::class.java, "Z", PredefTypeOpcode.INT),
     INT("int", Int::class.java, "I", PredefTypeOpcode.INT),
     CHAR("char", Char::class.java, "C", PredefTypeOpcode.INT),
     BYTE("byte", Byte::class.java, "B", PredefTypeOpcode.INT),
