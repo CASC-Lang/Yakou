@@ -30,4 +30,19 @@ data class FunctionSignature(val name: String, val parameters: List<Parameter>, 
             arguments[it].type == parameters[it].type
         }
     }
+
+    override fun equals(o: Any?): Boolean {
+        if (this === o) return true
+        if (o == null || javaClass != o.javaClass) return false
+        val (name1, parameters1, returnType1) = o as FunctionSignature
+        if (name != name1) return false
+        return if (parameters != parameters1) false else returnType == returnType1
+    }
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + parameters.hashCode()
+        result = 31 * result + returnType.hashCode()
+        return result
+    }
 }

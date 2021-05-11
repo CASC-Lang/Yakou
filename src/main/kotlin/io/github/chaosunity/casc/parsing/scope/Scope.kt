@@ -5,6 +5,7 @@ import io.github.chaosunity.casc.parsing.node.expression.Argument
 import io.github.chaosunity.casc.parsing.node.expression.SuperCall
 import io.github.chaosunity.casc.parsing.type.BuiltInType
 import io.github.chaosunity.casc.parsing.type.ClassType
+import io.github.chaosunity.casc.parsing.type.Type
 import io.github.chaosunity.casc.util.ReflectionMapper
 import org.apache.commons.lang3.ClassUtils
 import org.apache.commons.lang3.RegExUtils
@@ -52,6 +53,28 @@ class Scope(private val metadata: MetaData) {
         else functionSignatures.find { it.matches(identifier, arguments) }
             ?: throw RuntimeException("Function '$identifier' does not exist.")
 
+    fun getConstructorCallSignature(className: String, arguments: List<Argument>): FunctionSignature {
+        if (className != this.className) {
+            val argumentsType = arguments.map(Argument::type)
+
+            return ClassPathScope().getConstructorSignature(className, argumentsType)
+                ?: throw RuntimeException("Class constructor '$className' with type arguments '${argumentsType.map(Type::internalName).joinToString(", ")}' does not exist.")
+        }
+
+        return getMethodCallSignature(null, className, arguments)
+    }
+
+    fun getMethodCallSignature(owner: Type?, methodName: String, arguments: List<Argument>): FunctionSignature {
+        if (owner != null && owner == classType) {
+            val argumentsType = arguments.map(Argument::type)
+
+            return ClassPathScope().getConstructorSignature(className, argumentsType)
+                ?: throw RuntimeException("Class '$className' with type arguments '${argumentsType.joinToString(", ")}' does not exist.")
+        }
+
+        return getMethodCallSignature(methodName, arguments)
+    }
+
     fun addLocalVariable(variable: LocalVariable) {
         localVariables += variable
     }
@@ -65,29 +88,4 @@ class Scope(private val metadata: MetaData) {
 
     fun getLocalVariableIndex(variableName: String): Int =
         localVariables.indexOf(getLocalVariable(variableName))
-
-    fun getSignatureFromClassPath(fullMethodName: String): FunctionSignature? {
-        val methodName = RegExUtils.removePattern(fullMethodName, ".*\\.")
-        val ownerClass: Class<*>
-
-        try {
-            ownerClass = ClassUtils.getClass(fullMethodName)
-        } catch (e: Exception) {
-            throw RuntimeException("Class '$fullMethodName' does not exist.")
-        }
-
-        val accessibleMethod = MethodUtils.getAccessibleMethod(ownerClass, methodName)
-
-        if (accessibleMethod != null) {
-            return ReflectionMapper.fromMethod(accessibleMethod)
-        }
-
-        val accessibleConstructor = ConstructorUtils.getAccessibleConstructor(ownerClass)
-
-        if (accessibleConstructor != null) {
-            return ReflectionMapper.fromConstructor(accessibleConstructor)
-        }
-
-        return null
-    }
 }

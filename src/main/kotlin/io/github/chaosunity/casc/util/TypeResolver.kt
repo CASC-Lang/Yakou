@@ -8,11 +8,13 @@ import org.apache.commons.lang3.BooleanUtils
 import org.apache.commons.lang3.math.NumberUtils
 
 object TypeResolver {
-    fun getFromTypeName(ctx: CASCParser.TypeContext?): Type {
+    fun getFromTypeContext(ctx: CASCParser.TypeContext?): Type {
         if (ctx == null) return BuiltInType.VOID
 
-        val typeName = ctx.text
+        return getTypeByName(ctx.text)
+    }
 
+    fun getTypeByName(typeName: String): Type {
         if (typeName == "java.lang.String") return BuiltInType.STRING
 
         val builtInType = getBuiltInType(typeName)

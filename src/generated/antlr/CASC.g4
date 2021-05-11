@@ -4,7 +4,7 @@ grammar CASC;
 //RULES
 compilationUnit                 : classDeclaration EOF;
 classDeclaration                : CLASS className '{' classBody '}';
-className                       : ID;
+className                       : qualifiedName;
 classBody                       : (function | constructor)* ;
 constructor                     : constructorDeclaration block? ;
 constructorDeclaration          : ('ctor') '('(parameter (',' parameter)*)?')' ;
@@ -29,7 +29,7 @@ primitiveType   :  ('boolean'   | '\u5e03\u6797') ('[' ']')*
                 ;
 
 classType       : qualifiedName ('[' ']')* ;
-qualifiedName   : ID ('::' ID)+ ;
+qualifiedName   : ID ('::' ID)* ;
 
 block           : '{' statement* '}' ;
 
@@ -56,13 +56,13 @@ name                    : ID ;
 argument                : expression
                         | name '=' expression ;
 
-expression              : NEG=('\u8ca0' | '-') expression                                                       #negativeExpression
-                        | '(' expression ')'                                                                    #wrappedExpression
-                        | varReference                                                                          #varRef
-                        | superCall='this' '('argument? (',' argument)*')'                                      #superCall
+expression              : superCall='this' '('argument? (',' argument)*')'                                      #superCall
                         | className '('argument? (',' argument)*')'                                             #constructorCall
                         | owner=expression '.' functionName '('argument? (',' argument)*')'                     #functionCall
                         | functionName '('argument? (',' argument)*')'                                          #functionCall
+                        | NEG=('\u8ca0' | '-') expression                                                       #negativeExpression
+                        | '(' expression ')'                                                                    #wrappedExpression
+                        | varReference                                                                          #varRef
                         | expression cmp=GREATER expression                                                     #conditionalExpression
                         | expression cmp=LESS expression                                                        #conditionalExpression
                         | expression cmp=EQ expression                                                          #conditionalExpression

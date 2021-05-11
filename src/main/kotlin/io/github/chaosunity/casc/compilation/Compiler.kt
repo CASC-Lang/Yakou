@@ -8,17 +8,14 @@ import java.io.File
 
 class Compiler {
     private var DEV_MODE = false
-    private val LOGGER = LoggerFactory.getLogger(javaClass)
 
     fun compile(args: Array<String>) {
         DEV_MODE = args.contains("-dev")
 
         val problem = diagnoseProblem(args)
 
-        if (problem != CompilationError.SAFE) {
-            LOGGER.error("", problem)
-            return
-        }
+        if (problem != CompilationError.SAFE)
+            error(problem.msg)
 
         val cascFile = File(args[0])
         val absolutePath = cascFile.absolutePath
@@ -36,7 +33,7 @@ class Compiler {
         val generator = BytecodeFactory()
         val bytecode = generator.generate(compilationUnit)
         val className = compilationUnit.className
-        val fileName = if (!DEV_MODE) "$className.class" else "examples/$className.class"
+        val fileName = if (!DEV_MODE) "$className.class" else "examples/hello_world/$className.class"
 
         File(fileName).writeBytes(bytecode)
     }

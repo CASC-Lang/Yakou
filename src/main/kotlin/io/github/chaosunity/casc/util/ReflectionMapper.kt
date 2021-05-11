@@ -2,6 +2,7 @@ package io.github.chaosunity.casc.util
 
 import io.github.chaosunity.casc.parsing.node.expression.Parameter
 import io.github.chaosunity.casc.parsing.scope.FunctionSignature
+import io.github.chaosunity.casc.parsing.type.BuiltInType
 import io.github.chaosunity.casc.parsing.type.ClassType
 import java.lang.reflect.Constructor
 import java.lang.reflect.Executable
@@ -17,11 +18,10 @@ object ReflectionMapper {
 
     fun fromConstructor(constructor: Constructor<*>): FunctionSignature {
         val (name, parameters) = fromExecutable(constructor)
-        val returnType = constructor.declaringClass
 
-        return FunctionSignature(name, parameters, ClassType(returnType.canonicalName))
+        return FunctionSignature(name, parameters, BuiltInType.VOID)
     }
 
     private fun fromExecutable(executable: Executable): Pair<String, List<Parameter>> =
-        executable.name to executable.parameters.map { Parameter(ClassType(it.type.canonicalName), it.name, null) }
+        executable.name to executable.parameters.map { Parameter(TypeResolver.getTypeByName(it.type.canonicalName), it.name, null) }
 }

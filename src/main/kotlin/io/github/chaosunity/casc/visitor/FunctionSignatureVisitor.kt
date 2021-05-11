@@ -14,7 +14,7 @@ class FunctionSignatureVisitor(private val scope: Scope) : CASCBaseVisitor<Funct
 
     override fun visitFunctionDeclaration(ctx: CASCParser.FunctionDeclarationContext): FunctionSignature {
         val functionName = ctx.findFunctionName()!!.text
-        val returnType = TypeResolver.getFromTypeName(ctx.findType())
+        val returnType = TypeResolver.getFromTypeContext(ctx.findType())
         val parameters = ctx.findParameter().map { it.accept(ParameterVisitor(ev)) }
 
         return FunctionSignature(functionName, parameters, returnType)

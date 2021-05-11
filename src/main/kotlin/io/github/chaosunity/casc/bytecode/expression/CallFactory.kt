@@ -1,28 +1,33 @@
 package io.github.chaosunity.casc.bytecode.expression
 
 import io.github.chaosunity.casc.parsing.node.expression.*
+import io.github.chaosunity.casc.parsing.scope.FunctionSignature
 import io.github.chaosunity.casc.parsing.scope.Scope
+import io.github.chaosunity.casc.parsing.type.ClassType
 import io.github.chaosunity.casc.util.DescriptorFactory
 import jdk.internal.org.objectweb.asm.MethodVisitor
 import jdk.internal.org.objectweb.asm.Opcodes.*
 
 class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, private val mv: MethodVisitor) {
     fun generate(constructor: ConstructorCall) {
-        val ownerDescriptor = scope.classType.internalName
+        val signature = scope.getConstructorCallSignature(constructor.identifier, constructor.arguments)
+        val ownerDescriptor = ClassType(signature.name).internalName
 
         mv.visitTypeInsn(NEW, ownerDescriptor)
         mv.visitInsn(DUP)
 
-        val methodCallSignature = scope.getMethodCallSignature(constructor.identifier, constructor.arguments)
-        val methodDescriptor = DescriptorFactory.getMethodDescriptor(methodCallSignature)
+        val methodDescriptor = DescriptorFactory.getMethodDescriptor(signature)
 
-        generateArguments(constructor)
+        generateArguments(
+            constructor,
+            scope.getConstructorCallSignature(constructor.identifier, constructor.arguments)
+        )
         mv.visitMethodInsn(INVOKESPECIAL, ownerDescriptor, "<init>", methodDescriptor, false)
     }
 
     fun generate(superCall: SuperCall) {
         mv.visitVarInsn(ALOAD, 0)
-        generateArguments(superCall)
+        generateArguments(superCall, scope.getMethodCallSignature(superCall.identifier, superCall.arguments))
 
         val ownerDescriptor = scope.superClassInternalName
 
@@ -31,7 +36,7 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
 
     fun generate(function: FunctionCall) {
         function.owner.accept(ef)
-        generateArguments(function)
+        generateArguments(function, scope.getMethodCallSignature(function.owner.type, function.identifier, function.arguments))
 
         val functionName = function.identifier
         val methodDescriptor = DescriptorFactory.getMethodDescriptor(function.signature)
@@ -40,15 +45,14 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
         mv.visitMethodInsn(INVOKEVIRTUAL, ownerDescriptor, functionName, methodDescriptor, false)
     }
 
-    fun generateArguments(call: Call<*>) {
-        val signature = scope.getMethodCallSignature(call.identifier, call.arguments)
+    fun generateArguments(call: Call<*>, signature: FunctionSignature) {
         val parameters = signature.parameters
         var arguments = call.arguments
 
         if (arguments.size > parameters.size) throw RuntimeException("Argument size mismatch to parameter size.\nArguments: $arguments\nParameter: $parameters")
 
         arguments = getSortedArguments(arguments, parameters)
-        arguments.forEach { it.accept(ef) }
+        arguments.forEach { it.expression.accept(ef) }
         generateDefaultParameter(call, parameters, arguments)
     }
 

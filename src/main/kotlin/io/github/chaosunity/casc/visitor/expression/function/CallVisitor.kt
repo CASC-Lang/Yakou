@@ -15,20 +15,22 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
         }
 
         val arguments = collectArguments(ctx.findArgument())
-        val signature = scope.getMethodCallSignature(functionName, arguments)
         val ownerCtx = ctx.owner
 
         if (ownerCtx != null) {
             val owner = ownerCtx.accept(ev)
+            val signature = scope.getMethodCallSignature(owner.type, functionName, arguments)
 
             return FunctionCall(signature, arguments, owner)
         }
+
+        val signature = scope.getMethodCallSignature(functionName, arguments)
 
         return FunctionCall(signature, arguments, VariableReference(scope.classType, "this"))
     }
 
     override fun visitConstructorCall(ctx: CASCParser.ConstructorCallContext): Call<*> {
-        val className = scope.className
+        val className = ctx.findClassName()!!.text
         val arguments = collectArguments(ctx.findArgument())
 
         return ConstructorCall(className, arguments)
