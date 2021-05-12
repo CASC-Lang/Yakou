@@ -1,5 +1,5 @@
 class CASC {
     fn main(arg: string[]) {
-        b := Student(name= "ChAoS")
+        b := Student(name="ChAoS".toLowerCase())
     }
 }

@@ -65,10 +65,10 @@ class Scope(private val metadata: MetaData) {
     }
 
     fun getMethodCallSignature(owner: Type?, methodName: String, arguments: List<Argument>): FunctionSignature {
-        if (owner != null && owner == classType) {
+        if (owner != null && owner != classType) {
             val argumentsType = arguments.map(Argument::type)
 
-            return ClassPathScope().getConstructorSignature(className, argumentsType)
+            return ClassPathScope().getMethodSignature(owner, methodName, argumentsType)
                 ?: throw RuntimeException("Class '$className' with type arguments '${argumentsType.joinToString(", ")}' does not exist.")
         }
 
