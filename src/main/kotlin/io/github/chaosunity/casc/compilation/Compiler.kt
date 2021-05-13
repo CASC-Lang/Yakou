@@ -1,6 +1,5 @@
 package io.github.chaosunity.casc.compilation
 
-import com.sun.org.slf4j.internal.LoggerFactory
 import io.github.chaosunity.casc.bytecode.BytecodeFactory
 import io.github.chaosunity.casc.parsing.CompilationUnit
 import io.github.chaosunity.casc.security.CompilationError

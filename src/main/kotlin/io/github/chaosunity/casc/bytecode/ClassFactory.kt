@@ -7,7 +7,7 @@ import jdk.internal.org.objectweb.asm.Opcodes.*
 
 class ClassFactory {
     companion object {
-        const val CLASS_VERSION = 52
+        const val CLASS_VERSION = 60
     }
 
     private val cw = ClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS)

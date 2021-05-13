@@ -27,9 +27,8 @@ dependencies {
     implementation(kotlin("stdlib"))
     implementation(kotlin("reflect"))
 
-    implementation("com.strumenta.antlr-kotlin:antlr-kotlin-runtime-jvm:0951069063")
+    implementation(group = "com.strumenta.antlr-kotlin", name = "antlr-kotlin-runtime-jvm", version = "0951069063")
     implementation(group = "org.apache.commons", name = "commons-lang3", version = "3.12.0")
-    //implementation(group = "org.ow2.asm", name = "asm", version = "7.0")
 }
 
 tasks.register<com.strumenta.antlrkotlin.gradleplugin.AntlrKotlinTask>("generateKotlinGrammarSource") {
@@ -57,7 +56,9 @@ configure<SourceSetContainer> {
     }
 }
 
-val compileKotlin: KotlinCompile by tasks
-compileKotlin.kotlinOptions {
-    languageVersion = "1.5"
+tasks.withType<KotlinCompile> {
+    kotlinOptions {
+        languageVersion = "1.5"
+        jvmTarget = "11"
+    }
 }
