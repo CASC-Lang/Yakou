@@ -4,7 +4,6 @@ import io.github.chaosunity.casc.CASCParser
 import io.github.chaosunity.casc.parsing.type.BuiltInType
 import io.github.chaosunity.casc.parsing.type.ClassType
 import io.github.chaosunity.casc.parsing.type.Type
-import org.apache.commons.lang3.BooleanUtils
 import org.apache.commons.lang3.math.NumberUtils
 
 object TypeResolver {

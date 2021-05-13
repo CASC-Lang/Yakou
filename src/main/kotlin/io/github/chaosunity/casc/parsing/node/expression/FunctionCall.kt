@@ -1,7 +1,7 @@
 package io.github.chaosunity.casc.parsing.node.expression
 
-import io.github.chaosunity.casc.parsing.type.Type
 import io.github.chaosunity.casc.parsing.scope.FunctionSignature
+import io.github.chaosunity.casc.parsing.type.Type
 
 data class FunctionCall(
     val signature: FunctionSignature,

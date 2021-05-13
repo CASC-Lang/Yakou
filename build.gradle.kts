@@ -59,6 +59,6 @@ configure<SourceSetContainer> {
 tasks.withType<KotlinCompile> {
     kotlinOptions {
         languageVersion = "1.5"
-        jvmTarget = "11"
+        jvmTarget = "1.8"
     }
 }

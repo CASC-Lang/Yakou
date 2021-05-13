@@ -9,7 +9,8 @@ import io.github.chaosunity.casc.parsing.node.statement.Block
 import io.github.chaosunity.casc.parsing.node.statement.ReturnStatement
 import io.github.chaosunity.casc.util.DescriptorFactory
 import jdk.internal.org.objectweb.asm.ClassWriter
-import jdk.internal.org.objectweb.asm.Opcodes.*
+import jdk.internal.org.objectweb.asm.Opcodes.ACC_PUBLIC
+import jdk.internal.org.objectweb.asm.Opcodes.ACC_STATIC
 
 class MethodFactory(private val cw: ClassWriter) {
     fun generate(function: Function<*>) {

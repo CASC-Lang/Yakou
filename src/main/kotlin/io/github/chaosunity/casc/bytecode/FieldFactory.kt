@@ -2,7 +2,7 @@ package io.github.chaosunity.casc.bytecode
 
 import io.github.chaosunity.casc.parsing.scope.Field
 import jdk.internal.org.objectweb.asm.ClassWriter
-import jdk.internal.org.objectweb.asm.Opcodes.*
+import jdk.internal.org.objectweb.asm.Opcodes.ACC_PUBLIC
 
 class FieldFactory(private val cw: ClassWriter) {
     fun generate(field: Field) {

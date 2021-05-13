@@ -30,7 +30,8 @@ enum class BuiltInType(
     override fun classType(): Class<*>? =
         classType
 
-    override val internalName: String = descriptor.removePrefix("[").removePrefix("L").removeSuffix(";") // Need a better way to fix this issue.
+    override val internalName: String =
+        descriptor.removePrefix("[").removePrefix("L").removeSuffix(";") // Need a better way to fix this issue.
     override val loadVariableOpcode: Int = opcodes.load
     override val storeVariableOpcode: Int = opcodes.store
     override val returnOpcode: Int = opcodes.ret

@@ -6,11 +6,6 @@ import io.github.chaosunity.casc.parsing.node.expression.SuperCall
 import io.github.chaosunity.casc.parsing.type.BuiltInType
 import io.github.chaosunity.casc.parsing.type.ClassType
 import io.github.chaosunity.casc.parsing.type.Type
-import io.github.chaosunity.casc.util.ReflectionMapper
-import org.apache.commons.lang3.ClassUtils
-import org.apache.commons.lang3.RegExUtils
-import org.apache.commons.lang3.reflect.ConstructorUtils
-import org.apache.commons.lang3.reflect.MethodUtils
 
 class Scope(private val metadata: MetaData) {
     val localVariables = linkedMapOf<String, LocalVariable>()
@@ -56,7 +51,11 @@ class Scope(private val metadata: MetaData) {
             val argumentsType = arguments.map(Argument::type)
 
             return ClassPathScope().getConstructorSignature(className, argumentsType)
-                ?: throw RuntimeException("Class constructor '$className' with type arguments '${argumentsType.map(Type::internalName).joinToString(", ")}' does not exist.")
+                ?: throw RuntimeException(
+                    "Class constructor '$className' with type arguments '${
+                        argumentsType.map(Type::internalName).joinToString(", ")
+                    }' does not exist."
+                )
         }
 
         return getMethodCallSignature(null, className, arguments)

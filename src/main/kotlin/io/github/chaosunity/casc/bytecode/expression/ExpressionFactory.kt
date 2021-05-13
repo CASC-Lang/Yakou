@@ -30,7 +30,8 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
             is Division -> generate(expression)
             is Conditional -> generate(expression)
             is IfExpression -> generate(expression)
-            is EmptyExpression -> {}
+            is EmptyExpression -> {
+            }
             else -> throw RuntimeException("Invalid syntax feature.\nDetail: $expression")
         }
 

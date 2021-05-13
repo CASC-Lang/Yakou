@@ -3,7 +3,8 @@ package io.github.chaosunity.casc.bytecode.expression
 import io.github.chaosunity.casc.parsing.node.expression.IfExpression
 import jdk.internal.org.objectweb.asm.Label
 import jdk.internal.org.objectweb.asm.MethodVisitor
-import jdk.internal.org.objectweb.asm.Opcodes.*
+import jdk.internal.org.objectweb.asm.Opcodes.GOTO
+import jdk.internal.org.objectweb.asm.Opcodes.IFNE
 
 class IfFactory(private val ef: ExpressionFactory, private val mv: MethodVisitor) {
     fun generate(ifExpression: IfExpression) {

@@ -1,13 +1,13 @@
 package io.github.chaosunity.casc.bytecode
 
 import io.github.chaosunity.casc.parsing.ClassDeclaration
-import io.github.chaosunity.casc.parsing.Constructor
 import jdk.internal.org.objectweb.asm.ClassWriter
-import jdk.internal.org.objectweb.asm.Opcodes.*
+import jdk.internal.org.objectweb.asm.Opcodes.ACC_PUBLIC
+import jdk.internal.org.objectweb.asm.Opcodes.ACC_SUPER
 
 class ClassFactory {
     companion object {
-        const val CLASS_VERSION = 60
+        const val CLASS_VERSION = 52
     }
 
     private val cw = ClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS)

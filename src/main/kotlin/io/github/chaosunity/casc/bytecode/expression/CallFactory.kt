@@ -36,7 +36,10 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
 
     fun generate(function: FunctionCall) {
         function.owner.accept(ef)
-        generateArguments(function, scope.getMethodCallSignature(function.owner.type, function.identifier, function.arguments))
+        generateArguments(
+            function,
+            scope.getMethodCallSignature(function.owner.type, function.identifier, function.arguments)
+        )
 
         val functionName = function.identifier
         val methodDescriptor = DescriptorFactory.getMethodDescriptor(function.signature)

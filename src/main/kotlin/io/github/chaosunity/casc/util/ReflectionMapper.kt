@@ -23,5 +23,11 @@ object ReflectionMapper {
     }
 
     private fun fromExecutable(executable: Executable): Pair<String, List<Parameter>> =
-        executable.name to executable.parameters.map { Parameter(TypeResolver.getTypeByName(it.type.canonicalName), it.name, null) }
+        executable.name to executable.parameters.map {
+            Parameter(
+                TypeResolver.getTypeByName(it.type.canonicalName),
+                it.name,
+                null
+            )
+        }
 }

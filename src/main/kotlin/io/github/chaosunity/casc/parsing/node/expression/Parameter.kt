@@ -2,7 +2,8 @@ package io.github.chaosunity.casc.parsing.node.expression
 
 import io.github.chaosunity.casc.parsing.type.Type
 
-data class Parameter(override val type: Type, val name: String, val defaultValue: Expression<*>?) : Expression<Parameter> {
+data class Parameter(override val type: Type, val name: String, val defaultValue: Expression<*>?) :
+    Expression<Parameter> {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || javaClass != other.javaClass) return false

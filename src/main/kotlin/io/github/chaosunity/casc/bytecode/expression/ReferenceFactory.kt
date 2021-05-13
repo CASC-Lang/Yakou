@@ -4,7 +4,8 @@ import io.github.chaosunity.casc.parsing.node.expression.FieldReference
 import io.github.chaosunity.casc.parsing.node.expression.LocalVariableReference
 import io.github.chaosunity.casc.parsing.scope.Scope
 import jdk.internal.org.objectweb.asm.MethodVisitor
-import jdk.internal.org.objectweb.asm.Opcodes.*
+import jdk.internal.org.objectweb.asm.Opcodes.ALOAD
+import jdk.internal.org.objectweb.asm.Opcodes.GETFIELD
 
 class ReferenceFactory(private val mv: MethodVisitor, private val scope: Scope) {
     fun generate(local: LocalVariableReference) {

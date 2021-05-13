@@ -1,8 +1,8 @@
 package io.github.chaosunity.casc.bytecode.statement
 
 import io.github.chaosunity.casc.bytecode.expression.ExpressionFactory
-import io.github.chaosunity.casc.parsing.node.expression.*
-import io.github.chaosunity.casc.parsing.node.expression.ArithmeticExpression.*
+import io.github.chaosunity.casc.parsing.node.expression.Expression
+import io.github.chaosunity.casc.parsing.node.expression.FunctionCall
 import io.github.chaosunity.casc.parsing.node.statement.*
 import io.github.chaosunity.casc.parsing.scope.Scope
 import jdk.internal.org.objectweb.asm.MethodVisitor

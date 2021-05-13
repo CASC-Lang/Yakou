@@ -6,7 +6,8 @@ import io.github.chaosunity.casc.parsing.node.statement.PrintStatement
 import io.github.chaosunity.casc.parsing.node.statement.PrintlnStatement
 import io.github.chaosunity.casc.parsing.type.ClassType
 import jdk.internal.org.objectweb.asm.MethodVisitor
-import jdk.internal.org.objectweb.asm.Opcodes.*
+import jdk.internal.org.objectweb.asm.Opcodes.GETSTATIC
+import jdk.internal.org.objectweb.asm.Opcodes.INVOKEVIRTUAL
 
 
 class PrintFactory(private val ef: ExpressionFactory, private val mv: MethodVisitor) {

@@ -22,13 +22,31 @@ class ForVisitor(scope: Scope) : CASCBaseVisitor<ForStatement<*>>() {
         return if (scope.isLocalVariableExists(variableName)) {
             val iteratorVariable = Assignment(variableName, startExpression)
 
-            RangedForStatement(iteratorVariable, startExpression, false, stopAt, endExpression, statement, variableName, scope)
+            RangedForStatement(
+                iteratorVariable,
+                startExpression,
+                false,
+                stopAt,
+                endExpression,
+                statement,
+                variableName,
+                scope
+            )
         } else {
             scope.addLocalVariable(LocalVariable(variableName, startExpression.type))
 
             val iteratorVariable = VariableDeclaration(variableName, startExpression)
 
-            RangedForStatement(iteratorVariable, startExpression, false, stopAt, endExpression, statement, variableName, scope)
+            RangedForStatement(
+                iteratorVariable,
+                startExpression,
+                false,
+                stopAt,
+                endExpression,
+                statement,
+                variableName,
+                scope
+            )
         }
     }
 }

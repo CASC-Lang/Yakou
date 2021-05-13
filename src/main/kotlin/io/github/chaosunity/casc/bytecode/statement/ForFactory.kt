@@ -3,14 +3,14 @@ package io.github.chaosunity.casc.bytecode.statement
 import io.github.chaosunity.casc.bytecode.expression.ExpressionFactory
 import io.github.chaosunity.casc.parsing.LogicalOp
 import io.github.chaosunity.casc.parsing.node.expression.Conditional
-import io.github.chaosunity.casc.parsing.node.expression.FieldReference
 import io.github.chaosunity.casc.parsing.node.expression.LocalVariableReference
 import io.github.chaosunity.casc.parsing.node.statement.RangedForStatement
 import io.github.chaosunity.casc.parsing.node.statement.StopAt
 import io.github.chaosunity.casc.parsing.scope.LocalVariable
 import jdk.internal.org.objectweb.asm.Label
 import jdk.internal.org.objectweb.asm.MethodVisitor
-import jdk.internal.org.objectweb.asm.Opcodes.*
+import jdk.internal.org.objectweb.asm.Opcodes.IFEQ
+import jdk.internal.org.objectweb.asm.Opcodes.IFNE
 
 class ForFactory(private val mv: MethodVisitor) {
     fun generate(rangedFor: RangedForStatement) {

@@ -6,13 +6,13 @@ compilationUnit                 : classDeclaration EOF;
 classDeclaration                : CLASS className '{' classBody '}';
 className                       : qualifiedName;
 classBody                       : (function | constructor | field)* ;
-field                           : name ':' type ;
+field                           : name COLON type ;
 constructor                     : constructorDeclaration block? ;
-constructorDeclaration          : 'ctor' '('(parameter (',' parameter)*)?')' ;
+constructorDeclaration          : CTOR '('(parameter (',' parameter)*)?')' ;
 function                        : functionDeclaration block ;
-functionDeclaration             : FUNC functionName '('(parameter (',' parameter)*)?')' (':' type)? ;
+functionDeclaration             : FUNC functionName '('(parameter (',' parameter)*)?')' (COLON type)? ;
 functionName                    : ID ;
-parameter                       : ID ':' type ('=' expression)? ;
+parameter                       : ID COLON type (EQUALS expression)? ;
 type                            : primitiveType
                                 | classType
                                 ;
@@ -54,10 +54,10 @@ returnStatement         : RETURN expression                                 #Ret
                         ;
 ifStatement             : IF ('(')? condition=expression (')')? trueStatement=statement (ELSE falseStatement=statement)?;
 forStatement            : FOR ('(')? forRangedExpression (')')? statement ;
-forRangedExpression     : iterator=varReference ':' startExpr=expression down=DOWN? range=(TO | UNTIL) endExpr=expression ;
+forRangedExpression     : iterator=varReference COLON startExpr=expression down=DOWN? range=(TO | UNTIL) endExpr=expression ;
 name                    : ID ;
 argument                : expression
-                        | name '=' expression ;
+                        | name EQUALS expression ;
 
 expression              : superCall=THIS '('argument? (',' argument)*')'                                      #superCall
                         | className '('argument? (',' argument)*')'                                             #constructorCall
@@ -72,13 +72,13 @@ expression              : superCall=THIS '('argument? (',' argument)*')'        
                         | expression cmp=NOT_EQ expression                                                      #conditionalExpression
                         | expression cmp=GREATER_EQ expression                                                  #conditionalExpression
                         | expression cmp=LESS_EQ expression                                                     #conditionalExpression
-                        | left=expression cmp=GREATER right=expression '?' trueExpression=expression ':' falseExpression=expression     #ifExpression
-                        | left=expression cmp=LESS right=expression '?' trueExpression=expression ':' falseExpression=expression        #ifExpression
-                        | left=expression cmp=EQ right=expression '?' trueExpression=expression ':' falseExpression=expression          #ifExpression
-                        | left=expression cmp=NOT_EQ right=expression '?' trueExpression=expression ':' falseExpression=expression      #ifExpression
-                        | left=expression cmp=GREATER_EQ right=expression '?' trueExpression=expression ':' falseExpression=expression  #ifExpression
-                        | left=expression cmp=LESS_EQ right=expression '?' trueExpression=expression ':' falseExpression=expression     #ifExpression
-                        | condition=expression '?' trueExpression=expression ':' falseExpression=expression     #ifExpression
+                        | left=expression cmp=GREATER right=expression QUETION_MK trueExpression=expression COLON falseExpression=expression        #ifExpression
+                        | left=expression cmp=LESS right=expression QUETION_MK trueExpression=expression COLON falseExpression=expression           #ifExpression
+                        | left=expression cmp=EQ right=expression QUETION_MK trueExpression=expression COLON falseExpression=expression             #ifExpression
+                        | left=expression cmp=NOT_EQ right=expression QUETION_MK trueExpression=expression COLON falseExpression=expression         #ifExpression
+                        | left=expression cmp=GREATER_EQ right=expression QUETION_MK trueExpression=expression COLON falseExpression=expression     #ifExpression
+                        | left=expression cmp=LESS_EQ right=expression QUETION_MK trueExpression=expression COLON falseExpression=expression        #ifExpression
+                        | condition=expression QUETION_MK trueExpression=expression COLON falseExpression=expression                                #ifExpression
                         | expression STAR expression                                                            #multiply               // The order of arithmetic expression are related to its actual operator precedence.
                         | expression SLASH expression                                                           #divide
                         | expression PLUS expression                                                            #add
@@ -106,6 +106,16 @@ DOWN            : 'down'                            ;
 TO              : 'to'                              ;
 UNTIL           : 'until'                           ;
 
+//ACCESS MODIFIERS
+PUB             : 'pub'                             ;
+PROT            : 'prot'                            ;
+INTL            : 'intl'                            ;
+PRIV            : 'priv'                            ;
+
+//VARIABLE MODIFIER
+MUT             : 'mut'                             ;
+// no immutable keyword
+
 PRINT           : 'print'                           ;
 PRINTLN         : 'println'                         ;
 
@@ -115,6 +125,8 @@ STAR            : '*'                               ;
 SLASH           : '/'                               ;
 EQUALS          : '='                               ;
 ASSIGN_EQ       : ':='                              ;
+QUETION_MK      : '?'                               ;
+COLON           : ':'                               ;
 
 GREATER         : '>'                               ;
 LESS            : '<'                               ;
