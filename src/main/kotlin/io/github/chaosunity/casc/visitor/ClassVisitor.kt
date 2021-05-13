@@ -20,13 +20,17 @@ class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
         scope = Scope(metadata)
 
         val fieldVisitor = FieldVisitor(scope)
+        val fieldDeclarationVisitor = FieldDeclarationVisitor(scope)
         val functionSignatureVisitor = FunctionSignatureVisitor(scope)
         val ctorCtx = ctx.findClassBody()?.findConstructor()
         val methodsCtx = ctx.findClassBody()?.findFunction()
         val fields = ctx.findClassBody()?.findField()?.map {
             it.accept(fieldVisitor)
-        }?.onEach(scope::addField) ?: listOf()
+        }?.onEach(scope::addField)?.toMutableList() ?: mutableListOf()
 
+        fields += ctx.findClassBody()?.findFieldDeclaration()?.map {
+            it.accept(fieldDeclarationVisitor)
+        }?.flatten()?.onEach(scope::addField) ?: listOf()
         ctorCtx?.map {
             it.findConstructorDeclaration()?.accept(functionSignatureVisitor)!!
         }?.forEach(scope::addSignature)

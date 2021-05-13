@@ -1,6 +1,14 @@
 class CASC {
     abc: int
 
+    priv mut :
+        b: int
+        ba: long
+    intl :
+        c: string
+    prot mut :
+        d: short
+
     ctor(num: int) {
         abc = num
     }

@@ -5,7 +5,7 @@ grammar CASC;
 compilationUnit                 : classDeclaration EOF;
 classDeclaration                : CLASS className '{' classBody '}';
 className                       : qualifiedName;
-classBody                       : (function | constructor | field)* ;
+classBody                       : (function | constructor | field | fieldDeclaration)* ;
 field                           : name COLON type ;
 constructor                     : constructorDeclaration block? ;
 constructorDeclaration          : CTOR '('(parameter (',' parameter)*)?')' ;
@@ -16,6 +16,10 @@ parameter                       : ID COLON type (EQUALS expression)? ;
 type                            : primitiveType
                                 | classType
                                 ;
+
+fieldDeclaration                : accessMods MUT? ':' field* ;
+
+accessMods      : (PROT | INTL | PRIV) ;
 
 primitiveType   :  'boolean' ('[' ']')*
                 |  'string'  ('[' ']')*
@@ -45,8 +49,8 @@ statement       : block
                 | expression
                 ;
 
-variableDeclaration     : name ASSIGN_EQ expression                              ;
-assignment              : name EQUALS expression                               ;
+variableDeclaration     : name ASSIGN_EQ expression                         ;
+assignment              : name EQUALS expression                            ;
 printStatement          : PRINT '('expression')'                            ;
 printlnStatement        : PRINTLN '('expression')'                          ;
 returnStatement         : RETURN expression                                 #ReturnWithValue

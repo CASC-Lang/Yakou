@@ -84,6 +84,18 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitType(ctx : CASCParser.TypeContext) : T
 	/**
+	 * Visit a parse tree produced by {@link CASCParser#fieldDeclaration}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitFieldDeclaration(ctx : CASCParser.FieldDeclarationContext) : T
+	/**
+	 * Visit a parse tree produced by {@link CASCParser#accessMods}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitAccessMods(ctx : CASCParser.AccessModsContext) : T
+	/**
 	 * Visit a parse tree produced by {@link CASCParser#primitiveType}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
