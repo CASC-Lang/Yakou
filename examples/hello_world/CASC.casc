@@ -1,7 +1,12 @@
 class CASC {
     abc: int
 
+    ctor(num: int) {
+        abc = num
+    }
+
     fn main(arg: string[]) {
+        a := CASC(1)
         b := Student(name="ChAoS".toLowerCase().toUpperCase())
     }
 }
