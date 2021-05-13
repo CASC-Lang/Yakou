@@ -13,21 +13,19 @@ import org.apache.commons.lang3.reflect.ConstructorUtils
 import org.apache.commons.lang3.reflect.MethodUtils
 
 class Scope(private val metadata: MetaData) {
-    val localVariables = mutableListOf<LocalVariable>()
+    val localVariables = linkedMapOf<String, LocalVariable>()
+    val fields = linkedMapOf<String, Field>()
     val functionSignatures = mutableListOf<FunctionSignature>()
+
     val className = metadata.className
     val classType = ClassType(className)
-    val classInternalName = classType.internalName
-    val superClassName = metadata.superClassName
-    val superClassInternalName = ClassType(superClassName).internalName
+    val superClassInternalName = ClassType(metadata.superClassName).internalName
 
     constructor(scope: Scope) : this(scope.metadata) {
         localVariables += scope.localVariables
+        fields += scope.fields
         functionSignatures += scope.functionSignatures
     }
-
-    operator fun plusAssign(signature: FunctionSignature) =
-        addSignature(signature)
 
     fun addSignature(signature: FunctionSignature) {
         if (isParameterLessSignatureExists(signature.name)) throw RuntimeException("Function '${signature.name}' already exists.")
@@ -75,17 +73,26 @@ class Scope(private val metadata: MetaData) {
         return getMethodCallSignature(methodName, arguments)
     }
 
+    fun addField(field: Field) {
+        fields += field.name to field
+    }
+
+    fun getField(fieldName: String): Field =
+        fields[fieldName] ?: throw RuntimeException("Field '$fieldName' does not exist.")
+
+    fun isFieldExists(fieldName: String): Boolean =
+        fields.containsKey(fieldName)
+
     fun addLocalVariable(variable: LocalVariable) {
-        localVariables += variable
+        localVariables += variable.name to variable
     }
 
     fun getLocalVariable(variableName: String): LocalVariable =
-        localVariables.find { it.name == variableName }
-            ?: throw RuntimeException("Variable '$variableName' does not exist.")
+        localVariables[variableName] ?: throw RuntimeException("Variable '$variableName' does not exist.")
 
     fun isLocalVariableExists(variableName: String): Boolean =
-        localVariables.any { it.name == variableName }
+        localVariables.containsKey(variableName)
 
     fun getLocalVariableIndex(variableName: String): Int =
-        localVariables.indexOf(getLocalVariable(variableName))
+        localVariables.keys.indexOf(variableName)
 }

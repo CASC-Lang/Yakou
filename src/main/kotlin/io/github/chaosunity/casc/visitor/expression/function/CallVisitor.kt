@@ -3,6 +3,7 @@ package io.github.chaosunity.casc.visitor.expression.function
 import io.github.chaosunity.casc.CASCBaseVisitor
 import io.github.chaosunity.casc.CASCParser
 import io.github.chaosunity.casc.parsing.node.expression.*
+import io.github.chaosunity.casc.parsing.scope.LocalVariable
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.visitor.expression.ExpressionVisitor
 
@@ -25,8 +26,9 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
         }
 
         val signature = scope.getMethodCallSignature(functionName, arguments)
+        val thisVariable = LocalVariable("self", scope.classType)
 
-        return FunctionCall(signature, arguments, VariableReference(scope.classType, "this"))
+        return FunctionCall(signature, arguments, LocalVariableReference(thisVariable))
     }
 
     override fun visitConstructorCall(ctx: CASCParser.ConstructorCallContext): Call<*> {

@@ -1,5 +1,7 @@
 class CASC {
+    abc: int
+
     fn main(arg: string[]) {
-        b := Student(name="ChAoS".toLowerCase())
+        b := Student(name="ChAoS".toLowerCase().toUpperCase())
     }
 }

@@ -7,7 +7,7 @@ import jdk.internal.org.objectweb.asm.MethodVisitor
 
 
 class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
-    private val vrf = VariableReferenceFactory(mv, scope)
+    private val rf = ReferenceFactory(mv, scope)
     private val vf = ValueFactory(mv)
     private val pf = ParameterFactory(mv, scope)
     private val iff = IfFactory(this, mv)
@@ -17,7 +17,8 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
 
     fun generate(expression: Expression<*>) =
         when (expression) {
-            is VariableReference -> generate(expression)
+            is FieldReference -> generate(expression)
+            is LocalVariableReference -> generate(expression)
             is Parameter -> generate(expression)
             is Value -> generate(expression)
             is ConstructorCall -> generate(expression)
@@ -33,8 +34,11 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
             else -> throw RuntimeException("Invalid syntax feature.\nDetail: $expression")
         }
 
-    fun generate(variableReference: VariableReference) =
-        vrf.generate(variableReference)
+    fun generate(fieldReference: FieldReference) =
+        rf.generate(fieldReference)
+
+    fun generate(variableReference: LocalVariableReference) =
+        rf.generate(variableReference)
 
     fun generate(parameter: Parameter) =
         pf.generate(parameter)

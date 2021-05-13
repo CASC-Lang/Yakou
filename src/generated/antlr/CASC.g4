@@ -5,7 +5,8 @@ grammar CASC;
 compilationUnit                 : classDeclaration EOF;
 classDeclaration                : CLASS className '{' classBody '}';
 className                       : qualifiedName;
-classBody                       : (function | constructor)* ;
+classBody                       : (function | constructor | field)* ;
+field                           : name ':' type ;
 constructor                     : constructorDeclaration block? ;
 constructorDeclaration          : ('ctor') '('(parameter (',' parameter)*)?')' ;
 function                        : functionDeclaration block ;
@@ -35,6 +36,7 @@ block           : '{' statement* '}' ;
 
 statement       : block
                 | variableDeclaration
+                | assignment
                 | printStatement
                 | printlnStatement
                 | forStatement
@@ -43,9 +45,10 @@ statement       : block
                 | expression
                 ;
 
-variableDeclaration     : name ':=' expression                           ;
-printStatement          : PRINT '('expression')'                         ;
-printlnStatement        : PRINTLN '('expression')'                       ;
+variableDeclaration     : name ':=' expression                              ;
+assignment              : name '=' expression                               ;
+printStatement          : PRINT '('expression')'                            ;
+printlnStatement        : PRINTLN '('expression')'                          ;
 returnStatement         : RETURN expression                                 #ReturnWithValue
                         | RETURN                                            #ReturnVoid
                         ;

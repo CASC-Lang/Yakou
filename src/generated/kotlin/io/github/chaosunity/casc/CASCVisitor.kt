@@ -36,6 +36,12 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitClassBody(ctx : CASCParser.ClassBodyContext) : T
 	/**
+	 * Visit a parse tree produced by {@link CASCParser#field}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitField(ctx : CASCParser.FieldContext) : T
+	/**
 	 * Visit a parse tree produced by {@link CASCParser#constructor}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -113,6 +119,12 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	fun visitVariableDeclaration(ctx : CASCParser.VariableDeclarationContext) : T
+	/**
+	 * Visit a parse tree produced by {@link CASCParser#assignment}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitAssignment(ctx : CASCParser.AssignmentContext) : T
 	/**
 	 * Visit a parse tree produced by {@link CASCParser#printStatement}.
 	 * @param ctx the parse tree

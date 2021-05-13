@@ -1,5 +1,6 @@
 package io.github.chaosunity.casc.parsing.scope
 
 import io.github.chaosunity.casc.parsing.type.Type
+import io.github.chaosunity.casc.parsing.type.Variable
 
-data class LocalVariable(val name: String, val type: Type)
+data class LocalVariable(override val name: String, override val type: Type) : Variable

@@ -16,7 +16,7 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
     private val iff = IfFactory(this, ef, mv)
     private val ff = ForFactory(mv)
     private val bf = BlockFactory(mv)
-    private val af = AssignmentFactory(mv, scope)
+    private val af = AssignmentFactory(mv, ef, scope)
 
     fun generate(expression: Statement<*>) =
         when (expression) {

@@ -14,6 +14,7 @@ class StatementVisitor(scope: Scope) : CASCBaseVisitor<Statement<*>>() {
     private val rv = ReturnVisitor(ev)
     private val bv = BlockVisitor(scope)
     private val iv = IfStatementVisitor(this, ev)
+    private val av = AssignmentVisitor(ev)
 
     override fun visitPrintStatement(ctx: CASCParser.PrintStatementContext): Statement<*> =
         pv.visitPrintStatement(ctx)
@@ -71,6 +72,9 @@ class StatementVisitor(scope: Scope) : CASCBaseVisitor<Statement<*>>() {
 
     override fun visitIfExpression(ctx: CASCParser.IfExpressionContext): Expression<*> =
         ev.visitIfExpression(ctx)
+
+    override fun visitAssignment(ctx: CASCParser.AssignmentContext): Statement<*> =
+        av.visitAssignment(ctx)
 
     override fun visitNegativeExpression(ctx: CASCParser.NegativeExpressionContext): Expression<*> =
         ev.visitNegativeExpression(ctx)

@@ -19,9 +19,13 @@ class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
 
         scope = Scope(metadata)
 
+        val fieldVisitor = FieldVisitor(scope)
         val functionSignatureVisitor = FunctionSignatureVisitor(scope)
         val ctorCtx = ctx.findClassBody()?.findConstructor()
         val methodsCtx = ctx.findClassBody()?.findFunction()
+        val fields = ctx.findClassBody()?.findField()?.map {
+            it.accept(fieldVisitor)
+        }?.onEach(scope::addField) ?: listOf()
 
         ctorCtx?.map {
             it.findConstructorDeclaration()?.accept(functionSignatureVisitor)!!
@@ -51,7 +55,7 @@ class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
             methods += getDefaultConstructor()
         }
 
-        return ClassDeclaration(name, methods)
+        return ClassDeclaration(name, methods, fields)
     }
 
     private fun getDefaultConstructor(): Constructor =
