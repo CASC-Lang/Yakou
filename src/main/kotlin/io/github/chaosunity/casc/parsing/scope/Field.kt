@@ -1,6 +1,6 @@
 package io.github.chaosunity.casc.parsing.scope
 
-import io.github.chaosunity.casc.bytecode.expression.FieldFactory
+import io.github.chaosunity.casc.bytecode.FieldFactory
 import io.github.chaosunity.casc.parsing.type.Type
 import io.github.chaosunity.casc.parsing.type.Variable
 
