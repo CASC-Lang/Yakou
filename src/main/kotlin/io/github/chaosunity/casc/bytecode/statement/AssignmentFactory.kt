@@ -27,6 +27,9 @@ class AssignmentFactory(private val mv: MethodVisitor, private val ef: Expressio
         val field = scope.getField(variableName)
         val descriptor = field.type.descriptor
 
+        if (field.immutable)
+            throw RuntimeException("Cannot assign value to immutable field '$variableName'.")
+
         mv.visitVarInsn(Opcodes.ALOAD, 0)
         expression.accept(ef)
         mv.visitFieldInsn(Opcodes.PUTFIELD, field.ownerType.internalName, field.name, descriptor)
