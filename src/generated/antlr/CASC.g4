@@ -49,7 +49,7 @@ statement       : block
                 | expression
                 ;
 
-variableDeclaration     : name ASSIGN_EQ expression                         ;
+variableDeclaration     : MUT? name ASSIGN_EQ expression                    ;
 assignment              : name EQUALS expression                            ;
 printStatement          : PRINT '('expression')'                            ;
 printlnStatement        : PRINTLN '('expression')'                          ;
@@ -63,11 +63,11 @@ name                    : ID ;
 argument                : expression
                         | name EQUALS expression ;
 
-expression              : superCall=THIS '('argument? (',' argument)*')'                                      #superCall
+expression              : superCall=THIS '('argument? (',' argument)*')'                                        #superCall
                         | className '('argument? (',' argument)*')'                                             #constructorCall
                         | owner=expression '.' functionName '('argument? (',' argument)*')'                     #functionCall
                         | functionName '('argument? (',' argument)*')'                                          #functionCall
-                        | NEG=MINUS expression                                                       #negativeExpression
+                        | NEG=MINUS expression                                                                  #negativeExpression
                         | '(' expression ')'                                                                    #wrappedExpression
                         | varReference                                                                          #varRef
                         | expression cmp=GREATER expression                                                     #conditionalExpression

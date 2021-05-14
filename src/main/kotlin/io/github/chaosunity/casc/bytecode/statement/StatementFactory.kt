@@ -62,6 +62,6 @@ class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) 
         ff.generate(rangedFor)
 
 
-    fun generate(assignment: Assignment) =
-        af.generate(assignment)
+    fun generate(assignment: Assignment, initialAssignment: Boolean = false) =
+        af.generate(assignment, initialAssignment)
 }

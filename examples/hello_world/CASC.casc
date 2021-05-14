@@ -16,5 +16,7 @@ class CASC {
     fn main(arg: string[]) {
         a := CASC(1)
         b := Student(name="ChAoS".toLowerCase().toUpperCase())
+        mut c := 1
+        c = 2
     }
 }

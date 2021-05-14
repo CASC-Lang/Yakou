@@ -10,10 +10,11 @@ import io.github.chaosunity.casc.visitor.expression.ExpressionVisitor
 class VariableDeclarationVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
     CASCBaseVisitor<VariableDeclaration>() {
     override fun visitVariableDeclaration(ctx: CASCParser.VariableDeclarationContext): VariableDeclaration {
+        val immutable = ctx.MUT() == null
         val variableName = ctx.findName()!!.text
         val expression = ctx.findExpression()!!.accept(ev)
 
-        scope.addLocalVariable(LocalVariable(variableName, expression.type))
+        scope.addLocalVariable(LocalVariable(variableName, expression.type, immutable))
 
         return VariableDeclaration(variableName, expression)
     }

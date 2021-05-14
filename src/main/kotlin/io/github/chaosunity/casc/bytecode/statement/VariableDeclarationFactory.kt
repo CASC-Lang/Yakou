@@ -1,6 +1,7 @@
 package io.github.chaosunity.casc.bytecode.statement
 
 import io.github.chaosunity.casc.bytecode.expression.ExpressionFactory
+import io.github.chaosunity.casc.parsing.Immutable
 import io.github.chaosunity.casc.parsing.node.statement.Assignment
 import io.github.chaosunity.casc.parsing.node.statement.VariableDeclaration
 
@@ -12,6 +13,6 @@ class VariableDeclarationFactory(private val sf: StatementFactory, private val e
 
         val assignment = Assignment(variableDeclaration.variableName, expression)
 
-        assignment.accept(sf)
+        sf.generate(assignment, true) // Bypass the limit of assigment
     }
 }
