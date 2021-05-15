@@ -12,11 +12,14 @@ class Scope(private val metadata: MetaData) {
     val fields = linkedMapOf<String, Field>()
     val functionSignatures = mutableListOf<FunctionSignature>()
 
+    var callingScope = CallingScope.STATIC
+
     val className = metadata.className
     val classType = ClassType(className)
     val superClassInternalName = ClassType(metadata.superClassName).internalName
 
     constructor(scope: Scope) : this(scope.metadata) {
+        callingScope = scope.callingScope
         localVariables += scope.localVariables
         fields += scope.fields
         functionSignatures += scope.functionSignatures

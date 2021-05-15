@@ -2,7 +2,6 @@ package io.github.chaosunity.casc.bytecode
 
 import io.github.chaosunity.casc.parsing.ClassDeclaration
 import jdk.internal.org.objectweb.asm.ClassWriter
-import jdk.internal.org.objectweb.asm.Opcodes.ACC_PUBLIC
 import jdk.internal.org.objectweb.asm.Opcodes.ACC_SUPER
 
 class ClassFactory {
@@ -19,7 +18,14 @@ class ClassFactory {
         val mf = MethodFactory(cw)
         val ff = FieldFactory(cw)
 
-        cw.visit(CLASS_VERSION, ACC_PUBLIC + ACC_SUPER, className, null, "java/lang/Object", null)
+        cw.visit(
+            CLASS_VERSION,
+            classDeclaration.accessModifier.accessOpcode + ACC_SUPER,
+            className,
+            null,
+            "java/lang/Object",
+            null
+        )
 
         fields.forEach(ff::generate)
         methods.forEach(mf::generate)

@@ -20,11 +20,10 @@ class MethodFactory(private val cw: ClassWriter) {
         }
 
         val name = function.name
-        val isMain = name == "main" || name == "主函式"
         val descriptor = DescriptorFactory.getMethodDescriptor(function)
         val block = function.rootStatement as Block
         val scope = block.scope
-        val access = ACC_PUBLIC + if (isMain) ACC_STATIC else 0
+        val access = function.accessModifier.accessOpcode + if (function.static) ACC_STATIC else 0
         val mv = cw.visitMethod(access, name, descriptor, null, null)
 
         mv.visitCode()
@@ -41,7 +40,7 @@ class MethodFactory(private val cw: ClassWriter) {
     fun generate(constructor: Constructor) {
         val block = constructor.rootStatement as Block
         val scope = block.scope
-        val access = ACC_PUBLIC
+        val access = constructor.accessModifier.accessOpcode
         val description = DescriptorFactory.getMethodDescriptor(constructor)
         val mv = cw.visitMethod(access, "<init>", description, null, null)
 

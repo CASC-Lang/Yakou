@@ -3,23 +3,24 @@ grammar CASC;
 
 //RULES
 compilationUnit                 : classDeclaration EOF;
-classDeclaration                : CLASS className '{' classBody '}';
+classDeclaration                : outerAccessMods? CLASS className '{' classBody '}';
 className                       : qualifiedName;
 classBody                       : (function | constructor | field | fieldDeclaration)* ;
 field                           : name COLON type ;
 constructor                     : constructorDeclaration block? ;
-constructorDeclaration          : CTOR '('(parameter (',' parameter)*)?')' ;
+constructorDeclaration          : innerAccessMods? CTOR '('(parameter (',' parameter)*)?')' ;
 function                        : functionDeclaration block ;
-functionDeclaration             : FUNC functionName '('(parameter (',' parameter)*)?')' (COLON type)? ;
+functionDeclaration             : innerAccessMods? COMP? FUNC functionName '('(parameter (',' parameter)*)?')' (COLON type)? ;
 functionName                    : ID ;
 parameter                       : ID COLON type (EQUALS expression)? ;
 type                            : primitiveType
                                 | classType
                                 ;
 
-fieldDeclaration                : accessMods MUT? ':' field* ;
+fieldDeclaration                : innerAccessMods COMP? MUT? ':' field* ;
 
-accessMods      : (PROT | INTL | PRIV) ;
+outerAccessMods                 : (PUB | INTL | PRIV)               ;
+innerAccessMods                 : (PUB | PROT | INTL | PRIV)        ;
 
 primitiveType   :  'boolean' ('[' ']')*
                 |  'string'  ('[' ']')*
@@ -63,7 +64,7 @@ name                    : ID ;
 argument                : expression
                         | name EQUALS expression ;
 
-expression              : superCall=THIS '('argument? (',' argument)*')'                                        #superCall
+expression              : superCall=SELF '('argument? (',' argument)*')'                                        #superCall
                         | className '('argument? (',' argument)*')'                                             #constructorCall
                         | owner=expression '.' functionName '('argument? (',' argument)*')'                     #functionCall
                         | functionName '('argument? (',' argument)*')'                                          #functionCall
@@ -100,8 +101,8 @@ fragment UNICODE  :  '\u0080'..'\uFFFF'             ;
 CLASS           : 'class'                           ;
 FUNC            : 'fn'                              ;
 CTOR            : 'ctor'                            ;
-THIS            : 'this'                            ;
-VARIABLE        : 'var'                             ;
+SELF            : 'self'                            ;
+COMP            : 'comp'                            ;
 IF              : 'if'                              ;
 ELSE            : 'else'                            ;
 RETURN          : 'return'                          ;

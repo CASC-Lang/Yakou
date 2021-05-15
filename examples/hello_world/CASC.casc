@@ -1,4 +1,4 @@
-class CASC {
+priv class CASC {
     abc: int
 
     priv mut :
@@ -6,14 +6,14 @@ class CASC {
         ba: long
     intl :
         c: string
-    prot mut :
+    prot comp mut :
         d: short
 
-    ctor(num: int) {
+    priv ctor(num: int) {
         abc = num
     }
 
-    fn main(arg: string[]) {
+    comp fn main(arg: string[]) {
         a := CASC(1)
         b := Student(name="ChAoS".toLowerCase().toUpperCase())
         mut c := 1

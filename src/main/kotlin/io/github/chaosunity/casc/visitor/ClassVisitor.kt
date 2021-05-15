@@ -6,6 +6,7 @@ import io.github.chaosunity.casc.parsing.ClassDeclaration
 import io.github.chaosunity.casc.parsing.Constructor
 import io.github.chaosunity.casc.parsing.MetaData
 import io.github.chaosunity.casc.parsing.node.statement.Block
+import io.github.chaosunity.casc.parsing.scope.AccessModifier
 import io.github.chaosunity.casc.parsing.scope.FunctionSignature
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.parsing.type.BuiltInType
@@ -14,6 +15,7 @@ class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
     private lateinit var scope: Scope
 
     override fun visitClassDeclaration(ctx: CASCParser.ClassDeclarationContext): ClassDeclaration {
+        val accessModifier = AccessModifier.getModifier(ctx.findOuterAccessMods()?.text)
         val name = ctx.findClassName()?.text!!
         val metadata = MetaData(name, "java.lang.Object")
 
@@ -59,9 +61,9 @@ class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
             methods += getDefaultConstructor()
         }
 
-        return ClassDeclaration(name, methods, fields)
+        return ClassDeclaration(name, methods, fields, accessModifier)
     }
 
     private fun getDefaultConstructor(): Constructor =
-        Constructor(scope.getMethodCallSignatureWithoutParameters(scope.className), Block(scope))
+        Constructor(scope.getMethodCallSignatureWithoutParameters(scope.className), Block(scope), AccessModifier.PUB)
 }

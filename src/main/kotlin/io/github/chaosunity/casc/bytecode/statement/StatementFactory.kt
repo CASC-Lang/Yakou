@@ -8,9 +8,9 @@ import io.github.chaosunity.casc.parsing.scope.Scope
 import jdk.internal.org.objectweb.asm.MethodVisitor
 
 
-class StatementFactory(private val mv: MethodVisitor, private val scope: Scope) {
+class StatementFactory(mv: MethodVisitor, scope: Scope) {
     private val ef = ExpressionFactory(mv, scope)
-    private val vdf = VariableDeclarationFactory(this, ef)
+    private val vdf = VariableDeclarationFactory(this, ef, scope)
     private val rf = ReturnFactory(ef, mv)
     private val pf = PrintFactory(ef, mv)
     private val iff = IfFactory(this, ef, mv)

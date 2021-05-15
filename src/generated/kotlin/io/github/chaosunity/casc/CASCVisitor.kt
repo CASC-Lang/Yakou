@@ -90,11 +90,17 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitFieldDeclaration(ctx : CASCParser.FieldDeclarationContext) : T
 	/**
-	 * Visit a parse tree produced by {@link CASCParser#accessMods}.
+	 * Visit a parse tree produced by {@link CASCParser#outerAccessMods}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	fun visitAccessMods(ctx : CASCParser.AccessModsContext) : T
+	fun visitOuterAccessMods(ctx : CASCParser.OuterAccessModsContext) : T
+	/**
+	 * Visit a parse tree produced by {@link CASCParser#innerAccessMods}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitInnerAccessMods(ctx : CASCParser.InnerAccessModsContext) : T
 	/**
 	 * Visit a parse tree produced by {@link CASCParser#primitiveType}.
 	 * @param ctx the parse tree

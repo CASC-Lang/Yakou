@@ -2,6 +2,7 @@ package io.github.chaosunity.casc.bytecode.statement
 
 import io.github.chaosunity.casc.bytecode.expression.ExpressionFactory
 import io.github.chaosunity.casc.parsing.node.statement.Assignment
+import io.github.chaosunity.casc.parsing.scope.CallingScope
 import io.github.chaosunity.casc.parsing.scope.Scope
 import jdk.internal.org.objectweb.asm.MethodVisitor
 import jdk.internal.org.objectweb.asm.Opcodes
@@ -27,7 +28,7 @@ class AssignmentFactory(private val mv: MethodVisitor, private val ef: Expressio
         val field = scope.getField(variableName)
         val descriptor = field.type.descriptor
 
-        if (field.immutable)
+        if (!initialAssignment && field.immutable && assignment.callingScope != CallingScope.CONSTRUCTOR)
             throw RuntimeException("Cannot assign value to immutable field '$variableName'.")
 
         mv.visitVarInsn(Opcodes.ALOAD, 0)

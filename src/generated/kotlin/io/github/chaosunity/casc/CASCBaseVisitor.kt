@@ -109,7 +109,14 @@ open class CASCBaseVisitor<T> : AbstractParseTreeVisitor<T>(), CASCVisitor<T> {
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	override fun visitAccessMods(ctx : CASCParser.AccessModsContext ) : T { return this!!.visitChildren(ctx)!! }
+	override fun visitOuterAccessMods(ctx : CASCParser.OuterAccessModsContext ) : T { return this!!.visitChildren(ctx)!! }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	override fun visitInnerAccessMods(ctx : CASCParser.InnerAccessModsContext ) : T { return this!!.visitChildren(ctx)!! }
 	/**
 	 * {@inheritDoc}
 	 *

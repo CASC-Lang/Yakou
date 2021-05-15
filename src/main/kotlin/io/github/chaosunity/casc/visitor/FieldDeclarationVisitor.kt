@@ -9,16 +9,18 @@ import io.github.chaosunity.casc.util.TypeResolver
 
 class FieldDeclarationVisitor(private val scope: Scope) : CASCBaseVisitor<List<Field>>() {
     override fun visitFieldDeclaration(ctx: CASCParser.FieldDeclarationContext): List<Field> {
-        val accessModifier = AccessModifier.valueOf(ctx.findAccessMods()!!.text.toUpperCase())
+        val accessModifier = AccessModifier.valueOf(ctx.findInnerAccessMods()!!.text.toUpperCase())
+        val static = ctx.COMP() != null
         val finalized = ctx.MUT() == null
 
         return ctx.findField().map {
             Field(
-                accessModifier,
                 finalized,
                 scope.classType,
                 it.findName()!!.text,
-                TypeResolver.getFromTypeContext(it.findType())
+                TypeResolver.getFromTypeContext(it.findType()),
+                accessModifier,
+                static
             )
         }
     }
