@@ -2,7 +2,7 @@ priv class CASC {
     abc: int
 
     priv mut :
-        b: int
+        pub b: int
         ba: long
     intl :
         c: string
