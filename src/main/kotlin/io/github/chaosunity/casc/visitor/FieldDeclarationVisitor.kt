@@ -9,19 +9,23 @@ import io.github.chaosunity.casc.util.TypeResolver
 
 class FieldDeclarationVisitor(private val scope: Scope) : CASCBaseVisitor<List<Field>>() {
     override fun visitFieldDeclaration(ctx: CASCParser.FieldDeclarationContext): List<Field> {
-        val accessModifier = AccessModifier.valueOf(ctx.findInnerAccessMods()!!.text.toUpperCase())
+        val accessModifier = AccessModifier.getModifier(ctx.findInnerAccessMods()!!.text)
         val static = ctx.COMP() != null
         val finalized = ctx.MUT() == null
 
         return ctx.findField().map {
-            Field(
-                finalized,
-                scope.classType,
-                it.findName()!!.text,
-                TypeResolver.getFromTypeContext(it.findType()),
-                accessModifier,
-                static
-            )
+            if ((ctx.findInnerAccessMods() != null && it.findInnerAccessMods() != null && accessModifier != AccessModifier.getModifier(it.findInnerAccessMods()!!.text))) {
+                throw RuntimeException("Field '${it.findName()?.text}' has different access modifier to its parent declaration.")
+            } else {
+                Field(
+                    finalized,
+                    scope.classType,
+                    it.findName()!!.text,
+                    TypeResolver.getFromTypeContext(it.findType()),
+                    accessModifier,
+                    static
+                )
+            }
         }
     }
 }

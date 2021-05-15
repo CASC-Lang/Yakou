@@ -6,7 +6,7 @@ compilationUnit                 : classDeclaration EOF;
 classDeclaration                : outerAccessMods? CLASS className '{' classBody '}';
 className                       : qualifiedName;
 classBody                       : (function | constructor | field | fieldDeclaration)* ;
-field                           : name COLON type ;
+field                           : innerAccessMods? COMP? MUT? name COLON type ;
 constructor                     : constructorDeclaration block? ;
 constructorDeclaration          : innerAccessMods? CTOR '('(parameter (',' parameter)*)?')' ;
 function                        : functionDeclaration block ;
