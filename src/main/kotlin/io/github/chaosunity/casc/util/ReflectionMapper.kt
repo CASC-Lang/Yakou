@@ -11,9 +11,9 @@ import java.lang.reflect.Method
 object ReflectionMapper {
     fun fromMethod(method: Method): FunctionSignature {
         val (name, parameters) = fromExecutable(method)
-        val returnType = method.returnType
+        val returnTypeClass = method.returnType
 
-        return FunctionSignature(name, parameters, ClassType(returnType.canonicalName))
+        return FunctionSignature(name, parameters, TypeResolver.getTypeByName(returnTypeClass.typeName))
     }
 
     fun fromConstructor(constructor: Constructor<*>): FunctionSignature {

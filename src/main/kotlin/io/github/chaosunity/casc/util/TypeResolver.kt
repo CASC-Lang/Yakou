@@ -20,6 +20,10 @@ object TypeResolver {
 
         if (builtInType != null) return builtInType
 
+        val obfuscatedType = obfuscateBuiltInType(typeName)
+
+        if (obfuscatedType != null) return obfuscatedType
+
         return ClassType(typeName)
     }
 
@@ -52,4 +56,7 @@ object TypeResolver {
 
     fun getBuiltInType(typeName: String): BuiltInType? =
         BuiltInType.values().find { it.typeName == typeName }
+
+    fun obfuscateBuiltInType(canonicalName: String): BuiltInType? =
+        BuiltInType.values().find { it.originalName == canonicalName }
 }

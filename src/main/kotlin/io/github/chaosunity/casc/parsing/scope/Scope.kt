@@ -55,9 +55,9 @@ class Scope(private val metadata: MetaData) {
 
             return ClassPathScope().getConstructorSignature(className, argumentsType)
                 ?: throw RuntimeException(
-                    "Class constructor '$className' with type arguments '${
+                    "Class constructor '$className' with type arguments '(${
                         argumentsType.map(Type::internalName).joinToString(", ")
-                    }' does not exist."
+                    })' does not exist."
                 )
         }
 
@@ -69,7 +69,14 @@ class Scope(private val metadata: MetaData) {
             val argumentsType = arguments.map(Argument::type)
 
             return ClassPathScope().getMethodSignature(owner, methodName, argumentsType)
-                ?: throw RuntimeException("Class '$className' with type arguments '${argumentsType.joinToString(", ")}' does not exist.")
+                ?: throw RuntimeException(
+                    "Function '${
+                        owner.typeName.replace(
+                            ".",
+                            "::"
+                        )
+                    }.$methodName' with type arguments '(${argumentsType.joinToString(", ")})' does not exist."
+                )
         }
 
         return getMethodCallSignature(methodName, arguments)

@@ -1,5 +1,5 @@
 priv class CASC {
-    mut abc: int
+    mut abc: i32 = 1
 
     priv mut :
         b: i32
@@ -14,10 +14,9 @@ priv class CASC {
     }
 
     comp fn main(arg: str[]) {
-        a := CASC(1)
-        b := Student(name="ChAoS".toLowerCase().toUpperCase())
-        mut c := 1
-        c = 2
-        d := null
+        mut d := null
+        d = java::lang::Integer(10)
+        e := d.intValue()
+        println(e)
     }
 }

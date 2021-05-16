@@ -32,7 +32,7 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
     }
 
     override fun visitConstructorCall(ctx: CASCParser.ConstructorCallContext): Call<*> {
-        val className = ctx.findClassName()!!.text
+        val className = ctx.findClassName()!!.text.replace("::", ".")
         val arguments = collectArguments(ctx.findArgument())
 
         return ConstructorCall(className, arguments)
