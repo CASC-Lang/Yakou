@@ -22,16 +22,16 @@ fieldDeclaration                : innerAccessMods COMP? MUT? ':' field* ;
 outerAccessMods                 : (PUB | INTL | PRIV)               ;
 innerAccessMods                 : (PUB | PROT | INTL | PRIV)        ;
 
-primitiveType   :  'boolean' ('[' ']')*
-                |  'string'  ('[' ']')*
+primitiveType   :  'bool' ('[' ']')*
+                |  'str'  ('[' ']')*
                 |  'char'    ('[' ']')*
-                |  'byte'    ('[' ']')*
-                |  'short'   ('[' ']')*
-                |  'int'     ('[' ']')*
-                |  'long'    ('[' ']')*
-                |  'float'   ('[' ']')*
-                |  'double'  ('[' ']')*
-                |  'void'    ('[' ']')*
+                |  'i8'    ('[' ']')*
+                |  'i16'   ('[' ']')*
+                |  'i32'     ('[' ']')*
+                |  'i64'    ('[' ']')*
+                |  'f32'   ('[' ']')*
+                |  'f64'  ('[' ']')*
+                |  'unit'    ('[' ']')*
                 ;
 
 classType       : qualifiedName ('[' ']')* ;
@@ -88,6 +88,7 @@ expression              : superCall=SELF '('argument? (',' argument)*')'        
                         | expression SLASH expression                                                           #divide
                         | expression PLUS expression                                                            #add
                         | expression MINUS expression                                                           #subtract
+                        | 'null'                                                                                #value
                         | (NUMBER | BOOL | STRING)                                                              #value
                         ;
 

@@ -24,6 +24,8 @@ object TypeResolver {
     }
 
     fun getTypeByValue(value: String): Type {
+        if (value == "null") return BuiltInType.NULL
+
         if (value.isEmpty()) return BuiltInType.VOID
 
         if (NumberUtils.isCreatable(value)) {
@@ -37,13 +39,14 @@ object TypeResolver {
         return BuiltInType.STRING
     }
 
-    fun getValueByString(value: String, type: Type): Any =
+    fun getValueByString(value: String, type: Type): Any? =
         when {
             type.isInt() -> value.toInt()
             type.isFloat() -> value.toFloat()
             type.isDouble() -> value.toDouble()
             type.isBool() -> value.toBoolean()
             type.isString() -> value.removeSurrounding("\"", "\"")
+            type == BuiltInType.NULL -> null
             else -> throw RuntimeException("Object is not implemented yet.")
         }
 

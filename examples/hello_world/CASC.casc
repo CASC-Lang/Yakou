@@ -2,25 +2,22 @@ priv class CASC {
     mut abc: int
 
     priv mut :
-        b: int
-        ba: long
+        b: i32
+        ba: i64
     intl :
-        c: string
+        c: str
     prot comp mut :
-        d: short
+        d: i16
 
-    priv ctor(num: int) {
+    priv ctor(num: i32) {
         abc = num
     }
 
-    comp fn main(arg: string[]) {
+    comp fn main(arg: str[]) {
         a := CASC(1)
         b := Student(name="ChAoS".toLowerCase().toUpperCase())
         mut c := 1
         c = 2
-    }
-
-    comp fn test() {
-        abc = 1
+        d := null
     }
 }
