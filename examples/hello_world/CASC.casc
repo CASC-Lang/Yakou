@@ -1,8 +1,8 @@
 priv class CASC {
-    abc: int
+    mut abc: int
 
     priv mut :
-        pub b: int
+        b: int
         ba: long
     intl :
         c: string
@@ -18,5 +18,9 @@ priv class CASC {
         b := Student(name="ChAoS".toLowerCase().toUpperCase())
         mut c := 1
         c = 2
+    }
+
+    comp fn test() {
+        abc = 1
     }
 }

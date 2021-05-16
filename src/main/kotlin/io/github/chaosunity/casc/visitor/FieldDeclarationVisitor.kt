@@ -18,7 +18,7 @@ class FieldDeclarationVisitor(private val scope: Scope) : CASCBaseVisitor<List<F
                 throw RuntimeException("Field '${it.findName()?.text}' has different access modifier to its parent declaration.")
             } else {
                 Field(
-                    finalized,
+                    finalized && it.MUT() == null,
                     scope.classType,
                     it.findName()!!.text,
                     TypeResolver.getFromTypeContext(it.findType()),
