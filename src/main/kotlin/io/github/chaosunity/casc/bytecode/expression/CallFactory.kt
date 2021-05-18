@@ -35,7 +35,8 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
     }
 
     fun generate(function: FunctionCall) {
-        function.owner.accept(ef)
+        if (!function.signature.static)
+            function.owner.accept(ef)
         generateArguments(
             function,
             scope.getMethodCallSignature(function.owner.type, function.identifier, function.arguments)
@@ -45,7 +46,13 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
         val methodDescriptor = DescriptorFactory.getMethodDescriptor(function.signature)
         val ownerDescriptor = function.owner.type.internalName
 
-        mv.visitMethodInsn(INVOKEVIRTUAL, ownerDescriptor, functionName, methodDescriptor, false)
+        mv.visitMethodInsn(
+            if (function.signature.static) INVOKESTATIC else INVOKEVIRTUAL,
+            ownerDescriptor,
+            functionName,
+            methodDescriptor,
+            false
+        )
     }
 
     fun generateArguments(call: Call<*>, signature: FunctionSignature) {

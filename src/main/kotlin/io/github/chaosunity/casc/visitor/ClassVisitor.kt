@@ -40,7 +40,7 @@ class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
         val constructorExists = ctx.findClassBody()?.findConstructor()?.isNotEmpty() ?: false
 
         if (!constructorExists) {
-            val constructorSignature = FunctionSignature(name, listOf(), BuiltInType.VOID)
+            val constructorSignature = FunctionSignature(name, listOf(), BuiltInType.VOID, false)
 
             scope.addSignature(constructorSignature)
         }

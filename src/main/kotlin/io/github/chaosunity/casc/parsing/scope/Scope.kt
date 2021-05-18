@@ -44,7 +44,8 @@ class Scope(private val metadata: MetaData) {
         if (identifier == SuperCall.SUPER_CALL_ID) FunctionSignature(
             SuperCall.SUPER_CALL_ID,
             listOf(),
-            BuiltInType.VOID
+            BuiltInType.VOID,
+            false
         )
         else functionSignatures.find { it.matches(identifier, arguments) }
             ?: throw RuntimeException("Function '$identifier' does not exist.")

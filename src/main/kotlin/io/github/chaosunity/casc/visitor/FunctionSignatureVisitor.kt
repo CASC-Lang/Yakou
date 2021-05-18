@@ -16,13 +16,14 @@ class FunctionSignatureVisitor(private val scope: Scope) : CASCBaseVisitor<Funct
         val functionName = ctx.findFunctionName()!!.text
         val returnType = TypeResolver.getFromTypeContext(ctx.findType())
         val parameters = ctx.findParameter().map { it.accept(ParameterVisitor(ev)) }
+        val static = ctx.COMP() != null
 
-        return FunctionSignature(functionName, parameters, returnType)
+        return FunctionSignature(functionName, parameters, returnType, static)
     }
 
     override fun visitConstructorDeclaration(ctx: CASCParser.ConstructorDeclarationContext): FunctionSignature {
         val parameters = ctx.findParameter().map { it.accept(ParameterVisitor(ev)) }
 
-        return FunctionSignature(scope.className, parameters, BuiltInType.VOID)
+        return FunctionSignature(scope.className, parameters, BuiltInType.VOID, false)
     }
 }

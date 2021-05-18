@@ -13,7 +13,12 @@ priv class CASC {
         abc = num
     }
 
+    comp fn lol() {
+        println("hi")
+    }
+
     comp fn main(arg: str[]) {
+        lol()
         mut d := null
         d = java::lang::Integer(10)
         e := d.intValue()

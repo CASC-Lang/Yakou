@@ -4,7 +4,7 @@ import io.github.chaosunity.casc.parsing.node.expression.Argument
 import io.github.chaosunity.casc.parsing.node.expression.Parameter
 import io.github.chaosunity.casc.parsing.type.Type
 
-data class FunctionSignature(val name: String, val parameters: List<Parameter>, val returnType: Type) {
+data class FunctionSignature(val name: String, val parameters: List<Parameter>, val returnType: Type, val static: Boolean) {
     fun getParameterByName(name: String): Parameter =
         parameters.find { it.name == name }
             ?: throw RuntimeException("Function '${this.name}' has no parameter named '$name'")

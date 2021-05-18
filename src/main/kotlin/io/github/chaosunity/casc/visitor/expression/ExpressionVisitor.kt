@@ -22,6 +22,9 @@ class ExpressionVisitor(scope: Scope) : CASCBaseVisitor<Expression<*>>() {
     override fun visitVarReference(ctx: CASCParser.VarReferenceContext): Expression<*> =
         vrv.visitVarReference(ctx)
 
+    override fun visitFieldCall(ctx: CASCParser.FieldCallContext): Expression<*> =
+        cv.visitFieldCall(ctx)
+
     override fun visitFunctionCall(ctx: CASCParser.FunctionCallContext): Expression<*> =
         cv.visitFunctionCall(ctx)
 

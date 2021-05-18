@@ -65,9 +65,10 @@ argument                : expression
                         | name EQUALS expression ;
 
 expression              : superCall=SELF '('argument? (',' argument)*')'                                        #superCall
-                        | className '('argument? (',' argument)*')'                                             #constructorCall
                         | owner=expression '.' functionName '('argument? (',' argument)*')'                     #functionCall
+                        | owner=expression '.' ID                                                               #fieldCall
                         | functionName '('argument? (',' argument)*')'                                          #functionCall
+                        | className '('argument? (',' argument)*')'                                             #constructorCall
                         | NEG=MINUS expression                                                                  #negativeExpression
                         | '(' expression ')'                                                                    #wrappedExpression
                         | varReference                                                                          #varRef
@@ -88,8 +89,7 @@ expression              : superCall=SELF '('argument? (',' argument)*')'        
                         | expression SLASH expression                                                           #divide
                         | expression PLUS expression                                                            #add
                         | expression MINUS expression                                                           #subtract
-                        | 'null'                                                                                #value
-                        | (NUMBER | BOOL | STRING)                                                              #value
+                        | (NUMBER | BOOL | STRING | NULL)                                                              #value
                         ;
 
 varReference        : ID ;
@@ -143,6 +143,7 @@ NOT_EQ          : '!='                              ;
 
 NUMBER          : [0-9.]+                                   ;
 STRING          : '"'~('\r' | '\n' | '"')*'"'               ;
-BOOL            : 'true' | 'false' | '\u771f' | '\u5047'    ;
+BOOL            : 'true' | 'false'                          ;
+NULL            : 'null'                                    ;
 ID              : (CHAR|DIGIT|UNICODE)+                     ;
 WS              : [ \t\n\r]+ -> skip                        ;

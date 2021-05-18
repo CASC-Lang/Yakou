@@ -256,6 +256,13 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitSuperCall(ctx : CASCParser.SuperCallContext) : T
 	/**
+	 * Visit a parse tree produced by the {@code fieldCall}
+	 * labeled alternative in {@link CASCParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitFieldCall(ctx : CASCParser.FieldCallContext) : T
+	/**
 	 * Visit a parse tree produced by the {@code divide}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree
