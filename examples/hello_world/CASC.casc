@@ -15,12 +15,10 @@ priv class CASC {
 
     comp fn main(arg: str[]) {
         lol()
-        mut d := null
-        d = java::lang::Integer(10)
-        e := d.intValue()
-        f := d.MAX_VALUE
-        println(e)
-        println(f)
+        a := java::lang::Integer(1)
+        b := a.MAX_VALUE
+        f := CASC(1)
+        g := f.abc
     }
 
     comp fn lol() {

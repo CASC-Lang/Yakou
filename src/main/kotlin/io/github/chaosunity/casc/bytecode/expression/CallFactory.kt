@@ -12,7 +12,15 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
     fun generate(field: FieldCall) {
         val ownerType = field.owner.type
 
-        mv.visitFieldInsn(GETSTATIC, ownerType.internalName, field.identifier, field.type.internalName)
+        if (!field.static)
+            field.owner.accept(ef)
+
+        mv.visitFieldInsn(
+            if (field.static) GETSTATIC else GETFIELD,
+            ownerType.internalName,
+            field.identifier,
+            field.type.internalName
+        )
     }
 
     fun generate(constructor: ConstructorCall) {

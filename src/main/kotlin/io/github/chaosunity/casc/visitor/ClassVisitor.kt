@@ -61,6 +61,10 @@ class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
             methods += getDefaultConstructor()
         }
 
+        methods.sortWith { o1, _ ->
+            if (o1 is Constructor) return@sortWith -1 else 1
+        } // Moves constructors to front.
+
         return ClassDeclaration(name, methods, fields, accessModifier)
     }
 

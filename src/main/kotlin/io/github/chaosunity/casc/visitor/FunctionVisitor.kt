@@ -20,8 +20,6 @@ class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function<*>>() {
         scope.addLocalVariable(LocalVariable("this", scope.classType))
         addParameterAsLocalVariable(signature)
 
-        if (scope.callingScope == CallingScope.STATIC) scope.fields.clear()
-
         val block = getBlock(ctx.findBlock()!!)
 
         return Function<Function<*>>(signature, block, accessModifier, static)
