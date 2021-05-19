@@ -11,19 +11,13 @@ import jdk.internal.org.objectweb.asm.Opcodes.INVOKEVIRTUAL
 
 
 class PrintFactory(private val ef: ExpressionFactory, private val mv: MethodVisitor) {
-    fun generate(printStatement: PrintStatement) {
-        val (fieldDescriptor, descriptor) = preGenerate(printStatement)
+    fun generate(printStatement: PrintStatement) =
+        preGenerate(printStatement, "print")
 
-        mv.visitMethodInsn(INVOKEVIRTUAL, fieldDescriptor, "print", descriptor, false)
-    }
+    fun generate(printlnStatement: PrintlnStatement) =
+        preGenerate(printlnStatement, "println")
 
-    fun generate(printlnStatement: PrintlnStatement) {
-        val (fieldDescriptor, descriptor) = preGenerate(printlnStatement)
-
-        mv.visitMethodInsn(INVOKEVIRTUAL, fieldDescriptor, "println", descriptor, false)
-    }
-
-    private fun preGenerate(printable: OutputStatement<*>): Pair<String, String> {
+    private fun preGenerate(printable: OutputStatement<*>, methodName: String) {
         val expression = printable.expression
 
         mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
@@ -33,6 +27,6 @@ class PrintFactory(private val ef: ExpressionFactory, private val mv: MethodVisi
         val owner = ClassType("java.io.PrintStream")
         val fieldDescriptor = owner.internalName
 
-        return fieldDescriptor to descriptor
+        mv.visitMethodInsn(INVOKEVIRTUAL, fieldDescriptor, methodName, descriptor, false)
     }
 }

@@ -21,6 +21,7 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
             is LocalVariableReference -> generate(expression)
             is Parameter -> generate(expression)
             is Value -> generate(expression)
+            is FieldCall -> generate(expression)
             is ConstructorCall -> generate(expression)
             is SuperCall -> generate(expression)
             is FunctionCall -> generate(expression)
@@ -46,6 +47,9 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
 
     fun generate(value: Value) =
         vf.generate(value)
+
+    fun generate(fieldCall: FieldCall) =
+        callFactory.generate(fieldCall)
 
     fun generate(constructorCall: ConstructorCall) =
         callFactory.generate(constructorCall)

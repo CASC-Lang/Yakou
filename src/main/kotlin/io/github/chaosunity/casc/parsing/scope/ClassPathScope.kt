@@ -3,8 +3,27 @@ package io.github.chaosunity.casc.parsing.scope
 import io.github.chaosunity.casc.parsing.type.ClassType
 import io.github.chaosunity.casc.parsing.type.Type
 import io.github.chaosunity.casc.util.ReflectionMapper
+import io.github.chaosunity.casc.util.TypeResolver
+import java.lang.reflect.Modifier
 
-class ClassPathScope {
+object ClassPathScope {
+    fun getField(owner: Type, fieldName: String): Field? =
+        try {
+            val field = owner.classType()!!.getField(fieldName)
+            val modifiers = field.modifiers
+
+            Field(
+                Modifier.isFinal(modifiers),
+                owner,
+                fieldName,
+                TypeResolver.getTypeByName(field.type.canonicalName),
+                AccessModifier.getModifier(modifiers),
+                Modifier.isStatic(modifiers)
+            )
+        } catch (e: Exception) {
+            null
+        }
+
     fun getMethodSignature(owner: Type, methodName: String, arguments: List<Type>): FunctionSignature? =
         try {
             val (methodOwnerClass, params) = getExecutableInfo(owner, arguments)

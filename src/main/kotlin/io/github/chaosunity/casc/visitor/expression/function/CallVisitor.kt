@@ -8,6 +8,23 @@ import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.visitor.expression.ExpressionVisitor
 
 class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) : CASCBaseVisitor<Call<*>>() {
+    override fun visitFieldCall(ctx: CASCParser.FieldCallContext): Call<*> {
+        val fieldName = ctx.ID()!!.text
+        val ownerCtx = ctx.owner
+
+        if (ownerCtx != null) {
+            val owner = ownerCtx.accept(ev)
+            val field = scope.getField(owner.type, fieldName)
+
+            return FieldCall(owner, fieldName, field.type)
+        }
+
+        val field = scope.getField(fieldName)
+        val thisVariable = LocalVariable("self", scope.classType)
+
+        return FieldCall(LocalVariableReference(thisVariable), fieldName, field.type)
+    }
+
     override fun visitFunctionCall(ctx: CASCParser.FunctionCallContext): Call<*> {
         val functionName = ctx.findFunctionName()!!.text
 

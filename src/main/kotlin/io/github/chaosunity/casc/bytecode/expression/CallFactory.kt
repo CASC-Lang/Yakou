@@ -9,6 +9,12 @@ import jdk.internal.org.objectweb.asm.MethodVisitor
 import jdk.internal.org.objectweb.asm.Opcodes.*
 
 class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, private val mv: MethodVisitor) {
+    fun generate(field: FieldCall) {
+        val ownerType = field.owner.type
+
+        mv.visitFieldInsn(GETSTATIC, ownerType.internalName, field.identifier, field.type.internalName)
+    }
+
     fun generate(constructor: ConstructorCall) {
         val signature = scope.getConstructorCallSignature(constructor.identifier, constructor.arguments)
         val ownerDescriptor = ClassType(signature.name).internalName

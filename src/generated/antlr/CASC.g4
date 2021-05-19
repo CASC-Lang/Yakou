@@ -145,5 +145,5 @@ NUMBER          : [0-9.]+                                   ;
 STRING          : '"'~('\r' | '\n' | '"')*'"'               ;
 BOOL            : 'true' | 'false'                          ;
 NULL            : 'null'                                    ;
-ID              : (CHAR|DIGIT|UNICODE)+                     ;
+ID              : (CHAR|DIGIT|UNICODE|'_')+                 ;
 WS              : [ \t\n\r]+ -> skip                        ;

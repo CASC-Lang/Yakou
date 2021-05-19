@@ -50,26 +50,23 @@ class Scope(private val metadata: MetaData) {
         else functionSignatures.find { it.matches(identifier, arguments) }
             ?: throw RuntimeException("Function '$identifier' does not exist.")
 
-    fun getConstructorCallSignature(className: String, arguments: List<Argument>): FunctionSignature {
+    fun getConstructorCallSignature(className: String, arguments: List<Argument>): FunctionSignature =
         if (className != this.className) {
             val argumentsType = arguments.map(Argument::type)
 
-            return ClassPathScope().getConstructorSignature(className, argumentsType)
+            ClassPathScope.getConstructorSignature(className, argumentsType)
                 ?: throw RuntimeException(
                     "Class constructor '$className' with type arguments '(${
                         argumentsType.map(Type::internalName).joinToString(", ")
                     })' does not exist."
                 )
-        }
+        } else getMethodCallSignature(null, className, arguments)
 
-        return getMethodCallSignature(null, className, arguments)
-    }
-
-    fun getMethodCallSignature(owner: Type?, methodName: String, arguments: List<Argument>): FunctionSignature {
+    fun getMethodCallSignature(owner: Type?, methodName: String, arguments: List<Argument>): FunctionSignature =
         if (owner != null && owner != classType) {
             val argumentsType = arguments.map(Argument::type)
 
-            return ClassPathScope().getMethodSignature(owner, methodName, argumentsType)
+            ClassPathScope.getMethodSignature(owner, methodName, argumentsType)
                 ?: throw RuntimeException(
                     "Function '${
                         owner.typeName.replace(
@@ -78,14 +75,23 @@ class Scope(private val metadata: MetaData) {
                         )
                     }.$methodName' with type arguments '(${argumentsType.joinToString(", ")})' does not exist."
                 )
-        }
-
-        return getMethodCallSignature(methodName, arguments)
-    }
+        } else getMethodCallSignature(methodName, arguments)
 
     fun addField(field: Field) {
         fields += field.name to field
     }
+
+    fun getField(owner: Type?, fieldName: String): Field =
+        if (owner != null && owner != classType) {
+            ClassPathScope.getField(owner, fieldName) ?: throw RuntimeException(
+                "Field '${
+                    owner.typeName.replace(
+                        ".",
+                        "::"
+                    )
+                }#$fieldName' does not exist."
+            )
+        } else getField(fieldName)
 
     fun getField(fieldName: String): Field =
         fields[fieldName] ?: throw RuntimeException("Field '$fieldName' does not exist.")
