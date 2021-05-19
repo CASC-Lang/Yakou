@@ -1018,6 +1018,7 @@ class CASCParser(input: TokenStream) : Parser(input) {
 	        get() = Rules.RULE_fieldDeclaration.id
 	        set(value) { throw RuntimeException() }
 		fun findInnerAccessMods() : InnerAccessModsContext? = getRuleContext(solver.getType("InnerAccessModsContext"),0)
+		fun COLON() : TerminalNode? = getToken(CASCParser.Tokens.COLON.id, 0)
 		fun COMP() : TerminalNode? = getToken(CASCParser.Tokens.COMP.id, 0)
 		fun MUT() : TerminalNode? = getToken(CASCParser.Tokens.MUT.id, 0)
 		fun findField() : List<FieldContext> = getRuleContexts(solver.getType("FieldContext"))

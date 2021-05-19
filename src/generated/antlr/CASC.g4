@@ -17,7 +17,7 @@ type                            : primitiveType
                                 | classType
                                 ;
 
-fieldDeclaration                : innerAccessMods COMP? MUT? ':' field* ;
+fieldDeclaration                : innerAccessMods COMP? MUT? COLON field* ;
 
 outerAccessMods                 : (PUB | INTL | PRIV)               ;
 innerAccessMods                 : (PUB | PROT | INTL | PRIV)        ;
@@ -143,7 +143,7 @@ LESS_EQ         : '<='                              ;
 EQ              : '=='                              ;
 NOT_EQ          : '!='                              ;
 
-NUMBER          : [0-9.]+                                   ;
+NUMBER          : [0-9.]+ ('L' | 'l' | 'F' | 'f')?          ;
 STRING          : '"'~('\r' | '\n' | '"')*'"'               ;
 BOOL            : 'true' | 'false'                          ;
 NULL            : 'null'                                    ;

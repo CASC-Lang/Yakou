@@ -1,12 +1,14 @@
 priv class CASC {
     mut abc: i32 = 1
 
-    priv mut :
+    pub comp:
+        uwu: str
+    priv mut:
         b: i32
         ba: i64
-    intl :
+    intl:
         c: str
-    prot comp mut :
+    prot comp mut:
         d: i16
 
     priv ctor(num: i32) {
@@ -18,11 +20,13 @@ priv class CASC {
         a := java::lang::Integer(1)
         b := java::lang::Integer::MAX_VALUE
         c := a.MAX_VALUE
-        d := java::lang::Math::round(2.0)
+        d := java::lang::Math::pow(2.0, 2.0)
+        e := 100L
         f := CASC(1)
         g := f.abc
         h := f.abc
-        i := d
+        i := uwu
+        println(i)
     }
 
     comp fn lol() {

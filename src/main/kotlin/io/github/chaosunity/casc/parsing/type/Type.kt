@@ -17,6 +17,9 @@ interface Type {
     fun isInt(): Boolean =
         this == BuiltInType.INT
 
+    fun isLong(): Boolean =
+        this == BuiltInType.LONG
+
     fun isFloat(): Boolean =
         this == BuiltInType.FLOAT
 

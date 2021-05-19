@@ -24,7 +24,15 @@ object TypeResolver {
 
         if (obfuscatedType != null) return obfuscatedType
 
-        return ClassType(typeName)
+        val classType = ClassType(typeName)
+
+        try {
+            classType.classType()
+        } catch (e: Exception) {
+            throw RuntimeException("Type '$typeName' does not exist.")
+        }
+
+        return classType
     }
 
     fun getTypeByValue(value: String): Type {
@@ -33,9 +41,11 @@ object TypeResolver {
         if (value.isEmpty()) return BuiltInType.VOID
 
         if (NumberUtils.isCreatable(value)) {
+            if (value.endsWith("L") || value.endsWith("l")) return BuiltInType.LONG
+            if (value.endsWith("F") || value.endsWith("f")) return BuiltInType.FLOAT
+
             when {
                 value.toIntOrNull() != null -> return BuiltInType.INT
-                value.toFloatOrNull() != null -> return BuiltInType.FLOAT
                 value.toDoubleOrNull() != null -> return BuiltInType.DOUBLE
             }
         } else if (value == "true" || value == "false") return BuiltInType.BOOLEAN
@@ -46,6 +56,7 @@ object TypeResolver {
     fun getValueByString(value: String, type: Type): Any? =
         when {
             type.isInt() -> value.toInt()
+            type.isLong() -> value.toLong()
             type.isFloat() -> value.toFloat()
             type.isDouble() -> value.toDouble()
             type.isBool() -> value.toBoolean()
