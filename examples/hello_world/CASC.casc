@@ -16,9 +16,13 @@ priv class CASC {
     comp fn main(arg: str[]) {
         lol()
         a := java::lang::Integer(1)
-        b := a.MAX_VALUE
+        b := java::lang::Integer::MAX_VALUE
+        c := a.MAX_VALUE
+        d := java::lang::Math::round(2.0)
         f := CASC(1)
         g := f.abc
+        h := f.abc
+        i := d
     }
 
     comp fn lol() {

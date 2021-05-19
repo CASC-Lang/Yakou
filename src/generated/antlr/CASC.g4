@@ -66,9 +66,11 @@ argument                : expression
 
 expression              : superCall=SELF '('argument? (',' argument)*')'                                        #superCall
                         | owner=expression '.' functionName '('argument? (',' argument)*')'                     #functionCall
-                        | owner=expression '.' ID                                                               #fieldCall
+                        | qualifiedName '::' functionName '('argument? (',' argument)*')'                       #functionCall
                         | functionName '('argument? (',' argument)*')'                                          #functionCall
                         | className '('argument? (',' argument)*')'                                             #constructorCall
+                        | qualifiedName '::' ID                                                                 #fieldCall
+                        | owner=expression '.' ID                                                               #fieldCall
                         | NEG=MINUS expression                                                                  #negativeExpression
                         | '(' expression ')'                                                                    #wrappedExpression
                         | varReference                                                                          #varRef

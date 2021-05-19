@@ -6,12 +6,14 @@ import io.github.chaosunity.casc.parsing.type.Type
 data class FunctionCall(
     val signature: FunctionSignature,
     override val arguments: List<Argument>,
-    val owner: Expression<*>
+    val owner: Expression<*>,
+    val static: Boolean
 ) : Call<FunctionCall> {
-    constructor(signature: FunctionSignature, arguments: List<Argument>, ownerType: Type) : this(
+    constructor(signature: FunctionSignature, arguments: List<Argument>, ownerType: Type, static: Boolean) : this(
         signature,
         arguments,
-        EmptyExpression(ownerType)
+        EmptyExpression(ownerType),
+        static
     )
 
     override val type: Type = signature.returnType
