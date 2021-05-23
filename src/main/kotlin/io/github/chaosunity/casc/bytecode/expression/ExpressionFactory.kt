@@ -9,6 +9,7 @@ import jdk.internal.org.objectweb.asm.MethodVisitor
 class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
     private val rf = ReferenceFactory(mv, this, scope)
     private val adf = ArrayDeclarationFactory(mv, this)
+    private val aif = ArrayInitializationFactory(mv, this)
     private val vf = ValueFactory(mv)
     private val pf = ParameterFactory(mv, scope)
     private val iff = IfFactory(this, mv)
@@ -22,6 +23,7 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
             is LocalVariableReference -> generate(expression)
             is Parameter -> generate(expression)
             is ArrayDeclaration -> generate(expression)
+            is ArrayInitialization -> generate(expression)
             is Value -> generate(expression)
             is FieldCall -> generate(expression)
             is ConstructorCall -> generate(expression)
@@ -38,32 +40,35 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
             else -> throw RuntimeException("Invalid syntax feature.\nDetail: $expression")
         }
 
-    fun generate(fieldReference: FieldReference) =
-        rf.generate(fieldReference)
+    fun generate(reference: FieldReference) =
+        rf.generate(reference)
 
-    fun generate(variableReference: LocalVariableReference) =
-        rf.generate(variableReference)
+    fun generate(reference: LocalVariableReference) =
+        rf.generate(reference)
 
     fun generate(parameter: Parameter) =
         pf.generate(parameter)
 
-    fun generate(arrayDeclaration: ArrayDeclaration) =
-        adf.generate(arrayDeclaration)
+    fun generate(declaration: ArrayDeclaration) =
+        adf.generate(declaration)
+
+    fun generate(initialization: ArrayInitialization) =
+        aif.generate(initialization)
 
     fun generate(value: Value) =
         vf.generate(value)
 
-    fun generate(fieldCall: FieldCall) =
-        callFactory.generate(fieldCall)
+    fun generate(call: FieldCall) =
+        callFactory.generate(call)
 
-    fun generate(constructorCall: ConstructorCall) =
-        callFactory.generate(constructorCall)
+    fun generate(call: ConstructorCall) =
+        callFactory.generate(call)
 
-    fun generate(superCall: SuperCall) =
-        callFactory.generate(superCall)
+    fun generate(call: SuperCall) =
+        callFactory.generate(call)
 
-    fun generate(functionCall: FunctionCall) =
-        callFactory.generate(functionCall)
+    fun generate(call: FunctionCall) =
+        callFactory.generate(call)
 
     fun generate(expression: Addition) =
         af.generate(expression)

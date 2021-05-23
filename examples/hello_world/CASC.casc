@@ -1,14 +1,5 @@
 class CASC {
-    pub mut:
-        b: i32[]
-
-    fn set() {
-        b = i32[10]
-        b[1] = 1;
-        a := b[1]
-    }
-
     comp fn main(arg: str[]) {
-        a := CASC()
+        b := { { 1, 2 } }
     }
 }

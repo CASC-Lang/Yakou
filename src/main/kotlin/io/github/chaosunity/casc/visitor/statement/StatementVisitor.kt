@@ -61,6 +61,9 @@ class StatementVisitor(scope: Scope) : CASCBaseVisitor<Statement<*>>() {
     override fun visitArrayDeclaration(ctx: CASCParser.ArrayDeclarationContext): Statement<*> =
         ev.visitArrayDeclaration(ctx)
 
+    override fun visitArrayInitialization(ctx: CASCParser.ArrayInitializationContext): Statement<*> =
+        ev.visitArrayInitialization(ctx)
+
     override fun visitValue(ctx: CASCParser.ValueContext): Expression<*> =
         ev.visitValue(ctx)
 

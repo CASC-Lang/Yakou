@@ -10,6 +10,7 @@ class ExpressionVisitor(scope: Scope) : CASCBaseVisitor<Expression<*>>() {
     private val av = ArithmeticVisitor(this)
     private val vrv = VariableReferenceVisitor(this, scope)
     private val adv = ArrayDeclarationVisitor(this, scope)
+    private val aiv = ArrayInitializationVisitor(this)
     private val vv = ValueVisitor()
     private val cv = CallVisitor(this, scope)
     private val cev = ConditionalVisitor(this)
@@ -40,6 +41,9 @@ class ExpressionVisitor(scope: Scope) : CASCBaseVisitor<Expression<*>>() {
 
     override fun visitArrayDeclaration(ctx: CASCParser.ArrayDeclarationContext): Expression<*> =
         adv.visitArrayDeclaration(ctx)
+
+    override fun visitArrayInitialization(ctx: CASCParser.ArrayInitializationContext): Expression<*> =
+        aiv.visitArrayInitialization(ctx)
 
     override fun visitValue(ctx: CASCParser.ValueContext): Expression<*> =
         vv.visitValue(ctx)

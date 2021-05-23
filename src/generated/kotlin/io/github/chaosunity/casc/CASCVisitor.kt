@@ -290,6 +290,13 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitArrayReference(ctx : CASCParser.ArrayReferenceContext) : T
 	/**
+	 * Visit a parse tree produced by the {@code arrayInitialization}
+	 * labeled alternative in {@link CASCParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitArrayInitialization(ctx : CASCParser.ArrayInitializationContext) : T
+	/**
 	 * Visit a parse tree produced by the {@code ifExpression}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree
