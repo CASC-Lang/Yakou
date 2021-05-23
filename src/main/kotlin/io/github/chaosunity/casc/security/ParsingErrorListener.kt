@@ -49,6 +49,6 @@ class ParsingErrorListener : ANTLRErrorListener {
         msg: String,
         e: RecognitionException?
     ) {
-        e?.printStackTrace()
+        throw e?.fillInStackTrace()!!
     }
 }

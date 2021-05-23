@@ -31,6 +31,7 @@ priv class CASC {
         l := char[9]
         m := java::lang::Integer[10]
         n := i32[10][10]
+        i32 := 10
         println(i)
     }
 

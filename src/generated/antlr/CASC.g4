@@ -23,17 +23,7 @@ fieldDeclaration                : innerAccessMods COMP? MUT? COLON field* ;
 outerAccessMods                 : (PUB | INTL | PRIV)               ;
 innerAccessMods                 : (PUB | PROT | INTL | PRIV)        ;
 
-primitiveType   :  'bool'
-                |  'str'
-                |  'char'
-                |  'i8'
-                |  'i16'
-                |  'i32'
-                |  'i64'
-                |  'f32'
-                |  'f64'
-                |  'unit'
-                ;
+primitiveType   : TYPES ;
 
 classType       : qualifiedName ;
 qualifiedName   : ID ('::' ID)* ;
@@ -144,6 +134,19 @@ GREATER_EQ      : '>='                              ;
 LESS_EQ         : '<='                              ;
 EQ              : '=='                              ;
 NOT_EQ          : '!='                              ;
+
+//types
+TYPES           :  'bool'
+                |  'str'
+                |  'char'
+                |  'i8'
+                |  'i16'
+                |  'i32'
+                |  'i64'
+                |  'f32'
+                |  'f64'
+                |  'unit'
+                ;
 
 NUMBER          : [0-9.]+ ('L' | 'l' | 'F' | 'f')?          ;
 STRING          : '"'~('\r' | '\n' | '"')*'"'               ;
