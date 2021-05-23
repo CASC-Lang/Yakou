@@ -7,6 +7,6 @@ data class ArrayDeclaration(
     val baseType: Type,
     val dimension: Int,
     val expressions: List<Expression<*>>
-) : Expression<ArrayDeclaration> {
+) : ArrayBridge {
     override val type: ArrayType = ArrayType(baseType, dimension)
 }

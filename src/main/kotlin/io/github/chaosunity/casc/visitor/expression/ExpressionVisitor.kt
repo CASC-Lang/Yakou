@@ -8,8 +8,8 @@ import io.github.chaosunity.casc.visitor.expression.function.CallVisitor
 
 class ExpressionVisitor(scope: Scope) : CASCBaseVisitor<Expression<*>>() {
     private val av = ArithmeticVisitor(this)
-    private val vrv = VariableReferenceVisitor(scope)
-    private val adv = ArrayDeclarationVisitor(this)
+    private val vrv = VariableReferenceVisitor(this, scope)
+    private val adv = ArrayDeclarationVisitor(this, scope)
     private val vv = ValueVisitor()
     private val cv = CallVisitor(this, scope)
     private val cev = ConditionalVisitor(this)
@@ -22,6 +22,9 @@ class ExpressionVisitor(scope: Scope) : CASCBaseVisitor<Expression<*>>() {
 
     override fun visitVarReference(ctx: CASCParser.VarReferenceContext): Expression<*> =
         vrv.visitVarReference(ctx)
+
+    override fun visitArrayReference(ctx: CASCParser.ArrayReferenceContext): Expression<*> =
+        vrv.visitArrayReference(ctx)
 
     override fun visitFieldCall(ctx: CASCParser.FieldCallContext): Expression<*> =
         cv.visitFieldCall(ctx)

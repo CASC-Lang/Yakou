@@ -7,7 +7,7 @@ import jdk.internal.org.objectweb.asm.MethodVisitor
 
 
 class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
-    private val rf = ReferenceFactory(mv, scope)
+    private val rf = ReferenceFactory(mv, this, scope)
     private val adf = ArrayDeclarationFactory(mv, this)
     private val vf = ValueFactory(mv)
     private val pf = ParameterFactory(mv, scope)

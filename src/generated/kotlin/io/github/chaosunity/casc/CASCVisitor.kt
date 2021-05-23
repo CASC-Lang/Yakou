@@ -283,6 +283,13 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitDivide(ctx : CASCParser.DivideContext) : T
 	/**
+	 * Visit a parse tree produced by the {@code arrayReference}
+	 * labeled alternative in {@link CASCParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitArrayReference(ctx : CASCParser.ArrayReferenceContext) : T
+	/**
 	 * Visit a parse tree produced by the {@code ifExpression}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree

@@ -17,10 +17,20 @@ class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function<*>>() {
         val signature = ctx.findFunctionDeclaration()!!.accept(FunctionSignatureVisitor(scope))
 
         scope.callingScope = CallingScope.getScope(ctx)
-        scope.addLocalVariable(LocalVariable("this", scope.classType))
+        if (scope.callingScope == CallingScope.OBJECT) scope.addLocalVariable(LocalVariable("this", scope.classType))
         addParameterAsLocalVariable(signature)
 
+        var fieldsHolder: LinkedHashMap<String, Field> = linkedMapOf()
+
+        if (scope.callingScope == CallingScope.STATIC) {
+            fieldsHolder = scope.fields
+            scope.fields.clear()
+        }
+
         val block = getBlock(ctx.findBlock()!!)
+
+        if (scope.callingScope == CallingScope.STATIC)
+            scope.fields.putAll(fieldsHolder)
 
         return Function<Function<*>>(signature, block, accessModifier, static)
     }

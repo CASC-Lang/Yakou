@@ -84,7 +84,8 @@ expression              : superCall=SELF '('argument? (',' argument)*')'        
                         | expression SLASH expression                                                           #divide
                         | expression PLUS expression                                                            #add
                         | expression MINUS expression                                                           #subtract
-                        | type '[' expression ']' ('[' expression ']')*                                                       #arrayDeclaration
+                        | type '[' expression ']' ('[' expression ']')*                                         #arrayDeclaration
+                        | varReference '[' expression ']' ('[' expression ']')*                                 #arrayReference
                         | (NUMBER | BOOL | STRING | NULL)                                                       #value
                         ;
 
