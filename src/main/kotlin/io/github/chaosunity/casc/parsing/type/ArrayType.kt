@@ -24,4 +24,8 @@ data class ArrayType(val baseType: Type, val dimension: Int) : Type {
         get() = throw RuntimeException("Multiplication operation is not supported for array")
     override val divideOpcode: Int
         get() = throw RuntimeException("Division operation is not supported for array")
+    override val typeOpcode: Int
+        get() = throw RuntimeException("Type operation is not supported for array")
+    override val arrayLoadOpcode: Int = AALOAD
+    override val arrayStoreOpcode: Int = AASTORE
 }

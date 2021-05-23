@@ -16,6 +16,10 @@ interface Type {
     val multiplyOpcode: Int
     val divideOpcode: Int
 
+    val typeOpcode: Int
+    val arrayLoadOpcode: Int
+    val arrayStoreOpcode: Int
+
     fun isInt(): Boolean =
         this == BuiltInType.INT
 

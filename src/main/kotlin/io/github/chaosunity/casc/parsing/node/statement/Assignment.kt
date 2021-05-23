@@ -6,5 +6,6 @@ import io.github.chaosunity.casc.parsing.scope.CallingScope
 data class Assignment(
     val variableName: String,
     val expression: Expression<*>,
-    val callingScope: CallingScope
+    val callingScope: CallingScope,
+    val dimensions: List<Expression<*>> = listOf()
 ) : Statement<Assignment>

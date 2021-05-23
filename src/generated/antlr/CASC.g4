@@ -42,7 +42,9 @@ statement       : block
                 ;
 
 variableDeclaration     : MUT? name ASSIGN_EQ expression                    ;
-assignment              : name EQUALS expression                            ;
+assignment              : name EQUALS expression
+                        | name '[' expression ']' ('[' expression ']')* EQUALS expression
+                        ;
 printStatement          : PRINT '('expression')'                            ;
 printlnStatement        : PRINTLN '('expression')'                          ;
 returnStatement         : RETURN expression                                 #ReturnWithValue

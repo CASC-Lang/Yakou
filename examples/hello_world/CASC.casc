@@ -30,8 +30,8 @@ priv class CASC {
         k := bool[20]
         l := char[9]
         m := java::lang::Integer[10]
-        n := i32[10][10]
-        i32 := 10
+        n := i32[10][20]
+        n[0][1] = 10
         println(i)
     }
 
