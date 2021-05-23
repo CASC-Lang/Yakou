@@ -17,7 +17,7 @@ class FieldVisitor(private val scope: Scope) : CASCBaseVisitor<Field>() {
                 finalized,
                 scope.classType,
                 ctx.findName()!!.text,
-                TypeResolver.getFromTypeContext(ctx.findType()),
+                TypeResolver.getFromTypeReferenceContext(ctx.findTypeReference()),
                 accessModifier,
                 static
             )

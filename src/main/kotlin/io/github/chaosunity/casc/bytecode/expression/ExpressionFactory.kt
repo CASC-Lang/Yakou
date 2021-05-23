@@ -8,6 +8,7 @@ import jdk.internal.org.objectweb.asm.MethodVisitor
 
 class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
     private val rf = ReferenceFactory(mv, scope)
+    private val adf = ArrayDeclarationFactory(mv, this)
     private val vf = ValueFactory(mv)
     private val pf = ParameterFactory(mv, scope)
     private val iff = IfFactory(this, mv)
@@ -20,6 +21,7 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
             is FieldReference -> generate(expression)
             is LocalVariableReference -> generate(expression)
             is Parameter -> generate(expression)
+            is ArrayDeclaration -> generate(expression)
             is Value -> generate(expression)
             is FieldCall -> generate(expression)
             is ConstructorCall -> generate(expression)
@@ -44,6 +46,9 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
 
     fun generate(parameter: Parameter) =
         pf.generate(parameter)
+
+    fun generate(arrayDeclaration: ArrayDeclaration) =
+        adf.generate(arrayDeclaration)
 
     fun generate(value: Value) =
         vf.generate(value)

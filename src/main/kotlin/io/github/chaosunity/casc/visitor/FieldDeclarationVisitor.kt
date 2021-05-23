@@ -21,7 +21,7 @@ class FieldDeclarationVisitor(private val scope: Scope) : CASCBaseVisitor<List<F
                     finalized && it.MUT() == null,
                     scope.classType,
                     it.findName()!!.text,
-                    TypeResolver.getFromTypeContext(it.findType()),
+                    TypeResolver.getFromTypeReferenceContext(it.findTypeReference()),
                     accessModifier,
                     static
                 )

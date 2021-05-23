@@ -1,5 +1,7 @@
 package io.github.chaosunity.casc.parsing.type
 
+import jdk.internal.org.objectweb.asm.Opcodes
+
 interface Type {
     val typeName: String
     fun classType(): Class<*>?
@@ -31,4 +33,7 @@ interface Type {
 
     fun isString(): Boolean =
         this == BuiltInType.STRING
+
+    fun isBuiltInType() =
+        BuiltInType.values().any { it == this }
 }

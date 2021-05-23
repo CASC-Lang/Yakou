@@ -2,39 +2,40 @@
 grammar CASC;
 
 //RULES
-compilationUnit                 : classDeclaration EOF;
-classDeclaration                : outerAccessMods? CLASS className '{' classBody '}';
-className                       : qualifiedName;
+compilationUnit                 : classDeclaration EOF? ;
+classDeclaration                : outerAccessMods? CLASS className '{' classBody '}' ;
+className                       : qualifiedName ;
 classBody                       : (function | constructor | field | fieldDeclaration)* ;
-field                           : innerAccessMods? COMP? MUT? name COLON type (EQUALS expression)? ;
+field                           : innerAccessMods? COMP? MUT? name COLON typeReference (EQUALS expression)? ;
 constructor                     : constructorDeclaration block? ;
 constructorDeclaration          : innerAccessMods? CTOR '('(parameter (',' parameter)*)?')' ;
 function                        : functionDeclaration block ;
-functionDeclaration             : innerAccessMods? COMP? FUNC functionName '('(parameter (',' parameter)*)?')' (COLON type)? ;
+functionDeclaration             : innerAccessMods? COMP? FUNC functionName '('(parameter (',' parameter)*)?')' (COLON typeReference)? ;
 functionName                    : ID ;
-parameter                       : ID COLON type (EQUALS expression)? ;
+parameter                       : ID COLON typeReference (EQUALS expression)? ;
 type                            : primitiveType
                                 | classType
                                 ;
+typeReference                   : type ('[]')* ;
 
 fieldDeclaration                : innerAccessMods COMP? MUT? COLON field* ;
 
 outerAccessMods                 : (PUB | INTL | PRIV)               ;
 innerAccessMods                 : (PUB | PROT | INTL | PRIV)        ;
 
-primitiveType   :  'bool' ('[' ']')*
-                |  'str'  ('[' ']')*
-                |  'char'    ('[' ']')*
-                |  'i8'    ('[' ']')*
-                |  'i16'   ('[' ']')*
-                |  'i32'     ('[' ']')*
-                |  'i64'    ('[' ']')*
-                |  'f32'   ('[' ']')*
-                |  'f64'  ('[' ']')*
-                |  'unit'    ('[' ']')*
+primitiveType   :  'bool'
+                |  'str'
+                |  'char'
+                |  'i8'
+                |  'i16'
+                |  'i32'
+                |  'i64'
+                |  'f32'
+                |  'f64'
+                |  'unit'
                 ;
 
-classType       : qualifiedName ('[' ']')* ;
+classType       : qualifiedName ;
 qualifiedName   : ID ('::' ID)* ;
 
 block           : '{' statement* '}' ;
@@ -91,7 +92,8 @@ expression              : superCall=SELF '('argument? (',' argument)*')'        
                         | expression SLASH expression                                                           #divide
                         | expression PLUS expression                                                            #add
                         | expression MINUS expression                                                           #subtract
-                        | (NUMBER | BOOL | STRING | NULL)                                                              #value
+                        | type '[' expression ']' ('[' expression ']')*                                                       #arrayDeclaration
+                        | (NUMBER | BOOL | STRING | NULL)                                                       #value
                         ;
 
 varReference        : ID ;

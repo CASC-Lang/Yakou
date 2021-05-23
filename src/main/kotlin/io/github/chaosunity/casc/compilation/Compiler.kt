@@ -6,6 +6,9 @@ import io.github.chaosunity.casc.security.CompilationError
 import java.io.File
 
 class Compiler {
+    companion object {
+        private lateinit var outputDirectory: File
+    }
     private var DEV_MODE = false
 
     fun compile(args: Array<String>) {
@@ -17,6 +20,10 @@ class Compiler {
             error(problem.msg)
 
         val cascFile = File(args[0])
+
+        outputDirectory = File(cascFile.parent + "/out")
+        outputDirectory.mkdirs()
+
         val absolutePath = cascFile.absolutePath
         val compilationUnit = Parser().getCompilationUnit(absolutePath)
         saveBytecode(compilationUnit)
@@ -32,7 +39,7 @@ class Compiler {
         val generator = BytecodeFactory()
         val bytecode = generator.generate(compilationUnit)
         val className = compilationUnit.className
-        val fileName = if (!DEV_MODE) "$className.class" else "examples/hello_world/$className.class"
+        val fileName = "$outputDirectory/$className.class"
 
         File(fileName).writeBytes(bytecode)
     }

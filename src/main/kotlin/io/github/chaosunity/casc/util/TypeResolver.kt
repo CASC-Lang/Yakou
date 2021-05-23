@@ -1,12 +1,20 @@
 package io.github.chaosunity.casc.util
 
 import io.github.chaosunity.casc.CASCParser
+import io.github.chaosunity.casc.parsing.type.ArrayType
 import io.github.chaosunity.casc.parsing.type.BuiltInType
 import io.github.chaosunity.casc.parsing.type.ClassType
 import io.github.chaosunity.casc.parsing.type.Type
+import jdk.internal.org.objectweb.asm.Opcodes
 import org.apache.commons.lang3.math.NumberUtils
 
 object TypeResolver {
+    fun getFromTypeReferenceContext(ctx: CASCParser.TypeReferenceContext?): Type {
+        if (ctx == null) return BuiltInType.VOID
+
+        return getTypeByName(ctx.text)
+    }
+
     fun getFromTypeContext(ctx: CASCParser.TypeContext?): Type {
         if (ctx == null) return BuiltInType.VOID
 
@@ -14,7 +22,15 @@ object TypeResolver {
     }
 
     fun getTypeByName(typeName: String): Type {
-        if (typeName == "java.lang.String") return BuiltInType.STRING
+        if (typeName.endsWith("[]")) {
+            val baseTypeName = typeName.replace("[]", "")
+            val baseType = getTypeByName(baseTypeName)
+            val dimension = typeName.removePrefix(baseTypeName).length / 2
+
+            return ArrayType(baseType, dimension)
+        }
+
+        if (typeName == "java::lang::String") return BuiltInType.STRING
 
         val builtInType = getBuiltInType(typeName)
 
@@ -24,7 +40,7 @@ object TypeResolver {
 
         if (obfuscatedType != null) return obfuscatedType
 
-        val classType = ClassType(typeName)
+        val classType = ClassType(typeName.replace("::", "."))
 
         try {
             classType.classType()

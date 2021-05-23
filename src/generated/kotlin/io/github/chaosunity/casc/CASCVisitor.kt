@@ -84,6 +84,12 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitType(ctx : CASCParser.TypeContext) : T
 	/**
+	 * Visit a parse tree produced by {@link CASCParser#typeReference}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitTypeReference(ctx : CASCParser.TypeReferenceContext) : T
+	/**
 	 * Visit a parse tree produced by {@link CASCParser#fieldDeclaration}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -262,6 +268,13 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	fun visitFieldCall(ctx : CASCParser.FieldCallContext) : T
+	/**
+	 * Visit a parse tree produced by the {@code arrayDeclaration}
+	 * labeled alternative in {@link CASCParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitArrayDeclaration(ctx : CASCParser.ArrayDeclarationContext) : T
 	/**
 	 * Visit a parse tree produced by the {@code divide}
 	 * labeled alternative in {@link CASCParser#expression}.

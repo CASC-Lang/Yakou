@@ -26,6 +26,11 @@ priv class CASC {
         g := f.abc
         h := f.abc
         i := uwu
+        j := i32[10]
+        k := bool[20]
+        l := char[9]
+        m := java::lang::Integer[10]
+        n := i32[10][10]
         println(i)
     }
 
