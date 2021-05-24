@@ -2,6 +2,7 @@ package io.github.chaosunity.casc.visitor.statement
 
 import io.github.chaosunity.casc.CASCBaseVisitor
 import io.github.chaosunity.casc.CASCParser
+import io.github.chaosunity.casc.parsing.node.expression.LocalVariableReference
 import io.github.chaosunity.casc.parsing.node.statement.*
 import io.github.chaosunity.casc.parsing.scope.CallingScope
 import io.github.chaosunity.casc.parsing.scope.LocalVariable
@@ -21,7 +22,12 @@ class ForVisitor(scope: Scope) : CASCBaseVisitor<ForStatement<*>>() {
         val stopAt = StopAt.valueOf(ctx.range?.text!!)
 
         return if (scope.isLocalVariableExists(variableName)) {
-            val iteratorVariable = Assignment(variableName, startExpression, CallingScope.STATIC)
+            val iteratorVariable = Assignment(
+                variableName,
+                LocalVariableReference(scope.getLocalVariable(variableName)),
+                startExpression,
+                CallingScope.STATIC
+            )
 
             RangedForStatement(
                 iteratorVariable,

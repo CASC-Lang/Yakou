@@ -1,7 +1,20 @@
 class CASC {
+    mut k: i32
+    pub comp mut:
+        kk: i32
+        dd: i32[]
+
+
     comp fn main(arg: str[]) {
-        a := { { !1 } }
+        a := { { 1 } }
         b := a[0][0]
         c := (i32:[1][1])[0]
+        d := CASC()
+        kk = 1
+        dd = i32:[10]
+    }
+
+    fn i() {
+        kk = 10
     }
 }

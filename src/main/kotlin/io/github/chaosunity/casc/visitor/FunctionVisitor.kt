@@ -24,13 +24,19 @@ class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function<*>>() {
 
         if (scope.callingScope == CallingScope.STATIC) {
             fieldsHolder = scope.fields
+
+            val staticFields = scope.fields.filter { it.value.static }
+
             scope.fields.clear()
+            scope.fields.putAll(staticFields)
         }
 
         val block = getBlock(ctx.findBlock()!!)
 
-        if (scope.callingScope == CallingScope.STATIC)
+        if (scope.callingScope == CallingScope.STATIC) {
+            scope.fields.clear()
             scope.fields.putAll(fieldsHolder)
+        }
 
         return Function<Function<*>>(signature, block, accessModifier, static)
     }
