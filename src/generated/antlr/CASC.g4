@@ -65,6 +65,7 @@ expression              : superCall=SELF '('argument? (',' argument)*')'        
                         | qualifiedName '::' ID                                                                 #fieldCall
                         | owner=expression '.' ID                                                               #fieldCall
                         | NEG=MINUS expression                                                                  #negativeExpression
+                        | NEG=EXCLAMATION_MK expression                                                         #negativeExpression
                         | '(' expression ')'                                                                    #wrappedExpression
                         | varReference                                                                          #varRef
                         | expression cmp=GREATER expression                                                     #conditionalExpression
@@ -84,9 +85,9 @@ expression              : superCall=SELF '('argument? (',' argument)*')'        
                         | expression SLASH expression                                                           #divide
                         | expression PLUS expression                                                            #add
                         | expression MINUS expression                                                           #subtract
-                        | type '[' expression ']' ('[' expression ']')*                                         #arrayDeclaration
-                        | '{' expression (',' expression)* '}'                                                  #arrayInitialization
-                        | varReference '[' expression ']' ('[' expression ']')*                                 #arrayReference
+                        | referenceExpression=expression '[' indexExpression=expression ']'                     #indexEpxression
+                        | type COLON '[' expression ']' ('[' expression ']')*                                   #arrayDeclaration
+                        | '{' (expression (',' expression)*)? '}'                                               #arrayInitialization
                         | (NUMBER | BOOL | STRING | NULL)                                                       #value
                         ;
 
@@ -130,6 +131,7 @@ SLASH           : '/'                               ;
 EQUALS          : '='                               ;
 ASSIGN_EQ       : ':='                              ;
 QUETION_MK      : '?'                               ;
+EXCLAMATION_MK  : '!'                               ;
 COLON           : ':'                               ;
 
 GREATER         : '>'                               ;

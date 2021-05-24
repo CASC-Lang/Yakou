@@ -1,5 +1,7 @@
 class CASC {
     comp fn main(arg: str[]) {
-        b := { { 1, 2 } }
+        a := { { !1 } }
+        b := a[0][0]
+        c := (i32:[1][1])[0]
     }
 }

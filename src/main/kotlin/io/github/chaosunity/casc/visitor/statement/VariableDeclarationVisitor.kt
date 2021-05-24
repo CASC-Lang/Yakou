@@ -15,14 +15,7 @@ class VariableDeclarationVisitor(private val ev: ExpressionVisitor, private val 
         val immutable = ctx.MUT() == null
         val variableName = ctx.findName()!!.text
         val expression = ctx.findExpression()!!.accept(ev)
-        val expressionType = expression.type
-
-        val type = if (expression is Reference<*> && expressionType is ArrayType) {
-            val resultDimension = expressionType.dimension - expression.dimensions.size
-
-            if (resultDimension == 0) expressionType.baseType
-            else ArrayType(expressionType.baseType, resultDimension)
-        } else expression.type
+        val type = expression.type
 
         scope.addLocalVariable(LocalVariable(variableName, type, immutable))
 

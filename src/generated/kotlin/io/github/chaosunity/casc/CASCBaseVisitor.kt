@@ -284,6 +284,13 @@ open class CASCBaseVisitor<T> : AbstractParseTreeVisitor<T>(), CASCVisitor<T> {
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
+	override fun visitIndexEpxression(ctx : CASCParser.IndexEpxressionContext ) : T { return this!!.visitChildren(ctx)!! }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
 	override fun visitFunctionCall(ctx : CASCParser.FunctionCallContext ) : T { return this!!.visitChildren(ctx)!! }
 	/**
 	 * {@inheritDoc}
@@ -313,13 +320,6 @@ open class CASCBaseVisitor<T> : AbstractParseTreeVisitor<T>(), CASCVisitor<T> {
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	override fun visitDivide(ctx : CASCParser.DivideContext ) : T { return this!!.visitChildren(ctx)!! }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	override fun visitArrayReference(ctx : CASCParser.ArrayReferenceContext ) : T { return this!!.visitChildren(ctx)!! }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -22,6 +22,8 @@ class ClassType(override val typeName: String) : Type {
         get() = throw RuntimeException("Multiplication operation is not supported for custom objects")
     override val divideOpcode: Int
         get() = throw RuntimeException("Division operation is not supported for custom objects")
+    override val negativeOpcode: Int
+        get() = throw RuntimeException("Negate operation is not supported for custom objects")
     override val typeOpcode: Int
         get() = throw RuntimeException("Type operation is not supported for custom objects")
     override val arrayLoadOpcode: Int = AALOAD

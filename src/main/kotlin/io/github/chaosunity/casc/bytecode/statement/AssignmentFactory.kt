@@ -16,64 +16,15 @@ class AssignmentFactory(private val mv: MethodVisitor, private val ef: Expressio
         val type = expression.type
 
         if (scope.isLocalVariableExists(variableName)) {
-            if (assignment.dimensions.isEmpty()) {
-                if (!initialAssignment && scope.getLocalVariable(variableName).immutable)
-                    throw RuntimeException("Cannot assign value to immutable variable '$variableName'.")
+            if (!initialAssignment && scope.getLocalVariable(variableName).immutable)
+                throw RuntimeException("Cannot assign value to immutable variable '$variableName'.")
 
-                val index = scope.getLocalVariableIndex(variableName)
+            val index = scope.getLocalVariableIndex(variableName)
 
-                if (!initialAssignment) expression.accept(ef)
+            if (!initialAssignment) expression.accept(ef)
+            mv.visitVarInsn(type.storeVariableOpcode, index)
 
-                if (expression is Reference<*>) {
-                    val referencedType = if (scope.isFieldExists(expression.name)) scope.getField(expression.name).type
-                    else scope.getLocalVariable(expression.name).type
-
-                    if (referencedType is ArrayType) {
-                        val assignableDimension = referencedType.dimension - expression.dimensions.size
-                        val assignableType = if (assignableDimension == 0) referencedType.baseType
-                        else ArrayType(referencedType.baseType, assignableDimension)
-
-                        mv.visitVarInsn(assignableType.storeVariableOpcode, index)
-
-                        return
-                    }
-                }
-
-                mv.visitVarInsn(type.storeVariableOpcode, index)
-
-                return
-            } else {
-                val variableType = if (scope.isFieldExists(variableName)) scope.getField(variableName).type
-                else scope.getLocalVariable(variableName).type
-
-                if (variableType !is ArrayType)
-                    throw RuntimeException("Type $variableType cannot be indexed.")
-
-                val assignableDimension = variableType.dimension - assignment.dimensions.size
-                val assignableType = if (assignableDimension == 0) variableType.baseType
-                else ArrayType(variableType.baseType, assignableDimension)
-
-                if (expression.type != assignableType)
-                    throw RuntimeException("Cannot cast type ${expression.type} into $assignableType.")
-
-                val index = scope.getLocalVariableIndex(variableName)
-                val dimensions = assignment.dimensions.toMutableList()
-                val lastDimension = dimensions.removeLast()
-
-                mv.visitVarInsn(ALOAD, index)
-
-                dimensions.forEach {
-                    it.accept(ef)
-                    mv.visitInsn(AALOAD)
-                }
-
-                lastDimension.accept(ef)
-                expression.accept(ef)
-
-                mv.visitInsn(assignableType.arrayStoreOpcode)
-
-                return
-            }
+            return
         }
 
         val field = scope.getField(variableName)
@@ -83,39 +34,7 @@ class AssignmentFactory(private val mv: MethodVisitor, private val ef: Expressio
             throw RuntimeException("Cannot assign value to immutable field '$variableName'.")
 
         mv.visitVarInsn(ALOAD, 0)
-
-        if (assignment.dimensions.isEmpty()) {
-            expression.accept(ef)
-
-            mv.visitFieldInsn(PUTFIELD, field.ownerType.internalName, field.name, descriptor)
-        } else {
-            mv.visitFieldInsn(GETFIELD, field.ownerType.internalName, field.name, descriptor)
-
-            val variableType = if (scope.isFieldExists(variableName)) scope.getField(variableName).type
-            else scope.getLocalVariable(variableName).type
-
-            if (variableType !is ArrayType)
-                throw RuntimeException("Type $variableType cannot be indexed.")
-
-            val assignableDimension = variableType.dimension - assignment.dimensions.size
-            val assignableType = if (assignableDimension == 0) variableType.baseType
-            else ArrayType(variableType.baseType, assignableDimension)
-
-            if (expression.type != assignableType)
-                throw RuntimeException("Cannot cast type ${expression.type} into $assignableType.")
-
-            val dimensions = assignment.dimensions.toMutableList()
-            val lastDimension = dimensions.removeLast()
-
-            dimensions.forEach {
-                it.accept(ef)
-                mv.visitInsn(AALOAD)
-            }
-
-            lastDimension.accept(ef)
-            expression.accept(ef)
-
-            mv.visitInsn(assignableType.arrayStoreOpcode)
-        }
+        expression.accept(ef)
+        mv.visitFieldInsn(PUTFIELD, field.ownerType.internalName, field.name, descriptor)
     }
 }

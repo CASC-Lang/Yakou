@@ -15,19 +15,7 @@ class VariableReferenceVisitor(private val ev: ExpressionVisitor, private val sc
     override fun visitVarReference(ctx: CASCParser.VarReferenceContext): Reference<*> =
         getReference(ctx.text)
 
-    override fun visitArrayReference(ctx: CASCParser.ArrayReferenceContext): Reference<*> =
-        getReference(ctx.text, ctx.findExpression())
-
-    internal fun getReference(name: String, dimensionsCtx: List<CASCParser.ExpressionContext> = listOf()): Reference<*> {
-        val dimensions = dimensionsCtx.map {
-            it.accept(ev)
-        }.onEach {
-            if (!it.type.isInt() && !it.type.isLong())
-                throw RuntimeException("Cannot index an array with type ${it.type}.")
-        }
-
-        return if (scope.isFieldExists(name)) FieldReference(scope.getField(name), dimensions)
-        else LocalVariableReference(scope.getLocalVariable(name), dimensions)
-    }
-
+    private fun getReference(name: String): Reference<*> =
+        if (scope.isFieldExists(name)) FieldReference(scope.getField(name))
+        else LocalVariableReference(scope.getLocalVariable(name))
 }

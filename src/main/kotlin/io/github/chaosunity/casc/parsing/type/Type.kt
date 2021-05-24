@@ -15,10 +15,17 @@ interface Type {
     val subtractOpcode: Int
     val multiplyOpcode: Int
     val divideOpcode: Int
+    val negativeOpcode: Int
 
     val typeOpcode: Int
     val arrayLoadOpcode: Int
     val arrayStoreOpcode: Int
+
+    fun isByte(): Boolean =
+        this == BuiltInType.BYTE
+
+    fun isShort(): Boolean =
+        this == BuiltInType.SHORT
 
     fun isInt(): Boolean =
         this == BuiltInType.INT
@@ -31,6 +38,9 @@ interface Type {
 
     fun isDouble(): Boolean =
         this == BuiltInType.DOUBLE
+
+    fun isNumeric(): Boolean =
+        isByte() || isShort() || isInt() || isLong() || isFloat() || isDouble()
 
     fun isBool(): Boolean =
         this == BuiltInType.BOOLEAN

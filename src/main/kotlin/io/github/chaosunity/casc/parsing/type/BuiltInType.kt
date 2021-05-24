@@ -31,6 +31,7 @@ enum class BuiltInType(
     override val subtractOpcode: Int = opcodes.sub
     override val multiplyOpcode: Int = opcodes.mul
     override val divideOpcode: Int = opcodes.div
+    override val negativeOpcode: Int = opcodes.neg
 
     override val typeOpcode: Int = opcodes.type
     override val arrayLoadOpcode: Int = opcodes.arrayLoad

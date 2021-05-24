@@ -8,6 +8,7 @@ import jdk.internal.org.objectweb.asm.MethodVisitor
 
 class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
     private val rf = ReferenceFactory(mv, this, scope)
+    private val `if` = IndexFactory(mv, this)
     private val adf = ArrayDeclarationFactory(mv, this)
     private val aif = ArrayInitializationFactory(mv, this)
     private val vf = ValueFactory(mv)
@@ -16,12 +17,14 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
     private val conditionalFactory = ConditionalFactory(this, mv)
     private val callFactory = CallFactory(this, scope, mv)
     private val af = ArithmeticFactory(this, mv)
+    private val nf = NegativeFactory(mv, this)
 
-    fun generate(expression: Expression<*>) =
+    fun generate(expression: Expression<*>): Unit =
         when (expression) {
             is FieldReference -> generate(expression)
             is LocalVariableReference -> generate(expression)
             is Parameter -> generate(expression)
+            is Index -> generate(expression)
             is ArrayDeclaration -> generate(expression)
             is ArrayInitialization -> generate(expression)
             is Value -> generate(expression)
@@ -35,6 +38,8 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
             is Division -> generate(expression)
             is Conditional -> generate(expression)
             is IfExpression -> generate(expression)
+            is Wrapped -> generate(expression.expression)
+            is Negative -> generate(expression)
             is EmptyExpression -> {
             }
             else -> throw RuntimeException("Invalid syntax feature.\nDetail: $expression")
@@ -48,6 +53,9 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
 
     fun generate(parameter: Parameter) =
         pf.generate(parameter)
+
+    fun generate(index: Index) =
+        `if`.generate(index)
 
     fun generate(declaration: ArrayDeclaration) =
         adf.generate(declaration)
@@ -81,6 +89,9 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
 
     fun generate(expression: Division) =
         af.generate(expression)
+
+    fun generate(negative: Negative) =
+        nf.generate(negative)
 
     fun generate(conditional: Conditional) =
         conditionalFactory.generate(conditional)
