@@ -42,7 +42,7 @@ statement       : block
                 ;
 
 variableDeclaration     : MUT? name ASSIGN_EQ expression                    ;
-assignment              : expression EQUALS expression                      ;
+assignment              : ref=expression EQUALS toAssign=expression         ;
 printStatement          : PRINT '('expression')'                            ;
 printlnStatement        : PRINTLN '('expression')'                          ;
 returnStatement         : RETURN expression                                 #ReturnWithValue

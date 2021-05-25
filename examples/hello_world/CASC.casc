@@ -10,6 +10,8 @@ class CASC {
         b := a[0][0]
         c := (i32:[1][1])[0]
         d := CASC()
+        e := d.dd
+        d.k = 1
         kk = 1
         dd = i32:[10]
     }

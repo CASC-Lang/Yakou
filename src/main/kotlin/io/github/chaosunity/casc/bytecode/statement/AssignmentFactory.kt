@@ -2,6 +2,7 @@ package io.github.chaosunity.casc.bytecode.statement
 
 import io.github.chaosunity.casc.bytecode.expression.ExpressionFactory
 import io.github.chaosunity.casc.parsing.node.expression.Expression
+import io.github.chaosunity.casc.parsing.node.expression.FieldCall
 import io.github.chaosunity.casc.parsing.node.expression.Reference
 import io.github.chaosunity.casc.parsing.node.statement.Assignment
 import io.github.chaosunity.casc.parsing.scope.CallingScope
@@ -17,7 +18,7 @@ class AssignmentFactory(private val mv: MethodVisitor, private val ef: Expressio
         val expression = assignment.expression
         val type = expression.type
 
-        if (scope.isLocalVariableExists(variableName)) {
+        if (variableName != null && scope.isLocalVariableExists(variableName)) {
             if (!initialAssignment && scope.getLocalVariable(variableName).immutable)
                 throw RuntimeException("Cannot assign value to immutable variable '$variableName'.")
 
@@ -30,34 +31,35 @@ class AssignmentFactory(private val mv: MethodVisitor, private val ef: Expressio
         }
 
         val callingScope = assignment.callingScope
-        val field = scope.getField(variableName)
-        val ownerTypeInternalName = field.ownerType.internalName
-        val fieldName = field.name
-        val descriptor = field.type.descriptor
 
-        when (callingScope) {
-            CallingScope.CONSTRUCTOR -> {
-                if (!initialAssignment && field.immutable)
-                    throw RuntimeException("Cannot assign value to immutable field '$variableName'.")
-            }
-            CallingScope.OBJECT -> {
-                if (initialAssignment)
-                    throw RuntimeException("Cannot initialize field in object's function.")
-
-                if (field.immutable)
-                    throw RuntimeException("Cannot assign value to immutable field '$variableName'.")
-            }
-            CallingScope.STATIC -> {
-                if (initialAssignment)
-                    throw RuntimeException("Cannot initialize static field in object's function.")
-
-                if (field.immutable)
-                    throw RuntimeException("Cannot assign value to immutable field '$variableName'.")
-            }
-        }
-
-        when (assignment.variableReference) {
+        when (variableReference) {
             is Reference<*> -> {
+                val field = scope.getField(variableReference.name)
+                val ownerTypeInternalName = field.ownerType.internalName
+                val fieldName = field.name
+                val descriptor = field.type.descriptor
+
+                when (callingScope) {
+                    CallingScope.CONSTRUCTOR -> {
+                        if (!initialAssignment && field.immutable)
+                            throw RuntimeException("Cannot assign value to immutable field '$variableName'.")
+                    }
+                    CallingScope.OBJECT -> {
+                        if (initialAssignment)
+                            throw RuntimeException("Cannot initialize field in object's function.")
+
+                        if (field.immutable)
+                            throw RuntimeException("Cannot assign value to immutable field '$variableName'.")
+                    }
+                    CallingScope.STATIC -> {
+                        if (initialAssignment)
+                            throw RuntimeException("Cannot initialize static field in object's function.")
+
+                        if (field.immutable)
+                            throw RuntimeException("Cannot assign value to immutable field '$variableName'.")
+                    }
+                }
+
                 generateVariableReferenceAssignment(
                     expression,
                     ownerTypeInternalName,
@@ -65,6 +67,27 @@ class AssignmentFactory(private val mv: MethodVisitor, private val ef: Expressio
                     descriptor,
                     callingScope
                 )
+            }
+            is FieldCall -> {
+                val ownerType = variableReference.owner.type
+
+                if (!variableReference.static)
+                    variableReference.owner.accept(ef)
+
+                expression.accept(ef)
+
+                mv.visitFieldInsn(
+                    if (variableReference.static) PUTSTATIC else PUTFIELD,
+                    ownerType.internalName,
+                    variableReference.identifier,
+                    variableReference.type.descriptor
+                )
+            }
+            else -> {
+                variableReference.accept(ef)
+
+                expression.accept(ef)
+
             }
         }
     }
@@ -92,17 +115,5 @@ class AssignmentFactory(private val mv: MethodVisitor, private val ef: Expressio
                 mv.visitFieldInsn(PUTSTATIC, ownerTypeInternalName, fieldName, descriptor)
             }
         }
-    }
-
-    private fun generateIndexedVariableReferenceAssignment(
-        leftExpression: Expression<*>,
-        rightExpression: Expression<*>,
-        ownerTypeInternalName: String,
-        fieldName: String,
-        descriptor: String,
-        callingScope: CallingScope
-    ) {
-        leftExpression.accept(ef)
-
     }
 }

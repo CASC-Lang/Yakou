@@ -19,7 +19,7 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
             if (field.static) GETSTATIC else GETFIELD,
             ownerType.internalName,
             field.identifier,
-            field.type.internalName
+            field.type.descriptor
         )
     }
 

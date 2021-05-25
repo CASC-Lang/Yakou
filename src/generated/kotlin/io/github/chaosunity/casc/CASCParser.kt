@@ -1545,9 +1545,11 @@ class CASCParser(input: TokenStream) : Parser(input) {
 	    override var ruleIndex: Int
 	        get() = Rules.RULE_assignment.id
 	        set(value) { throw RuntimeException() }
+		var ref: ExpressionContext? = null
+		var toAssign: ExpressionContext? = null
+		fun EQUALS() : TerminalNode? = getToken(CASCParser.Tokens.EQUALS.id, 0)
 		fun findExpression() : List<ExpressionContext> = getRuleContexts(solver.getType("ExpressionContext"))
 		fun findExpression(i: Int) : ExpressionContext? = getRuleContext(solver.getType("ExpressionContext"),i)
-		fun EQUALS() : TerminalNode? = getToken(CASCParser.Tokens.EQUALS.id, 0)
 		constructor(parent: ParserRuleContext?, invokingState: Int) : super(parent, invokingState){
 		}
 		override fun <T> accept(visitor : ParseTreeVisitor<out T>) : T {
@@ -1563,11 +1565,11 @@ class CASCParser(input: TokenStream) : Parser(input) {
 			enterOuterAlt(_localctx, 1)
 			if (true){
 			this.state = 231
-			expression(0)
+			(_localctx as AssignmentContext).ref = expression(0)
 			this.state = 232
 			match(EQUALS) as Token
 			this.state = 233
-			expression(0)
+			(_localctx as AssignmentContext).toAssign = expression(0)
 			}
 		}
 		catch (re: RecognitionException) {

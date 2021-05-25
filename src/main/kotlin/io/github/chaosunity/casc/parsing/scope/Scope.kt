@@ -9,6 +9,7 @@ import io.github.chaosunity.casc.parsing.type.Type
 
 class Scope(private val metadata: MetaData) {
     val localVariables = linkedMapOf<String, LocalVariable>()
+    private val concealedFields = linkedMapOf<String, Field>()
     val fields = linkedMapOf<String, Field>()
     val functionSignatures = mutableListOf<FunctionSignature>()
 
@@ -20,6 +21,7 @@ class Scope(private val metadata: MetaData) {
 
     constructor(scope: Scope) : this(scope.metadata) {
         callingScope = scope.callingScope
+        concealedFields += scope.concealedFields
         localVariables += scope.localVariables
         fields += scope.fields
         functionSignatures += scope.functionSignatures
@@ -77,6 +79,27 @@ class Scope(private val metadata: MetaData) {
                 )
         } else getMethodCallSignature(methodName, arguments)
 
+    fun concealNonStaticFields() {
+        if (callingScope != CallingScope.STATIC)
+            return
+
+        val staticFields = fields.filter { it.value.static }
+
+        concealedFields.putAll(fields)
+        fields.clear()
+        fields.putAll(staticFields)
+    }
+
+    fun revealNonStaticFields() {
+        if (callingScope != CallingScope.STATIC)
+            return
+
+        val nonStaticFields = concealedFields
+
+        fields.putAll(nonStaticFields)
+        concealedFields.clear()
+    }
+
     fun addField(field: Field) {
         fields += field.name to field
     }
@@ -91,6 +114,8 @@ class Scope(private val metadata: MetaData) {
                     )
                 }#$fieldName' does not exist."
             )
+        } else if (owner != null && owner == classType) {
+            concealedFields[fieldName] ?: fields[fieldName] ?: throw RuntimeException("Field '$fieldName' does not exist.")
         } else getField(fieldName)
 
     fun getField(fieldName: String): Field =
