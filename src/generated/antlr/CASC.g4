@@ -53,7 +53,7 @@ forStatement            : FOR forExpressions? statement ;
 forExpressions          : ('(')? (forRangedExpression | forLoopExpression) (')')? ;
 forRangedExpression     : iterator=varReference COLON startExpr=expression arrow=forArrow endExpr=expression ;
 forArrow                : '->' | '<-' | '|>' | '<|' ;
-forLoopExpression       : initStatement=statement ';' conditionExpr=expression? ';' postStatement=statement ;
+forLoopExpression       : initStatement=statement? ';' conditionExpr=expression? ';' postStatement=statement? ;
 name                    : ID ;
 argument                : expression
                         | name EQUALS expression ;
