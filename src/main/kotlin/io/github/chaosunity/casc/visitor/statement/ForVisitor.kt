@@ -3,17 +3,23 @@ package io.github.chaosunity.casc.visitor.statement
 import io.github.chaosunity.casc.CASCBaseVisitor
 import io.github.chaosunity.casc.CASCParser
 import io.github.chaosunity.casc.parsing.node.expression.LocalVariableReference
-import io.github.chaosunity.casc.parsing.node.statement.Assignment
-import io.github.chaosunity.casc.parsing.node.statement.ForStatement
-import io.github.chaosunity.casc.parsing.node.statement.RangedForStatement
-import io.github.chaosunity.casc.parsing.node.statement.VariableDeclaration
+import io.github.chaosunity.casc.parsing.node.statement.*
 import io.github.chaosunity.casc.parsing.scope.LocalVariable
 import io.github.chaosunity.casc.parsing.scope.Scope
 import io.github.chaosunity.casc.visitor.expression.ExpressionVisitor
 
 class ForVisitor(private val scope: Scope) : CASCBaseVisitor<ForStatement<*>>() {
     override fun visitForStatement(ctx: CASCParser.ForStatementContext): ForStatement<*> =
-        visitForRangedExpression(ctx.findForRangedExpression()!!)
+        if (ctx.findForExpressions() != null) {
+            val forExpression = ctx.findForExpressions()!!
+
+            if (forExpression.findForRangedExpression() != null)
+                visitForRangedExpression(forExpression.findForRangedExpression()!!)
+            else
+                visitForLoopExpression(forExpression.findForLoopExpression()!!)
+        } else {
+            InfiniteForStatement(ctx.findStatement()!!.accept(StatementVisitor(scope)), Scope(scope))
+        }
 
     override fun visitForRangedExpression(ctx: CASCParser.ForRangedExpressionContext): ForStatement<*> {
         val scope = Scope(scope)
@@ -24,7 +30,7 @@ class ForVisitor(private val scope: Scope) : CASCBaseVisitor<ForStatement<*>>() 
         val startExpression = ctx.startExpr!!.accept(ev)
         val arrow = ctx.arrow!!.text
         val endExpression = ctx.endExpr!!.accept(ev)
-        val statement = (ctx.readParent() as CASCParser.ForStatementContext).findStatement()!!
+        val statement = (ctx.readParent()!!.readParent() as CASCParser.ForStatementContext).findStatement()!!
 
         return if (scope.isLocalVariableExists(variableName)) {
             val iteratorVariable = Assignment(
@@ -59,5 +65,25 @@ class ForVisitor(private val scope: Scope) : CASCBaseVisitor<ForStatement<*>>() 
                 scope
             )
         }
+    }
+
+    override fun visitForLoopExpression(ctx: CASCParser.ForLoopExpressionContext): ForStatement<*> {
+        val scope = Scope(scope)
+        val ev = ExpressionVisitor(scope)
+        val sv = StatementVisitor(scope)
+
+        val initStatement = ctx.initStatement?.accept(sv)
+        val conditionExpression = ctx.conditionExpr?.accept(ev)
+        val postStatement = ctx.postStatement?.accept(sv)
+
+        val statement = (ctx.readParent()!!.readParent() as CASCParser.ForStatementContext).findStatement()!!.accept(sv)
+
+        return ForLoopStatement(
+            initStatement,
+            conditionExpression,
+            postStatement,
+            statement,
+            Scope(scope)
+        )
     }
 }

@@ -25,6 +25,8 @@ class StatementFactory(mv: MethodVisitor, scope: Scope) {
             is IfStatement -> generate(expression)
             is PrintlnStatement -> generate(expression)
             is PrintStatement -> generate(expression)
+            is InfiniteForStatement -> generate(expression)
+            is ForLoopStatement -> generate(expression)
             is RangedForStatement -> generate(expression)
             is ReturnStatement -> generate(expression)
             is VariableDeclaration -> generate(expression)
@@ -34,33 +36,32 @@ class StatementFactory(mv: MethodVisitor, scope: Scope) {
     fun generate(print: PrintStatement) =
         pf.generate(print)
 
-
     fun generate(println: PrintlnStatement) =
         pf.generate(println)
 
     fun generate(variableDeclaration: VariableDeclaration) =
         vdf.generate(variableDeclaration)
 
-
     fun generate(functionCall: FunctionCall) =
         ef.generate(functionCall)
-
 
     fun generate(returnStatement: ReturnStatement) =
         rf.generate(returnStatement)
 
-
     fun generate(ifStatement: IfStatement) =
         iff.generate(ifStatement)
-
 
     fun generate(block: Block) =
         bf.generate(block)
 
+    fun generate(infiniteFor: InfiniteForStatement) =
+        ff.generate(infiniteFor)
+
+    fun generate(forLoop: ForLoopStatement) =
+        ff.generate(forLoop)
 
     fun generate(rangedFor: RangedForStatement) =
         ff.generate(rangedFor)
-
 
     fun generate(assignment: Assignment, initialAssignment: Boolean = false) =
         af.generate(assignment, initialAssignment)

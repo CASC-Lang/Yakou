@@ -2,11 +2,9 @@ package io.github.chaosunity.casc.visitor.statement
 
 import io.github.chaosunity.casc.CASCBaseVisitor
 import io.github.chaosunity.casc.CASCParser
-import io.github.chaosunity.casc.parsing.node.expression.Reference
 import io.github.chaosunity.casc.parsing.node.statement.VariableDeclaration
 import io.github.chaosunity.casc.parsing.scope.LocalVariable
 import io.github.chaosunity.casc.parsing.scope.Scope
-import io.github.chaosunity.casc.parsing.type.ArrayType
 import io.github.chaosunity.casc.visitor.expression.ExpressionVisitor
 
 class VariableDeclarationVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :

@@ -1,16 +1,8 @@
 class CASC {
     comp fn main(arg: str[]) {
-        for i : 1 -> 2 {
+        for mut i := 10; i <= 20; {
             println(i)
-        }
-        for i : 1 |> 2 {
-            println(i)
-        }
-        for i : 1 <- 10 {
-            println(i)
-        }
-        for i : 1 <| 10 {
-            println(i)
+            i = i + 1
         }
     }
 }

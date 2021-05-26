@@ -31,14 +31,14 @@ qualifiedName   : ID ('::' ID)* ;
 block           : '{' statement* '}' ;
 
 statement       : block
-                | variableDeclaration
-                | assignment
-                | printStatement
-                | printlnStatement
-                | forStatement
-                | returnStatement
-                | ifStatement
-                | expression
+                | variableDeclaration ';'?
+                | assignment ';'?
+                | printStatement ';'?
+                | printlnStatement ';'?
+                | forStatement ';'?
+                | returnStatement ';'?
+                | ifStatement ';'?
+                | expression ';'?
                 ;
 
 variableDeclaration     : MUT? name ASSIGN_EQ expression                    ;
@@ -49,9 +49,11 @@ returnStatement         : RETURN expression                                 #Ret
                         | RETURN                                            #ReturnVoid
                         ;
 ifStatement             : IF ('(')? condition=expression (')')? trueStatement=statement (ELSE falseStatement=statement)?;
-forStatement            : FOR ('(')? forRangedExpression (')')? statement ;
+forStatement            : FOR forExpressions? statement ;
+forExpressions          : ('(')? (forRangedExpression | forLoopExpression) (')')? ;
 forRangedExpression     : iterator=varReference COLON startExpr=expression arrow=forArrow endExpr=expression ;
 forArrow                : '->' | '<-' | '|>' | '<|' ;
+forLoopExpression       : initStatement=statement ';' conditionExpr=expression? ';' postStatement=statement ;
 name                    : ID ;
 argument                : expression
                         | name EQUALS expression ;
