@@ -1,5 +1,8 @@
 class Student {
-    ctor(name: string) {
+    pub comp mut:
+        lol: i32
+
+    ctor(name: str) {
         println(name)
     }
 }

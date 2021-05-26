@@ -54,8 +54,8 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
     fun generate(parameter: Parameter) =
         pf.generate(parameter)
 
-    fun generate(index: Index) =
-        `if`.generate(index)
+    fun generate(index: Index, load: Boolean = true) =
+        `if`.generate(index, load)
 
     fun generate(declaration: ArrayDeclaration) =
         adf.generate(declaration)

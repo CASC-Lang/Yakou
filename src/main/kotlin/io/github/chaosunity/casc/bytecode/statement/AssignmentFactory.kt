@@ -3,6 +3,7 @@ package io.github.chaosunity.casc.bytecode.statement
 import io.github.chaosunity.casc.bytecode.expression.ExpressionFactory
 import io.github.chaosunity.casc.parsing.node.expression.Expression
 import io.github.chaosunity.casc.parsing.node.expression.FieldCall
+import io.github.chaosunity.casc.parsing.node.expression.Index
 import io.github.chaosunity.casc.parsing.node.expression.Reference
 import io.github.chaosunity.casc.parsing.node.statement.Assignment
 import io.github.chaosunity.casc.parsing.scope.CallingScope
@@ -14,7 +15,6 @@ import jdk.internal.org.objectweb.asm.Opcodes.*
 class AssignmentFactory(private val mv: MethodVisitor, private val ef: ExpressionFactory, private val scope: Scope) {
     fun generate(assignment: Assignment, initialAssignment: Boolean = false) {
         val variableName = assignment.variableName
-        val variableReference = assignment.variableReference
         val expression = assignment.expression
         val type = expression.type
 
@@ -30,14 +30,13 @@ class AssignmentFactory(private val mv: MethodVisitor, private val ef: Expressio
             return
         }
 
-        val callingScope = assignment.callingScope
-
-        when (variableReference) {
+        when (val variableReference = assignment.variableReference) {
             is Reference<*> -> {
                 val field = scope.getField(variableReference.name)
                 val ownerTypeInternalName = field.ownerType.internalName
                 val fieldName = field.name
                 val descriptor = field.type.descriptor
+                val callingScope = assignment.callingScope
 
                 when (callingScope) {
                     CallingScope.CONSTRUCTOR -> {
@@ -83,12 +82,15 @@ class AssignmentFactory(private val mv: MethodVisitor, private val ef: Expressio
                     variableReference.type.descriptor
                 )
             }
-            else -> {
-                variableReference.accept(ef)
+            is Index -> {
+                val storeType = variableReference.type
 
+                ef.generate(variableReference, false)
                 expression.accept(ef)
 
+                mv.visitInsn(storeType.arrayStoreOpcode)
             }
+            else -> throw RuntimeException("Unsupported assignment operation.")
         }
     }
 
@@ -100,12 +102,7 @@ class AssignmentFactory(private val mv: MethodVisitor, private val ef: Expressio
         callingScope: CallingScope
     ) {
         when (callingScope) {
-            CallingScope.CONSTRUCTOR -> {
-                mv.visitVarInsn(ALOAD, 0)
-                rightExpression.accept(ef)
-                mv.visitFieldInsn(PUTFIELD, ownerTypeInternalName, fieldName, descriptor)
-            }
-            CallingScope.OBJECT -> {
+            CallingScope.CONSTRUCTOR, CallingScope.OBJECT -> {
                 mv.visitVarInsn(ALOAD, 0)
                 rightExpression.accept(ef)
                 mv.visitFieldInsn(PUTFIELD, ownerTypeInternalName, fieldName, descriptor)
