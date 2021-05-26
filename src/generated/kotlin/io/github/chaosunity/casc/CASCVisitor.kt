@@ -194,6 +194,12 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitForRangedExpression(ctx : CASCParser.ForRangedExpressionContext) : T
 	/**
+	 * Visit a parse tree produced by {@link CASCParser#forArrow}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitForArrow(ctx : CASCParser.ForArrowContext) : T
+	/**
 	 * Visit a parse tree produced by {@link CASCParser#name}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

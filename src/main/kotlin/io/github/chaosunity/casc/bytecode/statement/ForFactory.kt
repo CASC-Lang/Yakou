@@ -5,7 +5,6 @@ import io.github.chaosunity.casc.parsing.LogicalOp
 import io.github.chaosunity.casc.parsing.node.expression.Conditional
 import io.github.chaosunity.casc.parsing.node.expression.LocalVariableReference
 import io.github.chaosunity.casc.parsing.node.statement.RangedForStatement
-import io.github.chaosunity.casc.parsing.node.statement.StopAt
 import io.github.chaosunity.casc.parsing.scope.LocalVariable
 import jdk.internal.org.objectweb.asm.Label
 import jdk.internal.org.objectweb.asm.MethodVisitor
@@ -26,22 +25,28 @@ class ForFactory(private val mv: MethodVisitor) {
         val rightExpression = rangedFor.endExpression
         val leftExpression = LocalVariable(iteratorVariableName, rightExpression.type)
         val iteratorVariable = LocalVariableReference(leftExpression)
-        val conditionalExpression = Conditional(
+        val conditionalExpression = if (rangedFor.forward) Conditional(
             iteratorVariable,
             rightExpression,
-            when (rangedFor.stopAt) {
-                StopAt.TO -> LogicalOp.LESS_EQ
-                StopAt.UNTIL -> LogicalOp.LESS
-            }
+            if (rangedFor.stopTo) LogicalOp.LESS_EQ else LogicalOp.LESS
+        ) else Conditional(
+            iteratorVariable,
+            rangedFor.startExpression,
+            if (rangedFor.stopTo) LogicalOp.GREATER_EQ else LogicalOp.GREATER
         )
 
-        sf.generate(iterator)
-        ef.generate(conditionalExpression)
+        iterator.accept(sf)
+        conditionalExpression.accept(ef)
         mv.visitJumpInsn(IFEQ, endLabel)
         mv.visitLabel(trueLabel)
-        sf.generate(rangedFor.statement)
-        mv.visitIincInsn(innerScope.getLocalVariableIndex(iteratorVariableName), 1)
-        ef.generate(conditionalExpression)
+        rangedFor.statement.accept(sf)
+
+        if (rangedFor.forward)
+            mv.visitIincInsn(innerScope.getLocalVariableIndex(iteratorVariableName), 1)
+        else
+            mv.visitIincInsn(innerScope.getLocalVariableIndex(iteratorVariableName), -1)
+
+        conditionalExpression.accept(ef)
         mv.visitJumpInsn(IFNE, trueLabel)
         mv.visitLabel(endLabel)
     }

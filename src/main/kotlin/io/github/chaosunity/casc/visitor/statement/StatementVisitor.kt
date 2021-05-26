@@ -12,6 +12,7 @@ class StatementVisitor(scope: Scope) : CASCBaseVisitor<Statement<*>>() {
     private val pv = PrintVisitor(ev)
     private val vdv = VariableDeclarationVisitor(ev, scope)
     private val rv = ReturnVisitor(ev)
+    private val fv = ForVisitor(scope)
     private val bv = BlockVisitor(scope)
     private val iv = IfStatementVisitor(this, ev)
     private val av = AssignmentVisitor(ev, scope)
@@ -27,6 +28,9 @@ class StatementVisitor(scope: Scope) : CASCBaseVisitor<Statement<*>>() {
 
     override fun visitReturnWithValue(ctx: CASCParser.ReturnWithValueContext): Statement<*> =
         rv.visitReturnWithValue(ctx)
+
+    override fun visitForStatement(ctx: CASCParser.ForStatementContext): Statement<*> =
+        fv.visitForStatement(ctx)
 
     override fun visitBlock(ctx: CASCParser.BlockContext): Statement<*> =
         bv.visitBlock(ctx)

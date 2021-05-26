@@ -8,7 +8,7 @@ enum class LogicalOp(val sign: String, val opcode: Int) {
     LESS("<", IF_ICMPLT),
     GREATER(">", IF_ICMPGT),
     LESS_EQ("<=", IF_ICMPLE),
-    GRATER_EQ(">=", IF_ICMPGE);
+    GREATER_EQ(">=", IF_ICMPGE);
 
     companion object {
         fun fromString(literal: String?): LogicalOp =

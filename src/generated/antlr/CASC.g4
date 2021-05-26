@@ -50,7 +50,8 @@ returnStatement         : RETURN expression                                 #Ret
                         ;
 ifStatement             : IF ('(')? condition=expression (')')? trueStatement=statement (ELSE falseStatement=statement)?;
 forStatement            : FOR ('(')? forRangedExpression (')')? statement ;
-forRangedExpression     : iterator=varReference COLON startExpr=expression down=DOWN? range=(TO | UNTIL) endExpr=expression ;
+forRangedExpression     : iterator=varReference COLON startExpr=expression arrow=forArrow endExpr=expression ;
+forArrow                : '->' | '<-' | '|>' | '<|' ;
 name                    : ID ;
 argument                : expression
                         | name EQUALS expression ;
