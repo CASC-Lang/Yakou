@@ -19,11 +19,12 @@ class PrintFactory(private val ef: ExpressionFactory, private val mv: MethodVisi
 
     private fun preGenerate(printable: OutputStatement<*>, methodName: String) {
         val expression = printable.expression
+        val type = expression.type
 
         mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
         expression.accept(ef)
 
-        val descriptor = "(${expression.type.descriptor})V"
+        val descriptor = if (type.isBuiltInType()) "(${type.descriptor})V" else "(Ljava/lang/Object;)V"
         val owner = ClassType("java.io.PrintStream")
         val fieldDescriptor = owner.internalName
 

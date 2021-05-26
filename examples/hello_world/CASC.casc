@@ -5,14 +5,16 @@ class CASC {
         kk: i32
         dd: i32[]
 
-
     comp fn main(arg: str[]) {
         d := CASC()
+        e := i32:[10]
+        e[0] = 10
         d.k = 1
         kk = 1
         dd = i32:[10]
         dd[1] = 1
         Student::lol = 1
+        println(d)
     }
 
     fn i() {
