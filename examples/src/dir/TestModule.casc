@@ -1,3 +1,5 @@
+module dir
+
 class TestModule {
     ctor() {
         Student("hi")

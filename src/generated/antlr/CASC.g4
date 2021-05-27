@@ -2,9 +2,10 @@
 grammar CASC;
 
 //RULES
-compilationUnit                 : classDeclaration EOF? ;
+compilationUnit                 : moduleDeclaraion? classDeclaration EOF? ;
+moduleDeclaraion                : MODULE qualifiedName ;
 classDeclaration                : outerAccessMods? CLASS className '{' classBody '}' ;
-className                       : qualifiedName ;
+className                       : ID ;
 classBody                       : (function | constructor | field | fieldDeclaration)* ;
 field                           : innerAccessMods? COMP? MUT? name COLON typeReference (EQUALS expression)? ;
 constructor                     : constructorDeclaration block? ;
@@ -99,6 +100,7 @@ fragment CHAR     :  ('A'..'Z') | ('a'..'z')        ;
 fragment DIGIT    :  ('0'..'9')                     ;
 fragment UNICODE  :  '\u0080'..'\uFFFF'             ;
 
+MODULE          : 'module'                          ;
 CLASS           : 'class'                           ;
 FUNC            : 'fn'                              ;
 CTOR            : 'ctor'                            ;

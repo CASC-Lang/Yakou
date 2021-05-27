@@ -6,7 +6,7 @@ import io.github.chaosunity.casc.parsing.ClassDeclaration
 import jdk.internal.org.objectweb.asm.ClassWriter
 import jdk.internal.org.objectweb.asm.Opcodes.ACC_SUPER
 
-class ClassFactory {
+class ClassFactory(private val qualifiedClassName: String) {
     companion object {
         const val CLASS_VERSION = 52
     }
@@ -14,16 +14,6 @@ class ClassFactory {
     private val cw = ClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS)
 
     fun generate(classDeclaration: ClassDeclaration): ClassWriter {
-        val className = if (Compiler.compilation.source.isFile) {
-            classDeclaration.name
-        } else {
-            val clazz = PackageTree.classes.values.find { it.name == classDeclaration.name }!!
-            var path = clazz.name
-
-            if (clazz.packagePath.isNotEmpty()) path = "${clazz.packagePath}/$path"
-
-            path
-        }
         val methods = classDeclaration.functions
         val fields = classDeclaration.fields
         val mf = MethodFactory(cw)
@@ -32,7 +22,7 @@ class ClassFactory {
         cw.visit(
             CLASS_VERSION,
             classDeclaration.accessModifier.accessOpcode + ACC_SUPER,
-            className,
+            qualifiedClassName,
             null,
             "java/lang/Object",
             null

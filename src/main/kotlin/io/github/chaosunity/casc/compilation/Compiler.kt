@@ -10,13 +10,13 @@ object Compiler {
 
     fun compile() {
         if (compilation.source.isFile) {
-            val absolutePath = compilation.source.absolutePath
-            Parser(absolutePath).parseFile().emitBytecode()
+            PackageTree.sourceSetFolder = compilation.source.parentFile
+            PackageTree.addCASCFile(compilation.source)
+            Parser(compilation.source.absolutePath).parseFile().emitBytecode()
         } else if (compilation.source.isDirectory) {
             PackageTree.init(compilation.source)
-            println(PackageTree.classes)
             PackageTree.classes.forEach {
-                Parser("${compilation.source.path}/${it.value.relativeFilePath}")
+                Parser(it.value.absoluteFilePath)
                     .parseFile()
                     .emitBytecode()
                 it.value.isCompiled = true
