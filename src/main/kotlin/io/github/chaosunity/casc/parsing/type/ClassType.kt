@@ -1,12 +1,29 @@
 package io.github.chaosunity.casc.parsing.type
 
+import io.github.chaosunity.casc.compilation.Compiler
+import io.github.chaosunity.casc.compilation.PackageTree
+import io.github.chaosunity.casc.compilation.Parser
 import jdk.internal.org.objectweb.asm.Opcodes.*
+import java.net.URLClassLoader
 
 class ClassType(override val typeName: String) : Type {
     override fun classType(): Class<*> = try {
+        if (PackageTree.classes.containsKey(internalName) && !PackageTree.classes[internalName]!!.isCompiled) {
+            Parser("${Compiler.compilation.source.path}/${PackageTree.classes[internalName]!!.relativeFilePath}")
+                .parseFile()
+                .emitBytecode()
+            PackageTree.classes[internalName]!!.isCompiled = true
+        }
+
         Class.forName(typeName)
     } catch (e: ClassNotFoundException) {
-        throw RuntimeException()
+        try {
+            val classLoader = URLClassLoader(arrayOf(Compiler.compilation.outputDirectory.toURI().toURL()))
+
+            classLoader.loadClass(typeName)
+        } catch (e: Exception) {
+            throw e
+        }
     }
 
     override val internalName: String = typeName.replace('.', '/')

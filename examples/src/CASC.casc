@@ -1,5 +1,7 @@
 class CASC {
     comp fn main(arg: str[]) {
+        a := Student("ChAoS")
+        b := dir::TestModule()
         for mut i := 10; i <= 20; {
             println(i)
             i = i + 1

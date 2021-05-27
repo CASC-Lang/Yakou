@@ -1,46 +1,26 @@
 package io.github.chaosunity.casc.compilation
 
-import io.github.chaosunity.casc.bytecode.BytecodeFactory
-import io.github.chaosunity.casc.parsing.CompilationUnit
-import io.github.chaosunity.casc.security.CompilationError
-import java.io.File
+object Compiler {
+    lateinit var compilation: Compilation
 
-class Compiler {
-    companion object {
-        private lateinit var outputDirectory: File
-    }
-    private var DEV_MODE = false
-
-    fun compile(args: Array<String>) {
-        DEV_MODE = args.contains("-dev")
-
-        val problem = diagnoseProblem(args)
-
-        if (problem != CompilationError.SAFE)
-            error(problem.msg)
-
-        val cascFile = File(args[0])
-
-        outputDirectory = File(cascFile.parent + "/out")
-        outputDirectory.mkdirs()
-
-        val absolutePath = cascFile.absolutePath
-        val compilationUnit = Parser().getCompilationUnit(absolutePath)
-        saveBytecode(compilationUnit)
+    fun init(args: Array<String>): Compiler {
+        compilation = Compilation(args)
+        return this
     }
 
-    fun diagnoseProblem(args: Array<String>): CompilationError =
-        if (args.isEmpty()) CompilationError.NO_FILE_PROVIDED
-        else if (!args[0].endsWith(".casc") && !args[0].endsWith(".cas")) CompilationError.BAD_FILE_EXTENSION
-        else CompilationError.SAFE
-
-
-    fun saveBytecode(compilationUnit: CompilationUnit) {
-        val generator = BytecodeFactory()
-        val bytecode = generator.generate(compilationUnit)
-        val className = compilationUnit.className
-        val fileName = "$outputDirectory/$className.class"
-
-        File(fileName).writeBytes(bytecode)
+    fun compile() {
+        if (compilation.source.isFile) {
+            val absolutePath = compilation.source.absolutePath
+            Parser(absolutePath).parseFile().emitBytecode()
+        } else if (compilation.source.isDirectory) {
+            PackageTree.init(compilation.source)
+            println(PackageTree.classes)
+            PackageTree.classes.forEach {
+                Parser("${compilation.source.path}/${it.value.relativeFilePath}")
+                    .parseFile()
+                    .emitBytecode()
+                it.value.isCompiled = true
+            }
+        }
     }
 }

@@ -1,0 +1,5 @@
+class TestModule {
+    ctor() {
+        Student("hi")
+    }
+}

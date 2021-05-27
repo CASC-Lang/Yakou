@@ -4,7 +4,7 @@ import io.github.chaosunity.casc.compilation.Compiler
 
 internal fun main(args: Array<String>) {
     try {
-        Compiler().compile(args)
+        Compiler.init(args).compile()
     } catch (e: Exception) {
         e.printStackTrace()
     }
