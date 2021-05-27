@@ -9,9 +9,10 @@ import io.github.chaosunity.casc.parsing.node.statement.Block
 import io.github.chaosunity.casc.parsing.scope.AccessModifier
 import io.github.chaosunity.casc.parsing.scope.FunctionSignature
 import io.github.chaosunity.casc.parsing.scope.Scope
+import io.github.chaosunity.casc.parsing.scope.Usage
 import io.github.chaosunity.casc.parsing.type.BuiltInType
 
-class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
+class ClassVisitor(private val usages: List<Usage> = listOf()) : CASCBaseVisitor<ClassDeclaration>() {
     private lateinit var scope: Scope
 
     override fun visitClassDeclaration(ctx: CASCParser.ClassDeclarationContext): ClassDeclaration {
@@ -19,7 +20,7 @@ class ClassVisitor : CASCBaseVisitor<ClassDeclaration>() {
         val name = ctx.findClassName()?.text!!
         val metadata = MetaData(name, "java.lang.Object")
 
-        scope = Scope(metadata)
+        scope = Scope(metadata, usages)
 
         val fieldVisitor = FieldVisitor(scope)
         val fieldDeclarationVisitor = FieldDeclarationVisitor(scope)

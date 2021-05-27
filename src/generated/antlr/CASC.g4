@@ -2,8 +2,9 @@
 grammar CASC;
 
 //RULES
-compilationUnit                 : moduleDeclaraion? classDeclaration EOF? ;
-moduleDeclaraion                : MODULE qualifiedName ;
+compilationUnit                 : moduleDeclaraion? useReference* classDeclaration EOF? ;
+moduleDeclaraion                : MOD qualifiedName ;
+useReference                    : USE qualifiedName ;
 classDeclaration                : outerAccessMods? CLASS className '{' classBody '}' ;
 className                       : ID ;
 classBody                       : (function | constructor | field | fieldDeclaration)* ;
@@ -11,7 +12,7 @@ field                           : innerAccessMods? COMP? MUT? name COLON typeRef
 constructor                     : constructorDeclaration block? ;
 constructorDeclaration          : innerAccessMods? CTOR '('(parameter (',' parameter)*)?')' ;
 function                        : functionDeclaration block ;
-functionDeclaration             : innerAccessMods? COMP? FUNC functionName '('(parameter (',' parameter)*)?')' (COLON typeReference)? ;
+functionDeclaration             : innerAccessMods? COMP? FN functionName '('(parameter (',' parameter)*)?')' (COLON typeReference)? ;
 functionName                    : ID ;
 parameter                       : ID COLON typeReference (EQUALS expression)? ;
 type                            : primitiveType
@@ -100,9 +101,10 @@ fragment CHAR     :  ('A'..'Z') | ('a'..'z')        ;
 fragment DIGIT    :  ('0'..'9')                     ;
 fragment UNICODE  :  '\u0080'..'\uFFFF'             ;
 
-MODULE          : 'module'                          ;
+MOD             : 'mod'                             ;
+USE             : 'use'                             ;
 CLASS           : 'class'                           ;
-FUNC            : 'fn'                              ;
+FN              : 'fn'                              ;
 CTOR            : 'ctor'                            ;
 SELF            : 'self'                            ;
 COMP            : 'comp'                            ;

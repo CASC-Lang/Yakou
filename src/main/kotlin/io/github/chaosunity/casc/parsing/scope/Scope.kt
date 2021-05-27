@@ -7,7 +7,9 @@ import io.github.chaosunity.casc.parsing.type.BuiltInType
 import io.github.chaosunity.casc.parsing.type.ClassType
 import io.github.chaosunity.casc.parsing.type.Type
 
-class Scope(private val metadata: MetaData) {
+class Scope(private val metadata: MetaData, usages: List<Usage> = listOf()) {
+    val usages = mutableMapOf<String, Usage>()
+
     val localVariables = linkedMapOf<String, LocalVariable>()
     private val concealedFields = linkedMapOf<String, Field>()
     val fields = linkedMapOf<String, Field>()
@@ -19,7 +21,26 @@ class Scope(private val metadata: MetaData) {
     val classType = ClassType(className)
     val superClassInternalName = ClassType(metadata.superClassName).internalName
 
+    init {
+        usages.forEach {
+            when (it) {
+                is PathUsage -> {
+                    val referencablePath = it.qualifiedPath.split('.').last()
+
+                    this.usages += referencablePath to it
+                }
+                is ClassUsage -> {
+                    val referencableClassName = it.className
+
+                    this.usages += referencableClassName to it
+                }
+            }
+        }
+    }
+
     constructor(scope: Scope) : this(scope.metadata) {
+        usages += scope.usages
+
         callingScope = scope.callingScope
         concealedFields += scope.concealedFields
         localVariables += scope.localVariables
@@ -75,7 +96,7 @@ class Scope(private val metadata: MetaData) {
                             ".",
                             "::"
                         )
-                    }.$methodName' with type arguments '(${argumentsType.joinToString(", ")})' does not exist."
+                    }#$methodName' with type arguments '(${argumentsType.joinToString(", ")})' does not exist."
                 )
         } else getMethodCallSignature(methodName, arguments)
 
@@ -115,7 +136,8 @@ class Scope(private val metadata: MetaData) {
                 }#$fieldName' does not exist."
             )
         } else if (owner != null && owner == classType) {
-            concealedFields[fieldName] ?: fields[fieldName] ?: throw RuntimeException("Field '$fieldName' does not exist.")
+            concealedFields[fieldName] ?: fields[fieldName]
+            ?: throw RuntimeException("Field '$fieldName' does not exist.")
         } else getField(fieldName)
 
     fun getField(fieldName: String): Field =

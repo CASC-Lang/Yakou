@@ -1,7 +1,7 @@
-module dir
+mod dir
 
 class TestModule {
-    ctor() {
-        Student("hi")
+    comp fn test() {
+        println("test")
     }
 }

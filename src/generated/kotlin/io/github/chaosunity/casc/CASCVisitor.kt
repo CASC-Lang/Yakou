@@ -24,6 +24,12 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitModuleDeclaraion(ctx : CASCParser.ModuleDeclaraionContext) : T
 	/**
+	 * Visit a parse tree produced by {@link CASCParser#useReference}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitUseReference(ctx : CASCParser.UseReferenceContext) : T
+	/**
 	 * Visit a parse tree produced by {@link CASCParser#classDeclaration}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

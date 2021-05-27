@@ -1,0 +1,7 @@
+mod dir::pkg::another
+
+class Magik {
+    comp fn boom() {
+
+    }
+}

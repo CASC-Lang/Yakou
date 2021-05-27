@@ -1,6 +1,14 @@
+use dir::pkg
+use dir::pkg::ChAoS
+
 class CASC {
     comp fn main(arg: str[]) {
-        a := Student("ChAoS")
+        ChAoS::greeting()
+        a := pkg::another::Magik()
+        b := dir::Lol()
+        dir::TestModule::test()
+        pkg::another::Magik::boom()
+        c := pkg::another::Magik()
         for mut i := 10; i <= 20; {
             println(i)
             i = i + 1

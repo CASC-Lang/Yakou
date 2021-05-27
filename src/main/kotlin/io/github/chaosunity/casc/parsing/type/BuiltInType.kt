@@ -17,7 +17,7 @@ enum class BuiltInType(
     DOUBLE("f64", "double", Double::class.java, "D", PredefTypeOpcode.DOUBLE),
     STRING("str", "java.lang.String", String::class.java, "Ljava/lang/String;", PredefTypeOpcode.OBJECT),
     NULL("null", "null", null, "", PredefTypeOpcode.OBJECT),
-    VOID("unit", "null", Void.TYPE, "V", PredefTypeOpcode.VOID);
+    VOID("unit", "void", Void.TYPE, "V", PredefTypeOpcode.VOID);
 
     override fun classType(): Class<*>? =
         classType
