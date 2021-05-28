@@ -1,6 +1,10 @@
 mod dir::pkg::another
 
 class Magik {
+    ctor() {
+        a := ""
+    }
+
     comp fn boom() {
 
     }

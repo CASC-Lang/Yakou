@@ -11,33 +11,63 @@ import io.github.chaosunity.casc.visitor.util.QualifiedNameVisitor
 class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) : CASCBaseVisitor<Call<*>>() {
     override fun visitFieldCall(ctx: CASCParser.FieldCallContext): Call<*> {
         val fieldName = ctx.ID()!!.text
-        val qualifiedName = ctx.findQualifiedName()
+        val qualifiedNameCtx = ctx.findQualifiedName()
         val ownerCtx = ctx.owner
 
-        if (ownerCtx == null && qualifiedName != null) {
-            val className = qualifiedName.accept(QualifiedNameVisitor)
-            val classPathRef = ClassPathReference(className.qualifiedName)
+        fun getField(className: String): FieldCall {
+            ClassType(className).classType()
+
+            val classPathRef = ClassPathReference(className)
             val field = scope.getField(classPathRef.type, fieldName)
 
-            if (!field.static) throw RuntimeException("Field '$fieldName' in class '$className' is non-static field.")
+            if (!field.static)
+                throw RuntimeException("Field ${classPathRef.type.internalName}#$fieldName is not a companion field.")
 
             return FieldCall(classPathRef, fieldName, field.type, true)
         }
 
-        if (ownerCtx != null) {
+        return if (ownerCtx == null) {
+            val qualifiedPath = qualifiedNameCtx?.accept(QualifiedNameVisitor)
+
+            if (qualifiedPath != null) {
+                val topUsage = if (qualifiedPath.qualifiedName.contains('.'))
+                    qualifiedPath.qualifiedName.substring(0 until qualifiedPath.qualifiedName.indexOf('.'))
+                else qualifiedPath.reference
+                val usage = scope.usages[topUsage]
+
+                if (usage != null) {
+
+
+                    when (usage) {
+                        is PathUsage -> {
+                            try {
+                                getField("${usage.qualifiedPath}.${if (usage.qualifiedPath.contains(qualifiedPath.reference)) "" else qualifiedPath.reference}")
+                            } catch (e: ClassNotFoundException) {
+                                getField("${usage.qualifiedPath}.${qualifiedPath.removeDuplicate(topUsage)}")
+                            }
+                        }
+                        is ClassUsage -> {
+                            getField("${usage.qualifiedPath}.${usage.className}")
+                        }
+                    }
+                } else {
+                    getField(qualifiedPath.qualifiedName)
+                }
+            } else {
+                val field = if (scope.callingScope == CallingScope.STATIC) {
+                    val innerScope = Scope(scope)
+                    innerScope.getField(fieldName)
+                } else scope.getField(fieldName)
+                val thisVariable = LocalVariable("self", scope.classType)
+
+                FieldCall(LocalVariableReference(thisVariable), fieldName, field.type, field.static)
+            }
+        } else {
             val owner = ownerCtx.accept(ev)
             val field = scope.getField(owner.type, fieldName)
 
-            return FieldCall(owner, fieldName, field.type, field.static)
+            FieldCall(owner, fieldName, field.type, field.static)
         }
-
-        val field = if (scope.callingScope == CallingScope.STATIC) {
-            val innerScope = Scope(scope)
-            innerScope.getField(fieldName)
-        } else scope.getField(fieldName)
-        val thisVariable = LocalVariable("self", scope.classType)
-
-        return FieldCall(LocalVariableReference(thisVariable), fieldName, field.type, field.static)
     }
 
     override fun visitFunctionCall(ctx: CASCParser.FunctionCallContext): Call<*> {
