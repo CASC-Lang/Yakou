@@ -5,15 +5,17 @@ grammar CASC;
 compilationUnit                 : moduleDeclaraion? useReference* classDeclaration EOF? ;
 moduleDeclaraion                : MOD qualifiedName ;
 useReference                    : USE qualifiedName ;
-classDeclaration                : outerAccessMods? CLASS className '{' classBody '}' ;
+classDeclaration                : outerAccessMods? CLASS className (ctorAccessMod=innerAccessMods? '('(parameter (',' parameter)*)?')')? '{' classBody '}' ;
+constructorParameter            : (access=innerAccessMods? MUT? ) ;
 className                       : ID ;
 classBody                       : (function | constructor | field | fieldDeclaration)* ;
 field                           : innerAccessMods? COMP? MUT? name COLON typeReference (EQUALS expression)? ;
 constructor                     : constructorDeclaration block? ;
-constructorDeclaration          : innerAccessMods? CTOR '('(parameter (',' parameter)*)?')' ;
+constructorDeclaration          : innerAccessMods? CTOR parameterSet ;
 function                        : functionDeclaration block ;
-functionDeclaration             : innerAccessMods? COMP? FN functionName '('(parameter (',' parameter)*)?')' (COLON typeReference)? ;
+functionDeclaration             : innerAccessMods? COMP? FN functionName parameterSet (COLON typeReference)? ;
 functionName                    : ID ;
+parameterSet                    : '('(parameter (',' parameter)*)?')' ;
 parameter                       : ID COLON typeReference (EQUALS expression)? ;
 type                            : primitiveType
                                 | classType
@@ -94,7 +96,7 @@ expression              : superCall=SELF '('argument? (',' argument)*')'        
                         | (NUMBER | BOOL | STRING | NULL)                                                       #value
                         ;
 
-varReference        : ID ;
+varReference        : ID | SELF ;
 
 //TOKENS
 fragment CHAR     :  ('A'..'Z') | ('a'..'z')        ;

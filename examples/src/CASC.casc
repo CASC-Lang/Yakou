@@ -4,4 +4,12 @@ class CASC {
     comp fn main(arg: str[]) {
         a := annotation::ElementType::METHOD
     }
+
+    fn bruh() {
+        self.kk()
+    }
+
+    fn kk() {
+        println("kk")
+    }
 }

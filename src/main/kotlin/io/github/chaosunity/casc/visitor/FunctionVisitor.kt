@@ -17,7 +17,7 @@ class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function<*>>() {
         val signature = ctx.findFunctionDeclaration()!!.accept(FunctionSignatureVisitor(scope))
 
         scope.callingScope = CallingScope.getScope(ctx)
-        if (scope.callingScope == CallingScope.OBJECT) scope.addLocalVariable(LocalVariable("this", scope.classType))
+        if (scope.callingScope == CallingScope.OBJECT) scope.addLocalVariable(LocalVariable("self", scope.classType))
         addParameterAsLocalVariable(signature)
 
         scope.concealNonStaticFields()
@@ -34,7 +34,7 @@ class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function<*>>() {
         val signature = ctx.findConstructorDeclaration()!!.accept(FunctionSignatureVisitor(scope))
 
         scope.callingScope = CallingScope.getScope(ctx)
-        scope.addLocalVariable(LocalVariable("this", scope.classType))
+        scope.addLocalVariable(LocalVariable("self", scope.classType))
         addParameterAsLocalVariable(signature)
 
         val blockCtx = ctx.findBlock()
