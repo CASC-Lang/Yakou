@@ -1,7 +1,0 @@
-mod dir::pkg
-
-class ChAoS {
-    comp fn greeting() {
-        println("Scientists: Greetings!")
-    }
-}

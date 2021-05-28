@@ -5,8 +5,9 @@ grammar CASC;
 compilationUnit                 : moduleDeclaraion? useReference* classDeclaration EOF? ;
 moduleDeclaraion                : MOD qualifiedName ;
 useReference                    : USE qualifiedName ;
-classDeclaration                : outerAccessMods? CLASS className (ctorAccessMod=innerAccessMods? '('(parameter (',' parameter)*)?')')? '{' classBody '}' ;
-constructorParameter            : (access=innerAccessMods? MUT? ) ;
+classDeclaration                : outerAccessMods? CLASS className primaryConstructor? '{' classBody '}' ;
+primaryConstructor              : ctorAccessMod=innerAccessMods? '('(constructorParameter (',' constructorParameter)*)?')' ;
+constructorParameter            : (innerAccessMods? MUT? | PARAM='param') parameter ;
 className                       : ID ;
 classBody                       : (function | constructor | field | fieldDeclaration)* ;
 field                           : innerAccessMods? COMP? MUT? name COLON typeReference (EQUALS expression)? ;
@@ -62,7 +63,7 @@ name                    : ID ;
 argument                : expression
                         | name EQUALS expression ;
 
-expression              : superCall=SELF '('argument? (',' argument)*')'                                        #superCall
+expression              : SELF '('argument? (',' argument)*')'                                        #selfCall
                         | owner=expression '.' functionName '('argument? (',' argument)*')'                     #functionCall
                         | qualifiedName '::' functionName '('argument? (',' argument)*')'                       #functionCall
                         | functionName '('argument? (',' argument)*')'                                          #functionCall

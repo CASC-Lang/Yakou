@@ -1,15 +1,14 @@
 use java::lang::annotation
 
-class CASC {
+class CASC priv (priv mut a: i32, param b: i32) {
+    ctor() {
+        self(1, 2)
+    }
+    ctor(b: bool) {
+        self()
+    }
+
     comp fn main(arg: str[]) {
         a := annotation::ElementType::METHOD
-    }
-
-    fn bruh() {
-        self.kk()
-    }
-
-    fn kk() {
-        println("kk")
     }
 }

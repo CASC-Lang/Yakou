@@ -12,11 +12,14 @@ buildscript {
 }
 
 plugins {
+    application
     kotlin("jvm") version "1.4.32"
 }
 
-group = "org.example"
-version = "1.0-SNAPSHOT"
+group = "org.casclang.casc"
+version = "0.1"
+
+application.mainClass.set("org.casclang.casc.MainKt")
 
 repositories {
     mavenCentral()
@@ -24,7 +27,7 @@ repositories {
 }
 
 dependencies {
-    implementation(kotlin("stdlib"))
+    compile(kotlin("stdlib"))
     implementation(kotlin("reflect"))
 
     implementation(group = "com.strumenta.antlr-kotlin", name = "antlr-kotlin-runtime-jvm", version = "0951069063")
@@ -36,7 +39,7 @@ tasks.register<com.strumenta.antlrkotlin.gradleplugin.AntlrKotlinTask>("generate
         project.dependencies.create("com.strumenta.antlr-kotlin:antlr-kotlin-target:0951069063")
     )
     maxHeapSize = "64m"
-    packageName = "io.github.chaosunity.casc"
+    packageName = "org.casclang.casc"
     arguments = listOf("-visitor", "-no-listener")
     source = project.objects
         .sourceDirectorySet("antlr", "antlr")
@@ -61,4 +64,13 @@ tasks.withType<KotlinCompile> {
         languageVersion = "1.5"
         jvmTarget = "1.8"
     }
+}
+
+tasks.withType<Jar> {
+    manifest {
+        attributes["Main-Class"] = "org.casclang.casc.MainKt"
+    }
+
+    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+    exclude("META-INF/versions/9/*.class")
 }

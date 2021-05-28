@@ -1,7 +1,0 @@
-mod dir
-
-class TestModule {
-    comp fn test() {
-        println("test")
-    }
-}
