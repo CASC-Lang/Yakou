@@ -1,2 +1,2 @@
-rootProject.name = "CASC-Kotlin"
+rootProject.name = "CASC"
 
