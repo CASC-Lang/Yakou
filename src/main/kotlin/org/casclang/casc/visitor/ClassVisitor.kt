@@ -98,7 +98,7 @@ class ClassVisitor(private val usages: List<Usage> = listOf()) : CASCBaseVisitor
             ctorCtx.map {
                 it.findConstructorDeclaration()?.accept(functionSignatureVisitor)!!
             }.forEach(scope::addSignature)
-        else if (ctorCtx != null)
+        else if (ctorCtx.isNotEmpty())
             throw RuntimeException("Could not have auxiliary constructors without primary constructor.")
 
 

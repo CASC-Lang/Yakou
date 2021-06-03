@@ -1,14 +1,15 @@
 use java::lang::annotation
 
-class CASC priv (priv mut a: i32, param b: i32) {
-    ctor() {
-        self(1, 2)
-    }
-    ctor(b: bool) {
-        self()
-    }
-
+class CASC {
     comp fn main(arg: str[]) {
         a := annotation::ElementType::METHOD
+    }
+
+    fn getNum(b: i32): i32 {
+        if b > 12 return b
+        else {
+            if b > 10 return 10
+            else return 0
+        }
     }
 }

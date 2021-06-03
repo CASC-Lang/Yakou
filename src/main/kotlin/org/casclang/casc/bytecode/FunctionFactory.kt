@@ -1,6 +1,6 @@
 package org.casclang.casc.bytecode
 
- import jdk.internal.org.objectweb.asm.ClassWriter
+import jdk.internal.org.objectweb.asm.ClassWriter
 import jdk.internal.org.objectweb.asm.Opcodes.*
 import org.casclang.casc.bytecode.statement.StatementFactory
 import org.casclang.casc.parsing.Constructor
@@ -8,6 +8,7 @@ import org.casclang.casc.parsing.Function
 import org.casclang.casc.parsing.node.expression.EmptyExpression
 import org.casclang.casc.parsing.node.statement.Block
 import org.casclang.casc.parsing.node.statement.ReturnStatement
+import org.casclang.casc.parsing.type.BuiltInType
 import org.casclang.casc.util.DescriptorFactory
 
 class FunctionFactory(private val cw: ClassWriter) {
@@ -29,7 +30,8 @@ class FunctionFactory(private val cw: ClassWriter) {
         val sf = StatementFactory(mv, scope)
 
         block.accept(sf)
-        appendReturnIfAbsence(function, block, sf)
+        if (function.signature.returnType == BuiltInType.VOID)
+            appendReturnIfAbsence(function, block, sf)
         mv.visitMaxs(-1, -1)
 
         mv.visitEnd()

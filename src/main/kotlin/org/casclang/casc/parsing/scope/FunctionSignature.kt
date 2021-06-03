@@ -18,9 +18,12 @@ data class FunctionSignature(
         parameters.indexOf(getParameterByName(parameterName))
 
     fun matches(signature: FunctionSignature) =
-        if (signature.parameters.size != parameters.size) false
-        else (signature.parameters.indices).all {
-            signature.parameters[it].type == parameters[it].type
+        when {
+            signature.name != name -> false
+            signature.parameters.size != parameters.size -> false
+            else -> (signature.parameters.indices).all {
+                signature.parameters[it].type == parameters[it].type
+            }
         }
 
     fun matches(signatureName: String, arguments: List<Argument>): Boolean {
