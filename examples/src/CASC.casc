@@ -1,15 +1,7 @@
-use java::lang::annotation
-
 class CASC {
     comp fn main(arg: str[]) {
-        a := annotation::ElementType::METHOD
-    }
+        use java::lang::annotation
 
-    fn getNum(b: i32): i32 {
-        if b > 12 return b
-        else {
-            if b > 10 return 10
-            else return 0
-        }
+        a := annotation::ElementType::METHOD
     }
 }

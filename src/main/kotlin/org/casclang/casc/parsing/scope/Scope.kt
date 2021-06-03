@@ -20,20 +20,7 @@ class Scope(private val metadata: MetaData, usages: List<Usage> = listOf()) {
     val superClassInternalName = ClassType(metadata.superClassName).internalName
 
     init {
-        usages.forEach {
-            when (it) {
-                is PathUsage -> {
-                    val referencablePath = it.qualifiedPath.split('.').last()
-
-                    this.usages += referencablePath to it
-                }
-                is ClassUsage -> {
-                    val referencableClassName = it.className
-
-                    this.usages += referencableClassName to it
-                }
-            }
-        }
+        usages.forEach(this::addUsage)
     }
 
     constructor(scope: Scope) : this(scope.metadata) {
@@ -44,6 +31,25 @@ class Scope(private val metadata: MetaData, usages: List<Usage> = listOf()) {
         localVariables += scope.localVariables
         fields += scope.fields
         functionSignatures += scope.functionSignatures
+    }
+
+    fun addUsage(usage: Usage) {
+        when (usage) {
+            is PathUsage -> {
+                val referencablePath = usage.qualifiedPath.split('.').last()
+
+                if (usages.containsKey(referencablePath)) throw RuntimeException("Duplicate usage: $referencablePath")
+
+                this.usages += referencablePath to usage
+            }
+            is ClassUsage -> {
+                val referencableClassName = usage.className
+
+                if (usages.containsKey(referencableClassName)) throw RuntimeException("Duplicate usage: $referencableClassName")
+
+                this.usages += referencableClassName to usage
+            }
+        }
     }
 
     fun addSignature(signature: FunctionSignature) {

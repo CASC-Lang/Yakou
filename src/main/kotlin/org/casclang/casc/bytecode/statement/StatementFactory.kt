@@ -29,6 +29,8 @@ class StatementFactory(mv: MethodVisitor, scope: Scope) {
             is RangedForStatement -> generate(expression)
             is ReturnStatement -> generate(expression)
             is VariableDeclaration -> generate(expression)
+            is EmptyStatement -> {
+            }
             else -> ef.generate(expression as Expression<*>)
         }
 

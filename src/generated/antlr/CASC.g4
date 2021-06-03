@@ -36,6 +36,7 @@ qualifiedName   : ID ('::' ID)* ;
 block           : '{' statement* '}' ;
 
 statement       : block
+                | useReference ';'?
                 | variableDeclaration ';'?
                 | assignment ';'?
                 | printStatement ';'?

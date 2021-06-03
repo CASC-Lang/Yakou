@@ -3,11 +3,13 @@ package org.casclang.casc.visitor.statement
 import org.casclang.casc.CASCBaseVisitor
 import org.casclang.casc.CASCParser
 import org.casclang.casc.parsing.node.expression.Expression
+import org.casclang.casc.parsing.node.statement.EmptyStatement
 import org.casclang.casc.parsing.node.statement.Statement
 import org.casclang.casc.parsing.scope.Scope
 import org.casclang.casc.visitor.expression.ExpressionVisitor
+import org.casclang.casc.visitor.util.UseReferenceVisitor
 
-class StatementVisitor(scope: Scope) : CASCBaseVisitor<Statement<*>>() {
+class StatementVisitor(private val scope: Scope) : CASCBaseVisitor<Statement<*>>() {
     private val ev = ExpressionVisitor(scope)
     private val pv = PrintVisitor(ev)
     private val vdv = VariableDeclarationVisitor(ev, scope)
@@ -16,6 +18,7 @@ class StatementVisitor(scope: Scope) : CASCBaseVisitor<Statement<*>>() {
     private val bv = BlockVisitor(scope)
     private val iv = IfStatementVisitor(this, ev)
     private val av = AssignmentVisitor(ev, scope)
+    private val urv = UseReferenceVisitor()
 
     override fun visitPrintStatement(ctx: CASCParser.PrintStatementContext): Statement<*> =
         pv.visitPrintStatement(ctx)
@@ -97,4 +100,10 @@ class StatementVisitor(scope: Scope) : CASCBaseVisitor<Statement<*>>() {
 
     override fun visitWrappedExpression(ctx: CASCParser.WrappedExpressionContext): Expression<*> =
         ev.visitWrappedExpression(ctx)
+
+    override fun visitUseReference(ctx: CASCParser.UseReferenceContext): Statement<*> {
+        scope.addUsage(ctx.accept(urv))
+
+        return EmptyStatement
+    }
 }
