@@ -10,21 +10,8 @@ import org.casclang.casc.visitor.util.QualifiedNameVisitor
 
 class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) : CASCBaseVisitor<Call<*>>() {
     override fun visitFieldCall(ctx: CASCParser.FieldCallContext): Call<*> {
-        val fieldName = ctx.ID()!!.text
         val qualifiedNameCtx = ctx.findQualifiedName()
         val ownerCtx = ctx.owner
-
-        fun getField(className: String): FieldCall {
-            ClassType(className).classType()
-
-            val classPathRef = ClassPathReference(className)
-            val field = scope.getField(classPathRef.type, fieldName)
-
-            if (!field.static)
-                throw RuntimeException("Field ${classPathRef.type.internalName}#$fieldName is not a companion field.")
-
-            return FieldCall(classPathRef, fieldName, field.type, true)
-        }
 
         return if (ownerCtx == null) {
             val qualifiedPath = qualifiedNameCtx?.accept(QualifiedNameVisitor)
@@ -33,17 +20,32 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
                 val topUsage = if (qualifiedPath.qualifiedName.contains('.'))
                     qualifiedPath.qualifiedName.substring(0 until qualifiedPath.qualifiedName.indexOf('.'))
                 else qualifiedPath.reference
+                val fieldName = qualifiedPath.reference
                 val usage = scope.usages[topUsage]
 
+                fun getField(className: String): FieldCall {
+                    ClassType(className).classType()
+
+                    val classPathRef = ClassPathReference(className)
+                    val field = scope.getField(classPathRef.type, fieldName)
+
+                    if (!field.static)
+                        throw RuntimeException("Field ${classPathRef.type.internalName}#$fieldName is not a companion field.")
+
+                    return FieldCall(classPathRef, fieldName, field.type, true)
+                }
+
                 if (usage != null) {
-
-
                     when (usage) {
                         is PathUsage -> {
                             try {
-                                getField("${usage.qualifiedPath}.${if (usage.qualifiedPath.contains(qualifiedPath.reference)) "" else qualifiedPath.reference}")
+                                val className = "${usage.qualifiedPath}.${if (usage.qualifiedPath.contains(qualifiedPath.reference)) "" else qualifiedPath.reference}"
+
+                                getField(className.substring(0 until className.lastIndexOf('.')))
                             } catch (e: ClassNotFoundException) {
-                                getField("${usage.qualifiedPath}.${qualifiedPath.removeDuplicate(topUsage)}")
+                                val className = "${usage.qualifiedPath}.${qualifiedPath.removeDuplicate(topUsage)}"
+
+                                getField(className.substring(0 until className.lastIndexOf('.')))
                             }
                         }
                         is ClassUsage -> {
@@ -54,15 +56,14 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
                     getField(qualifiedPath.qualifiedName)
                 }
             } else {
-                val field = if (scope.callingScope == CallingScope.STATIC) {
-                    val innerScope = Scope(scope)
-                    innerScope.getField(fieldName)
-                } else scope.getField(fieldName)
+                val fieldName = ctx.ID()!!.text
+                val field = scope.getField(fieldName)
                 val thisVariable = LocalVariable("self", scope.classType)
 
                 FieldCall(LocalVariableReference(thisVariable), fieldName, field.type, field.static)
             }
         } else {
+            val fieldName = ctx.ID()!!.text
             val owner = ownerCtx.accept(ev)
             val field = scope.getField(owner.type, fieldName)
 
