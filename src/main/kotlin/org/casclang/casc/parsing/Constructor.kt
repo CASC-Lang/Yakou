@@ -11,7 +11,7 @@ class Constructor(
     signature: FunctionSignature,
     block: Block?,
     accessModifier: AccessModifier,
-    val primary: Boolean = false
+    val isPrimary: Boolean = false
 ) : Function<Constructor>(signature, block ?: EmptyExpression(BuiltInType.VOID), accessModifier) {
     override val returnType: Type = BuiltInType.VOID
 }

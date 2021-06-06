@@ -12,7 +12,7 @@ className                       : ID ;
 classBody                       : (function | constructor | field | fieldDeclaration)* ;
 field                           : innerAccessMods? COMP? MUT? name COLON typeReference (EQUALS expression)? ;
 constructor                     : constructorDeclaration block? ;
-constructorDeclaration          : innerAccessMods? CTOR parameterSet ;
+constructorDeclaration          : innerAccessMods? CTOR parameterSet COLON SELF '('argument? (',' argument)*')' ;
 function                        : functionDeclaration block ;
 functionDeclaration             : innerAccessMods? COMP? FN functionName parameterSet (COLON typeReference)? ;
 functionName                    : ID ;
@@ -64,8 +64,7 @@ name                    : ID ;
 argument                : expression
                         | name EQUALS expression ;
 
-expression              : SELF '('argument? (',' argument)*')'                                        #selfCall
-                        | owner=expression '.' functionName '('argument? (',' argument)*')'                     #functionCall
+expression              : owner=expression '.' functionName '('argument? (',' argument)*')'                     #functionCall
                         | qualifiedName '::' functionName '('argument? (',' argument)*')'                       #functionCall
                         | functionName '('argument? (',' argument)*')'                                          #functionCall
                         | className '('argument? (',' argument)*')'                                             #constructorCall

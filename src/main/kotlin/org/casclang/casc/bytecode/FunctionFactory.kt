@@ -48,7 +48,7 @@ class FunctionFactory(private val cw: ClassWriter) {
 
         val sf = StatementFactory(mv, scope)
 
-        if (constructor.primary) {
+        if (constructor.isPrimary) {
             mv.visitVarInsn(ALOAD, 0)
             mv.visitMethodInsn(INVOKESPECIAL, scope.superClassInternalName, "<init>", "()V", false)
         }

@@ -62,9 +62,6 @@ class StatementVisitor(private val scope: Scope) : CASCBaseVisitor<Statement<*>>
     override fun visitConstructorCall(ctx: CASCParser.ConstructorCallContext): Expression<*> =
         ev.visitConstructorCall(ctx)
 
-    override fun visitSelfCall(ctx: CASCParser.SelfCallContext): Statement<*> =
-        ev.visitSelfCall(ctx)
-
     override fun visitArrayDeclaration(ctx: CASCParser.ArrayDeclarationContext): Statement<*> =
         ev.visitArrayDeclaration(ctx)
 

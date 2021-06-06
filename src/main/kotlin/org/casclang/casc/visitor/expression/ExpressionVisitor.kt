@@ -37,9 +37,6 @@ class ExpressionVisitor(scope: Scope) : CASCBaseVisitor<Expression<*>>() {
     override fun visitConstructorCall(ctx: CASCParser.ConstructorCallContext): Expression<*> =
         cv.visitConstructorCall(ctx)
 
-    override fun visitSelfCall(ctx: CASCParser.SelfCallContext): Expression<*> =
-        cv.visitSelfCall(ctx)
-
     override fun visitArrayDeclaration(ctx: CASCParser.ArrayDeclarationContext): Expression<*> =
         adv.visitArrayDeclaration(ctx)
 

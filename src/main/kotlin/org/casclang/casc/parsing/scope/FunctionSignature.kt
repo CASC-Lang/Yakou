@@ -40,15 +40,17 @@ data class FunctionSignature(
             }
         }
 
+        if (parameters.isEmpty() && arguments.size > parameters.size) return false
+
         return (arguments.indices).all {
             arguments[it].type == parameters[it].type
         }
     }
 
-    override fun equals(o: Any?): Boolean {
-        if (this === o) return true
-        if (o == null || javaClass != o.javaClass) return false
-        val (name1, parameters1, returnType1) = o as FunctionSignature
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || javaClass != other.javaClass) return false
+        val (name1, parameters1, returnType1) = other as FunctionSignature
         if (name != name1) return false
         return if (parameters != parameters1) false else returnType == returnType1
     }

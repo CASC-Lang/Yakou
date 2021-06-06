@@ -171,11 +171,8 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
         return ConstructorCall(className.qualifiedName, arguments)
     }
 
-    override fun visitSelfCall(ctx: CASCParser.SelfCallContext): Call<*> {
-        val arguments = collectArguments(ctx.findArgument())
-
-        return SelfCall(arguments)
-    }
+    fun buildSelfCall(arguments: List<CASCParser.ArgumentContext>): Call<*> =
+        SelfCall(collectArguments(arguments))
 
     private fun collectArguments(list: List<CASCParser.ArgumentContext>): List<Argument> {
         val aev = ArgumentVisitor(ev)

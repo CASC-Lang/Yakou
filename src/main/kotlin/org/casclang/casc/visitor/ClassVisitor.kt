@@ -55,7 +55,7 @@ class ClassVisitor(private val usages: List<Usage> = listOf()) : CASCBaseVisitor
                         scope.classType,
                         it.findParameter()!!.ID()!!.text,
                         TypeResolver.getFromTypeReferenceContext(it.findParameter()!!.findTypeReference()),
-                        AccessModifier.getModifier(it.findInnerAccessMods()!!.text)
+                        AccessModifier.getModifier(it.findInnerAccessMods()?.text)
                     )
                 }
             }.map {
@@ -79,7 +79,7 @@ class ClassVisitor(private val usages: List<Usage> = listOf()) : CASCBaseVisitor
                         true,
                         CallingScope.CONSTRUCTOR
                     )
-                }
+                }.toMutableList()
             ), ctorAccess, true)
 
             scope.addSignature(signature)
@@ -92,7 +92,7 @@ class ClassVisitor(private val usages: List<Usage> = listOf()) : CASCBaseVisitor
 
         fields += ctx.findClassBody()!!.findFieldDeclaration().map {
             it.accept(fieldDeclarationVisitor)
-        }.flatten().onEach(scope::addField) ?: listOf()
+        }.flatten().onEach(scope::addField)
 
         if (primaryCtorCtx != null)
             ctorCtx.map {

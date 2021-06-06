@@ -10,6 +10,6 @@ class BlockVisitor(private val scope: Scope) : CASCBaseVisitor<Block>() {
         val innerScope = Scope(scope)
         val sv = StatementVisitor(innerScope)
 
-        return Block(innerScope, ctx.findStatement().map { it.accept(sv) })
+        return Block(innerScope, ctx.findStatement().map { it.accept(sv) }.toMutableList())
     }
 }

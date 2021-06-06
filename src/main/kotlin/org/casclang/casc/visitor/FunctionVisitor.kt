@@ -1,10 +1,10 @@
 package org.casclang.casc.visitor
 
-import com.sun.org.apache.bcel.internal.generic.RET
 import org.casclang.casc.CASCBaseVisitor
 import org.casclang.casc.CASCParser
 import org.casclang.casc.parsing.Constructor
 import org.casclang.casc.parsing.Function
+import org.casclang.casc.parsing.node.expression.Argument
 import org.casclang.casc.parsing.node.expression.EmptyExpression
 import org.casclang.casc.parsing.node.statement.Block
 import org.casclang.casc.parsing.node.statement.IfStatement
@@ -13,6 +13,9 @@ import org.casclang.casc.parsing.node.statement.Statement
 import org.casclang.casc.parsing.scope.*
 import org.casclang.casc.parsing.type.BuiltInType
 import org.casclang.casc.parsing.type.Type
+import org.casclang.casc.util.prepend
+import org.casclang.casc.visitor.expression.ExpressionVisitor
+import org.casclang.casc.visitor.expression.function.CallVisitor
 import org.casclang.casc.visitor.statement.BlockVisitor
 
 class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function<*>>() {
@@ -34,7 +37,6 @@ class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function<*>>() {
         if (signature.returnType != BuiltInType.VOID && !validateAllCodePathsHaveReturn(block, signature.returnType))
             throw IllegalArgumentException("Function must return a value of type ${signature.returnType}")
 
-
         scope.revealNonStaticFields()
 
         return Function<Function<*>>(signature, block, accessModifier, static)
@@ -43,6 +45,9 @@ class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function<*>>() {
     override fun visitConstructor(ctx: CASCParser.ConstructorContext): Function<*> {
         val accessModifier = AccessModifier.getModifier(ctx.findConstructorDeclaration()?.findInnerAccessMods()?.text)
         val signature = ctx.findConstructorDeclaration()!!.accept(FunctionSignatureVisitor(scope))
+        val selfCall = CallVisitor(ExpressionVisitor(scope), scope).buildSelfCall(
+            ctx.findConstructorDeclaration()!!.findArgument()
+        )
 
         scope.callingScope = CallingScope.getScope(ctx)
         scope.addLocalVariable(LocalVariable("self", scope.classType))
@@ -51,6 +56,8 @@ class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function<*>>() {
         val blockCtx = ctx.findBlock()
         val block = if (blockCtx != null) getBlock(blockCtx) else Block(scope)
 
+        block.statements.prepend(selfCall)
+        
         return Constructor(signature, block, accessModifier)
     }
 

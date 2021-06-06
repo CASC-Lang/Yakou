@@ -303,13 +303,6 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitIndexEpxression(ctx : CASCParser.IndexEpxressionContext) : T
 	/**
-	 * Visit a parse tree produced by the {@code selfCall}
-	 * labeled alternative in {@link CASCParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	fun visitSelfCall(ctx : CASCParser.SelfCallContext) : T
-	/**
 	 * Visit a parse tree produced by the {@code functionCall}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree

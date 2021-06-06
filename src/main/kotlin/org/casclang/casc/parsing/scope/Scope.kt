@@ -1,5 +1,6 @@
 package org.casclang.casc.parsing.scope
 
+import org.casclang.casc.parsing.Function
 import org.casclang.casc.parsing.MetaData
 import org.casclang.casc.parsing.node.expression.Argument
 import org.casclang.casc.parsing.type.ClassType
@@ -11,6 +12,7 @@ class Scope(private val metadata: MetaData, usages: List<Usage> = listOf()) {
     val localVariables = linkedMapOf<String, LocalVariable>()
     private val concealedFields = linkedMapOf<String, Field>()
     val fields = linkedMapOf<String, Field>()
+    val functions = mutableListOf<Function<*>>()
     val functionSignatures = mutableListOf<FunctionSignature>()
 
     var callingScope = CallingScope.STATIC
@@ -30,6 +32,7 @@ class Scope(private val metadata: MetaData, usages: List<Usage> = listOf()) {
         concealedFields += scope.concealedFields
         localVariables += scope.localVariables
         fields += scope.fields
+        functions += scope.functions
         functionSignatures += scope.functionSignatures
     }
 
@@ -50,6 +53,10 @@ class Scope(private val metadata: MetaData, usages: List<Usage> = listOf()) {
                 this.usages += referencableClassName to usage
             }
         }
+    }
+
+    fun addFunction(function: Function<*>) {
+        functions += function
     }
 
     fun addSignature(signature: FunctionSignature) {
