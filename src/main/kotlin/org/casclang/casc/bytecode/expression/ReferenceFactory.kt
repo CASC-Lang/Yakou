@@ -24,7 +24,7 @@ class ReferenceFactory(private val mv: MethodVisitor, private val ef: Expression
 
         if (scope.callingScope == CallingScope.OBJECT) {
             mv.visitVarInsn(ALOAD, 0)
-            mv.visitFieldInsn(GETFIELD, ownerInternalName, varName, descriptor)
+            mv.visitFieldInsn(GETFIELD, field.field.ownerType.internalName, varName, descriptor)
         } else {
             mv.visitFieldInsn(GETSTATIC, scope.classType.internalName, varName, descriptor)
         }

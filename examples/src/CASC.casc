@@ -1,15 +1,8 @@
 class CASC(mut lol: i32) {
-    ctor(kk: bool) : self(11) {
-
-    }
-
-    ctor() : self(true) {
-
-    }
-
     comp fn main(arg: str[]) {
-        use java::lang::annotation
+        use module::Person
 
-        a := annotation::ElementType::METHOD
+        a := module::Person("Baby", 2)
+        a.prt()
     }
 }

@@ -1,0 +1,10 @@
+mod module
+
+class Person(name: str, age: i32) {
+    fn prt() {
+        print("name: ")
+        println(name)
+        print("age: ")
+        println(age)
+    }
+}
