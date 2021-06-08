@@ -1,7 +1,6 @@
 package org.casclang.casc.compilation
 
-import org.antlr.v4.kotlinruntime.CharStreams
-import org.antlr.v4.kotlinruntime.CommonTokenStream
+import org.antlr.v4.kotlinruntime.*
 import org.casclang.casc.CASCLexer
 import org.casclang.casc.CASCParser
 import org.casclang.casc.bytecode.BytecodeFactory
@@ -19,6 +18,8 @@ class Parser(private val filePath: String) {
         val lexer = CASCLexer(charStream)
         val tokenStream = CommonTokenStream(lexer)
         val parser = CASCParser(tokenStream)
+        parser.removeErrorListeners()
+        parser.addErrorListener(ErrorHandler)
         val compilationUnitVisitor = CompilationUnitVisitor()
 
         compilationUnit = parser.compilationUnit().accept(compilationUnitVisitor)
@@ -40,5 +41,22 @@ class Parser(private val filePath: String) {
         compiledFile.writeBytes(bytecode)
 
         return this
+    }
+
+    private object ErrorHandler : BaseErrorListener() {
+        override fun syntaxError(
+            recognizer: Recognizer<*, *>,
+            offendingSymbol: Any?,
+            line: Int,
+            charPositionInLine: Int,
+            msg: String,
+            e: RecognitionException?
+        ) {
+            var sourceName = recognizer.readInputStream()?.sourceName
+            if (sourceName?.isEmpty() != true)
+                sourceName = "%s:%d:%d: ".format(sourceName, line, charPositionInLine)
+
+            System.err.println("${sourceName}line $line:$charPositionInLine $msg")
+        }
     }
 }

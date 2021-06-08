@@ -68,7 +68,7 @@ expression              : owner=expression '.' functionName '('argument? (',' ar
                         | qualifiedName '::' functionName '('argument? (',' argument)*')'                       #functionCall
                         | functionName '('argument? (',' argument)*')'                                          #functionCall
                         | className '('argument? (',' argument)*')'                                             #constructorCall
-                        | qualifiedName '::' ID                                                                 #fieldCall
+                        | qualifiedName                                                                         #fieldCall
                         | owner=expression '.' ID                                                               #fieldCall
                         | NEG=MINUS expression                                                                  #negativeExpression
                         | NEG=EXCLAMATION_MK expression                                                         #negativeExpression

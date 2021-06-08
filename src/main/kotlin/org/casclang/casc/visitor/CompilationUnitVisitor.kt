@@ -20,6 +20,9 @@ class CompilationUnitVisitor : CASCBaseVisitor<CompilationUnit>() {
         val cv = ClassVisitor(usages)
         val classDeclaration = ctx.findClassDeclaration()!!.accept(cv)
 
+        println(ctx.position?.start?.column)
+        println(ctx.position?.end?.column)
+
         return CompilationUnit(packagePath?.qualifiedName, classDeclaration)
     }
 }
