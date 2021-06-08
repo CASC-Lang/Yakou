@@ -14,16 +14,17 @@ import org.casclang.casc.parsing.node.statement.Block
 import org.casclang.casc.parsing.scope.*
 import org.casclang.casc.parsing.type.BuiltInType
 import org.casclang.casc.util.TypeResolver
+import org.casclang.casc.util.dot
 import org.casclang.casc.visitor.expression.ExpressionVisitor
 import org.casclang.casc.visitor.expression.function.ParameterVisitor
 
-class ClassVisitor(private val usages: List<Usage> = listOf()) : CASCBaseVisitor<ClassDeclaration>() {
+class ClassVisitor(private val modulePath: QualifiedName?, private val usages: List<Usage> = listOf()) : CASCBaseVisitor<ClassDeclaration>() {
     private lateinit var scope: Scope
 
     override fun visitClassDeclaration(ctx: CASCParser.ClassDeclarationContext): ClassDeclaration {
         val accessModifier = AccessModifier.getModifier(ctx.findOuterAccessMods()?.text)
         val name = ctx.findClassName()!!.text
-        val metadata = MetaData(name, "java.lang.Object")
+        val metadata = MetaData("${modulePath?.qualifiedName?.dot() ?: ""}$name", "java.lang.Object")
 
         scope = Scope(metadata, usages)
 

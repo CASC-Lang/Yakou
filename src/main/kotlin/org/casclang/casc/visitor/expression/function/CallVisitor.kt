@@ -53,7 +53,7 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
                         }
                     }
                 } else {
-                    getField(qualifiedPath.qualifiedName)
+                    getField(qualifiedPath.qualifiedPath)
                 }
             } else {
                 val fieldName = ctx.ID()!!.text
