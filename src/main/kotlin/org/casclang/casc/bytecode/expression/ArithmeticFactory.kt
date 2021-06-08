@@ -4,9 +4,15 @@ import org.casclang.casc.parsing.node.expression.ArithmeticExpression
 import org.casclang.casc.parsing.node.expression.ArithmeticExpression.*
 import jdk.internal.org.objectweb.asm.MethodVisitor
 import jdk.internal.org.objectweb.asm.Opcodes.*
+import org.casclang.casc.parsing.type.BuiltInType
 
 class ArithmeticFactory(private val ef: ExpressionFactory, private val mv: MethodVisitor) {
     fun generate(addition: Addition) {
+        if (addition.leftExpression.type == BuiltInType.STRING || addition.rightExpression.type == BuiltInType.STRING) {
+            generateStringAppend(addition)
+            return
+        }
+
         evaluateArithmeticComponents(addition)
 
         mv.visitInsn(addition.type.addOpcode)
