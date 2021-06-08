@@ -75,7 +75,7 @@ object TypeResolver {
             type.isFloat() -> value.toFloat()
             type.isDouble() -> value.toDouble()
             type.isBool() -> value.toBoolean()
-            type.isString() -> value.removeSurrounding("\"", "\"")
+            type.isString() -> value
             type == BuiltInType.NULL -> null
             else -> throw RuntimeException("Object is not implemented yet.")
         }

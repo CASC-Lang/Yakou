@@ -10,5 +10,6 @@ class CASC() {
         println(a.toStr())
 
         b := java::lang::String::valueOf(1)
+        println("HI!" + "CASC!")
     }
 }

@@ -8,7 +8,7 @@ import org.casclang.casc.util.TypeResolver
 
 class ValueVisitor : CASCBaseVisitor<Value>() {
     override fun visitValue(ctx: CASCParser.ValueContext): Value {
-        var value = ctx.text
+        var value = ctx.text.removeSurrounding("\"")
         val type = TypeResolver.getTypeByValue(value)
 
         if (type == BuiltInType.LONG) value = value.removeSuffix("L").removeSuffix("l")
