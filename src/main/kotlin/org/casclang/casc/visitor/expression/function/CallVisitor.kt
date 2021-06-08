@@ -3,7 +3,10 @@ package org.casclang.casc.visitor.expression.function
 import org.casclang.casc.CASCBaseVisitor
 import org.casclang.casc.CASCParser
 import org.casclang.casc.parsing.node.expression.*
-import org.casclang.casc.parsing.scope.*
+import org.casclang.casc.parsing.scope.ClassUsage
+import org.casclang.casc.parsing.scope.LocalVariable
+import org.casclang.casc.parsing.scope.PathUsage
+import org.casclang.casc.parsing.scope.Scope
 import org.casclang.casc.parsing.type.ClassType
 import org.casclang.casc.visitor.expression.ExpressionVisitor
 import org.casclang.casc.visitor.util.QualifiedNameVisitor
@@ -39,7 +42,8 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
                     when (usage) {
                         is PathUsage -> {
                             try {
-                                val className = "${usage.qualifiedPath}.${if (usage.qualifiedPath.contains(qualifiedPath.reference)) "" else qualifiedPath.reference}"
+                                val className =
+                                    "${usage.qualifiedPath}.${if (usage.qualifiedPath.contains(qualifiedPath.reference)) "" else qualifiedPath.reference}"
 
                                 getField(className.substring(0 until className.lastIndexOf('.')))
                             } catch (e: ClassNotFoundException) {
@@ -77,7 +81,7 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
         val qualifiedNameCtx = ctx.findQualifiedName()
         val ownerCtx = ctx.owner
 
-        return if (ownerCtx == null) {
+        if (ownerCtx == null) {
             val qualifiedPath = qualifiedNameCtx?.accept(QualifiedNameVisitor)
 
             if (qualifiedPath != null) {
@@ -89,80 +93,81 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
                 if (usage != null) {
                     when (usage) {
                         is PathUsage -> {
-                            try {
-                                val className =
-                                    "${usage.qualifiedPath}.${if (usage.qualifiedPath.contains(qualifiedPath.reference)) "" else "${qualifiedPath.reference}."}$functionName"
+                            val clazzName =
+                                "${usage.qualifiedPath}.${if (usage.qualifiedPath.contains(qualifiedPath.reference)) "" else "${qualifiedPath.reference}."}$functionName"
+                            val clazzType = ClassType(clazzName)
 
-                                ClassType(className).classType()
+                            if (clazzType.isCached())
+                                clazzType.tryInitClass()
 
-                                ConstructorCall(className, arguments)
-                            } catch (e: ClassNotFoundException) {
-                                val className = "${usage.qualifiedPath}.${qualifiedPath.removeDuplicate(topUsage)}"
+                            if (clazzType.isClassExists())
+                                return ConstructorCall(clazzName, arguments)
 
-                                val classType = ClassType(className)
-
-                                classType.classType()
-
-                                val signature = scope.getMethodCallSignature(classType, functionName, arguments)
-
-                                if (!signature.static)
-                                    throw RuntimeException("Function ${classType.internalName}#$functionName() is not a companion function.")
-
-                                FunctionCall(signature, arguments, classType, true)
-                            }
-                        }
-                        is ClassUsage -> {
-                            val className = "${usage.qualifiedPath}.${usage.className}"
-
+                            val className = "${usage.qualifiedPath}.${qualifiedPath.removeDuplicate(topUsage)}"
                             val classType = ClassType(className)
-
-                            classType.classType()
 
                             val signature = scope.getMethodCallSignature(classType, functionName, arguments)
 
                             if (!signature.static)
                                 throw RuntimeException("Function ${classType.internalName}#$functionName() is not a companion function.")
 
-                            FunctionCall(signature, arguments, classType, true)
+                            return FunctionCall(signature, arguments, classType, true)
+                        }
+                        is ClassUsage -> {
+                            val className = usage.qualifiedName
+                            val classType = ClassType(className)
+
+                            if (classType.isCached())
+                                classType.tryInitClass()
+
+                            val signature = scope.getMethodCallSignature(classType, functionName, arguments)
+
+                            if (!signature.static)
+                                throw RuntimeException("Function ${classType.internalName}#$functionName() is not a companion function.")
+
+                            return FunctionCall(signature, arguments, classType, true)
                         }
                     }
                 } else {
-                    try {
-                        val className = "${qualifiedPath.qualifiedName}.$functionName"
-                        ClassType(className).classType()
+                    val clazzName = "${qualifiedPath.qualifiedName}.$functionName"
+                    val clazzType = ClassType(clazzName)
 
-                        ConstructorCall(className, arguments)
-                    } catch (e: ClassNotFoundException) {
-                        val className = qualifiedPath.qualifiedName
-                        val classType = ClassType(className)
-                        val signature = scope.getMethodCallSignature(classType, functionName, arguments)
+                    if (clazzType.isCached())
+                        clazzType.tryInitClass()
 
-                        FunctionCall(signature, arguments, classType, signature.static)
-                    }
+                    if (clazzType.isClassExists())
+                        return ConstructorCall(clazzName, arguments)
+
+                    val className = qualifiedPath.qualifiedName
+                    val classType = ClassType(className)
+                    val signature = scope.getMethodCallSignature(classType, functionName, arguments)
+
+                    return FunctionCall(signature, arguments, classType, signature.static)
                 }
             } else {
-                try {
-                    val className = (scope.usages[functionName] as ClassUsage?)?.qualifiedName ?: kotlin.run {
-                        ClassType(functionName).classType()
+                val className = (scope.usages[functionName] as ClassUsage?)?.qualifiedName ?: functionName
+                val classType = ClassType(className)
 
-                        functionName
-                    }
+                if (classType.isCached())
+                    classType.tryInitClass()
 
-                    ConstructorCall(className, arguments)
-                } catch (e: ClassNotFoundException) {
-                    val signature = scope.getMethodCallSignature(functionName, arguments)
-                    val thisVariable = LocalVariable("self", scope.classType)
+                if (classType.isClassExists())
+                    return ConstructorCall(className, arguments)
 
-                    FunctionCall(signature, arguments, LocalVariableReference(thisVariable), signature.static)
-                }
+                val signature = scope.getMethodCallSignature(functionName, arguments)
+                val thisVariable = LocalVariable("self", scope.classType)
+
+                return FunctionCall(signature, arguments, LocalVariableReference(thisVariable), signature.static)
+
             }
         } else {
             val owner = ownerCtx.accept(ev)
             val signature = scope.getMethodCallSignature(owner.type, functionName, arguments)
 
-            FunctionCall(signature, arguments, owner, signature.static)
+            return FunctionCall(signature, arguments, owner, signature.static)
         }
     }
+
 
     override fun visitConstructorCall(ctx: CASCParser.ConstructorCallContext): Call<*> {
         val className = ctx.findClassName()!!.accept(QualifiedNameVisitor)

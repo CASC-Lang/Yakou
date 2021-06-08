@@ -1,10 +1,18 @@
 mod module
 
 class Person(name: str, age: i32) {
+    comp fn hello() {
+        println("Hello!")
+    }
+
     fn prt() {
         print("name: ")
         println(name)
         print("age: ")
         println(age)
+    }
+
+    fn toStr(): str {
+        return "name: " + name + ", age: "
     }
 }

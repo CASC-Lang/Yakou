@@ -1,7 +1,14 @@
+use module::Person
+
 class CASC() {
     comp fn main(arg: str[]) {
-        if 1.0 > 2.99 {
-            println("Lol")
-        }
+        a := Person("ChAoS", 17)
+        a.prt()
+
+        Person::hello()
+
+        println(a.toStr())
+
+        b := java::lang::String::valueOf(1)
     }
 }

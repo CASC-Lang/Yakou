@@ -7,23 +7,35 @@ import org.casclang.casc.compilation.Parser
 import java.net.URLClassLoader
 
 class ClassType(override val typeName: String) : Type {
-    override fun classType(): Class<*> = try {
-        if (PackageTree.classes.containsKey(internalName) && !PackageTree.classes[internalName]!!.isCompiled) {
+    override fun classType(): Class<*> {
+        val classLoader = URLClassLoader(arrayOf(Compiler.compilation.outputDirectory.toURI().toURL()))
+
+        return Class.forName(typeName, false, classLoader)
+    }
+
+    fun isClassExists() =
+        try {
+            val classLoader = URLClassLoader(arrayOf(Compiler.compilation.outputDirectory.toURI().toURL()))
+
+            val clazz = Class.forName(typeName, false, classLoader)
+
+            true
+        } catch (e: Exception) {
+            false
+        }
+
+    fun isCached() =
+        PackageTree.classes.containsKey(internalName) && !PackageTree.classes[internalName]!!.isCompiled
+
+    fun tryInitClass(): Class<*> {
+        if (isCached()) {
             Parser("${Compiler.compilation.source.path}/${PackageTree.classes[internalName]!!.relativeFilePath}")
                 .parseFile()
                 .emitBytecode()
             PackageTree.classes[internalName]!!.isCompiled = true
         }
 
-        Class.forName(typeName)
-    } catch (e: ClassNotFoundException) {
-        try {
-            val classLoader = URLClassLoader(arrayOf(Compiler.compilation.outputDirectory.toURI().toURL()))
-
-            classLoader.loadClass(typeName)
-        } catch (e: Exception) {
-            throw e
-        }
+        return classType()
     }
 
     override val internalName: String = typeName.replace('.', '/')
