@@ -1,8 +1,5 @@
-class CASC(mut lol: i32) {
+class CASC() {
     comp fn main(arg: str[]) {
-        use module::Person
-
-        a := module::Person("Baby", 2)
-        a.prt()
+        a := 20 / 2
     }
 }

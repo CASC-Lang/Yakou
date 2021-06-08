@@ -1,19 +1,14 @@
 package org.casclang.casc.parsing.node.expression
 
 import org.casclang.casc.parsing.type.BuiltInType
-import org.casclang.casc.parsing.type.Type
 
 sealed class ArithmeticExpression<T>(val leftExpression: Expression<*>, val rightExpression: Expression<*>) :
-    Expression<T> where T : ArithmeticExpression<T> {
-    companion object {
-        fun getCompanionType(leftExpression: Expression<*>, rightExpression: Expression<*>): Type =
-            when (rightExpression.type) {
-                BuiltInType.STRING -> BuiltInType.STRING
-                else -> leftExpression.type
-            }
-    }
-
-    override val type: Type = getCompanionType(leftExpression, rightExpression)
+    FoldableExpression<T>(
+        when (rightExpression.type) {
+            BuiltInType.STRING -> BuiltInType.STRING
+            else -> leftExpression.type
+        }
+    ) where T : ArithmeticExpression<T> {
 
     class Addition(
         leftExpression: Expression<*>,
