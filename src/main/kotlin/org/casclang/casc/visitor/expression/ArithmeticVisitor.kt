@@ -21,11 +21,10 @@ class ArithmeticVisitor(private val ev: ExpressionVisitor) : CASCBaseVisitor<Fol
                 Value(BuiltInType.STRING, leftExpression.value + rightExpression.value)
             } else if (leftExpression.type.isNumeric() && rightExpression.type.isNumeric()) {
                 val (t1, t2) = leftExpression.type to rightExpression.type
-                val (v1, v2) = leftExpression.value to rightExpression.value
                 val targetType = isEvaluable(t1, t2)
-                val (ev1, ev2) = evaluate(targetType, v1, v2)
+                val (ev1, ev2) = leftExpression.evaluate(targetType) to rightExpression.evaluate(targetType)
 
-                Value(targetType, ev1 + ev2)
+                Value(targetType, "${ev1 + ev2}")
             } else {
                 throw RuntimeException("Cannot apply addition on type ${leftExpression.type} and type ${rightExpression.type}")
             }
@@ -38,11 +37,10 @@ class ArithmeticVisitor(private val ev: ExpressionVisitor) : CASCBaseVisitor<Fol
         return if (leftExpression is Value && rightExpression is Value) {
             if (leftExpression.type.isNumeric() && rightExpression.type.isNumeric()) {
                 val (t1, t2) = leftExpression.type to rightExpression.type
-                val (v1, v2) = leftExpression.value to rightExpression.value
                 val targetType = isEvaluable(t1, t2)
-                val (ev1, ev2) = evaluate(targetType, v1, v2)
+                val (ev1, ev2) = leftExpression.evaluate(targetType) to rightExpression.evaluate(targetType)
 
-                Value(targetType, ev1 - ev2)
+                Value(targetType, "${ev1 - ev2}")
             } else {
                 throw RuntimeException("Cannot apply subtraction on type ${leftExpression.type} and type ${rightExpression.type}")
             }
@@ -55,11 +53,10 @@ class ArithmeticVisitor(private val ev: ExpressionVisitor) : CASCBaseVisitor<Fol
         return if (leftExpression is Value && rightExpression is Value) {
             if (leftExpression.type.isNumeric() && rightExpression.type.isNumeric()) {
                 val (t1, t2) = leftExpression.type to rightExpression.type
-                val (v1, v2) = leftExpression.value to rightExpression.value
                 val targetType = isEvaluable(t1, t2)
-                val (ev1, ev2) = evaluate(targetType, v1, v2)
+                val (ev1, ev2) = leftExpression.evaluate(targetType) to rightExpression.evaluate(targetType)
 
-                Value(targetType, ev1 * ev2)
+                Value(targetType, "${ev1 * ev2}")
             } else {
                 throw RuntimeException("Cannot apply multiplication on type ${leftExpression.type} and type ${rightExpression.type}")
             }
@@ -72,11 +69,10 @@ class ArithmeticVisitor(private val ev: ExpressionVisitor) : CASCBaseVisitor<Fol
         return if (leftExpression is Value && rightExpression is Value) {
             if (leftExpression.type.isNumeric() && rightExpression.type.isNumeric()) {
                 val (t1, t2) = leftExpression.type to rightExpression.type
-                val (v1, v2) = leftExpression.value to rightExpression.value
                 val targetType = isEvaluable(t1, t2)
-                val (ev1, ev2) = evaluate(targetType, v1, v2)
+                val (ev1, ev2) = leftExpression.evaluate(targetType) to rightExpression.evaluate(targetType)
 
-                Value(targetType, ev1 / ev2)
+                Value(targetType, "${ev1 / ev2}")
             } else {
                 throw RuntimeException("Cannot apply division on type ${leftExpression.type} and type ${rightExpression.type}")
             }
@@ -94,16 +90,4 @@ class ArithmeticVisitor(private val ev: ExpressionVisitor) : CASCBaseVisitor<Fol
         else if (t1.isFloat() || t2.isFloat()) BuiltInType.FLOAT
         else if (t1.isLong() || t2.isLong()) BuiltInType.LONG
         else BuiltInType.INT
-
-    private fun evaluate(targetType: BuiltInType, v1: String, v2: String): Pair<Number, Number> =
-        evaluate(targetType, v1) to evaluate(targetType, v2)
-
-    private fun evaluate(targetType: BuiltInType, value: String): Number =
-        when (targetType) {
-            BuiltInType.DOUBLE -> value.toDouble()
-            BuiltInType.FLOAT -> value.toFloat()
-            BuiltInType.LONG -> value.toLong()
-            BuiltInType.INT -> value.toInt()
-            else -> throw IllegalArgumentException()
-        }
 }

@@ -11,7 +11,7 @@ class ConditionalFactory(private val ef: ExpressionFactory, private val mv: Meth
         val rightExpression = conditional.rightExpression
 
         leftExpression.accept(ef)
-        rightExpression?.accept(ef)
+        rightExpression.accept(ef)
 
         val logicalOp = conditional.logicalOp
         val endLabel = Label()

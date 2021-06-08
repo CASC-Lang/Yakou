@@ -14,6 +14,6 @@ class ValueVisitor : CASCBaseVisitor<Value>() {
         if (type == BuiltInType.LONG) value = value.removeSuffix("L").removeSuffix("l")
         if (type == BuiltInType.FLOAT) value = value.removeSuffix("F").removeSuffix("f")
 
-        return Value(type, value)
+        return Value(type as BuiltInType, value)
     }
 }
