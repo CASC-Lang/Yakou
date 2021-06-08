@@ -1,9 +1,9 @@
 package org.casclang.casc.bytecode.expression
 
-import org.casclang.casc.parsing.node.expression.Conditional
 import jdk.internal.org.objectweb.asm.Label
 import jdk.internal.org.objectweb.asm.MethodVisitor
 import jdk.internal.org.objectweb.asm.Opcodes.*
+import org.casclang.casc.parsing.node.expression.Conditional
 
 class ConditionalFactory(private val ef: ExpressionFactory, private val mv: MethodVisitor) {
     fun generate(conditional: Conditional) {
@@ -11,7 +11,7 @@ class ConditionalFactory(private val ef: ExpressionFactory, private val mv: Meth
         val rightExpression = conditional.rightExpression
 
         leftExpression.accept(ef)
-        rightExpression.accept(ef)
+        rightExpression?.accept(ef)
 
         val logicalOp = conditional.logicalOp
         val endLabel = Label()

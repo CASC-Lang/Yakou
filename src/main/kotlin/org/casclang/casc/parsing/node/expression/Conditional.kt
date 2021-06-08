@@ -6,7 +6,7 @@ import org.casclang.casc.parsing.type.Type
 
 data class Conditional(
     val leftExpression: Expression<*>,
-    val rightExpression: Expression<*>,
+    val rightExpression: Expression<*>?,
     val logicalOp: LogicalOp
 ) : Expression<Conditional> {
     override val type: Type = BuiltInType.BOOLEAN

@@ -1,7 +1,5 @@
 package org.casclang.casc.parsing.type
 
-import jdk.internal.org.objectweb.asm.Opcodes
-
 interface Type {
     val typeName: String
     fun classType(): Class<*>?

@@ -36,4 +36,7 @@ enum class BuiltInType(
     override val typeOpcode: Int = opcodes.type
     override val arrayLoadOpcode: Int = opcodes.arrayLoad
     override val arrayStoreOpcode: Int = opcodes.arrayStore
+
+    override fun toString() =
+        typeName
 }

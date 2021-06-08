@@ -1,10 +1,10 @@
 package org.casclang.casc.bytecode.expression
 
-import org.casclang.casc.parsing.node.expression.IfExpression
 import jdk.internal.org.objectweb.asm.Label
 import jdk.internal.org.objectweb.asm.MethodVisitor
 import jdk.internal.org.objectweb.asm.Opcodes.GOTO
 import jdk.internal.org.objectweb.asm.Opcodes.IFNE
+import org.casclang.casc.parsing.node.expression.IfExpression
 
 class IfFactory(private val ef: ExpressionFactory, private val mv: MethodVisitor) {
     fun generate(ifExpression: IfExpression) {

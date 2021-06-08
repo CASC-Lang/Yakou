@@ -1,5 +1,7 @@
 class CASC() {
     comp fn main(arg: str[]) {
-        a := 20 / 2
+        if false {
+            println("Lol")
+        }
     }
 }

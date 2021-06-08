@@ -53,7 +53,9 @@ class ClassType(override val typeName: String) : Type {
         return typeName == classType.typeName
     }
 
-    override fun hashCode(): Int {
-        return typeName.hashCode()
-    }
+    override fun hashCode() =
+        typeName.hashCode()
+
+    override fun toString() =
+        typeName
 }
