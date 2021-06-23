@@ -22,6 +22,7 @@ version = "0.1"
 application.mainClass.set("org.casclang.casc.MainKt")
 
 repositories {
+    jcenter()
     mavenCentral()
     maven("https://jitpack.io")
 }
@@ -32,6 +33,7 @@ dependencies {
 
     implementation(group = "com.strumenta.antlr-kotlin", name = "antlr-kotlin-runtime-jvm", version = "0951069063")
     implementation(group = "org.apache.commons", name = "commons-lang3", version = "3.12.0")
+    implementation(group = "com.andreapivetta.kolor", name = "kolor", version = "1.0.0")
 }
 
 tasks.register<com.strumenta.antlrkotlin.gradleplugin.AntlrKotlinTask>("generateKotlinGrammarSource") {

@@ -7,11 +7,16 @@ import org.casclang.casc.bytecode.BytecodeFactory
 import org.casclang.casc.parsing.CompilationUnit
 import org.casclang.casc.visitor.CompilationUnitVisitor
 import java.io.File
+import kotlin.system.exitProcess
 
 class Parser(private val filePath: String) {
     private lateinit var compilationUnit: CompilationUnit
     private lateinit var compiledFilePath: String
     private lateinit var compiledFile: File
+
+    init {
+        Compiler.compilation.currentFile = File(filePath)
+    }
 
     fun parseFile(): Parser {
         val charStream = CharStreams.fromFileName(filePath, Charsets.UTF_8)
@@ -24,7 +29,12 @@ class Parser(private val filePath: String) {
 
         compilationUnit = parser.compilationUnit().accept(compilationUnitVisitor)
 
-        return this
+        if (DiagnosticHandler.success()) {
+            return this
+        } else {
+            DiagnosticHandler.printErrors()
+            exitProcess(-1)
+        }
     }
 
     fun emitBytecode(): Parser {

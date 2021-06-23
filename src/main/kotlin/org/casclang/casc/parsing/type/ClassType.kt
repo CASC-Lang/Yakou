@@ -4,6 +4,7 @@ import jdk.internal.org.objectweb.asm.Opcodes.*
 import org.casclang.casc.compilation.Compiler
 import org.casclang.casc.compilation.PackageTree
 import org.casclang.casc.compilation.Parser
+import java.io.File
 import java.net.URLClassLoader
 
 class ClassType(override val typeName: String) : Type {
@@ -28,12 +29,16 @@ class ClassType(override val typeName: String) : Type {
         PackageTree.classes.containsKey(internalName) && !PackageTree.classes[internalName]!!.isCompiled
 
     fun tryInitClass(): Class<*> {
+        val selfFile = Compiler.compilation.currentFile
+
         if (isCached()) {
             Parser("${Compiler.compilation.source.path}/${PackageTree.classes[internalName]!!.relativeFilePath}")
                 .parseFile()
                 .emitBytecode()
             PackageTree.classes[internalName]!!.isCompiled = true
         }
+
+        Compiler.compilation.currentFile = selfFile
 
         return classType()
     }

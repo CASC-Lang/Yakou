@@ -1,5 +1,19 @@
 package org.casclang.casc.compilation
 
-object DiagnosticHandler {
+internal object DiagnosticHandler {
+    private val diagnostics: MutableMap<TextSpan, String> = mutableMapOf()
 
+    fun success() =
+        diagnostics.isEmpty()
+
+    fun addError(filePath: String, startLine: Int, startPos: Int, length: Int, message: String) =
+        diagnostics.put(TextSpan(filePath, startLine, startPos, length), message)
+
+    fun addError(span: TextSpan, message: String) =
+        diagnostics.put(span, message)
+
+    fun printErrors() =
+        diagnostics.forEach {
+            it.key.println(it.value)
+        }
 }

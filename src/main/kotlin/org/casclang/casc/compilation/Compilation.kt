@@ -20,6 +20,7 @@ class Compilation(private val args: Array<String>) {
         if (it.isFile && !(it.extension == "casc" || it.extension == "cas"))
             throw RuntimeException("Provided file '${it.name}' is not casc source file. Extension should be .casc or .cas.")
     }
+    var currentFile: File? = null
 
     init {
         if (args.contains("-cp"))
