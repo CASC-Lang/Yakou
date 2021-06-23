@@ -35,7 +35,7 @@ class ForVisitor(private val scope: Scope) : CASCBaseVisitor<ForStatement<*>>() 
         return if (scope.isLocalVariableExists(variableName)) {
             val iteratorVariable = Assignment(
                 variableName,
-                LocalVariableReference(scope.getLocalVariable(variableName)),
+                LocalVariableReference(scope.getLocalVariable(variableName)!!),
                 if (arrow.endsWith('>')) startExpression else endExpression,
                 false,
                 scope.callingScope

@@ -25,7 +25,7 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
 
     fun generate(constructor: ConstructorCall) {
         val signature = scope.getConstructorCallSignature(constructor.identifier, constructor.arguments)
-        val ownerDescriptor = ClassType(signature.name).internalName
+        val ownerDescriptor = ClassType(signature!!.name).internalName
 
         mv.visitTypeInsn(NEW, ownerDescriptor)
         mv.visitInsn(DUP)
@@ -34,7 +34,7 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
 
         generateArguments(
             constructor,
-            scope.getConstructorCallSignature(constructor.identifier, constructor.arguments)
+            scope.getConstructorCallSignature(constructor.identifier, constructor.arguments)!!
         )
         mv.visitMethodInsn(INVOKESPECIAL, ownerDescriptor, "<init>", methodDescriptor, false)
     }
@@ -42,7 +42,7 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
     fun generate(selfCall: SelfCall) {
         mv.visitVarInsn(ALOAD, 0)
 
-        val signature = scope.getMethodCallSignature(scope.className, selfCall.arguments)
+        val signature = scope.getMethodCallSignature(scope.className, selfCall.arguments)!!
         val methodDescriptor = DescriptorFactory.getMethodDescriptor(signature)
 
         generateArguments(selfCall, signature)
@@ -51,11 +51,11 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
     }
 
     fun generate(function: FunctionCall) {
-        if (!function.signature.static)
+        if (!function.signature!!.static)
             function.owner.accept(ef)
         generateArguments(
             function,
-            scope.getMethodCallSignature(function.owner.type, function.identifier, function.arguments)
+            scope.getMethodCallSignature(function.owner.type, function.identifier, function.arguments)!!
         )
 
         val functionName = function.identifier

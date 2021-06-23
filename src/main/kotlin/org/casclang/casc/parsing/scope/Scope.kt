@@ -6,7 +6,7 @@ import org.casclang.casc.parsing.node.expression.Argument
 import org.casclang.casc.parsing.type.ClassType
 import org.casclang.casc.parsing.type.Type
 
-class Scope(private val metadata: MetaData, usages: List<Usage> = listOf()) {
+class Scope(private val metadata: MetaData) {
     val usages = mutableMapOf<String, Usage>()
 
     val localVariables = linkedMapOf<String, LocalVariable>()
@@ -21,10 +21,6 @@ class Scope(private val metadata: MetaData, usages: List<Usage> = listOf()) {
     val classType = ClassType(className)
     val superClassInternalName = ClassType(metadata.superClassName).internalName
 
-    init {
-        usages.forEach(this::addUsage)
-    }
-
     constructor(scope: Scope) : this(scope.metadata) {
         usages += scope.usages
 
@@ -36,32 +32,37 @@ class Scope(private val metadata: MetaData, usages: List<Usage> = listOf()) {
         functionSignatures += scope.functionSignatures
     }
 
-    fun addUsage(usage: Usage) {
+    fun addUsage(usage: Usage): Boolean {
         when (usage) {
             is PathUsage -> {
                 val referencablePath = usage.qualifiedPath.split('.').last()
 
-                if (usages.containsKey(referencablePath)) throw RuntimeException("Duplicate usage: $referencablePath")
+                if (usages.containsKey(referencablePath))
+                    return false
 
                 this.usages += referencablePath to usage
             }
             is ClassUsage -> {
                 val referencableClassName = usage.className
 
-                if (usages.containsKey(referencableClassName)) throw RuntimeException("Duplicate usage: $referencableClassName")
+                if (usages.containsKey(referencableClassName))
+                    return false
 
                 this.usages += referencableClassName to usage
             }
         }
+        return true
     }
 
     fun addFunction(function: Function<*>) {
         functions += function
     }
 
-    fun addSignature(signature: FunctionSignature) {
-        if (isSignatureExists(signature)) throw RuntimeException("Function '${signature.name}' already exists.")
+    fun addSignature(signature: FunctionSignature): Boolean {
+        if (isSignatureExists(signature)) return false
         functionSignatures += signature
+
+        return true
     }
 
     fun isSignatureExists(signature: FunctionSignature): Boolean =
@@ -70,39 +71,24 @@ class Scope(private val metadata: MetaData, usages: List<Usage> = listOf()) {
     fun isSignatureExists(identifier: String, arguments: List<Argument>): Boolean =
         functionSignatures.any { it.matches(identifier, arguments) }
 
-    fun getMethodCallSignatureWithoutParameters(identifier: String): FunctionSignature =
+    fun getMethodCallSignatureWithoutParameters(identifier: String): FunctionSignature? =
         getMethodCallSignature(identifier, listOf())
 
-    fun getMethodCallSignature(identifier: String, arguments: List<Argument>): FunctionSignature =
-        functionSignatures.find {
-            it.matches(identifier, arguments)
-        } ?: throw RuntimeException("Function '$identifier' does not exist.")
+    fun getMethodCallSignature(identifier: String, arguments: List<Argument>): FunctionSignature? =
+        functionSignatures.find { it.matches(identifier, arguments) }
 
-    fun getConstructorCallSignature(className: String, arguments: List<Argument>): FunctionSignature =
+    fun getConstructorCallSignature(className: String, arguments: List<Argument>): FunctionSignature? =
         if (className != this.className) {
             val argumentsType = arguments.map(Argument::type)
 
             ClassPathScope.getConstructorSignature(className, argumentsType)
-                ?: throw RuntimeException(
-                    "Class constructor '$className' with type arguments '(${
-                        argumentsType.map(Type::internalName).joinToString(", ")
-                    })' does not exist."
-                )
         } else getMethodCallSignature(null, className, arguments)
 
-    fun getMethodCallSignature(owner: Type?, methodName: String, arguments: List<Argument>): FunctionSignature =
+    fun getMethodCallSignature(owner: Type?, methodName: String, arguments: List<Argument>): FunctionSignature? =
         if (owner != null && owner != classType) {
             val argumentsType = arguments.map(Argument::type)
 
             ClassPathScope.getMethodSignature(owner, methodName, argumentsType)
-                ?: throw RuntimeException(
-                    "Function '${
-                        owner.typeName.replace(
-                            ".",
-                            "::"
-                        )
-                    }#$methodName' with type arguments '(${argumentsType.joinToString(", ")})' does not exist."
-                )
         } else getMethodCallSignature(methodName, arguments)
 
     fun concealNonStaticFields() {
@@ -130,23 +116,15 @@ class Scope(private val metadata: MetaData, usages: List<Usage> = listOf()) {
         fields += field.name to field
     }
 
-    fun getField(owner: Type?, fieldName: String): Field =
+    fun getField(owner: Type?, fieldName: String): Field? =
         if (owner != null && owner != classType) {
-            ClassPathScope.getField(owner, fieldName) ?: throw RuntimeException(
-                "Field '${
-                    owner.typeName.replace(
-                        ".",
-                        "::"
-                    )
-                }#$fieldName' does not exist."
-            )
+            ClassPathScope.getField(owner, fieldName)
         } else if (owner != null && owner == classType) {
             concealedFields[fieldName] ?: fields[fieldName]
-            ?: throw RuntimeException("Field '$fieldName' does not exist.")
         } else getField(fieldName)
 
-    fun getField(fieldName: String): Field =
-        fields[fieldName] ?: throw RuntimeException("Field '$fieldName' does not exist.")
+    fun getField(fieldName: String): Field? =
+        fields[fieldName]
 
     fun isFieldExists(fieldName: String): Boolean =
         fields.containsKey(fieldName)
@@ -155,8 +133,8 @@ class Scope(private val metadata: MetaData, usages: List<Usage> = listOf()) {
         localVariables += variable.name to variable
     }
 
-    fun getLocalVariable(variableName: String): LocalVariable =
-        localVariables[variableName] ?: throw RuntimeException("Variable '$variableName' does not exist.")
+    fun getLocalVariable(variableName: String): LocalVariable? =
+        localVariables[variableName]
 
     fun isLocalVariableExists(variableName: String): Boolean =
         localVariables.containsKey(variableName)

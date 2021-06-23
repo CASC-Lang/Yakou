@@ -19,7 +19,7 @@ class VariableDeclarationFactory(
 
         val assignment = Assignment(
             variableName,
-            LocalVariableReference(scope.getLocalVariable(variableName)),
+            LocalVariableReference(scope.getLocalVariable(variableName)!!),
             expression,
             true,
             scope.callingScope

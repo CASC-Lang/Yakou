@@ -3,6 +3,7 @@ package org.casclang.casc.parsing.scope
 import org.casclang.casc.parsing.node.expression.Argument
 import org.casclang.casc.parsing.node.expression.Parameter
 import org.casclang.casc.parsing.type.Type
+import org.casclang.casc.util.addError
 
 data class FunctionSignature(
     val name: String,
@@ -10,10 +11,11 @@ data class FunctionSignature(
     val returnType: Type,
     val static: Boolean
 ) {
-    fun getParameterByName(name: String): Parameter =
+    @Deprecated("Default parameter feature is still unstable.")
+    fun getParameterByName(name: String): Parameter? =
         parameters.find { it.name == name }
-            ?: throw RuntimeException("Function '${this.name}' has no parameter named '$name'")
 
+    @Deprecated("Default parameter feature is still unstable.")
     fun getIndexOfParameter(parameterName: String): Int =
         parameters.indexOf(getParameterByName(parameterName))
 

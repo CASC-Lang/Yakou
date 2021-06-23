@@ -6,6 +6,7 @@ import org.casclang.casc.parsing.node.expression.Expression
 import org.casclang.casc.parsing.node.statement.EmptyStatement
 import org.casclang.casc.parsing.node.statement.Statement
 import org.casclang.casc.parsing.scope.Scope
+import org.casclang.casc.util.addError
 import org.casclang.casc.visitor.expression.ExpressionVisitor
 import org.casclang.casc.visitor.util.UseReferenceVisitor
 
@@ -99,7 +100,8 @@ class StatementVisitor(private val scope: Scope) : CASCBaseVisitor<Statement<*>>
         ev.visitWrappedExpression(ctx)
 
     override fun visitUseReference(ctx: CASCParser.UseReferenceContext): Statement<*> {
-        scope.addUsage(ctx.accept(urv))
+        if (!scope.addUsage(ctx.accept(urv)))
+            addError(ctx, "Ambiguous usage.")
 
         return EmptyStatement
     }

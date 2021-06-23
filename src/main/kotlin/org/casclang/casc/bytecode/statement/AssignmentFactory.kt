@@ -19,7 +19,7 @@ class AssignmentFactory(private val mv: MethodVisitor, private val ef: Expressio
         val initialAssignment = assignment.initialAssignment
 
         if (variableName != null && scope.isLocalVariableExists(variableName)) {
-            if (!initialAssignment && scope.getLocalVariable(variableName).immutable)
+            if (!initialAssignment && scope.getLocalVariable(variableName)!!.immutable)
                 throw RuntimeException("Cannot assign value to immutable variable '$variableName'.")
 
             val index = scope.getLocalVariableIndex(variableName)
@@ -46,7 +46,7 @@ class AssignmentFactory(private val mv: MethodVisitor, private val ef: Expressio
 
         when (val variableReference = assignment.variableReference) {
             is Reference<*> -> {
-                val field = scope.getField(variableReference.name)
+                val field = scope.getField(variableReference.name)!!
                 val ownerTypeInternalName = field.ownerType.internalName
                 val fieldName = field.name
                 val descriptor = field.type.descriptor

@@ -3,10 +3,8 @@ package org.casclang.casc.visitor.expression.function
 import org.casclang.casc.CASCBaseVisitor
 import org.casclang.casc.CASCParser
 import org.casclang.casc.parsing.node.expression.*
-import org.casclang.casc.parsing.scope.ClassUsage
-import org.casclang.casc.parsing.scope.LocalVariable
-import org.casclang.casc.parsing.scope.PathUsage
-import org.casclang.casc.parsing.scope.Scope
+import org.casclang.casc.parsing.scope.*
+import org.casclang.casc.parsing.type.BuiltInType
 import org.casclang.casc.parsing.type.ClassType
 import org.casclang.casc.util.addError
 import org.casclang.casc.util.fromContext
@@ -34,10 +32,13 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
                     val classPathRef = ClassPathReference(className)
                     val field = scope.getField(classPathRef.type, fieldName)
 
-                    if (!field.static)
+                    if (field == null)
+                        addError(ctx, "Unresolved reference: $fieldName")
+
+                    if (field?.static != true)
                         addError(ctx, "Field ${classPathRef.type.internalName}#$fieldName is not a companion field.")
 
-                    return FieldCall(classPathRef, fieldName, field.type, true)
+                    return FieldCall(classPathRef, fieldName, field?.type ?: BuiltInType.VOID, true)
                 }
 
                 if (usage != null) {
@@ -66,14 +67,20 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
                 val field = scope.getField(fieldName)
                 val thisVariable = LocalVariable("self", scope.classType)
 
-                FieldCall(LocalVariableReference(thisVariable), fieldName, field.type, field.static)
+                if (field == null)
+                    addError(ctx, "Unresolved reference: $fieldName")
+
+                FieldCall(LocalVariableReference(thisVariable), fieldName, field?.type ?: BuiltInType.VOID, field?.static ?: false)
             }
         } else {
             val fieldName = ctx.ID()!!.text
             val owner = ownerCtx.accept(ev)
             val field = scope.getField(owner.type, fieldName)
 
-            FieldCall(owner, fieldName, field.type, field.static)
+            if (field == null)
+                addError(ctx, "Unresolved reference: $fieldName")
+
+            FieldCall(owner, fieldName, field?.type ?: BuiltInType.VOID, field?.static ?: false)
         }
     }
 
@@ -107,10 +114,12 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
 
                             val className = "${usage.qualifiedPath}.${qualifiedPath.removeDuplicate(topUsage)}"
                             val classType = ClassType(className)
-
                             val signature = scope.getMethodCallSignature(classType, functionName, arguments)
 
-                            if (!signature.static)
+                            if (signature == null)
+                                addError(ctx, "Unresolved reference: $functionName")
+
+                            if (signature != null && !signature.static)
                                 addError(ctx, "Function ${classType.internalName}#$functionName() is not a companion function.")
 
                             return FunctionCall(signature, arguments, classType, true)
@@ -124,7 +133,10 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
 
                             val signature = scope.getMethodCallSignature(classType, functionName, arguments)
 
-                            if (!signature.static)
+                            if (signature == null)
+                                addError(ctx, "Unresolved reference: $functionName")
+
+                            if (signature != null && !signature.static)
                                 addError(ctx, "Function ${classType.internalName}#$functionName() is not a companion function.")
 
                             return FunctionCall(signature, arguments, classType, true)
@@ -144,7 +156,10 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
                     val classType = ClassType(className)
                     val signature = scope.getMethodCallSignature(classType, functionName, arguments)
 
-                    return FunctionCall(signature, arguments, classType, signature.static)
+                    if (signature == null)
+                        addError(ctx, "Unresolved reference: $functionName")
+
+                    return FunctionCall(signature, arguments, classType, signature?.static ?: false)
                 }
             } else {
                 val className = (scope.usages[functionName] as ClassUsage?)?.qualifiedName ?: functionName
@@ -159,14 +174,20 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
                 val signature = scope.getMethodCallSignature(functionName, arguments)
                 val thisVariable = LocalVariable("self", scope.classType)
 
-                return FunctionCall(signature, arguments, LocalVariableReference(thisVariable), signature.static)
+                if (signature == null)
+                    addError(ctx, "Unresolved reference: $functionName")
+
+                return FunctionCall(signature, arguments, LocalVariableReference(thisVariable), signature?.static ?: false)
 
             }
         } else {
             val owner = ownerCtx.accept(ev)
             val signature = scope.getMethodCallSignature(owner.type, functionName, arguments)
 
-            return FunctionCall(signature, arguments, owner, signature.static)
+            if (signature == null)
+                addError(ctx, "Unresolved reference: $functionName")
+
+            return FunctionCall(signature, arguments, owner, signature?.static ?: false)
         }
     }
 

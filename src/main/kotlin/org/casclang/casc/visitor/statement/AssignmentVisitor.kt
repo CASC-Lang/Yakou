@@ -22,9 +22,9 @@ class AssignmentVisitor(private val ev: ExpressionVisitor, private val scope: Sc
         ).also {
             if (it.variableName != null) {
                 if (scope.isLocalVariableExists(it.variableName) &&
-                    scope.getLocalVariable(it.variableName).type == BuiltInType.NULL
+                    scope.getLocalVariable(it.variableName)?.type == BuiltInType.NULL
                 ) {
-                    scope.getLocalVariable(it.variableName).type = it.expression.type
+                    scope.getLocalVariable(it.variableName)?.type = it.expression.type
                 } // Clarify local variable's actual type.
             }
         }

@@ -28,7 +28,8 @@ class ClassVisitor(private val modulePath: QualifiedName?, private val usages: L
         val name = ctx.findClassName()!!.text
         val metadata = MetaData("${modulePath?.qualifiedName?.dot() ?: ""}$name", "java.lang.Object")
 
-        scope = Scope(metadata, usages)
+        scope = Scope(metadata)
+        usages.forEach(scope::addUsage)
 
         val primaryCtorCtx = ctx.findPrimaryConstructor()
 
@@ -77,8 +78,8 @@ class ClassVisitor(private val modulePath: QualifiedName?, private val usages: L
                 fields.map {
                     Assignment(
                         null,
-                        FieldReference(innerScope.getField(it.name)),
-                        LocalVariableReference(innerScope.getLocalVariable(it.name)),
+                        FieldReference(innerScope.getField(it.name)!!),
+                        LocalVariableReference(innerScope.getLocalVariable(it.name)!!),
                         true,
                         CallingScope.CONSTRUCTOR
                     )
@@ -136,5 +137,5 @@ class ClassVisitor(private val modulePath: QualifiedName?, private val usages: L
     }
 
     private fun getDefaultConstructor(): Constructor =
-        Constructor(scope.getMethodCallSignatureWithoutParameters(scope.className), Block(scope), AccessModifier.PUB)
+        Constructor(scope.getMethodCallSignatureWithoutParameters(scope.className)!!, Block(scope), AccessModifier.PUB, true)
 }

@@ -2,5 +2,6 @@ use module::Person
 
 class CASC {
     comp fn main(arg: str[]) {
+        Person::bruh()
     }
 }

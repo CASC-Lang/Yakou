@@ -8,7 +8,7 @@ enum class AccessModifier(val accessOpcode: Int) {
 
     companion object {
         fun getModifier(value: String?) =
-            AccessModifier.valueOf(value?.toUpperCase() ?: "PUB")
+            valueOf(value?.toUpperCase() ?: "PUB")
 
         fun getModifier(modifier: Int) =
             when {

@@ -15,6 +15,6 @@ class VariableReferenceVisitor(private val ev: ExpressionVisitor, private val sc
         getReference(ctx.text)
 
     private fun getReference(name: String): Reference<*> =
-        if (scope.isFieldExists(name)) FieldReference(scope.getField(name))
-        else LocalVariableReference(scope.getLocalVariable(name))
+        if (scope.isFieldExists(name)) FieldReference(scope.getField(name)!!)
+        else LocalVariableReference(scope.getLocalVariable(name)!!)
 }
