@@ -25,7 +25,21 @@ class AssignmentFactory(private val mv: MethodVisitor, private val ef: Expressio
             val index = scope.getLocalVariableIndex(variableName)
 
             if (!initialAssignment) expression.accept(ef)
-            mv.visitVarInsn(type.storeVariableOpcode, index)
+
+            when (val variableReference = assignment.variableReference) {
+                is Reference<*> -> {
+                    mv.visitVarInsn(type.storeVariableOpcode, index)
+                }
+                is Index -> {
+                    val storeType = variableReference.type
+
+                    ef.generate(variableReference, false)
+                    expression.accept(ef)
+
+                    mv.visitInsn(storeType.arrayStoreOpcode)
+                }
+                else -> throw RuntimeException("Unsupported assignment operation.")
+            }
 
             return
         }
