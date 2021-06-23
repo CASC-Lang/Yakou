@@ -13,6 +13,8 @@ import org.casclang.casc.parsing.node.statement.Statement
 import org.casclang.casc.parsing.scope.*
 import org.casclang.casc.parsing.type.BuiltInType
 import org.casclang.casc.parsing.type.Type
+import org.casclang.casc.util.addError
+import org.casclang.casc.util.fromContext
 import org.casclang.casc.util.prepend
 import org.casclang.casc.visitor.expression.ExpressionVisitor
 import org.casclang.casc.visitor.expression.function.CallVisitor
@@ -35,7 +37,7 @@ class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function<*>>() {
         val block = getBlock(ctx.findBlock()!!)
 
         if (signature.returnType != BuiltInType.VOID && !validateAllCodePathsHaveReturn(block, signature.returnType))
-            throw IllegalArgumentException("Function must return a value of type ${signature.returnType}")
+            addError(ctx, "Function must return a value of type ${signature.returnType}")
 
         scope.revealNonStaticFields()
 
@@ -73,7 +75,7 @@ class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function<*>>() {
             is Block ->
                 when (val lastStatement = statement.statements.lastOrNull()) {
                     is IfStatement -> validateAllCodePathsHaveReturn(lastStatement, returnType)
-                    !is ReturnStatement -> throw RuntimeException("All code paths need return statement.")
+                    !is ReturnStatement -> false
                     else -> true
                 }
             is IfStatement ->
@@ -82,9 +84,9 @@ class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function<*>>() {
                             statement.falseStatement,
                             returnType
                         )
-                        else throw RuntimeException("All code paths need return statement.")
+                        else false
             is ReturnStatement -> statement.expression !is EmptyExpression && statement.expression.type == returnType
-            else -> throw RuntimeException("All code paths need return statement.")
+            else -> false
         }
     }
 }

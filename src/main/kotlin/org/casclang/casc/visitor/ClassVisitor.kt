@@ -14,7 +14,9 @@ import org.casclang.casc.parsing.node.statement.Block
 import org.casclang.casc.parsing.scope.*
 import org.casclang.casc.parsing.type.BuiltInType
 import org.casclang.casc.util.TypeResolver
+import org.casclang.casc.util.addError
 import org.casclang.casc.util.dot
+import org.casclang.casc.util.fromContext
 import org.casclang.casc.visitor.expression.ExpressionVisitor
 import org.casclang.casc.visitor.expression.function.ParameterVisitor
 
@@ -93,14 +95,14 @@ class ClassVisitor(private val modulePath: QualifiedName?, private val usages: L
 
         fields += ctx.findClassBody()!!.findFieldDeclaration().map {
             it.accept(fieldDeclarationVisitor)
-        }.flatten().onEach(scope::addField)
+        }.flatten().filterNotNull().onEach(scope::addField)
 
         if (primaryCtorCtx != null)
             ctorCtx.map {
                 it.findConstructorDeclaration()?.accept(functionSignatureVisitor)!!
             }.forEach(scope::addSignature)
-        else if (ctorCtx.isNotEmpty())
-            throw RuntimeException("Could not have auxiliary constructors without primary constructor.")
+        else if (ctorCtx.isNotEmpty()) addError(ctx, "Could not have auxiliary constructors without primary constructor.")
+
 
 
         val constructorExists = primaryCtorCtx != null || ctx.findClassBody()!!.findConstructor().isNotEmpty()

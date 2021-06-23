@@ -6,6 +6,7 @@ import org.casclang.casc.parsing.node.expression.Value
 import org.casclang.casc.parsing.node.statement.EmptyStatement
 import org.casclang.casc.parsing.node.statement.IfStatement
 import org.casclang.casc.parsing.node.statement.Statement
+import org.casclang.casc.util.addError
 import org.casclang.casc.visitor.expression.ExpressionVisitor
 
 class IfStatementVisitor(private val sv: StatementVisitor, private val ev: ExpressionVisitor) : CASCBaseVisitor<Statement<*>>() {
@@ -14,8 +15,10 @@ class IfStatementVisitor(private val sv: StatementVisitor, private val ev: Expre
         val trueStatement = ctx.trueStatement!!.accept(sv)
         val falseStatementCtx = ctx.falseStatement
 
-        if (!condition.isBool())
-            throw IllegalArgumentException("Cannot convert ${condition.type} into bool.")
+        if (!condition.isBool()) {
+            addError(ctx.condition, "Cannot convert ${condition.type} into bool.")
+            return EmptyStatement
+        }
 
         return if (falseStatementCtx != null) {
             val falseStatement = falseStatementCtx.accept(sv)

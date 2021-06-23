@@ -6,14 +6,14 @@ internal object DiagnosticHandler {
     fun success() =
         diagnostics.isEmpty()
 
-    fun addError(filePath: String, startLine: Int, startPos: Int, length: Int, message: String) =
-        diagnostics.put(TextSpan(filePath, startLine, startPos, length), message)
+    fun addError(filePath: String, startLine: Int, startPos: Int, endPos: Int, message: String) =
+        diagnostics.put(TextSpan(filePath, startLine, startPos, endPos), message)
 
     fun addError(span: TextSpan, message: String) =
         diagnostics.put(span, message)
 
     fun printErrors() =
         diagnostics.forEach {
-            it.key.println(it.value)
+            it.key.print(it.value)
         }
 }

@@ -8,6 +8,8 @@ import org.casclang.casc.parsing.scope.LocalVariable
 import org.casclang.casc.parsing.scope.PathUsage
 import org.casclang.casc.parsing.scope.Scope
 import org.casclang.casc.parsing.type.ClassType
+import org.casclang.casc.util.addError
+import org.casclang.casc.util.fromContext
 import org.casclang.casc.visitor.expression.ExpressionVisitor
 import org.casclang.casc.visitor.util.QualifiedNameVisitor
 
@@ -33,7 +35,7 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
                     val field = scope.getField(classPathRef.type, fieldName)
 
                     if (!field.static)
-                        throw RuntimeException("Field ${classPathRef.type.internalName}#$fieldName is not a companion field.")
+                        addError(ctx, "Field ${classPathRef.type.internalName}#$fieldName is not a companion field.")
 
                     return FieldCall(classPathRef, fieldName, field.type, true)
                 }
@@ -109,7 +111,7 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
                             val signature = scope.getMethodCallSignature(classType, functionName, arguments)
 
                             if (!signature.static)
-                                throw RuntimeException("Function ${classType.internalName}#$functionName() is not a companion function.")
+                                addError(ctx, "Function ${classType.internalName}#$functionName() is not a companion function.")
 
                             return FunctionCall(signature, arguments, classType, true)
                         }
@@ -123,7 +125,7 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
                             val signature = scope.getMethodCallSignature(classType, functionName, arguments)
 
                             if (!signature.static)
-                                throw RuntimeException("Function ${classType.internalName}#$functionName() is not a companion function.")
+                                addError(ctx, "Function ${classType.internalName}#$functionName() is not a companion function.")
 
                             return FunctionCall(signature, arguments, classType, true)
                         }

@@ -6,10 +6,12 @@ import org.casclang.casc.parsing.scope.AccessModifier
 import org.casclang.casc.parsing.scope.Field
 import org.casclang.casc.parsing.scope.Scope
 import org.casclang.casc.util.TypeResolver
+import org.casclang.casc.util.addError
+import org.casclang.casc.util.fromContext
 
 class FieldDeclarationVisitor(private val scope: Scope) :
-    CASCBaseVisitor<List<Field>>() {
-    override fun visitFieldDeclaration(ctx: CASCParser.FieldDeclarationContext): List<Field> {
+    CASCBaseVisitor<List<Field?>>() {
+    override fun visitFieldDeclaration(ctx: CASCParser.FieldDeclarationContext): List<Field?> {
         val accessModifier = AccessModifier.getModifier(ctx.findInnerAccessMods()!!.text)
         val static = ctx.COMP() != null
         val finalized = ctx.MUT() == null
@@ -19,7 +21,8 @@ class FieldDeclarationVisitor(private val scope: Scope) :
                     it.findInnerAccessMods()!!.text
                 ))
             ) {
-                throw RuntimeException("Field '${it.findName()?.text}' has different access modifier to its parent declaration.")
+                addError(it, "Field '${it.findName()?.text}' has different access modifier to its parent declaration.")
+                null
             } else {
                 Field(
                     finalized && it.MUT() == null,

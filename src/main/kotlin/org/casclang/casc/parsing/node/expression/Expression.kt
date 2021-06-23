@@ -12,6 +12,9 @@ interface Expression<T> : Statement<Expression<T>> where T : Expression<T> {
     fun isInt(): Boolean =
         type.isInt()
 
+    fun isLong(): Boolean =
+        type.isLong()
+
     fun isFloat(): Boolean =
         type.isFloat()
 

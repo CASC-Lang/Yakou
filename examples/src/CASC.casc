@@ -1,9 +1,6 @@
 use module::Person
 
-class CASC() {
+class CASC {
     comp fn main(arg: str[]) {
-        a := i32:[10]
-        a[0] = 12
-        print(a[0])
     }
 }

@@ -2,18 +2,13 @@ package org.casclang.casc.visitor.expression
 
 import org.casclang.casc.CASCBaseVisitor
 import org.casclang.casc.CASCParser
-import org.casclang.casc.parsing.node.expression.ArithmeticExpression
-import org.casclang.casc.parsing.node.expression.FoldableExpression
-import org.casclang.casc.parsing.node.expression.Value
+import org.casclang.casc.parsing.node.expression.*
 import org.casclang.casc.parsing.type.BuiltInType
 import org.casclang.casc.parsing.type.Type
-import org.casclang.casc.util.div
-import org.casclang.casc.util.minus
-import org.casclang.casc.util.plus
-import org.casclang.casc.util.times
+import org.casclang.casc.util.*
 
-class ArithmeticVisitor(private val ev: ExpressionVisitor) : CASCBaseVisitor<FoldableExpression<*>>() {
-    override fun visitAdd(ctx: CASCParser.AddContext): FoldableExpression<*> {
+class ArithmeticVisitor(private val ev: ExpressionVisitor) : CASCBaseVisitor<Expression<*>>() {
+    override fun visitAdd(ctx: CASCParser.AddContext): Expression<*> {
         val (leftExpression, rightExpression) = parseExpressions(ctx.findExpression(0), ctx.findExpression(1))
 
         return if (leftExpression is Value && rightExpression is Value) {
@@ -26,12 +21,14 @@ class ArithmeticVisitor(private val ev: ExpressionVisitor) : CASCBaseVisitor<Fol
 
                 Value(targetType, "${ev1 + ev2}")
             } else {
-                throw RuntimeException("Cannot apply addition on type ${leftExpression.type} and type ${rightExpression.type}")
+                addError(ctx, "Cannot apply addition on type ${leftExpression.type} and type ${rightExpression.type}")
+
+                EmptyExpression(BuiltInType.VOID)
             }
         } else ArithmeticExpression.Addition(leftExpression, rightExpression)
     }
 
-    override fun visitSubtract(ctx: CASCParser.SubtractContext): FoldableExpression<*> {
+    override fun visitSubtract(ctx: CASCParser.SubtractContext): Expression<*> {
         val (leftExpression, rightExpression) = parseExpressions(ctx.findExpression(0), ctx.findExpression(1))
 
         return if (leftExpression is Value && rightExpression is Value) {
@@ -42,12 +39,14 @@ class ArithmeticVisitor(private val ev: ExpressionVisitor) : CASCBaseVisitor<Fol
 
                 Value(targetType, "${ev1 - ev2}")
             } else {
-                throw RuntimeException("Cannot apply subtraction on type ${leftExpression.type} and type ${rightExpression.type}")
+                addError(ctx, "Cannot apply subtraction on type ${leftExpression.type} and type ${rightExpression.type}")
+
+                EmptyExpression(BuiltInType.VOID)
             }
         } else ArithmeticExpression.Addition(leftExpression, rightExpression)
     }
 
-    override fun visitMultiply(ctx: CASCParser.MultiplyContext): FoldableExpression<*> {
+    override fun visitMultiply(ctx: CASCParser.MultiplyContext): Expression<*> {
         val (leftExpression, rightExpression) = parseExpressions(ctx.findExpression(0), ctx.findExpression(1))
 
         return if (leftExpression is Value && rightExpression is Value) {
@@ -58,12 +57,14 @@ class ArithmeticVisitor(private val ev: ExpressionVisitor) : CASCBaseVisitor<Fol
 
                 Value(targetType, "${ev1 * ev2}")
             } else {
-                throw RuntimeException("Cannot apply multiplication on type ${leftExpression.type} and type ${rightExpression.type}")
+                addError(ctx, "Cannot apply multiplication on type ${leftExpression.type} and type ${rightExpression.type}")
+
+                EmptyExpression(BuiltInType.VOID)
             }
         } else ArithmeticExpression.Addition(leftExpression, rightExpression)
     }
 
-    override fun visitDivide(ctx: CASCParser.DivideContext): FoldableExpression<*> {
+    override fun visitDivide(ctx: CASCParser.DivideContext): Expression<*> {
         val (leftExpression, rightExpression) = parseExpressions(ctx.findExpression(0), ctx.findExpression(1))
 
         return if (leftExpression is Value && rightExpression is Value) {
@@ -74,7 +75,9 @@ class ArithmeticVisitor(private val ev: ExpressionVisitor) : CASCBaseVisitor<Fol
 
                 Value(targetType, "${ev1 / ev2}")
             } else {
-                throw RuntimeException("Cannot apply division on type ${leftExpression.type} and type ${rightExpression.type}")
+                addError(ctx, "Cannot apply division on type ${leftExpression.type} and type ${rightExpression.type}")
+
+                EmptyExpression(BuiltInType.VOID)
             }
         } else ArithmeticExpression.Addition(leftExpression, rightExpression)
     }
