@@ -33,24 +33,11 @@ class Scope(private val metadata: MetaData) {
     }
 
     fun addUsage(usage: Usage): Boolean {
-        when (usage) {
-            is PathUsage -> {
-                val referencablePath = usage.qualifiedPath.split('.').last()
+        if (usages.containsKey(usage.classReference))
+            return false
 
-                if (usages.containsKey(referencablePath))
-                    return false
+        usages += usage.classReference to usage
 
-                this.usages += referencablePath to usage
-            }
-            is ClassUsage -> {
-                val referencableClassName = usage.className
-
-                if (usages.containsKey(referencableClassName))
-                    return false
-
-                this.usages += referencableClassName to usage
-            }
-        }
         return true
     }
 

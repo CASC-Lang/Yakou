@@ -100,7 +100,9 @@ class StatementVisitor(private val scope: Scope) : CASCBaseVisitor<Statement<*>>
         ev.visitWrappedExpression(ctx)
 
     override fun visitUseReference(ctx: CASCParser.UseReferenceContext): Statement<*> {
-        if (!scope.addUsage(ctx.accept(urv)))
+        val usage = ctx.accept(urv)
+
+        if (usage != null && !scope.addUsage(usage))
             addError(ctx, "Ambiguous usage.")
 
         return EmptyStatement

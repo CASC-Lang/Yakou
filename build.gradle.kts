@@ -34,6 +34,7 @@ dependencies {
     implementation(group = "com.strumenta.antlr-kotlin", name = "antlr-kotlin-runtime-jvm", version = "0951069063")
     implementation(group = "org.apache.commons", name = "commons-lang3", version = "3.12.0")
     implementation(group = "com.andreapivetta.kolor", name = "kolor", version = "1.0.0")
+    implementation(group = "com.google.guava", name = "guava", version = "30.1.1-jre")
 }
 
 tasks.register<com.strumenta.antlrkotlin.gradleplugin.AntlrKotlinTask>("generateKotlinGrammarSource") {

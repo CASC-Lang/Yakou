@@ -1,5 +1,6 @@
 package org.casclang.casc.visitor
 
+import com.google.common.reflect.ClassPath
 import org.casclang.casc.CASCBaseVisitor
 import org.casclang.casc.CASCParser
 import org.casclang.casc.parsing.ClassDeclaration
@@ -16,11 +17,12 @@ import org.casclang.casc.parsing.type.BuiltInType
 import org.casclang.casc.util.TypeResolver
 import org.casclang.casc.util.addError
 import org.casclang.casc.util.dot
-import org.casclang.casc.util.fromContext
 import org.casclang.casc.visitor.expression.ExpressionVisitor
 import org.casclang.casc.visitor.expression.function.ParameterVisitor
+import java.net.URLClassLoader
 
-class ClassVisitor(private val modulePath: QualifiedName?, private val usages: List<Usage> = listOf()) : CASCBaseVisitor<ClassDeclaration>() {
+class ClassVisitor(private val modulePath: QualifiedName?, private val usages: List<Usage> = listOf()) :
+    CASCBaseVisitor<ClassDeclaration>() {
     private lateinit var scope: Scope
 
     override fun visitClassDeclaration(ctx: CASCParser.ClassDeclarationContext): ClassDeclaration {
@@ -29,6 +31,12 @@ class ClassVisitor(private val modulePath: QualifiedName?, private val usages: L
         val metadata = MetaData("${modulePath?.qualifiedName?.dot() ?: ""}$name", "java.lang.Object")
 
         scope = Scope(metadata)
+        scope.usages += ClassPath.from(URLClassLoader.getSystemClassLoader()).getTopLevelClasses("java.lang")
+            .map(ClassPath.ClassInfo::getName).map {
+                val usage = Usage(it)
+
+                usage.classReference to usage
+            }
         usages.forEach(scope::addUsage)
 
         val primaryCtorCtx = ctx.findPrimaryConstructor()
@@ -74,17 +82,20 @@ class ClassVisitor(private val modulePath: QualifiedName?, private val usages: L
             innerScope.addLocalVariable(LocalVariable("self", scope.classType))
             parameters.map { LocalVariable(it.name, it.type) }.forEach(innerScope::addLocalVariable)
 
-            val function = Constructor(signature, Block(innerScope,
-                fields.map {
-                    Assignment(
-                        null,
-                        FieldReference(innerScope.getField(it.name)!!),
-                        LocalVariableReference(innerScope.getLocalVariable(it.name)!!),
-                        true,
-                        CallingScope.CONSTRUCTOR
-                    )
-                }.toMutableList()
-            ), ctorAccess, true)
+            val function = Constructor(
+                signature, Block(
+                    innerScope,
+                    fields.map {
+                        Assignment(
+                            null,
+                            FieldReference(innerScope.getField(it.name)!!),
+                            LocalVariableReference(innerScope.getLocalVariable(it.name)!!),
+                            true,
+                            CallingScope.CONSTRUCTOR
+                        )
+                    }.toMutableList()
+                ), ctorAccess, true
+            )
 
             scope.addSignature(signature)
             functions += function
@@ -102,8 +113,10 @@ class ClassVisitor(private val modulePath: QualifiedName?, private val usages: L
             ctorCtx.map {
                 it.findConstructorDeclaration()?.accept(functionSignatureVisitor)!!
             }.forEach(scope::addSignature)
-        else if (ctorCtx.isNotEmpty()) addError(ctx, "Could not have auxiliary constructors without primary constructor.")
-
+        else if (ctorCtx.isNotEmpty()) addError(
+            ctx,
+            "Could not have auxiliary constructors without primary constructor."
+        )
 
 
         val constructorExists = primaryCtorCtx != null || ctx.findClassBody()!!.findConstructor().isNotEmpty()
@@ -137,5 +150,10 @@ class ClassVisitor(private val modulePath: QualifiedName?, private val usages: L
     }
 
     private fun getDefaultConstructor(): Constructor =
-        Constructor(scope.getMethodCallSignatureWithoutParameters(scope.className)!!, Block(scope), AccessModifier.PUB, true)
+        Constructor(
+            scope.getMethodCallSignatureWithoutParameters(scope.className)!!,
+            Block(scope),
+            AccessModifier.PUB,
+            true
+        )
 }

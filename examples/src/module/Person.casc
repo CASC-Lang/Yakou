@@ -2,7 +2,7 @@ mod module
 
 class Person(name: str, age: i32) {
     comp fn hello() {
-        println("Hello!")
+        println(Integer::valueOf(1))
     }
 
     fn prt() {
