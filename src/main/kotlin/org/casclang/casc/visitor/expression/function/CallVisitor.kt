@@ -9,7 +9,6 @@ import org.casclang.casc.parsing.type.BuiltInType
 import org.casclang.casc.parsing.type.ClassType
 import org.casclang.casc.util.addError
 import org.casclang.casc.visitor.expression.ExpressionVisitor
-import org.casclang.casc.visitor.util.QualifiedNameVisitor
 
 class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) : CASCBaseVisitor<Call<*>>() {
     override fun visitFieldCall(ctx: CASCParser.FieldCallContext): Call<*> {
@@ -90,10 +89,10 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
 
 
     override fun visitConstructorCall(ctx: CASCParser.ConstructorCallContext): Call<*> {
-        val className = ctx.findClassName()!!.accept(QualifiedNameVisitor)
+        val className = ctx.findClassName()!!.text
         val arguments = collectArguments(ctx.findArgument())
 
-        return ConstructorCall(className.qualifiedName, arguments)
+        return ConstructorCall(className, arguments)
     }
 
     fun buildSelfCall(arguments: List<CASCParser.ArgumentContext>): Call<*> =

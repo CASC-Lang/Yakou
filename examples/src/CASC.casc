@@ -1,7 +1,7 @@
-use module::Person
+use module::{ inner::Language, Person as Per, Car }
 
 class CASC {
     comp fn main(arg: str[]) {
-        Person::hello()
+        Per::hello()
     }
 }

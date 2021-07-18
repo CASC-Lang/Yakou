@@ -1,0 +1,7 @@
+mod module::inner
+
+class Language(langCode: str) {
+    fn printLangCode() {
+        println(langCode)
+    }
+}

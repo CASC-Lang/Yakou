@@ -2,26 +2,36 @@ package org.casclang.casc.visitor.util
 
 import org.casclang.casc.CASCBaseVisitor
 import org.casclang.casc.CASCParser
-import org.casclang.casc.parsing.scope.Usage
+import org.casclang.casc.parsing.scope.Reference
 import org.casclang.casc.parsing.type.ClassType
 import org.casclang.casc.util.addError
 
-class UseReferenceVisitor : CASCBaseVisitor<Usage?>() {
-    override fun visitUseReference(ctx: CASCParser.UseReferenceContext): Usage? =
-        ctx.let {
-            val qualifiedName = it.findQualifiedName()?.accept(QualifiedNameVisitor)!!
+class UseReferenceVisitor : CASCBaseVisitor<List<Reference>>() {
+    override fun visitUseReference(ctx: CASCParser.UseReferenceContext): List<Reference> {
+        val references = ctx.findReference()!!.accept(this)
 
-            val classType = ClassType(qualifiedName.qualifiedName)
+        references.forEach {
+            val clazzType = ClassType(it.fullPath)
 
-            if (classType.isCached())
-                classType.tryInitClass()
+            if (clazzType.isCached())
+                clazzType.tryInitClass()
 
-            if (classType.isClassExists()) {
-                Usage(qualifiedName.qualifiedName)
-            } else {
-                addError(ctx.findQualifiedName(), "Unresolved class reference: ${qualifiedName.qualifiedName}")
-
-                null
-            }
+            if (!clazzType.isClassExists())
+                addError(ctx.findReference(), "Unresolved class reference: ${it.fullPath}")
         }
+
+        return references
+    }
+
+    override fun visitSimpleReference(ctx: CASCParser.SimpleReferenceContext): List<Reference> =
+        listOf(Reference(ctx.findQualifiedName()!!.text, ctx.ID()?.text ?: ""))
+
+    override fun visitMultiReference(ctx: CASCParser.MultiReferenceContext): List<Reference> =
+        ctx.findReference()
+            .map { it.accept(this) }
+            .flatten()
+            .map {
+                it.fullPath = "${ctx.findQualifiedName()!!.text}.${it.fullPath}"
+                it
+            }
 }

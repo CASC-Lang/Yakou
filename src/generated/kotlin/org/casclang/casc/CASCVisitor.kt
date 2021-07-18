@@ -30,6 +30,20 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitUseReference(ctx : CASCParser.UseReferenceContext) : T
 	/**
+	 * Visit a parse tree produced by the {@code simpleReference}
+	 * labeled alternative in {@link CASCParser#reference}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitSimpleReference(ctx : CASCParser.SimpleReferenceContext) : T
+	/**
+	 * Visit a parse tree produced by the {@code multiReference}
+	 * labeled alternative in {@link CASCParser#reference}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	fun visitMultiReference(ctx : CASCParser.MultiReferenceContext) : T
+	/**
 	 * Visit a parse tree produced by {@link CASCParser#classDeclaration}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

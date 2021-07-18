@@ -4,7 +4,10 @@ grammar CASC;
 //RULES
 compilationUnit                 : moduleDeclaraion? useReference* classDeclaration EOF? ;
 moduleDeclaraion                : MOD qualifiedName ;
-useReference                    : USE qualifiedName ;
+useReference                    : USE reference ;
+reference                       : qualifiedName (AS ID)?                              #simpleReference
+                                | qualifiedName '::' '{' reference (',' reference)* '}'    #multiReference
+                                ;
 classDeclaration                : outerAccessMods? CLASS className primaryConstructor? '{' classBody '}' ;
 primaryConstructor              : ctorAccessMod=innerAccessMods? '('(constructorParameter (',' constructorParameter)*)?')' ;
 constructorParameter            : (innerAccessMods? MUT? | PARAM='param') parameter ;
@@ -113,6 +116,7 @@ SELF            : 'self'                            ;
 COMP            : 'comp'                            ;
 IF              : 'if'                              ;
 ELSE            : 'else'                            ;
+AS              : 'as'                              ;
 RETURN          : 'return'                          ;
 FOR             : 'for'                             ;
 DOWN            : 'down'                            ;

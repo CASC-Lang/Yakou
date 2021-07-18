@@ -16,26 +16,26 @@ import org.casclang.casc.parsing.scope.*
 import org.casclang.casc.parsing.type.BuiltInType
 import org.casclang.casc.util.TypeResolver
 import org.casclang.casc.util.addError
-import org.casclang.casc.util.dot
 import org.casclang.casc.visitor.expression.ExpressionVisitor
 import org.casclang.casc.visitor.expression.function.ParameterVisitor
 import java.net.URLClassLoader
 
-class ClassVisitor(private val modulePath: QualifiedName?, private val usages: List<Usage> = listOf()) :
+class ClassVisitor(private val modulePath: String?, private val usages: List<Reference> = listOf()) :
     CASCBaseVisitor<ClassDeclaration>() {
     private lateinit var scope: Scope
 
     override fun visitClassDeclaration(ctx: CASCParser.ClassDeclarationContext): ClassDeclaration {
         val accessModifier = AccessModifier.getModifier(ctx.findOuterAccessMods()?.text)
         val name = ctx.findClassName()!!.text
-        val metadata = MetaData("${modulePath?.qualifiedName?.dot() ?: ""}$name", "java.lang.Object")
+        val clazzPath = if (modulePath != null) "$modulePath.$name" else name
+        val metadata = MetaData(clazzPath, "java.lang.Object")
 
         scope = Scope(metadata)
         scope.usages += ClassPath.from(URLClassLoader.getSystemClassLoader()).getTopLevelClasses("java.lang")
             .map(ClassPath.ClassInfo::getName).map {
-                val usage = Usage(it)
+                val reference = Reference(it)
 
-                usage.classReference to usage
+                reference.localName to reference
             }
         usages.forEach(scope::addUsage)
 
@@ -122,7 +122,7 @@ class ClassVisitor(private val modulePath: QualifiedName?, private val usages: L
         val constructorExists = primaryCtorCtx != null || ctx.findClassBody()!!.findConstructor().isNotEmpty()
 
         if (!constructorExists) {
-            val constructorSignature = FunctionSignature(name, listOf(), BuiltInType.VOID, false)
+            val constructorSignature = FunctionSignature(clazzPath, listOf(), BuiltInType.VOID, false)
 
             scope.addSignature(constructorSignature)
         }
