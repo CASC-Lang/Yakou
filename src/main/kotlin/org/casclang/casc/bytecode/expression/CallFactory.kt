@@ -23,6 +23,11 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
         )
     }
 
+    fun generate(length: LengthCall) {
+        length.owner.accept(ef)
+        mv.visitInsn(ARRAYLENGTH)
+    }
+
     fun generate(constructor: ConstructorCall) {
         val signature = scope.getConstructorCallSignature(constructor.identifier, constructor.arguments)
         val ownerDescriptor = ClassType(signature!!.name).internalName

@@ -29,6 +29,7 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
             is ArrayInitialization -> generate(expression)
             is Value -> generate(expression)
             is FieldCall -> generate(expression)
+            is LengthCall -> generate(expression)
             is ConstructorCall -> generate(expression)
             is SelfCall -> generate(expression)
             is FunctionCall -> generate(expression)
@@ -67,6 +68,9 @@ class ExpressionFactory(mv: MethodVisitor, scope: Scope) {
         vf.generate(value)
 
     fun generate(call: FieldCall) =
+        callFactory.generate(call)
+
+    fun generate(call: LengthCall) =
         callFactory.generate(call)
 
     fun generate(call: ConstructorCall) =

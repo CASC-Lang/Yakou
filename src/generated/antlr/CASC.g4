@@ -70,7 +70,6 @@ argument                : expression
 expression              : owner=expression '.' functionName '('argument? (',' argument)*')'                     #functionCall
                         | qualifiedName '::' functionName '('argument? (',' argument)*')'                       #functionCall
                         | functionName '('argument? (',' argument)*')'                                          #functionCall
-                        | className '('argument? (',' argument)*')'                                             #constructorCall
                         | qualifiedName '::' ID                                                                 #fieldCall
                         | owner=expression '.' ID                                                               #fieldCall
                         | NEG=MINUS expression                                                                  #negativeExpression
@@ -166,7 +165,7 @@ TYPES           :  'bool'
                 |  'unit'
                 ;
 
-NUMBER          : [0-9.]+ ('L' | 'l' | 'F' | 'f')?          ;
+NUMBER          : ('0'..'9')+ ('L' | 'l' | 'F' | 'f')?          ;
 STRING          : '"'~('\r' | '\n' | '"')*'"'               ;
 BOOL            : 'true' | 'false'                          ;
 NULL            : 'null'                                    ;

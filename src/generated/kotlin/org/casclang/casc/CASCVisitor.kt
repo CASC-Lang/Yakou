@@ -296,13 +296,6 @@ interface CASCVisitor<T> : ParseTreeVisitor<T> {
 	 */
 	fun visitSubtract(ctx : CASCParser.SubtractContext) : T
 	/**
-	 * Visit a parse tree produced by the {@code constructorCall}
-	 * labeled alternative in {@link CASCParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	fun visitConstructorCall(ctx : CASCParser.ConstructorCallContext) : T
-	/**
 	 * Visit a parse tree produced by the {@code varRef}
 	 * labeled alternative in {@link CASCParser#expression}.
 	 * @param ctx the parse tree

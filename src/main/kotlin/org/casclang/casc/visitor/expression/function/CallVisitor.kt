@@ -5,6 +5,7 @@ import org.casclang.casc.CASCBaseVisitor
 import org.casclang.casc.CASCParser
 import org.casclang.casc.parsing.node.expression.*
 import org.casclang.casc.parsing.scope.Scope
+import org.casclang.casc.parsing.type.ArrayType
 import org.casclang.casc.parsing.type.BuiltInType
 import org.casclang.casc.parsing.type.ClassType
 import org.casclang.casc.util.addError
@@ -37,12 +38,17 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
             FieldCall(clazzPathRef, fieldName, field?.type ?: BuiltInType.VOID, true)
         } else {
             val owner = ownerCtx.accept(ev)
-            val field = scope.getField(owner.type, fieldName)
 
-            if (field == null)
-                addError(ctx, "Unresolved reference: $fieldName")
+            if (owner.type is ArrayType && fieldName == "len")
+                LengthCall(owner)
+            else {
+                val field = scope.getField(owner.type, fieldName)
 
-            FieldCall(owner, fieldName, field?.type ?: BuiltInType.VOID, field?.static ?: false)
+                if (field == null)
+                    addError(ctx, "Unresolved reference: $fieldName")
+
+                FieldCall(owner, fieldName, field?.type ?: BuiltInType.VOID, field?.static ?: false)
+            }
         }
     }
 
@@ -116,14 +122,6 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
 
             FunctionCall(signature, arguments, owner, signature?.static ?: false)
         }
-    }
-
-
-    override fun visitConstructorCall(ctx: CASCParser.ConstructorCallContext): Call<*> {
-        val className = ctx.findClassName()!!.text
-        val arguments = collectArguments(ctx.findArgument())
-
-        return ConstructorCall(className, arguments)
     }
 
     fun buildSelfCall(arguments: List<CASCParser.ArgumentContext>): Call<*> =

@@ -2,10 +2,6 @@ use module::{ inner::Language, Person as Per, Car }
 
 class CASC {
     pub comp fn main(arg: str[]) {
-        person := Per("ChAoS", 18)
-        person.prt()
-        mut c := CASC()
-        c = person
-        person.prt()
+        println((i32:[10]).len)
     }
 }
