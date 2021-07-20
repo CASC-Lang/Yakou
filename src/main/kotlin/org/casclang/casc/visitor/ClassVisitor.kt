@@ -5,6 +5,8 @@ import org.casclang.casc.CASCParser
 import org.casclang.casc.parsing.ClassDeclaration
 import org.casclang.casc.parsing.Constructor
 import org.casclang.casc.parsing.Function
+import org.casclang.casc.parsing.Implementation
+import org.casclang.casc.parsing.node.expression.ConstructorCall
 import org.casclang.casc.parsing.node.expression.FieldReference
 import org.casclang.casc.parsing.node.expression.LocalVariableReference
 import org.casclang.casc.parsing.node.expression.Parameter
@@ -15,18 +17,23 @@ import org.casclang.casc.parsing.type.BuiltInType
 import org.casclang.casc.util.TypeResolver
 import org.casclang.casc.util.addError
 import org.casclang.casc.visitor.expression.ExpressionVisitor
+import org.casclang.casc.visitor.expression.function.ArgumentVisitor
 import org.casclang.casc.visitor.expression.function.ParameterVisitor
 
-class ClassVisitor(private val scope: Scope) : CASCBaseVisitor<ClassDeclaration>() {
+class ClassVisitor(private val scope: Scope, private val implementations: List<CASCParser.ImplDeclarationContext>) :
+    CASCBaseVisitor<ClassDeclaration>() {
     override fun visitClassDeclaration(ctx: CASCParser.ClassDeclarationContext): ClassDeclaration {
         val accessModifier = AccessModifier.getModifier(ctx.findOuterAccessMods()?.text)
         val primaryCtorCtx = ctx.findPrimaryConstructor()
+        val implementationsCtx = implementations.groupBy { it.superCtor != null }
 
         val fieldVisitor = FieldVisitor(scope)
         val fieldDeclarationVisitor = FieldDeclarationVisitor(scope)
         val functionSignatureVisitor = FunctionSignatureVisitor(scope)
         val ctorCtx = ctx.findClassBody()!!.findConstructor()
         val functionsCtx = ctx.findClassBody()!!.findFunction()
+
+        val implementations = mutableListOf<Implementation>()
 
         // all class properties
         val functions = mutableListOf<Function<*>>()
@@ -40,6 +47,21 @@ class ClassVisitor(private val scope: Scope) : CASCBaseVisitor<ClassDeclaration>
 
             // We first collect all field parameters
             val ev = ExpressionVisitor(scope)
+
+            if (implementationsCtx[true] != null) {
+                val av = ArgumentVisitor(ev)
+                val arguments = implementationsCtx[true]!![0].findArguments()!!.findArgument().map { it.accept(av) }
+                val superClassCtor = scope.getConstructorCallSignature(scope.metadata.superClassName, arguments)
+
+                if (superClassCtor == null)
+                    addError(implementationsCtx[true]!![0].superCtor, "Unresolved super constructor.")
+
+                implementations += Implementation(
+                    scope.metadata.superClassName,
+                    ConstructorCall(scope.metadata.superClassName, arguments),
+                    listOf()
+                )
+            }
 
             parameterCtx.onEach {
                 if (it.PARAM == null) {
@@ -80,6 +102,25 @@ class ClassVisitor(private val scope: Scope) : CASCBaseVisitor<ClassDeclaration>
 
             scope.addSignature(signature)
             functions += function
+        } else if (implementationsCtx[true] != null) {
+            val av = ArgumentVisitor(ExpressionVisitor(scope))
+            val arguments = implementationsCtx[true]!![0].findArguments()!!.findArgument().map { it.accept(av) }
+            val superClassCtor = scope.getConstructorCallSignature(scope.metadata.superClassName, arguments)
+
+            if (superClassCtor == null)
+                addError(implementationsCtx[true]!![0].superCtor, "Unresolved super constructor.")
+
+            implementations += Implementation(
+                scope.metadata.superClassName,
+                ConstructorCall(scope.metadata.superClassName, arguments),
+                listOf()
+            )
+        } else {
+            implementations += Implementation(
+                scope.metadata.superClassName,
+                ConstructorCall(scope.metadata.superClassName),
+                listOf()
+            )
         }
 
         ctx.findClassBody()!!.findField().map {
@@ -127,7 +168,7 @@ class ClassVisitor(private val scope: Scope) : CASCBaseVisitor<ClassDeclaration>
             if (o1 is Constructor) return@sortWith -1 else 1
         } // Moves constructors to front.
 
-        return ClassDeclaration(scope.className, functions, fields, accessModifier)
+        return ClassDeclaration(scope.className, scope, functions, fields, implementations, accessModifier)
     }
 
     private fun getDefaultConstructor(): Constructor =

@@ -5,13 +5,14 @@ import jdk.internal.org.objectweb.asm.Opcodes.*
 import org.casclang.casc.bytecode.statement.StatementFactory
 import org.casclang.casc.parsing.Constructor
 import org.casclang.casc.parsing.Function
+import org.casclang.casc.parsing.Implementation
 import org.casclang.casc.parsing.node.expression.EmptyExpression
 import org.casclang.casc.parsing.node.statement.Block
 import org.casclang.casc.parsing.node.statement.ReturnStatement
 import org.casclang.casc.parsing.type.BuiltInType
 import org.casclang.casc.util.DescriptorFactory
 
-class FunctionFactory(private val cw: ClassWriter) {
+class FunctionFactory(private val cw: ClassWriter, private val implementations: List<Implementation>) {
     fun generate(function: Function<*>) {
         if (function is Constructor) {
             generate(function)
@@ -19,7 +20,7 @@ class FunctionFactory(private val cw: ClassWriter) {
         }
 
         val name = function.name
-        val descriptor = DescriptorFactory.getMethodDescriptor(function)
+        val descriptor = DescriptorFactory.getMethodDescriptorWithParameter(function)
         val block = function.rootStatement as Block
         val scope = block.scope
         val access = function.accessModifier.accessOpcode + if (function.static) ACC_STATIC else 0
@@ -41,7 +42,7 @@ class FunctionFactory(private val cw: ClassWriter) {
         val block = constructor.rootStatement as Block
         val scope = block.scope
         val access = constructor.accessModifier.accessOpcode
-        val description = DescriptorFactory.getMethodDescriptor(constructor)
+        val description = DescriptorFactory.getMethodDescriptorWithParameter(constructor)
         val mv = cw.visitMethod(access, "<init>", description, null, null)
 
         mv.visitCode()
@@ -49,8 +50,16 @@ class FunctionFactory(private val cw: ClassWriter) {
         val sf = StatementFactory(mv, scope)
 
         if (constructor.isPrimary) {
+            val superClassConstructorCall = implementations.find { it.superClassCtor != null }!!.superClassCtor!!
+
             mv.visitVarInsn(ALOAD, 0)
-            mv.visitMethodInsn(INVOKESPECIAL, scope.superClassInternalName, "<init>", "()V", false)
+            mv.visitMethodInsn(
+                INVOKESPECIAL,
+                scope.superClassInternalName,
+                "<init>",
+                DescriptorFactory.getMethodDescriptorWithArgument(superClassConstructorCall.arguments, BuiltInType.VOID),
+                false
+            )
         }
 
         sf.generate(block)

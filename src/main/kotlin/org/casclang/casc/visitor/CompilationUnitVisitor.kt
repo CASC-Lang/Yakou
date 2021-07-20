@@ -29,7 +29,7 @@ class CompilationUnitVisitor : CASCBaseVisitor<CompilationUnit>() {
 
         scope = Scope(metadata, usages)
 
-        val cv = ClassVisitor(scope)
+        val cv = ClassVisitor(scope, ctx.findImplDeclaration())
         val classDeclaration = ctx.findClassDeclaration()!!.accept(cv)
         val compilationUnit = CompilationUnit(modulePath, classDeclaration)
 

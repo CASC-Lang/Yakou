@@ -16,10 +16,12 @@ object Compiler {
         } else if (compilation.source.isDirectory) {
             PackageTree.init(compilation.source)
             PackageTree.classes.forEach {
-                Parser(it.value.absoluteFilePath)
-                    .parseFile()
-                    .emitBytecode()
-                it.value.isCompiled = true
+                if (!PackageTree.classes[it.key]!!.isCompiled) {
+                    Parser(it.value.absoluteFilePath)
+                        .parseFile()
+                        .emitBytecode()
+                    it.value.isCompiled = true
+                }
             }
         }
     }

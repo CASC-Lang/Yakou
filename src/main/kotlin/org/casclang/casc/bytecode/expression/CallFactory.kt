@@ -35,7 +35,7 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
         mv.visitTypeInsn(NEW, ownerDescriptor)
         mv.visitInsn(DUP)
 
-        val methodDescriptor = DescriptorFactory.getMethodDescriptor(signature)
+        val methodDescriptor = DescriptorFactory.getMethodDescriptorWithParameter(signature)
 
         generateArguments(
             constructor,
@@ -48,7 +48,7 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
         mv.visitVarInsn(ALOAD, 0)
 
         val signature = scope.getMethodCallSignature(scope.className, selfCall.arguments)!!
-        val methodDescriptor = DescriptorFactory.getMethodDescriptor(signature)
+        val methodDescriptor = DescriptorFactory.getMethodDescriptorWithParameter(signature)
 
         generateArguments(selfCall, signature)
 
@@ -64,7 +64,7 @@ class CallFactory(private val ef: ExpressionFactory, private val scope: Scope, p
         )
 
         val functionName = function.identifier
-        val methodDescriptor = DescriptorFactory.getMethodDescriptor(function.signature)
+        val methodDescriptor = DescriptorFactory.getMethodDescriptorWithParameter(function.signature)
         val ownerDescriptor = function.owner.type.internalName
 
         mv.visitMethodInsn(

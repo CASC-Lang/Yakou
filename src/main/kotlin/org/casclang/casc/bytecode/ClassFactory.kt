@@ -14,7 +14,7 @@ class ClassFactory(private val qualifiedClassName: String) {
     fun generate(classDeclaration: ClassDeclaration): ClassWriter {
         val methods = classDeclaration.functions
         val fields = classDeclaration.fields
-        val mf = FunctionFactory(cw)
+        val mf = FunctionFactory(cw, classDeclaration.implementations)
         val ff = FieldFactory(cw)
 
         cw.visit(
@@ -22,7 +22,7 @@ class ClassFactory(private val qualifiedClassName: String) {
             classDeclaration.accessModifier.accessOpcode + ACC_SUPER,
             qualifiedClassName,
             null,
-            "java/lang/Object",
+            classDeclaration.scope.superClassInternalName,
             null
         )
 

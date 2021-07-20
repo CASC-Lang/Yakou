@@ -6,7 +6,7 @@ import org.casclang.casc.parsing.node.expression.Argument
 import org.casclang.casc.parsing.type.ClassType
 import org.casclang.casc.parsing.type.Type
 
-class Scope(private val metadata: MetaData, usages: List<Reference>) {
+class Scope(val metadata: MetaData, usages: List<Reference>) {
     val usages = mutableMapOf<String, Reference>()
 
     val localVariables = linkedMapOf<String, LocalVariable>()
