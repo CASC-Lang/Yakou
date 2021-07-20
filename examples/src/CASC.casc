@@ -2,6 +2,5 @@ use module::{ inner::Language, Person as Per, Car }
 
 class CASC {
     pub comp fn main(arg: str[]) {
-        println((i32:[10]).len)
     }
 }
