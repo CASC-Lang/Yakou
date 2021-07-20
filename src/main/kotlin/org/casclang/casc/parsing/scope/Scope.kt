@@ -6,7 +6,7 @@ import org.casclang.casc.parsing.node.expression.Argument
 import org.casclang.casc.parsing.type.ClassType
 import org.casclang.casc.parsing.type.Type
 
-class Scope(private val metadata: MetaData) {
+class Scope(private val metadata: MetaData, usages: List<Reference>) {
     val usages = mutableMapOf<String, Reference>()
 
     val localVariables = linkedMapOf<String, LocalVariable>()
@@ -21,7 +21,13 @@ class Scope(private val metadata: MetaData) {
     val classType = ClassType(className)
     val superClassInternalName = ClassType(metadata.superClassName).internalName
 
-    constructor(scope: Scope) : this(scope.metadata) {
+    init {
+        this.usages += usages.map {
+            it.localName to it
+        }
+    }
+
+    constructor(scope: Scope) : this(scope.metadata, mutableListOf<Reference>()) {
         usages += scope.usages
 
         callingScope = scope.callingScope

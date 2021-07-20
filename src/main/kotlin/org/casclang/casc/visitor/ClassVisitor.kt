@@ -1,12 +1,10 @@
 package org.casclang.casc.visitor
 
-import com.google.common.reflect.ClassPath
 import org.casclang.casc.CASCBaseVisitor
 import org.casclang.casc.CASCParser
 import org.casclang.casc.parsing.ClassDeclaration
 import org.casclang.casc.parsing.Constructor
 import org.casclang.casc.parsing.Function
-import org.casclang.casc.parsing.MetaData
 import org.casclang.casc.parsing.node.expression.FieldReference
 import org.casclang.casc.parsing.node.expression.LocalVariableReference
 import org.casclang.casc.parsing.node.expression.Parameter
@@ -18,27 +16,10 @@ import org.casclang.casc.util.TypeResolver
 import org.casclang.casc.util.addError
 import org.casclang.casc.visitor.expression.ExpressionVisitor
 import org.casclang.casc.visitor.expression.function.ParameterVisitor
-import java.net.URLClassLoader
 
-class ClassVisitor(private val modulePath: String?, private val usages: List<Reference> = listOf()) :
-    CASCBaseVisitor<ClassDeclaration>() {
-    private lateinit var scope: Scope
-
+class ClassVisitor(private val scope: Scope) : CASCBaseVisitor<ClassDeclaration>() {
     override fun visitClassDeclaration(ctx: CASCParser.ClassDeclarationContext): ClassDeclaration {
         val accessModifier = AccessModifier.getModifier(ctx.findOuterAccessMods()?.text)
-        val name = ctx.findClassName()!!.text
-        val clazzPath = if (modulePath != null) "$modulePath.$name" else name
-        val metadata = MetaData(clazzPath, "java.lang.Object")
-
-        scope = Scope(metadata)
-        scope.usages += ClassPath.from(URLClassLoader.getSystemClassLoader()).getTopLevelClasses("java.lang")
-            .map(ClassPath.ClassInfo::getName).map {
-                val reference = Reference(it)
-
-                reference.localName to reference
-            }
-        usages.forEach(scope::addUsage)
-
         val primaryCtorCtx = ctx.findPrimaryConstructor()
 
         val fieldVisitor = FieldVisitor(scope)
@@ -122,7 +103,7 @@ class ClassVisitor(private val modulePath: String?, private val usages: List<Ref
         val constructorExists = primaryCtorCtx != null || ctx.findClassBody()!!.findConstructor().isNotEmpty()
 
         if (!constructorExists) {
-            val constructorSignature = FunctionSignature(clazzPath, listOf(), BuiltInType.VOID, false)
+            val constructorSignature = FunctionSignature(scope.className, listOf(), BuiltInType.VOID, false)
 
             scope.addSignature(constructorSignature)
         }
@@ -146,7 +127,7 @@ class ClassVisitor(private val modulePath: String?, private val usages: List<Ref
             if (o1 is Constructor) return@sortWith -1 else 1
         } // Moves constructors to front.
 
-        return ClassDeclaration(name, functions, fields, accessModifier)
+        return ClassDeclaration(scope.className, functions, fields, accessModifier)
     }
 
     private fun getDefaultConstructor(): Constructor =

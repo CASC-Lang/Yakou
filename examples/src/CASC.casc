@@ -1,6 +1,10 @@
-use module::{ inner::Language, Person as Per, Car }
+use Class2
 
 class CASC {
     pub comp fn main(arg: str[]) {
     }
+}
+
+impl Class2() : CASC {
+
 }

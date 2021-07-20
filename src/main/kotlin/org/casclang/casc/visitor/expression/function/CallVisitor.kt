@@ -54,7 +54,7 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
 
     override fun visitFunctionCall(ctx: CASCParser.FunctionCallContext): Call<*> {
         val functionName = ctx.findFunctionName()!!.text
-        val arguments = collectArguments(ctx.findArgument())
+        val arguments = collectArguments(ctx.findArguments()!!.findArgument())
         val referencedClass = ctx.findQualifiedName()
         val ownerCtx = ctx.owner
 

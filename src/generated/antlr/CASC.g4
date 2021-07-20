@@ -2,20 +2,21 @@
 grammar CASC;
 
 //RULES
-compilationUnit                 : moduleDeclaraion? useReference* classDeclaration EOF? ;
+compilationUnit                 : moduleDeclaraion? useReference* classDeclaration implDeclaration* EOF? ;
 moduleDeclaraion                : MOD qualifiedName ;
 useReference                    : USE reference ;
-reference                       : qualifiedName (AS ID)?                              #simpleReference
-                                | qualifiedName '::' '{' reference (',' reference)* '}'    #multiReference
+reference                       : qualifiedName (AS ID)?                                #simpleReference
+                                | qualifiedName '::' '{' reference (',' reference)* '}' #multiReference
                                 ;
 classDeclaration                : outerAccessMods? CLASS className primaryConstructor? '{' classBody '}' ;
+implDeclaration                 : IMPL qualifiedName superCtor=arguments? ':' className '{' function* '}' ;
 primaryConstructor              : ctorAccessMod=innerAccessMods? '('(constructorParameter (',' constructorParameter)*)?')' ;
 constructorParameter            : (innerAccessMods? MUT? | PARAM='param') parameter ;
 className                       : ID ;
 classBody                       : (function | constructor | field | fieldDeclaration)* ;
 field                           : innerAccessMods? COMP? MUT? name COLON typeReference (EQUALS expression)? ;
 constructor                     : constructorDeclaration block? ;
-constructorDeclaration          : innerAccessMods? CTOR parameterSet COLON SELF '('argument? (',' argument)*')' ;
+constructorDeclaration          : innerAccessMods? CTOR parameterSet COLON SELF arguments ;
 function                        : functionDeclaration block ;
 functionDeclaration             : innerAccessMods? COMP? FN functionName parameterSet (COLON typeReference)? ;
 functionName                    : ID ;
@@ -64,12 +65,13 @@ forRangedExpression     : iterator=varReference COLON startExpr=expression arrow
 forArrow                : '->' | '<-' | '|>' | '<|' ;
 forLoopExpression       : initStatement=statement? ';' conditionExpr=expression? ';' postStatement=statement? ;
 name                    : ID ;
+arguments               : '('argument? (',' argument)*')' ;
 argument                : expression
                         | name EQUALS expression ;
 
-expression              : owner=expression '.' functionName '('argument? (',' argument)*')'                     #functionCall
-                        | qualifiedName '::' functionName '('argument? (',' argument)*')'                       #functionCall
-                        | functionName '('argument? (',' argument)*')'                                          #functionCall
+expression              : owner=expression '.' functionName arguments                                           #functionCall
+                        | qualifiedName '::' functionName arguments                                             #functionCall
+                        | functionName arguments                                                                #functionCall
                         | qualifiedName '::' ID                                                                 #fieldCall
                         | owner=expression '.' ID                                                               #fieldCall
                         | NEG=MINUS expression                                                                  #negativeExpression
@@ -109,6 +111,7 @@ fragment UNICODE  :  '\u0080'..'\uFFFF'             ;
 MOD             : 'mod'                             ;
 USE             : 'use'                             ;
 CLASS           : 'class'                           ;
+IMPL            : 'impl'                            ;
 FN              : 'fn'                              ;
 CTOR            : 'ctor'                            ;
 SELF            : 'self'                            ;

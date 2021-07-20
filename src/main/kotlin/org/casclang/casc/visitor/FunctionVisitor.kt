@@ -48,7 +48,7 @@ class FunctionVisitor(scope: Scope) : CASCBaseVisitor<Function<*>>() {
         val accessModifier = AccessModifier.getModifier(ctx.findConstructorDeclaration()?.findInnerAccessMods()?.text)
         val signature = ctx.findConstructorDeclaration()!!.accept(FunctionSignatureVisitor(scope))
         val selfCall = CallVisitor(ExpressionVisitor(scope), scope).buildSelfCall(
-            ctx.findConstructorDeclaration()!!.findArgument()
+            ctx.findConstructorDeclaration()!!.findArguments()!!.findArgument()
         )
 
         scope.callingScope = CallingScope.getScope(ctx)
