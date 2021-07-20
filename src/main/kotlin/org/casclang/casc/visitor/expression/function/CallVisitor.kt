@@ -53,29 +53,60 @@ class CallVisitor(private val ev: ExpressionVisitor, private val scope: Scope) :
         val ownerCtx = ctx.owner
 
         return if (ownerCtx == null) {
-            val clazzPath = if (referencedClass!!.ID().size > 1) {
-                referencedClass.ID()
-                    .map(TerminalNode::text)
-                    .reduce { a, b -> "$a.$b" }
-            } else {
-                scope.usages[referencedClass.text]?.fullPath ?: run {
-                    addError(referencedClass, "Unresolved reference: ${referencedClass.text}")
-                    ""
+            if (referencedClass == null) {
+                val clazzPath = scope.usages[functionName]?.fullPath
+
+                when {
+                    clazzPath != null -> {
+                        val signature = scope.getConstructorCallSignature(clazzPath, arguments)
+
+                        if (signature == null)
+                            addError(ctx, "Unresolved reference: $functionName")
+
+                        ConstructorCall(clazzPath, arguments)
+                    }
+                    functionName == scope.className -> {
+                        val signature = scope.getConstructorCallSignature(functionName, arguments)
+
+                        if (signature == null)
+                            addError(ctx, "Unresolved reference: $functionName")
+
+                        ConstructorCall(functionName, arguments)
+                    }
+                    else -> {
+                        val signature = scope.getMethodCallSignature(functionName, arguments)
+
+                        if (signature == null)
+                            addError(ctx, "Unresolved reference: $functionName")
+
+                        FunctionCall(signature, arguments, scope.classType, signature?.static ?: false)
+                    }
                 }
+            } else {
+                val clazzPath = if (referencedClass.ID().size > 1) {
+                    referencedClass.ID()
+                        .map(TerminalNode::text)
+                        .reduce { a, b -> "$a.$b" }
+                } else {
+                    scope.usages[referencedClass.text]?.fullPath ?: run {
+                        addError(referencedClass, "Unresolved reference: ${referencedClass.text}")
+                        ""
+                    }
+                }
+                val clazzType = ClassType(clazzPath)
+                val signature = scope.getMethodCallSignature(clazzType, functionName, arguments)
+
+                if (signature == null)
+                    addError(ctx, "Unresolved reference: $functionName")
+
+                if (signature != null && !signature.static)
+                    addError(
+                        ctx,
+                        "Function ${clazzType.internalName}#$functionName() is not a companion function."
+                    )
+
+                FunctionCall(signature, arguments, clazzType, true)
             }
-            val clazzType = ClassType(clazzPath)
-            val signature = scope.getMethodCallSignature(clazzType, functionName, arguments)
-
-            if (signature == null)
-                addError(ctx, "Unresolved reference: $functionName")
-
-            if (signature != null && !signature.static)
-                addError(
-                    ctx,
-                    "Function ${clazzType.internalName}#$functionName() is not a companion function."
-                )
-
-            FunctionCall(signature, arguments, clazzType, true)
         } else {
             val owner = ownerCtx.accept(ev)
             val signature = scope.getMethodCallSignature(owner.type, functionName, arguments)

@@ -1,7 +1,11 @@
 use module::{ inner::Language, Person as Per, Car }
 
 class CASC {
-    comp fn main(arg: str[]) {
-        Per::hello()
+    pub comp fn main(arg: str[]) {
+        person := Per("ChAoS", 18)
+        person.prt()
+        mut c := CASC()
+        c = person
+        person.prt()
     }
 }
