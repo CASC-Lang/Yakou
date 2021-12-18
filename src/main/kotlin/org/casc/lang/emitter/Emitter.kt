@@ -97,6 +97,17 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                     }
                 }
             }
+            is FloatLiteral -> {
+                if (expression.isF64()) {
+                    expression.removeTypeSuffix()
+
+                    methodVisitor.visitLdcInsn(expression.literal!!.literal.toDouble())
+                } else {
+                    expression.removeTypeSuffix()
+
+                    methodVisitor.visitLdcInsn(expression.literal!!.literal.toFloat())
+                }
+            }
             is AssignmentExpression -> {
                 emitExpression(methodVisitor, expression.expression!!, true)
 

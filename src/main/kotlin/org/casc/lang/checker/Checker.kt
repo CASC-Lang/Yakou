@@ -128,6 +128,9 @@ class Checker {
 
                 expression.type
             }
+            is FloatLiteral -> {
+                expression.type
+            }
             is AssignmentExpression -> {
                 checkExpression(expression.expression, scope)
 

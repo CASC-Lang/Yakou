@@ -35,6 +35,25 @@ sealed class Expression {
             literal?.literal?.endsWith('L') ?: false
     }
 
+    data class FloatLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression() {
+        override var type: Type? = when {
+            literal?.literal?.endsWith('D') == true -> PrimitiveType.F64
+            else -> PrimitiveType.F32
+        }
+
+        fun removeTypeSuffix() {
+            if (literal?.literal?.lastOrNull()?.isLetter() == true) {
+                literal.literal = literal.literal.dropLast(1)
+            }
+        }
+
+        fun isF32(): Boolean =
+            literal?.literal?.endsWith('F') ?: false || !isF64()
+
+        fun isF64(): Boolean =
+            literal?.literal?.endsWith('D') ?: false
+    }
+
     data class IdentifierExpression(
         val name: Token?,
         var index: Int? = null,

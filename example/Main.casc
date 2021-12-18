@@ -9,7 +9,9 @@ impl A {
             mut b := 2L
             mut c := 2
             mut d := 1
-            d = c = b = a = 1
+            mut e := 1.
+            mut f := 2D
+            c = d = a = b = e = f = 1
         }
     }
 

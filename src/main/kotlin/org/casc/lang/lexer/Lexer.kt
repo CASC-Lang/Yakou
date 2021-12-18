@@ -25,6 +25,7 @@ class Lexer(val chunkedSource: List<String>) {
             while (pos < source.length) {
                 // Number Literals
                 if (source[pos].isDigit()) {
+                    var endsWithDot = false
                     var isFloatingPointNumber = false
                     val start = pos
 
@@ -33,32 +34,39 @@ class Lexer(val chunkedSource: List<String>) {
 
                     if (pos != source.length) {
                         if (source[pos] == '.') {
+
                             isFloatingPointNumber = true
                             pos++
 
-                            while (pos < source.length && source[pos].isDigit())
-                                pos++
-                        }
-
-                        when (source[pos]) {
-                            'B', 'S', 'I', 'L' -> {
-                                if (isFloatingPointNumber) {
-                                    reports += Error(
-                                        Position(lineNumber, pos - 1),
-                                        "Cannot declare a floating point number as long type"
-                                    )
-                                }
-
+                            while (pos < source.length && source[pos].isDigit()) {
+                                if (!endsWithDot) endsWithDot = true
                                 pos++
                             }
-                            'F', 'D' -> {
-                                pos++
+                        }
+
+                        if (pos != source.length) {
+                            when (source[pos]) {
+                                'B', 'S', 'I', 'L' -> {
+                                    if (isFloatingPointNumber) {
+                                        reports += Error(
+                                            Position(lineNumber, pos),
+                                            "Cannot declare a floating point number literal as non-floating type",
+                                            "Consider removing type suffix"
+                                        )
+                                    }
+
+                                    pos++
+                                }
+                                'F', 'D' -> {
+                                    isFloatingPointNumber = true
+                                    pos++
+                                }
                             }
                         }
                     }
 
                     tokens += Token(
-                        source.substring(start until pos),
+                        source.substring(start until pos - if (endsWithDot) 1 else 0),
                         if (isFloatingPointNumber) TokenType.FloatLiteral
                         else TokenType.IntegerLiteral,
                         Position(lineNumber, start, pos)

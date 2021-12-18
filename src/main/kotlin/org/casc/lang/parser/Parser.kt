@@ -383,6 +383,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
     private fun parseExpression(): Expression? =
         when (peek()?.type) {
             TokenType.IntegerLiteral -> IntegerLiteral(next())
+            TokenType.FloatLiteral -> FloatLiteral(next())
             TokenType.Identifier -> parseIdentifierOrFunctionCall()
             else -> null
         }
