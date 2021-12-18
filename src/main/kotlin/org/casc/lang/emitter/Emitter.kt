@@ -114,6 +114,14 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
 
                 methodVisitor.visitVarInsn(expression.type!!.loadOpcode, variableIndex)
             }
+            is UnaryExpression -> {
+                emitExpression(methodVisitor, expression.expression!!)
+
+                when (expression.operator?.literal) {
+                    "-" -> methodVisitor.visitInsn((expression.type!! as PrimitiveType).negOpcode)
+                    "+" -> {} // No effect
+                }
+            }
         }
     }
 

@@ -5,7 +5,7 @@ class A {
 impl A {
     comp {
         mut fn main(s: str[]) {
-            mut a := 122L
+            mut a := -122L
             mut f := 2D
             f = a
         }

@@ -45,6 +45,7 @@ enum class PrimitiveType(
     val mulOpcode: Int = opcodeSet?.mulOpcode ?: -1
     val divOpcode: Int = opcodeSet?.divOpcode ?: -1
     val remOpcode: Int = opcodeSet?.remOpcode ?: -1
+    val negOpcode: Int = opcodeSet?.negOpcode ?: -1
 
     private enum class OpcodeSets(
         val loadOpcode: Int,
@@ -53,12 +54,49 @@ enum class PrimitiveType(
         val subOpcode: Int?,
         val mulOpcode: Int?,
         val divOpcode: Int?,
-        val remOpcode: Int?
+        val remOpcode: Int?,
+        val negOpcode: Int?
     ) {
-        Integer(Opcodes.ILOAD, Opcodes.ISTORE, Opcodes.IADD, Opcodes.ISUB, Opcodes.IMUL, Opcodes.IDIV, Opcodes.IREM),
-        Long(Opcodes.LLOAD, Opcodes.LSTORE, Opcodes.LADD, Opcodes.LSUB, Opcodes.LMUL, Opcodes.LDIV, Opcodes.LREM),
-        Float(Opcodes.FLOAD, Opcodes.FSTORE, Opcodes.FADD, Opcodes.FSUB, Opcodes.FMUL, Opcodes.FDIV, Opcodes.FREM),
-        Double(Opcodes.DLOAD, Opcodes.DSTORE, Opcodes.DADD, Opcodes.DSUB, Opcodes.DMUL, Opcodes.DDIV, Opcodes.DREM),
-        Object(Opcodes.ALOAD, Opcodes.ASTORE, null, null, null, null, null);
+        Integer(
+            Opcodes.ILOAD,
+            Opcodes.ISTORE,
+            Opcodes.IADD,
+            Opcodes.ISUB,
+            Opcodes.IMUL,
+            Opcodes.IDIV,
+            Opcodes.IREM,
+            Opcodes.INEG
+        ),
+        Long(
+            Opcodes.LLOAD,
+            Opcodes.LSTORE,
+            Opcodes.LADD,
+            Opcodes.LSUB,
+            Opcodes.LMUL,
+            Opcodes.LDIV,
+            Opcodes.LREM,
+            Opcodes.LNEG
+        ),
+        Float(
+            Opcodes.FLOAD,
+            Opcodes.FSTORE,
+            Opcodes.FADD,
+            Opcodes.FSUB,
+            Opcodes.FMUL,
+            Opcodes.FDIV,
+            Opcodes.FREM,
+            Opcodes.FNEG
+        ),
+        Double(
+            Opcodes.DLOAD,
+            Opcodes.DSTORE,
+            Opcodes.DADD,
+            Opcodes.DSUB,
+            Opcodes.DMUL,
+            Opcodes.DDIV,
+            Opcodes.DREM,
+            Opcodes.DNEG
+        ),
+        Object(Opcodes.ALOAD, Opcodes.ASTORE, null, null, null, null, null, null);
     }
 }
