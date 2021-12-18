@@ -40,12 +40,25 @@ enum class PrimitiveType(
 
     override val loadOpcode: Int = opcodeSet?.loadOpcode ?: -1
     override val storeOpcode: Int = opcodeSet?.storeOpcode ?: -1
+    val addOpcode: Int = opcodeSet?.addOpcode ?: -1
+    val subOpcode: Int = opcodeSet?.subOpcode ?: -1
+    val mulOpcode: Int = opcodeSet?.mulOpcode ?: -1
+    val divOpcode: Int = opcodeSet?.divOpcode ?: -1
+    val remOpcode: Int = opcodeSet?.remOpcode ?: -1
 
-    private enum class OpcodeSets(val loadOpcode: Int, val storeOpcode: Int) {
-        Integer(Opcodes.ILOAD, Opcodes.ISTORE),
-        Long(Opcodes.LLOAD, Opcodes.LSTORE),
-        Float(Opcodes.FLOAD, Opcodes.FSTORE),
-        Double(Opcodes.DLOAD, Opcodes.DSTORE),
-        Object(Opcodes.ALOAD, Opcodes.ASTORE);
+    private enum class OpcodeSets(
+        val loadOpcode: Int,
+        val storeOpcode: Int,
+        val addOpcode: Int?,
+        val subOpcode: Int?,
+        val mulOpcode: Int?,
+        val divOpcode: Int?,
+        val remOpcode: Int?
+    ) {
+        Integer(Opcodes.ILOAD, Opcodes.ISTORE, Opcodes.IADD, Opcodes.ISUB, Opcodes.IMUL, Opcodes.IDIV, Opcodes.IREM),
+        Long(Opcodes.LLOAD, Opcodes.LSTORE, Opcodes.LADD, Opcodes.LSUB, Opcodes.LMUL, Opcodes.LDIV, Opcodes.LREM),
+        Float(Opcodes.FLOAD, Opcodes.FSTORE, Opcodes.FADD, Opcodes.FSUB, Opcodes.FMUL, Opcodes.FDIV, Opcodes.FREM),
+        Double(Opcodes.DLOAD, Opcodes.DSTORE, Opcodes.DADD, Opcodes.DSUB, Opcodes.DMUL, Opcodes.DDIV, Opcodes.DREM),
+        Object(Opcodes.ALOAD, Opcodes.ASTORE, null, null, null, null, null);
     }
 }

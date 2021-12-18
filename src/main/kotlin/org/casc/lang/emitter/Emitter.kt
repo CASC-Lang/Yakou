@@ -108,34 +108,38 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                     methodVisitor.visitLdcInsn(expression.literal!!.literal.toFloat())
                 }
             }
-            is AssignmentExpression -> {
-                emitExpression(methodVisitor, expression.expression!!, true)
-
-                if (isInsideAssignment) {
-                    methodVisitor.visitInsn(Opcodes.DUP) // Duplicates value since there is another assignment going on
-                }
-
-                if (expression.castTo != null) {
-                    if (expression.type is PrimitiveType && expression.castTo is PrimitiveType) {
-                        val opcode = TypeUtil.findPrimitiveCastOpcode(
-                            expression.type as PrimitiveType,
-                            expression.castTo as PrimitiveType
-                        )
-
-                        if (opcode != null)
-                            methodVisitor.visitInsn(opcode)
-                    }
-                    // TODO: Class-cast-to-class support
-                }
-
-                methodVisitor.visitVarInsn(
-                    expression.castTo?.storeOpcode ?: expression.expression.type!!.storeOpcode,
-                    expression.index!!
-                )
-            }
+            is AssignmentExpression -> emitAssignment(methodVisitor, expression)
             is IdentifierExpression -> {
-                val variableIndex = expression
+                val variableIndex = expression.index!!
+
+                methodVisitor.visitVarInsn(expression.type!!.loadOpcode, variableIndex)
             }
         }
+    }
+
+    fun emitAssignment(methodVisitor: MethodVisitor, expression: AssignmentExpression, inAssignment: Boolean = false) {
+        emitExpression(methodVisitor, expression.expression!!, true)
+
+        if (inAssignment) {
+            methodVisitor.visitInsn(Opcodes.DUP) // Duplicates value since there is another assignment going on
+        }
+
+        if (expression.castTo != null) {
+            if (expression.type is PrimitiveType && expression.castTo is PrimitiveType) {
+                val opcode = TypeUtil.findPrimitiveCastOpcode(
+                    expression.type as PrimitiveType,
+                    expression.castTo as PrimitiveType
+                )
+
+                if (opcode != null)
+                    methodVisitor.visitInsn(opcode)
+            }
+            // TODO: Class-cast-to-class support
+        }
+
+        methodVisitor.visitVarInsn(
+            expression.castTo?.storeOpcode ?: expression.expression.type!!.storeOpcode,
+            expression.index!!
+        )
     }
 }

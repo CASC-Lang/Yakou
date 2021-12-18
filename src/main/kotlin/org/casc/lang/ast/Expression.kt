@@ -71,7 +71,8 @@ sealed class Expression {
         var castTo: Type? = null,
         override val pos: Position? = identifier?.pos
     ) : Expression() {
-        override var type: Type? = expression?.type
+        override var type: Type? = null
+            get() = expression?.type
     }
 
     data class UnaryExpression(

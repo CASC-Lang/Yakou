@@ -91,8 +91,13 @@ class Checker {
         return function
     }
 
-    private fun checkParameter(parameter: Parameter, scope: Scope): Type? =
-        checkType(parameter.type, scope)
+    private fun checkParameter(parameter: Parameter, scope: Scope): Type? {
+        val type = checkType(parameter.type, scope)
+
+        scope.registerVariable(false, parameter.name!!.literal, type)
+
+        return type
+    }
 
     private fun checkType(reference: Reference?, scope: Scope): Type? =
         scope.findType(reference)
@@ -174,6 +179,7 @@ class Checker {
                         "Variable ${expression.name.pos} does not exist in current context"
                     )
                 } else {
+                    expression.type = variable.type
                     expression.index = scope.findVariableIndex(expression.name.literal)
                 }
 

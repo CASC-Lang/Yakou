@@ -6,12 +6,8 @@ impl A {
     comp {
         mut fn main(s: str[]) {
             mut a := 122L
-            mut b := 2L
-            mut c := 2
-            mut d := 1
-            mut e := 1.
             mut f := 2D
-            c = d = a = b = e = f = 1
+            f = a
         }
     }
 

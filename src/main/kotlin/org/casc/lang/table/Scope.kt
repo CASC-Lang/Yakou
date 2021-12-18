@@ -25,7 +25,18 @@ data class Scope(
     }
 
     fun registerVariable(mutable: Boolean, name: String, type: Type?): Boolean {
-        val variable = Variable(mutable, name, type)
+        val index = variables.lastIndex + 1 + if (variables.lastOrNull() != null) {
+            val lastType = variables.last().type
+
+            if (lastType == PrimitiveType.F64 || lastType == PrimitiveType.I64) 1
+            else 0
+        } else 0
+        val variable = Variable(
+            mutable,
+            name,
+            type,
+            index
+        )
 
         if (variables.contains(variable)) return false
 
@@ -38,8 +49,8 @@ data class Scope(
     fun findVariableIndex(name: String): Int? {
         var index: Int? = null
 
-        variables.forEachIndexed { i, it ->
-            if (it.name == name) index = i
+        variables.forEach {
+            if (it.name == name) index = it.index
         }
 
         return index
