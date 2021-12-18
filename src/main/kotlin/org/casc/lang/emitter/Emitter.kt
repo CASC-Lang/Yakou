@@ -100,6 +100,10 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             is AssignmentExpression -> {
                 emitExpression(methodVisitor, expression.expression!!, true)
 
+                if (isInsideAssignment) {
+                    methodVisitor.visitInsn(Opcodes.DUP) // Duplicates value since there is another assignment going on
+                }
+
                 if (expression.castTo != null) {
                     if (expression.type is PrimitiveType && expression.castTo is PrimitiveType) {
                         val opcode = TypeUtil.findPrimitiveCastOpcode(
@@ -111,10 +115,6 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                             methodVisitor.visitInsn(opcode)
                     }
                     // TODO: Class-cast-to-class support
-                }
-
-                if (isInsideAssignment) {
-                    methodVisitor.visitInsn(Opcodes.DUP) // Duplicates value since there is another assignment going on
                 }
 
                 methodVisitor.visitVarInsn(
