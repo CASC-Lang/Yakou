@@ -11,19 +11,31 @@ sealed class Report {
 
     abstract val position: Position?
     abstract val message: String
+    abstract val hint: String?
 
-    data class Warning(override val position: Position?, override val message: String) : Report() {
+    data class Warning(
+        override val position: Position?,
+        override val message: String,
+        override val hint: String? = null
+    ) : Report() {
         constructor(message: String) : this(null, message)
     }
 
-    data class Error(override val position: Position?, override val message: String) : Report() {
+    data class Error(
+        override val position: Position?,
+        override val message: String,
+        override val hint: String? = null
+    ) : Report() {
         constructor(message: String) : this(null, message)
     }
 
     fun printReport(filePath: String, source: List<String>) {
         if (position != null) {
             val (lineNumber, start, end) = position!!
-            val extendSpace =
+            val preExtend =
+                if (lineNumber > 1 && lineNumber.toString().length != (lineNumber - 1).toString().length) " "
+                else ""
+            val postExtend =
                 if (lineNumber < source.lastIndex && lineNumber.toString().length != (lineNumber + 1).toString().length) " "
                 else ""
 
@@ -38,13 +50,29 @@ sealed class Report {
             println("--> $filePath:$position")
 
             if (lineNumber > 1) {
-                println("${Ansi.colorize("${lineNumber - 1}$extendSpace | ", reportAttribute[2])}${source[lineNumber - 2]}")
+                println(
+                    "${
+                        Ansi.colorize(
+                            "${lineNumber - 1}$postExtend$preExtend | ",
+                            reportAttribute[2]
+                        )
+                    }${source[lineNumber - 2]}"
+                )
             }
 
-            println("${Ansi.colorize("$lineNumber$extendSpace | ", reportAttribute[2])}${source[lineNumber - 1]}")
+            println("${Ansi.colorize("$lineNumber$postExtend | ", reportAttribute[2])}${source[lineNumber - 1]}")
             print(" ".repeat(start + 3 + lineNumber.toString().length))
-            print(extendSpace)
-            println(Ansi.colorize("^".repeat(end - start), reportAttribute[1]))
+            print(postExtend)
+            print(Ansi.colorize("^".repeat(end - start), reportAttribute[1]))
+
+            if (hint != null) {
+                println(Ansi.colorize("= hint: $hint", reportAttribute[when (this) {
+                    is Warning -> 0
+                    is Error -> 1
+                }]))
+            } else {
+                println()
+            }
 
             if (lineNumber < source.lastIndex) {
                 println("${Ansi.colorize("${lineNumber + 1} | ", reportAttribute[2])}${source[lineNumber]}")

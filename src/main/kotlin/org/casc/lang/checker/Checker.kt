@@ -102,7 +102,7 @@ class Checker {
             is VariableDeclaration -> {
                 val expressionType = checkExpression(statement.expression, scope)
 
-                if (!scope.registerVariable(statement.name!!.literal, expressionType)) {
+                if (!scope.registerVariable(statement.mutKeyword != null, statement.name!!.literal, expressionType)) {
                     reports += Error(
                         statement.position!!,
                         "Variable ${statement.name.literal} is already declared in same context"
@@ -139,6 +139,14 @@ class Checker {
                         "Variable ${expression.identifier.literal} does not exist in this context"
                     )
                 } else {
+                    if (!variable.mutable) {
+                        reports += Error(
+                            expression.identifier.pos,
+                            "Variable ${expression.identifier.literal} is not mutable",
+                            "Declare variable ${expression.identifier.literal} with `mut` keyword"
+                        )
+                    }
+
                     expression.isFieldAssignment = false
                     expression.index = scope.findVariableIndex(expression.identifier.literal)
                 }
@@ -146,7 +154,7 @@ class Checker {
                 if (!TypeUtil.canCast(expression.type, variable?.type)) {
                     reports += Error(
                         expression.identifier.pos,
-                        "Type mismatch.\n       Expected: ${variable?.type?.typeName}\n       Found: ${expression.type?.typeName}"
+                        "Type mismatch.\n       Expected: ${variable?.type?.typeName ?: "<Unknown>"}\n       Found: ${expression.type?.typeName ?: "<Unknown>"}"
                     )
                 } else {
                     expression.castTo = variable?.type

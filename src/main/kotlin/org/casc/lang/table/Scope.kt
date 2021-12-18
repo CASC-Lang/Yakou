@@ -24,8 +24,8 @@ data class Scope(
         )
     }
 
-    fun registerVariable(name: String, type: Type?): Boolean {
-        val variable = Variable(name, type)
+    fun registerVariable(mutable: Boolean, name: String, type: Type?): Boolean {
+        val variable = Variable(mutable, name, type)
 
         if (variables.contains(variable)) return false
 
