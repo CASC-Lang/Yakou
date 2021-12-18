@@ -89,7 +89,7 @@ sealed class Expression {
         override val pos: Position? = left?.pos
     ) : Expression() {
         override var type: Type? = null
-            get() = left?.castTo
+            get() = left?.castTo ?: left?.type
 
         // Perform promotion on expressions, promotion only checks until i32
         fun promote() {

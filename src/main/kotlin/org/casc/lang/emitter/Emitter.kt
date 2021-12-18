@@ -78,11 +78,7 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
         }
     }
 
-    private fun emitExpression(
-        methodVisitor: MethodVisitor,
-        expression: Expression,
-        isInsideAssignment: Boolean = false
-    ) {
+    private fun emitExpression(methodVisitor: MethodVisitor, expression: Expression) {
         when (expression) {
             is IntegerLiteral -> {
                 when {
@@ -147,11 +143,22 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
         }
     }
 
-    fun emitAssignment(methodVisitor: MethodVisitor, expression: AssignmentExpression, inAssignment: Boolean = false) {
-        emitExpression(methodVisitor, expression.expression!!, true)
+    private fun emitAssignment(
+        methodVisitor: MethodVisitor,
+        expression: AssignmentExpression,
+        inAssignment: Boolean = false
+    ) {
+        if (expression.expression is AssignmentExpression) {
+            emitAssignment(methodVisitor, expression.expression, true)
+        } else {
+            emitExpression(methodVisitor, expression.expression!!)
+        }
 
         if (inAssignment) {
-            methodVisitor.visitInsn(Opcodes.DUP) // Duplicates value since there is another assignment going on
+            // Duplicates value since there is another assignment going on
+            val finalType = expression.expression.castTo ?: expression.expression.type!!
+            if (finalType == PrimitiveType.F64 || finalType == PrimitiveType.I64) methodVisitor.visitInsn(Opcodes.DUP2)
+            else methodVisitor.visitInsn(Opcodes.DUP)
         }
 
         emitAutoCast(methodVisitor, expression)

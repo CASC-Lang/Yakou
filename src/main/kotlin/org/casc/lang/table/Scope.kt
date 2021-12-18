@@ -25,12 +25,13 @@ data class Scope(
     }
 
     fun registerVariable(mutable: Boolean, name: String, type: Type?): Boolean {
-        val index = variables.lastIndex + 1 + if (variables.lastOrNull() != null) {
-            val lastType = variables.last().type
+        val index = if (variables.isEmpty()) 0
+        else {
+            val (_, _, lastType, lastIndex) = variables.last()
 
-            if (lastType == PrimitiveType.F64 || lastType == PrimitiveType.I64) 1
-            else 0
-        } else 0
+            if (lastType == PrimitiveType.F64 || lastType == PrimitiveType.I64) lastIndex + 2
+            else lastIndex + 1
+        }
         val variable = Variable(
             mutable,
             name,
