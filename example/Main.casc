@@ -1,0 +1,14 @@
+class A {
+
+}
+
+impl A {
+    comp {
+        mut fn main(s: str[]) {
+        }
+    }
+
+    fn lol(s: java::io::Serializable[]): unit {
+
+    }
+}
