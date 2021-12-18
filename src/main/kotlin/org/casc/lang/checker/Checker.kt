@@ -29,7 +29,7 @@ class Checker {
         val classScope = Scope(globalScope)
 
         clazz.functions = clazz.functions.map {
-            checkFunction(it, classScope)
+            checkFunction(it, Scope(classScope))
         }
 
         return clazz
