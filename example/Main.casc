@@ -5,6 +5,9 @@ class A {
 impl A {
     comp {
         mut fn main(s: str[]) {
+            a := 122L
+            b := 2
+            b = a = 1
         }
     }
 

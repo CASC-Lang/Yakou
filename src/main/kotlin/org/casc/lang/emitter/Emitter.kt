@@ -1,11 +1,11 @@
 package org.casc.lang.emitter
 
-import org.casc.lang.ast.Class
-import org.casc.lang.ast.File
+import org.casc.lang.ast.*
 import org.casc.lang.ast.Function
 import org.casc.lang.table.PrimitiveType
 import org.casc.lang.table.TypeUtil
 import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import java.io.File as JFile
 
@@ -44,7 +44,7 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
     }
 
     private fun emitFunction(classWriter: ClassWriter, function: Function) {
-        val methodWriter = classWriter.visitMethod(
+        val methodVisitor = classWriter.visitMethod(
             function.accessFlag,
             function.name!!.literal,
             function.descriptor,
@@ -52,10 +52,79 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             null
         )
 
-        methodWriter.visitCode()
+        methodVisitor.visitCode()
 
-        methodWriter.visitInsn(Opcodes.RETURN)
+        function.statements.forEach {
+            emitStatement(methodVisitor, it)
+        }
 
-        methodWriter.visitEnd()
+        methodVisitor.visitInsn(Opcodes.RETURN)
+
+        methodVisitor.visitMaxs(-1, -1)
+        methodVisitor.visitEnd()
+    }
+
+    private fun emitStatement(methodVisitor: MethodVisitor, statement: Statement) {
+        when (statement) {
+            is VariableDeclaration -> {
+                emitExpression(methodVisitor, statement.expression!!)
+
+                methodVisitor.visitVarInsn(statement.expression.type!!.storeOpcode, statement.index!!)
+            }
+            is ExpressionStatement -> {
+                emitExpression(methodVisitor, statement.expression!!)
+            }
+        }
+    }
+
+    private fun emitExpression(
+        methodVisitor: MethodVisitor,
+        expression: Expression,
+        isInsideAssignment: Boolean = false
+    ) {
+        when (expression) {
+            is IntegerLiteral -> {
+                when {
+                    expression.isI64() -> {
+                        expression.removeTypeSuffix()
+
+                        methodVisitor.visitLdcInsn(expression.literal!!.literal.toLong())
+                    }
+                    else -> { // Handles I8, I16, I32
+                        expression.removeTypeSuffix()
+
+                        methodVisitor.visitLdcInsn(expression.literal!!.literal.toInt())
+                    }
+                }
+            }
+            is AssignmentExpression -> {
+                emitExpression(methodVisitor, expression.expression!!, true)
+
+                if (expression.castTo != null) {
+                    if (expression.type is PrimitiveType && expression.castTo is PrimitiveType) {
+                        val opcode = TypeUtil.findPrimitiveCastOpcode(
+                            expression.type as PrimitiveType,
+                            expression.castTo as PrimitiveType
+                        )
+
+                        if (opcode != null)
+                            methodVisitor.visitInsn(opcode)
+                    }
+                    // TODO: Class-cast-to-class support
+                }
+
+                if (isInsideAssignment) {
+                    methodVisitor.visitInsn(Opcodes.DUP) // Duplicates value since there is another assignment going on
+                }
+
+                methodVisitor.visitVarInsn(
+                    expression.castTo?.storeOpcode ?: expression.expression.type!!.storeOpcode,
+                    expression.index!!
+                )
+            }
+            is IdentifierExpression -> {
+                val variableIndex = expression
+            }
+        }
     }
 }

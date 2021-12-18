@@ -1,16 +1,14 @@
 package org.casc.lang.table
 
 import org.casc.lang.ast.Function
-import org.casc.lang.ast.Parameter
-import org.casc.lang.checker.Checker
-import org.casc.lang.parser.Parser
 
 data class Scope(
     val isGlobalScope: Boolean = true,
     var usages: MutableSet<Reference> = mutableSetOf(),
-    var functions: MutableSet<FunctionSignature> = mutableSetOf()
+    var functions: MutableSet<FunctionSignature> = mutableSetOf(),
+    var variables: MutableList<Variable> = mutableListOf()
 ) {
-    constructor(parent: Scope) : this(false, parent.usages, parent.functions)
+    constructor(parent: Scope) : this(false, parent.usages, parent.functions, parent.variables)
 
     /**
      * registerFunctionSignature must be called after checker assigned types to function object
@@ -24,6 +22,27 @@ data class Scope(
             function.parameterTypes!!.mapNotNull { it },
             function.returnType!!
         )
+    }
+
+    fun registerVariable(name: String, type: Type?): Boolean {
+        val variable = Variable(name, type)
+
+        if (variables.contains(variable)) return false
+
+        return variables.add(variable)
+    }
+
+    fun findVariable(name: String): Variable? =
+        variables.find { it.name == name }
+
+    fun findVariableIndex(name: String): Int? {
+        var index: Int? = null
+
+        variables.forEachIndexed { i, it ->
+            if (it.name == name) index = i
+        }
+
+        return index
     }
 
     fun findType(reference: Reference?): Type? =

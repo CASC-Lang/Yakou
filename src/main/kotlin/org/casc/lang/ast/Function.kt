@@ -18,6 +18,7 @@ data class Function(
     val colon: Token?,
     val returnTypeReference: Reference?,
     val openBracket: Token?,
+    val statements: List<Statement>,
     val closeBracket: Token?,
     val accessor: Accessor = Accessor.fromString(accessorToken?.literal),
     var parameterTypes: List<Type?>? = listOf(),

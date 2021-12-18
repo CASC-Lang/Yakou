@@ -23,7 +23,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         return reports.toList() to files
     }
 
-    private fun assert(type: Token.TokenType): Token? = when {
+    private fun assert(type: TokenType): Token? = when {
         tokens.isEmpty() -> {
             reports += Error(
                 "Unable to compile empty source"
@@ -52,6 +52,21 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         else -> tokens[pos + offset]
     }
 
+    /**
+     * peekMultiple is used to determine whether a set of tokens matches specific syntax pattern.
+     */
+    private fun peekMultiple(offset: Int = 1): List<TokenType?> {
+        if (offset <= 0) return listOf()
+
+        val tokenTypes = mutableListOf<TokenType?>()
+
+        for (i in 0 until offset) {
+            tokenTypes += peek(i)?.type
+        }
+
+        return tokenTypes
+    }
+
     private fun last(): Token? =
         peek(-1)
 
@@ -61,18 +76,22 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         else -> tokens[pos++]
     }
 
+    private fun consume() {
+        if (tokens.isNotEmpty() && pos < tokens.size) pos++
+    }
+
     private fun parseFile(path: String): File {
         // TODO: Package
         // TODO: Usages
         // Parse class declaration
-        var accessor = assert(Token.TokenType.Identifier)
+        var accessor = assert(TokenType.Identifier)
         val classKeyword: Token?
 
         if (accessor?.isClassKeyword() == true) { // If class has no modifier, then we move accessor token to class token
             classKeyword = accessor
             accessor = null
         } else {
-            classKeyword = assert(Token.TokenType.Identifier)
+            classKeyword = assert(TokenType.Identifier)
 
             if (classKeyword?.isClassKeyword() != true) {
                 reports += Error(
@@ -82,13 +101,13 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             }
         }
 
-        val className = assert(Token.TokenType.Identifier)
-        assert(Token.TokenType.OpenBracket)
+        val className = assert(TokenType.Identifier)
+        assert(TokenType.OpenBrace)
         // TODO: Parse fields
-        assert(Token.TokenType.CloseBracket)
+        assert(TokenType.CloseBrace)
 
         // Parse major implementation
-        val implKeyword = assert(Token.TokenType.Identifier)
+        val implKeyword = assert(TokenType.Identifier)
 
         if (implKeyword?.isImplKeyword() != true) {
             reports += Error(
@@ -97,7 +116,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             )
         }
 
-        val implName = assert(Token.TokenType.Identifier)
+        val implName = assert(TokenType.Identifier)
 
         if (implName?.literal != className?.literal) {
             reports += Error(
@@ -106,9 +125,9 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             )
         }
 
-        assert(Token.TokenType.OpenBracket)
+        assert(TokenType.OpenBrace)
         val functions = parseFunctions()
-        assert(Token.TokenType.CloseBracket)
+        assert(TokenType.CloseBrace)
 
         val clazz = Class(accessor, classKeyword, className, functions)
 
@@ -122,23 +141,23 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         var startPos: Position? = null
         var nameBuilder = ""
 
-        while (pos < tokens.size && peek()?.type == Token.TokenType.Identifier) {
-            val identifier = assert(Token.TokenType.Identifier)!!
+        while (pos < tokens.size && peek()?.type == TokenType.Identifier) {
+            val identifier = assert(TokenType.Identifier)!!
 
             if (startPos == null) startPos = identifier.pos
 
             nameBuilder += identifier.literal
 
-            if (peek()?.type == Token.TokenType.DoubleColon) {
-                assert(Token.TokenType.DoubleColon)
+            if (peek()?.type == TokenType.DoubleColon) {
+                consume()
                 nameBuilder += "."
             } else break
         }
 
         if (isParameter) {
-            while (pos < tokens.size && peek()?.type == Token.TokenType.OpenBrace) {
-                assert(Token.TokenType.OpenBrace)
-                assert(Token.TokenType.CloseBrace) ?: break
+            while (pos < tokens.size && peek()?.type == TokenType.OpenBracket) {
+                consume()
+                assert(TokenType.CloseBracket) ?: break
 
                 nameBuilder += "[]"
             }
@@ -157,8 +176,8 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         var compScopeDeclared = false
         val functions = mutableListOf<Function>()
 
-        while (pos < tokens.size && peek()?.type != Token.TokenType.CloseBracket) { // Break the loop after encountered class declaration's close bracket
-            var accessor = assert(Token.TokenType.Identifier)
+        while (pos < tokens.size && peek()?.type != TokenType.CloseBrace) { // Break the loop after encountered class declaration's close bracket
+            var accessor = assert(TokenType.Identifier)
             var mutKeyword: Token?
             val fnKeyword: Token?
 
@@ -178,17 +197,17 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
                 }
 
                 compScopeDeclared = true
-                assert(Token.TokenType.OpenBracket)
+                assert(TokenType.OpenBrace)
                 functions += parseFunctions(accessor)
-                assert(Token.TokenType.CloseBracket)
+                assert(TokenType.CloseBrace)
                 continue
             }
 
             if (accessor?.isAccessorKeyword() == true) {
-                mutKeyword = assert(Token.TokenType.Identifier)
+                mutKeyword = next()
 
                 if (mutKeyword?.isMutKeyword() == true) {
-                    fnKeyword = assert(Token.TokenType.Identifier)
+                    fnKeyword = next()
 
                     if (fnKeyword?.isFnKeyword() != true) {
                         reports.reportExpectedFnDeclaration(peek(-1))
@@ -204,7 +223,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             } else if (accessor?.isMutKeyword() == true) {
                 mutKeyword = accessor
                 accessor = null
-                fnKeyword = assert(Token.TokenType.Identifier)
+                fnKeyword = assert(TokenType.Identifier)
 
                 if (fnKeyword?.isFnKeyword() != true) {
                     reports.reportExpectedFnDeclaration(peek(-1))
@@ -220,23 +239,24 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
                 fnKeyword = null
             }
 
-            val functionName = assert(Token.TokenType.Identifier)
-            val openParenthesis = assert(Token.TokenType.OpenParenthesis)
+            val functionName = assert(TokenType.Identifier)
+            val openParenthesis = assert(TokenType.OpenParenthesis)
             val parameters = parseParameters()
-            val closeParenthesis = assert(Token.TokenType.CloseParenthesis)
+            val closeParenthesis = assert(TokenType.CloseParenthesis)
             val colon: Token?
             val returnType: Reference?
 
-            if (peek()?.type == Token.TokenType.Colon) {
-                colon = assert(Token.TokenType.Colon)
+            if (peek()?.type == TokenType.Colon) {
+                colon = next()
                 returnType = parseQualifiedName(true)
             } else {
                 colon = null
                 returnType = null
             }
 
-            val openBracket = assert(Token.TokenType.OpenBracket)
-            val closeBracket = assert(Token.TokenType.CloseBracket)
+            val openBracket = assert(TokenType.OpenBrace)
+            val statements = parseStatements()
+            val closeBracket = assert(TokenType.CloseBrace)
 
             val function = Function(
                 accessor,
@@ -249,6 +269,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
                 colon,
                 returnType,
                 openBracket,
+                statements,
                 closeBracket
             )
 
@@ -264,18 +285,18 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
 
         while (pos < tokens.size && hasNext) {
             hasNext = false
-            if (peek()?.type == Token.TokenType.Identifier) {
-                var mutableKeyword = assert(Token.TokenType.Identifier)
+            if (peek()?.type == TokenType.Identifier) {
+                var mutableKeyword = next()
                 val parameterName: Token?
 
                 if (mutableKeyword?.literal == "mut") {
-                    parameterName = assert(Token.TokenType.Identifier)
+                    parameterName = assert(TokenType.Identifier)
                 } else {
                     parameterName = mutableKeyword
                     mutableKeyword = null
                 }
 
-                val colon = assert(Token.TokenType.Colon)
+                val colon = assert(TokenType.Colon)
                 val type = parseQualifiedName(true)
 
                 parameters += Parameter(
@@ -285,13 +306,89 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
                     type
                 )
 
-                if (peek()?.type == Token.TokenType.Comma) {
-                    assert(Token.TokenType.Comma)
+                if (peek()?.type == TokenType.Comma) {
+                    consume()
                     hasNext = true
                 }
             } else break
         }
 
         return parameters
+    }
+
+    private fun parseStatements(): List<Statement> {
+        val statements = mutableListOf<Statement>()
+
+        while (pos < tokens.size && peek()?.type != TokenType.CloseBrace) {
+            val mutKeyword =
+                if (peek()?.isMutKeyword() == true) next()
+                else null
+
+            if (peekMultiple(2) == listOf(TokenType.Identifier, TokenType.ColonEqual)) {
+                // Variable Declaration
+                val name = next()
+                val operator = next()
+                val expression = parseAssignment()
+
+                statements += VariableDeclaration(
+                    mutKeyword,
+                    name,
+                    operator,
+                    expression
+                )
+            } else statements += ExpressionStatement(parseAssignment())
+        }
+
+        return statements
+    }
+
+    private fun parseAssignment(): Expression? =
+        if (peekMultiple(2) == listOf(TokenType.Identifier, TokenType.Equal)) {
+            val name = next()
+            val operator = next()
+            val expression = parseAssignment()
+
+            AssignmentExpression(name, operator, expression)
+        } else parseBinaryExpression()
+
+    private fun parseBinaryExpression(parentPrecedence: Int = 0): Expression? {
+        var left: Expression?
+        val unaryPrecedence = peek()?.type?.unaryPrecedence() ?: 0
+
+        left = if (unaryPrecedence != 0 && unaryPrecedence >= parentPrecedence) {
+            val operator = next()
+            val right = parseBinaryExpression(unaryPrecedence)
+
+            UnaryExpression(operator, right)
+        } else parseExpression()
+
+        while (true) {
+            val binaryPrecedence = peek()?.type?.binaryPrecedence() ?: 0
+
+            if (binaryPrecedence == 0 || binaryPrecedence >= parentPrecedence) break
+
+            val operator = next()
+            val right = parseBinaryExpression(binaryPrecedence)
+
+            left = BinaryExpression(
+                left,
+                operator,
+                right
+            )
+        }
+
+        return left
+    }
+
+    private fun parseExpression(): Expression? =
+        when (peek()?.type) {
+            TokenType.IntegerLiteral -> IntegerLiteral(next())
+            TokenType.Identifier -> parseIdentifierOrFunctionCall()
+            else -> null
+        }
+
+    // TODO: Support FunctionCall
+    private fun parseIdentifierOrFunctionCall(): Expression? {
+        return IdentifierExpression(next())
     }
 }

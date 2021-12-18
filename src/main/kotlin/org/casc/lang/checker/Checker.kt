@@ -1,15 +1,10 @@
 package org.casc.lang.checker
 
-import org.casc.lang.ast.Class
-import org.casc.lang.ast.File
+import org.casc.lang.ast.*
 import org.casc.lang.ast.Function
-import org.casc.lang.ast.Parameter
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
-import org.casc.lang.table.PrimitiveType
-import org.casc.lang.table.Reference
-import org.casc.lang.table.Scope
-import org.casc.lang.table.Type
+import org.casc.lang.table.*
 
 class Checker {
     companion object {
@@ -85,6 +80,10 @@ class Checker {
                 } else type
             }
 
+        function.statements.forEach {
+            checkStatement(it, scope, function.returnType)
+        }
+
         if (validationPass) {
             scope.registerFunctionSignature(function)
         }
@@ -97,4 +96,85 @@ class Checker {
 
     private fun checkType(reference: Reference?, scope: Scope): Type? =
         scope.findType(reference)
+
+    private fun checkStatement(statement: Statement, scope: Scope, returnType: Type? = null) {
+        when (statement) {
+            is VariableDeclaration -> {
+                val expressionType = checkExpression(statement.expression, scope)
+
+                if (!scope.registerVariable(statement.name!!.literal, expressionType)) {
+                    reports += Error(
+                        statement.position!!,
+                        "Variable ${statement.name.literal} is already declared in same context"
+                    )
+                } else {
+                    statement.index = scope.findVariableIndex(statement.name.literal)
+                }
+            }
+            is ExpressionStatement -> checkExpression(statement.expression, scope)
+        }
+    }
+
+    private fun checkExpression(expression: Expression?, scope: Scope): Type? {
+        return when (expression) {
+            is IntegerLiteral -> {
+                expression.type = when {
+                    expression.isI8() -> PrimitiveType.I8
+                    expression.isI16() -> PrimitiveType.I16
+                    expression.isI32() -> PrimitiveType.I32
+                    expression.isI64() -> PrimitiveType.I64
+                    else -> null
+                }
+
+                expression.type
+            }
+            is AssignmentExpression -> {
+                checkExpression(expression.expression, scope)
+
+                val variable = scope.findVariable(expression.identifier!!.literal)
+
+                if (variable == null) {
+                    reports += Error(
+                        expression.identifier.pos,
+                        "Variable ${expression.identifier.literal} does not exist in this context"
+                    )
+                } else {
+                    expression.isFieldAssignment = false
+                    expression.index = scope.findVariableIndex(expression.identifier.literal)
+                }
+
+                if (!TypeUtil.canCast(expression.type, variable?.type)) {
+                    reports += Error(
+                        expression.identifier.pos,
+                        "Type mismatch.\n       Expected: ${variable?.type?.typeName}\n       Found: ${expression.type?.typeName}"
+                    )
+                } else {
+                    expression.castTo = variable?.type
+                }
+
+                expression.type
+            }
+            is IdentifierExpression -> {
+                val variable = scope.findVariable(expression.name!!.literal)
+
+                if (variable == null) {
+                    reports += Error(
+                        expression.name.pos,
+                        "Variable ${expression.name.pos} does not exist in current context"
+                    )
+                } else {
+                    expression.index = scope.findVariableIndex(expression.name.literal)
+                }
+
+                variable?.type
+            }
+            is UnaryExpression -> expression.type
+            is BinaryExpression -> {
+                expression.promote()
+
+                expression.type
+            }
+            null -> null
+        }
+    }
 }

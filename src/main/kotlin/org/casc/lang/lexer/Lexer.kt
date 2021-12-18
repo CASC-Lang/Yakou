@@ -2,6 +2,8 @@ package org.casc.lang.lexer
 
 import org.casc.lang.ast.Position
 import org.casc.lang.ast.Token
+import org.casc.lang.ast.TokenType
+import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 
 // TODO: Multi-Threaded Lexing Process
@@ -23,15 +25,42 @@ class Lexer(val chunkedSource: List<String>) {
             while (pos < source.length) {
                 // Number Literals
                 if (source[pos].isDigit()) {
+                    var isFloatingPointNumber = false
                     val start = pos
 
                     while (pos < source.length && source[pos].isDigit())
                         pos++
 
-                    // TODO: Support FloatLiteral
+                    if (pos != source.length) {
+                        if (source[pos] == '.') {
+                            isFloatingPointNumber = true
+                            pos++
+
+                            while (pos < source.length && source[pos].isDigit())
+                                pos++
+                        }
+
+                        when (source[pos]) {
+                            'B', 'S', 'I', 'L' -> {
+                                if (isFloatingPointNumber) {
+                                    reports += Error(
+                                        Position(lineNumber, pos - 1),
+                                        "Cannot declare a floating point number as long type"
+                                    )
+                                }
+
+                                pos++
+                            }
+                            'F', 'D' -> {
+                                pos++
+                            }
+                        }
+                    }
+
                     tokens += Token(
                         source.substring(start until pos),
-                        Token.TokenType.IntegerLiteral,
+                        if (isFloatingPointNumber) TokenType.FloatLiteral
+                        else TokenType.IntegerLiteral,
                         Position(lineNumber, start, pos)
                     )
                     continue
@@ -57,7 +86,7 @@ class Lexer(val chunkedSource: List<String>) {
 
                     tokens += Token(
                         source.substring(start until pos),
-                        Token.TokenType.Identifier,
+                        TokenType.Identifier,
                         Position(lineNumber, start, pos)
                     )
                     continue
@@ -65,22 +94,34 @@ class Lexer(val chunkedSource: List<String>) {
 
                 // Operators etc.
                 when (source[pos]) {
-                    '{' -> tokens += Token(source[pos], Token.TokenType.OpenBracket, Position(lineNumber, pos++))
-                    '}' -> tokens += Token(source[pos], Token.TokenType.CloseBracket, Position(lineNumber, pos++))
-                    '[' -> tokens += Token(source[pos], Token.TokenType.OpenBrace, Position(lineNumber, pos++))
-                    ']' -> tokens += Token(source[pos], Token.TokenType.CloseBrace, Position(lineNumber, pos++))
-                    '(' -> tokens += Token(source[pos], Token.TokenType.OpenParenthesis, Position(lineNumber, pos++))
-                    ')' -> tokens += Token(source[pos], Token.TokenType.CloseParenthesis, Position(lineNumber, pos++))
-                    ':' -> tokens += if (source[pos + 1] == ':') {
-                        Token(
-                            source.substring(pos until pos + 1),
-                            Token.TokenType.DoubleColon,
-                            Position(lineNumber, pos, skip(2) + 1)
-                        )
-                    } else {
-                        Token(source[pos], Token.TokenType.Colon, Position(lineNumber, pos++))
+                    '{' -> tokens.charToken(source, TokenType.OpenBrace)
+                    '}' -> tokens.charToken(source, TokenType.CloseBrace)
+                    '[' -> tokens.charToken(source, TokenType.OpenBracket)
+                    ']' -> tokens.charToken(source, TokenType.CloseBracket)
+                    '(' -> tokens.charToken(source, TokenType.OpenParenthesis)
+                    ')' -> tokens.charToken(source, TokenType.CloseParenthesis)
+                    ':' -> when (source[pos + 1]) {
+                        ':' ->
+                            tokens += Token(
+                                source.substring(pos..pos + 1),
+                                TokenType.DoubleColon,
+                                Position(lineNumber, pos, skip(2) + 1)
+                            )
+                        '=' ->
+                            tokens += Token(
+                                source.substring(pos..pos + 1),
+                                TokenType.ColonEqual,
+                                Position(lineNumber, pos, skip(2) + 1)
+                            )
+                        else -> tokens.charToken(source, TokenType.Colon)
                     }
-                    ',' -> tokens += Token(source[pos], Token.TokenType.Comma, Position(lineNumber, pos++))
+                    ',' -> tokens.charToken(source, TokenType.Comma)
+                    '=' -> tokens.charToken(source, TokenType.Equal)
+                    '+' -> tokens.charToken(source, TokenType.Plus)
+                    '-' -> tokens.charToken(source, TokenType.Minus)
+                    '*' -> tokens.charToken(source, TokenType.Star)
+                    '/' -> tokens.charToken(source, TokenType.Slash)
+                    '%' -> tokens.charToken(source, TokenType.Percentage)
                     else ->
                         reports += Report.Error(
                             Position(lineNumber, pos),
@@ -95,6 +136,9 @@ class Lexer(val chunkedSource: List<String>) {
 
         return reports to tokens
     }
+
+    private fun MutableList<Token>.charToken(source: String, type: TokenType) =
+        this.add(Token(source[pos], type, Position(lineNumber, pos++)))
 
     private fun isSymbol(char: Char): Boolean {
         val charCode = char.code

@@ -1,6 +1,7 @@
 package org.casc.lang.table
 
 import org.casc.lang.compilation.Preference
+import org.objectweb.asm.Opcodes
 
 data class ClassType(
     override val typeName: String,
@@ -14,4 +15,7 @@ data class ClassType(
     } catch (e: Exception) {
         null
     }
+
+    override val loadOpcode: Int = Opcodes.ALOAD
+    override val storeOpcode: Int = Opcodes.ASTORE
 }

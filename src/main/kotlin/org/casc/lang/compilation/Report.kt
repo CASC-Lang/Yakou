@@ -43,6 +43,7 @@ sealed class Report {
 
             println("${Ansi.colorize("$lineNumber$extendSpace | ", reportAttribute[2])}${source[lineNumber - 1]}")
             print(" ".repeat(start + 3 + lineNumber.toString().length))
+            print(extendSpace)
             println(Ansi.colorize("^".repeat(end - start), reportAttribute[1]))
 
             if (lineNumber < source.lastIndex) {

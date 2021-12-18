@@ -1,6 +1,6 @@
 package org.casc.lang.ast
 
-data class Token(val literal: String, val type: TokenType, val pos: Position) {
+data class Token(var literal: String, val type: TokenType, val pos: Position) {
     constructor(literal: Char, type: TokenType, pos: Position): this(literal.toString(), type, pos)
 
     fun isClassKeyword(): Boolean =
@@ -15,25 +15,12 @@ data class Token(val literal: String, val type: TokenType, val pos: Position) {
     fun isMutKeyword(): Boolean =
         literal == "mut"
 
+    fun isReturnKeyword(): Boolean =
+        literal == "return"
+
     fun isAccessorKeyword(): Boolean =
         Accessor.validKeywords.contains(literal)
 
     fun isFnKeyword(): Boolean =
         literal == "fn"
-
-    enum class TokenType {
-        Identifier,
-        IntegerLiteral,
-        StringLiteral,
-        FloatLiteral,
-        OpenBracket,
-        CloseBracket,
-        OpenBrace,
-        CloseBrace,
-        OpenParenthesis,
-        CloseParenthesis,
-        Colon,
-        DoubleColon,
-        Comma
-    }
 }
