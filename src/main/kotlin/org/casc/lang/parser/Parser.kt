@@ -365,7 +365,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         while (true) {
             val binaryPrecedence = peek()?.type?.binaryPrecedence() ?: 0
 
-            if (binaryPrecedence == 0 || binaryPrecedence >= parentPrecedence) break
+            if (binaryPrecedence == 0 || binaryPrecedence <= parentPrecedence) break
 
             val operator = next()
             val right = parseBinaryExpression(binaryPrecedence)

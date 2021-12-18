@@ -6,6 +6,7 @@ import org.casc.lang.table.Type
 sealed class Expression {
     abstract val pos: Position?
     abstract var type: Type?
+    var castTo: Type? = null
 
     data class IntegerLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression() {
         override var type: Type? = when {
@@ -68,7 +69,6 @@ sealed class Expression {
         val expression: Expression?,
         var isFieldAssignment: Boolean = false,
         var index: Int? = null,
-        var castTo: Type? = null,
         override val pos: Position? = identifier?.pos
     ) : Expression() {
         override var type: Type? = null
@@ -88,20 +88,19 @@ sealed class Expression {
         var left: Expression?, val operator: Token?, var right: Expression?,
         override val pos: Position? = left?.pos
     ) : Expression() {
-
-
-        override var type: Type? = left?.type
+        override var type: Type? = null
+            get() = left?.castTo
 
         // Perform promotion on expressions, promotion only checks until i32
         fun promote() {
-            for (type in PrimitiveType.promotionTable.keys.reversed().dropLast(2)) {
+            for (type in PrimitiveType.promotionTable.keys.toList().dropLast(2)) {
                 if (left?.type == type) {
-                    right?.type = type
+                    right?.castTo = type
                     break
                 }
 
                 if (right?.type == type) {
-                    left?.type = type
+                    left?.castTo = type
                     break
                 }
             }

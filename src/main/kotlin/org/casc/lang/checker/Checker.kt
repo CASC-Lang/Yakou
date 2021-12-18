@@ -185,8 +185,15 @@ class Checker {
 
                 variable?.type
             }
-            is UnaryExpression -> expression.type
+            is UnaryExpression -> {
+                checkExpression(expression.expression, scope)
+
+                expression.type
+            }
             is BinaryExpression -> {
+                checkExpression(expression.left, scope)
+                checkExpression(expression.right, scope)
+
                 expression.promote()
 
                 expression.type

@@ -7,7 +7,7 @@ impl A {
         mut fn main(s: str[]) {
             mut a := -122L
             mut f := 2D
-            f = a
+            f = a + f
         }
     }
 

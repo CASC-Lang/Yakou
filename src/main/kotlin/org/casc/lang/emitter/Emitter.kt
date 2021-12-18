@@ -3,6 +3,7 @@ package org.casc.lang.emitter
 import org.casc.lang.ast.*
 import org.casc.lang.ast.Function
 import org.casc.lang.table.PrimitiveType
+import org.casc.lang.table.Type
 import org.casc.lang.table.TypeUtil
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.MethodVisitor
@@ -117,10 +118,31 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             is UnaryExpression -> {
                 emitExpression(methodVisitor, expression.expression!!)
 
-                when (expression.operator?.literal) {
-                    "-" -> methodVisitor.visitInsn((expression.type!! as PrimitiveType).negOpcode)
-                    "+" -> {} // No effect
+                when (expression.operator?.type) {
+                    TokenType.Minus -> methodVisitor.visitInsn((expression.type!! as PrimitiveType).negOpcode)
+                    TokenType.Plus -> {} // No effect
                 }
+            }
+            is BinaryExpression -> {
+                emitExpression(methodVisitor, expression.left!!)
+                if (expression.left!!.castTo != null)
+                    emitAutoCast(methodVisitor, expression.left!!.type!!, expression.left!!.castTo!!)
+
+                emitExpression(methodVisitor, expression.right!!)
+                if (expression.right!!.castTo != null)
+                    emitAutoCast(methodVisitor, expression.right!!.type!!, expression.right!!.castTo!!)
+
+                val type = (expression.type!! as PrimitiveType)
+                val opcode = when (expression.operator?.type) {
+                    TokenType.Plus -> type.addOpcode
+                    TokenType.Minus -> type.subOpcode
+                    TokenType.Star -> type.mulOpcode
+                    TokenType.Slash -> type.divOpcode
+                    TokenType.Percentage -> type.remOpcode
+                    else -> null // Should not be null
+                }
+
+                methodVisitor.visitInsn(opcode!!)
             }
         }
     }
@@ -132,22 +154,30 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             methodVisitor.visitInsn(Opcodes.DUP) // Duplicates value since there is another assignment going on
         }
 
-        if (expression.castTo != null) {
-            if (expression.type is PrimitiveType && expression.castTo is PrimitiveType) {
-                val opcode = TypeUtil.findPrimitiveCastOpcode(
-                    expression.type as PrimitiveType,
-                    expression.castTo as PrimitiveType
-                )
-
-                if (opcode != null)
-                    methodVisitor.visitInsn(opcode)
-            }
-            // TODO: Class-cast-to-class support
-        }
+        emitAutoCast(methodVisitor, expression)
 
         methodVisitor.visitVarInsn(
             expression.castTo?.storeOpcode ?: expression.expression.type!!.storeOpcode,
             expression.index!!
         )
+    }
+
+    private fun emitAutoCast(methodVisitor: MethodVisitor, expression: Expression) {
+        if (expression.castTo != null) {
+            emitAutoCast(methodVisitor, expression.type!!, expression.castTo!!)
+        }
+    }
+
+    private fun emitAutoCast(methodVisitor: MethodVisitor, from: Type, to: Type) {
+        if (from is PrimitiveType && to is PrimitiveType) {
+            val opcode = TypeUtil.findPrimitiveCastOpcode(
+                from,
+                to as PrimitiveType
+            )
+
+            if (opcode != null)
+                methodVisitor.visitInsn(opcode)
+        }
+        // TODO: Class-cast-to-class support
     }
 }
