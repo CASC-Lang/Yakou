@@ -101,4 +101,10 @@ sealed class Expression {
             }
         }
     }
+
+    data class ArrayInitialization(
+        val inferTypeReference: Reference?,
+        val expressions: List<Expression?>,
+        override val pos: Position?
+    ) : Expression()
 }

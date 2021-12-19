@@ -7,6 +7,7 @@
 - [ ] usage
 - [ ] array declaration
 - [ ] array indexing (assignment)
+- [ ] block
 - [ ] loops
 - - [ ] for loop (C loop)
 - - [ ] while loop

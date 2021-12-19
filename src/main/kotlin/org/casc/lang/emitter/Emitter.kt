@@ -2,13 +2,10 @@ package org.casc.lang.emitter
 
 import org.casc.lang.ast.*
 import org.casc.lang.ast.Function
-import org.casc.lang.table.PrimitiveType
-import org.casc.lang.table.Type
-import org.casc.lang.table.TypeUtil
+import org.casc.lang.table.*
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
-import kotlin.math.exp
 import java.io.File as JFile
 
 class Emitter(private val outDir: JFile, private val files: List<File>) {
@@ -201,6 +198,33 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                 }
 
                 methodVisitor.visitInsn(opcode!!)
+            }
+            is ArrayInitialization -> {
+                methodVisitor.visitLdcInsn(expression.expressions.size)
+
+                val baseType = (expression.type as ArrayType).baseType
+
+                if (baseType is ArrayType || baseType is ClassType || baseType == PrimitiveType.Str)
+                    methodVisitor.visitTypeInsn(Opcodes.ANEWARRAY, expression.type?.descriptor?.drop(1)) // Cut down one dimension
+                else methodVisitor.visitIntInsn(Opcodes.NEWARRAY, (baseType as PrimitiveType).typeOpcode)
+
+                methodVisitor.visitInsn(Opcodes.DUP)
+
+                expression.expressions.forEachIndexed { i, it ->
+                    methodVisitor.visitLdcInsn(i)
+
+                    emitExpression(methodVisitor, it!!)
+
+                    if (it.type is PrimitiveType && baseType is PrimitiveType) {
+                        val opcode = TypeUtil.findPrimitiveCastOpcode(it.type as PrimitiveType, baseType)
+
+                        if (opcode != null) methodVisitor.visitInsn(opcode)
+                    }
+
+                    methodVisitor.visitInsn((expression.type as ArrayType).getContentStoreOpcode()!!)
+
+                    if (i != expression.expressions.lastIndex) methodVisitor.visitInsn(Opcodes.DUP)
+                }
             }
         }
     }

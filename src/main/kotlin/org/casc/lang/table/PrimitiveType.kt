@@ -47,6 +47,18 @@ enum class PrimitiveType(
     val divOpcode: Int = opcodeSet?.divOpcode ?: -1
     val remOpcode: Int = opcodeSet?.remOpcode ?: -1
     val negOpcode: Int = opcodeSet?.negOpcode ?: -1
+    val typeOpcode: Int
+        get() = when (this) {
+            Bool -> Opcodes.T_BOOLEAN
+            Char -> Opcodes.T_CHAR
+            I8 -> Opcodes.T_BYTE
+            I16 -> Opcodes.T_SHORT
+            I32 -> Opcodes.T_INT
+            I64 -> Opcodes.T_LONG
+            F32 -> Opcodes.T_FLOAT
+            F64 -> Opcodes.T_DOUBLE
+            else -> -1
+        }
 
     private enum class OpcodeSets(
         val loadOpcode: Int,

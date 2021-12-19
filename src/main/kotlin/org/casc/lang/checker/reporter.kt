@@ -9,12 +9,12 @@ import org.casc.lang.table.Type
 internal fun MutableSet<Report>.reportUnknownTypeSymbol(reference: Reference) =
     add(
         Error(
-            reference.position(),
+            reference.position,
             "Unknown type symbol $reference"
         )
     )
 
-internal fun MutableSet<Report>.reportTypeMismatch(pos: Position, expected: Type?, found: Type?) =
+internal fun MutableSet<Report>.reportTypeMismatch(pos: Position?, expected: Type?, found: Type?) =
     add(
         Error(
             pos,

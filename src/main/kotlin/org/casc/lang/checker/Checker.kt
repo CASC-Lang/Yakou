@@ -274,7 +274,11 @@ class Checker {
 
                 // Check function call expression's context, e.g companion context
                 val functionSignature =
-                    scope.findFunction(expression.ownerReference?.path ?: previousType?.typeName, expression.name!!.literal, argumentTypes)
+                    scope.findFunction(
+                        expression.ownerReference?.path ?: previousType?.typeName,
+                        expression.name!!.literal,
+                        argumentTypes
+                    )
 
                 if (functionSignature == null) {
                     // No function matched
@@ -317,15 +321,59 @@ class Checker {
                 expression.type
             }
             is UnaryExpression -> {
-                expression.type = checkExpression(expression.expression, scope)
+                val type = checkExpression(expression.expression, scope)
+
+                if (type !is PrimitiveType || !type.isNumericType()) {
+                    reports += Error(
+                        expression.operator?.pos,
+                        "Could not apply unary operator on object types",
+                        "Remove this operator"
+                    )
+                } else expression.type = type
 
                 expression.type
             }
             is BinaryExpression -> {
-                checkExpression(expression.left, scope)
-                checkExpression(expression.right, scope)
+                val leftType = checkExpression(expression.left, scope)
+                val rightType = checkExpression(expression.right, scope)
 
-                expression.promote()
+                if ((leftType !is PrimitiveType || !leftType.isNumericType()) || (rightType !is PrimitiveType || !rightType.isNumericType())) {
+                    reports += Error(
+                        expression.operator?.pos,
+                        "Could not apply binary operator on object types",
+                        "Remove this operator"
+                    )
+                } else expression.promote()
+
+                expression.type
+            }
+            is ArrayInitialization -> {
+                if (expression.inferTypeReference != null) {
+                    val inferType = checkType(expression.inferTypeReference, scope)
+
+                    if (inferType == null) reports.reportUnknownTypeSymbol(expression.inferTypeReference)
+                    else {
+                        val elementTypes = mutableListOf<Type?>()
+
+                        expression.expressions.forEach {
+                            elementTypes += checkExpression(it, scope)
+                        }
+
+                        elementTypes.forEachIndexed { i, it ->
+                            if (!TypeUtil.canCast(it, inferType)) {
+                                reports.reportTypeMismatch(
+                                    expression.expressions[i]?.pos,
+                                    inferType,
+                                    it
+                                )
+                            }
+                        }
+
+                        expression.type = ArrayType(inferType)
+                    }
+                } else {
+                    // TODO: Implement
+                }
 
                 expression.type
             }
