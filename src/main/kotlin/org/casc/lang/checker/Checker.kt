@@ -38,6 +38,7 @@ class Checker {
         return clazz
     }
 
+    // TODO: Track if-else and match branches so compiler can know whether all paths have return value or not
     private fun checkFunction(function: Function, scope: Scope): Function {
         // Validate types first then register it to scope
         // Check if parameter has duplicate names
@@ -140,6 +141,13 @@ class Checker {
                     checkExpression(statement.expression, scope)
                 }
             }
+            is ReturnStatement -> {
+                val expressionType = checkExpression(statement.expression, scope)
+
+                if (!TypeUtil.canCast(expressionType, returnType)) {
+                    reports.reportTypeMismatch(statement.position!!, returnType, expressionType)
+                } else statement.returnType = returnType
+            }
         }
     }
 
@@ -195,10 +203,7 @@ class Checker {
                 }
 
                 if (!TypeUtil.canCast(expression.type, variable?.type)) {
-                    reports += Error(
-                        expression.identifier.pos,
-                        "Type mismatch.\n       Expected: ${variable?.type?.typeName ?: "<Unknown>"}\n       Found: ${expression.type?.typeName ?: "<Unknown>"}"
-                    )
+                    reports.reportTypeMismatch(expression.identifier.pos, variable?.type, expression.type)
                 } else {
                     expression.castTo = variable?.type
                 }

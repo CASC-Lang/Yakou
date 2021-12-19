@@ -1,5 +1,7 @@
 package org.casc.lang.ast
 
+import org.casc.lang.table.Type
+
 sealed class Statement {
     abstract val position: Position?
 
@@ -14,6 +16,12 @@ sealed class Statement {
 
     data class ExpressionStatement(
         val expression: Expression?,
+        override val position: Position? = expression?.pos
+    ) : Statement()
+
+    data class ReturnStatement(
+        val expression: Expression?,
+        var returnType: Type? = null,
         override val position: Position? = expression?.pos
     ) : Statement()
 }

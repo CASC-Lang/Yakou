@@ -60,7 +60,8 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             emitStatement(methodVisitor, it)
         }
 
-        methodVisitor.visitInsn(Opcodes.RETURN)
+        if (function.returnType == PrimitiveType.Unit)
+            methodVisitor.visitInsn(Opcodes.RETURN)
 
         methodVisitor.visitMaxs(-1, -1)
         methodVisitor.visitEnd()
@@ -75,6 +76,13 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             }
             is ExpressionStatement -> {
                 emitExpression(methodVisitor, statement.expression!!)
+            }
+            is ReturnStatement -> {
+                emitExpression(methodVisitor, statement.expression!!)
+
+                emitAutoCast(methodVisitor, statement.expression.type!!, statement.returnType!!)
+
+                methodVisitor.visitInsn(statement.returnType!!.returnOpcode)
             }
         }
     }

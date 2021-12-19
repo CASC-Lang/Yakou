@@ -3,6 +3,7 @@ package org.casc.lang.ast
 // Statements
 typealias VariableDeclaration = Statement.VariableDeclaration
 typealias ExpressionStatement = Statement.ExpressionStatement
+typealias ReturnStatement = Statement.ReturnStatement
 
 // Expressions
 typealias IntegerLiteral = Expression.IntegerLiteral

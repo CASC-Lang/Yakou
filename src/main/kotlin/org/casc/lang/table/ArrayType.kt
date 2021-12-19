@@ -12,4 +12,5 @@ data class ArrayType(val baseType: Type,
 
     override val loadOpcode: Int = Opcodes.ALOAD
     override val storeOpcode: Int = Opcodes.ASTORE
+    override val returnOpcode: Int = Opcodes.ARETURN
 }

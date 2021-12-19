@@ -18,4 +18,5 @@ data class ClassType(
 
     override val loadOpcode: Int = Opcodes.ALOAD
     override val storeOpcode: Int = Opcodes.ASTORE
+    override val returnOpcode: Int = Opcodes.ARETURN
 }

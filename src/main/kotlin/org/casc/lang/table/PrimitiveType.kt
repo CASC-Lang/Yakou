@@ -6,7 +6,7 @@ enum class PrimitiveType(
     override val typeName: String,
     override val descriptor: String,
     override val internalName: String = descriptor,
-    val clazzType: Class<*>?,
+    private val clazzType: Class<*>?,
     opcodeSet: OpcodeSets?
 ) : Type {
     Unit("unit", "V", "void", Void::class.javaPrimitiveType, null),
@@ -40,6 +40,7 @@ enum class PrimitiveType(
 
     override val loadOpcode: Int = opcodeSet?.loadOpcode ?: -1
     override val storeOpcode: Int = opcodeSet?.storeOpcode ?: -1
+    override val returnOpcode: Int = opcodeSet?.returnOpcode ?: -1
     val addOpcode: Int = opcodeSet?.addOpcode ?: -1
     val subOpcode: Int = opcodeSet?.subOpcode ?: -1
     val mulOpcode: Int = opcodeSet?.mulOpcode ?: -1
@@ -50,6 +51,7 @@ enum class PrimitiveType(
     private enum class OpcodeSets(
         val loadOpcode: Int,
         val storeOpcode: Int,
+        val returnOpcode: Int,
         val addOpcode: Int?,
         val subOpcode: Int?,
         val mulOpcode: Int?,
@@ -60,6 +62,7 @@ enum class PrimitiveType(
         Integer(
             Opcodes.ILOAD,
             Opcodes.ISTORE,
+            Opcodes.IRETURN,
             Opcodes.IADD,
             Opcodes.ISUB,
             Opcodes.IMUL,
@@ -70,6 +73,7 @@ enum class PrimitiveType(
         Long(
             Opcodes.LLOAD,
             Opcodes.LSTORE,
+            Opcodes.LRETURN,
             Opcodes.LADD,
             Opcodes.LSUB,
             Opcodes.LMUL,
@@ -80,6 +84,7 @@ enum class PrimitiveType(
         Float(
             Opcodes.FLOAD,
             Opcodes.FSTORE,
+            Opcodes.FRETURN,
             Opcodes.FADD,
             Opcodes.FSUB,
             Opcodes.FMUL,
@@ -90,6 +95,7 @@ enum class PrimitiveType(
         Double(
             Opcodes.DLOAD,
             Opcodes.DSTORE,
+            Opcodes.DRETURN,
             Opcodes.DADD,
             Opcodes.DSUB,
             Opcodes.DMUL,
@@ -97,6 +103,6 @@ enum class PrimitiveType(
             Opcodes.DREM,
             Opcodes.DNEG
         ),
-        Object(Opcodes.ALOAD, Opcodes.ASTORE, null, null, null, null, null, null);
+        Object(Opcodes.ALOAD, Opcodes.ASTORE, Opcodes.ARETURN, null, null, null, null, null, null);
     }
 }

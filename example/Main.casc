@@ -9,4 +9,8 @@ impl A {
             java::lang::System.out.println(1)
         }
     }
+
+    fn kek(): i64 {
+        return 1S
+    }
 }

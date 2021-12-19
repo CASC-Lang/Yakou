@@ -321,6 +321,10 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
                     operator,
                     expression
                 )
+            } else if (peek()?.isReturnKeyword() == true) {
+                consume()
+
+                statements += ReturnStatement(parseExpression(true, inCompanionContext))
             } else statements += ExpressionStatement(parseExpression(inCompanionContext = inCompanionContext))
         }
 

@@ -7,4 +7,5 @@ sealed interface Type: HasDescriptor {
 
     val loadOpcode: Int
     val storeOpcode: Int
+    val returnOpcode: Int
 }
