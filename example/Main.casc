@@ -6,11 +6,11 @@ impl A {
     comp {
         mut fn main(s: str[]) {
             mut f := java::lang::Long.compare(1L, 2L)
-            java::lang::System.out.println(1)
+            java::lang::System.out.println(kek())
         }
-    }
 
-    fn kek(): i64 {
-        return 1S
+        fn kek(): i64 {
+            return 1S
+        }
     }
 }
