@@ -266,6 +266,7 @@ class Checker {
                 }
             }
             is FunctionCallExpression -> {
+                // TODO: Support auto promotion parameter checking
                 val argumentTypes = expression.arguments.map {
                     checkExpression(it, scope)
                 }
@@ -372,7 +373,96 @@ class Checker {
                         expression.type = ArrayType(inferType)
                     }
                 } else {
-                    // TODO: Implement
+                    if (expression.expressions.isEmpty()) {
+                        reports += Error(
+                            expression.pos,
+                            "Could not infer type from an empty array",
+                            "Consider adding at least one element or declare its type"
+                        )
+                    } else {
+                        // TODO: Support Object's promotion?
+                        val finalArrayType: Type?
+                        val expressionTypes = mutableListOf<Type?>()
+
+                        expression.expressions.forEach {
+                            expressionTypes += checkExpression(it, scope)
+                        }
+
+                        val firstInferredType = expressionTypes.first()
+                        var latestInferredType = firstInferredType
+
+                        if (expressionTypes.any { it?.javaClass != firstInferredType?.javaClass }) {
+                            // Must be not convertable type relative, e.g. ArrayType to PrimitiveType
+                            // TODO: Support boxed primitive type's unwrapping
+                            expressionTypes.forEachIndexed { i, type ->
+                                reports.reportTypeMismatch(
+                                    expression.expressions[i]?.pos,
+                                    type,
+                                    firstInferredType
+                                )
+                            }
+                        } else {
+                            when (firstInferredType) {
+                                is ArrayType -> {
+                                    // Checks all types' dimension is same as first element's dimension
+                                    val firstTypeDimension = firstInferredType.getDimension()
+
+                                    expressionTypes.forEachIndexed { i, type ->
+                                        // Check their dimensions first
+                                        val dimension = (type as ArrayType).getDimension() // Already checked
+
+                                        if (firstTypeDimension != dimension) {
+                                            reports += Error(
+                                                expression.expressions[i]?.pos,
+                                                "Dimension mismatch, requires $firstTypeDimension-dimension array but got $dimension-array"
+                                            )
+                                        } else {
+                                            // Then tries to infer their final type
+                                            // TODO: Support Object's promotion here
+                                            val latestFoundationType = (latestInferredType as ArrayType).getFoundationType()
+                                            val currentFoundationType = type.getFoundationType()
+
+                                            if (latestFoundationType is PrimitiveType && currentFoundationType is PrimitiveType) {
+                                                if (!TypeUtil.canCast(latestInferredType, currentFoundationType)) {
+                                                    if (!latestFoundationType.isNumericType() || !currentFoundationType.isNumericType()) {
+                                                        reports.reportTypeMismatch(
+                                                            expression.expressions[i]?.pos,
+                                                            expressionTypes[i],
+                                                            latestInferredType
+                                                        )
+                                                    }
+                                                    // If both are numeric types, it would be fine since current type is able to promote into latest inferred type
+                                                } else latestInferredType = type
+                                            } else {
+                                                // TODO: Support Object's Promotion here
+                                            }
+                                        }
+                                    }
+
+                                    finalArrayType = latestInferredType
+                                }
+                                is PrimitiveType -> {
+                                    expressionTypes.forEachIndexed { i, type ->
+                                        if (type is PrimitiveType && !TypeUtil.canCast(latestInferredType, type)) {
+                                            if (!type.isNumericType() || !type.isNumericType()) {
+                                                reports.reportTypeMismatch(
+                                                    expression.expressions[i]?.pos,
+                                                    expressionTypes[i],
+                                                    latestInferredType
+                                                )
+                                            }
+                                            // If both are numeric types, it would be fine since current type is able to promote into latest inferred type
+                                        } else latestInferredType = type
+                                    }
+                                }
+                                else -> {
+                                    // TODO: Support Object's Promotion
+                                }
+                            }
+                        }
+
+                        expression.type = ArrayType(latestInferredType!!)
+                    }
                 }
 
                 expression.type

@@ -17,6 +17,29 @@ data class ArrayType(
     override val storeOpcode: Int = Opcodes.ASTORE
     override val returnOpcode: Int = Opcodes.ARETURN
 
+    fun getDimension(): Int {
+        var dim = 1
+        var lastType = baseType
+
+        while (lastType is ArrayType) {
+            lastType = lastType.baseType
+            dim++
+        }
+
+        return dim
+    }
+
+    // getFoundationType returns basic type of array, e.g. `int[][]` returns `int`
+    fun getFoundationType(): Type {
+        var lastType = baseType
+
+        while (lastType is ArrayType) {
+            lastType = lastType.baseType
+        }
+
+        return lastType
+    }
+
     fun getContentLoadOpcode(): Int? = when (baseType) {
         is ArrayType, is ClassType -> Opcodes.AALOAD
         is PrimitiveType ->

@@ -330,25 +330,25 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             } else if (peek()?.isReturnKeyword() == true) {
                 consume()
 
-                statements += ReturnStatement(parseExpression(true, inCompanionContext))
-            } else statements += ExpressionStatement(parseExpression(inCompanionContext = inCompanionContext))
+                statements += ReturnStatement(parseExpression(inCompanionContext, true))
+            } else statements += ExpressionStatement(parseExpression(inCompanionContext))
         }
 
         return statements
     }
 
-    private fun parseExpression(retainValue: Boolean = false, inCompanionContext: Boolean = false): Expression? =
+    private fun parseExpression(inCompanionContext: Boolean, retainValue: Boolean = false): Expression? =
         parseAssignment(retainValue, inCompanionContext)
 
-    private fun parseAssignment(retainValue: Boolean = false, inCompanionContext: Boolean = false): Expression? {
+    private fun parseAssignment(inCompanionContext: Boolean, retainValue: Boolean = false): Expression? {
         var expression = if (peekMultiple(2) == listOf(TokenType.Identifier, TokenType.Equal)) {
             val name = next()
             val operator = next()
-            val expression = parseExpression(retainValue, inCompanionContext)
+            val expression = parseExpression(inCompanionContext, retainValue)
 
             AssignmentExpression(name, operator, expression, retainValue)
         } else {
-            parseBinaryExpression(retainValue = retainValue, inCompanionContext = inCompanionContext)
+            parseBinaryExpression(inCompanionContext = inCompanionContext)
         }
 
         while (peek()?.type == TokenType.Dot) {
@@ -386,18 +386,17 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
 
     private fun parseBinaryExpression(
         parentPrecedence: Int = 0,
-        retainValue: Boolean = false,
-        inCompanionContext: Boolean = false
+        inCompanionContext: Boolean
     ): Expression? {
         var left: Expression?
         val unaryPrecedence = peek()?.type?.unaryPrecedence() ?: 0
 
         left = if (unaryPrecedence != 0 && unaryPrecedence >= parentPrecedence) {
             val operator = next()
-            val right = parseBinaryExpression(unaryPrecedence, retainValue, inCompanionContext)
+            val right = parseBinaryExpression(unaryPrecedence, inCompanionContext)
 
             UnaryExpression(operator, right)
-        } else parsePrimaryExpression(retainValue, inCompanionContext)
+        } else parsePrimaryExpression(inCompanionContext)
 
         while (true) {
             val binaryPrecedence = peek()?.type?.binaryPrecedence() ?: 0
@@ -405,7 +404,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             if (binaryPrecedence == 0 || binaryPrecedence <= parentPrecedence) break
 
             val operator = next()
-            val right = parseBinaryExpression(binaryPrecedence, retainValue, inCompanionContext)
+            val right = parseBinaryExpression(binaryPrecedence, inCompanionContext)
 
             left = BinaryExpression(
                 left,
@@ -417,11 +416,12 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         return left
     }
 
-    private fun parsePrimaryExpression(retainValue: Boolean = false, inCompanionContext: Boolean = false): Expression? =
+    private fun parsePrimaryExpression(inCompanionContext: Boolean): Expression? =
         when (peek()?.type) {
             TokenType.IntegerLiteral -> IntegerLiteral(next())
             TokenType.FloatLiteral -> FloatLiteral(next())
             TokenType.Identifier -> parseSecondaryExpression(inCompanionContext)
+            TokenType.OpenBrace -> parseArrayInitialization(inCompanionContext)
             else -> null
         }
 
@@ -527,6 +527,28 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             // Local identifier Call, e.g local variables, local class fields
             IdentifierCallExpression(null, name)
         }
+    }
+
+    // parseArrayInitialization parses array initialization that didn't specific its type
+    private fun parseArrayInitialization(inCompanionContext: Boolean): Expression {
+        val openBrace = next()
+
+        val expressions = mutableListOf<Expression?>()
+
+        while (peek()?.type != TokenType.CloseBrace) {
+            expressions += parseExpression(inCompanionContext, true)
+
+            if (peek()?.type == TokenType.Comma) consume()
+            else break
+        }
+
+        val closeBrace = assert(TokenType.CloseBrace)
+
+        return ArrayInitialization(
+            null,
+            expressions,
+            openBrace?.pos?.extend(closeBrace?.pos)
+        )
     }
 
     private fun parseArguments(): List<Expression?> {
