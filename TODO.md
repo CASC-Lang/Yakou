@@ -3,16 +3,16 @@
 ### Category
 #### Language Spec
 
-- [] package declaration
-- [] usage
-- [] array declaration
-- [] array indexing (assignment)
-- [] loops
-- - [] for loop (C loop)
-- - [] while loop
-- - [] do-while loop
+- [ ] package declaration
+- [ ] usage
+- [ ] array declaration
+- [ ] array indexing (assignment)
+- [ ] loops
+- - [ ] for loop (C loop)
+- - [ ] while loop
+- - [ ] do-while loop
 
 ### Compiler Unit
 
-- [] multiple file compilation
-- [] more customizable compilation arguments(?)
+- [ ] multiple file compilation
+- [ ] more customizable compilation arguments(?)
