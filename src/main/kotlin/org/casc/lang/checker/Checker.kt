@@ -423,7 +423,7 @@ class Checker {
                                             val currentFoundationType = type.getFoundationType()
 
                                             if (latestFoundationType is PrimitiveType && currentFoundationType is PrimitiveType) {
-                                                if (!TypeUtil.canCast(latestInferredType, currentFoundationType)) {
+                                                if (!TypeUtil.canCast(latestFoundationType, currentFoundationType)) {
                                                     if (!latestFoundationType.isNumericType() || !currentFoundationType.isNumericType()) {
                                                         reports.reportTypeMismatch(
                                                             expression.expressions[i]?.pos,
@@ -438,8 +438,6 @@ class Checker {
                                             }
                                         }
                                     }
-
-                                    finalArrayType = latestInferredType
                                 }
                                 is PrimitiveType -> {
                                     expressionTypes.forEachIndexed { i, type ->
@@ -462,6 +460,18 @@ class Checker {
                         }
 
                         expression.type = ArrayType(latestInferredType!!)
+
+                        fun changeBaseType(type: ArrayType) {
+                            if (type.baseType is ArrayType) {
+                                changeBaseType(type.baseType as ArrayType)
+                            } else type.baseType = (expression.type as ArrayType).getFoundationType()
+                        }
+
+                        if ((expression.type as ArrayType).baseType is ArrayType) {
+                            expression.expressions.forEach {
+                                changeBaseType(it!!.type as ArrayType)
+                            }
+                        }
                     }
                 }
 

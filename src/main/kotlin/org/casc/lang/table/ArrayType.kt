@@ -5,7 +5,7 @@ import org.objectweb.asm.Opcodes
 import java.lang.reflect.Array
 
 data class ArrayType(
-    val baseType: Type,
+    var baseType: Type,
     override val typeName: String = "${baseType.typeName}[]",
     override val descriptor: String = "[${baseType.descriptor}",
     override val internalName: String = "${baseType.internalName}[]"
@@ -43,7 +43,7 @@ data class ArrayType(
     fun getContentLoadOpcode(): Int? = when (baseType) {
         is ArrayType, is ClassType -> Opcodes.AALOAD
         is PrimitiveType ->
-            if (baseType.isNumericType()) {
+            if ((baseType as PrimitiveType).isNumericType()) {
                 when (baseType) {
                     PrimitiveType.F64 -> Opcodes.DALOAD
                     PrimitiveType.F32 -> Opcodes.FALOAD
@@ -61,7 +61,7 @@ data class ArrayType(
     fun getContentStoreOpcode(): Int? = when (baseType) {
         is ArrayType, is ClassType -> Opcodes.AASTORE
         is PrimitiveType ->
-            if (baseType.isNumericType()) {
+            if ((baseType as PrimitiveType).isNumericType()) {
                 when (baseType) {
                     PrimitiveType.F64 -> Opcodes.DASTORE
                     PrimitiveType.F32 -> Opcodes.FASTORE

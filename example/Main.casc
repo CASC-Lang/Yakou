@@ -5,8 +5,8 @@ class A {
 impl A {
     comp {
         mut fn main(s: str[]) {
-            mut a := i64[]{ i64{1S}, i64{2}}
-            mut b := {1, 2, 3D }
+
+            mut c := {{1}, {4D}}
             mut f := java::lang::Long.compare(1L, 2L)
             java::lang::System.out.println(kek())
         }
