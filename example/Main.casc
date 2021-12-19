@@ -5,14 +5,8 @@ class A {
 impl A {
     comp {
         mut fn main(s: str[]) {
-            mut a := -122L
-            mut c := 1
-            mut f := 2D
-            f = a = c = c + c
+            mut f := java::lang::Long.compare(1L, 2L)
+            java::lang::System.out.println(1)
         }
-    }
-
-    fn lol(s: java::io::Serializable[]): unit {
-
     }
 }

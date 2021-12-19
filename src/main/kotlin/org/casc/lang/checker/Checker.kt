@@ -29,7 +29,10 @@ class Checker {
         val classScope = Scope(globalScope)
 
         clazz.functions = clazz.functions.map {
-            checkFunction(it, Scope(classScope))
+            checkFunction(it, classScope)
+        }
+        clazz.functions.forEach {
+            checkFunctionBody(it, Scope(classScope))
         }
 
         return clazz
@@ -80,15 +83,18 @@ class Checker {
                 } else type
             }
 
-        function.statements.forEach {
-            checkStatement(it, scope, function.returnType)
-        }
-
         if (validationPass) {
             scope.registerFunctionSignature(function)
         }
 
         return function
+    }
+
+    // Called right after function signature checking is complete
+    private fun checkFunctionBody(function: Function, scope: Scope) {
+        function.statements.forEach {
+            checkStatement(it, scope, function.returnType)
+        }
     }
 
     private fun checkParameter(parameter: Parameter, scope: Scope): Type? {
@@ -113,10 +119,27 @@ class Checker {
                         "Variable ${statement.name.literal} is already declared in same context"
                     )
                 } else {
+                    if (expressionType == PrimitiveType.Unit) {
+                        reports += Error(
+                            statement.expression!!.pos,
+                            "Could not store void type into variable"
+                        )
+                    }
+
                     statement.index = scope.findVariableIndex(statement.name.literal)
                 }
             }
-            is ExpressionStatement -> checkExpression(statement.expression, scope)
+            is ExpressionStatement -> {
+                if (statement.expression !is AssignmentExpression && statement.expression !is FunctionCallExpression) {
+                    reports += Error(
+                        statement.position,
+                        "Unused expression",
+                        "Consider remove this line"
+                    )
+                } else {
+                    checkExpression(statement.expression, scope)
+                }
+            }
         }
     }
 
@@ -128,16 +151,21 @@ class Checker {
                     expression.isI16() -> PrimitiveType.I16
                     expression.isI32() -> PrimitiveType.I32
                     expression.isI64() -> PrimitiveType.I64
-                    else -> null
+                    else -> null // Should not be null
                 }
 
                 expression.type
             }
             is FloatLiteral -> {
+                expression.type = when {
+                    expression.literal?.literal?.endsWith('D') == true -> PrimitiveType.F64
+                    else -> PrimitiveType.F32
+                }
+
                 expression.type
             }
             is AssignmentExpression -> {
-                checkExpression(expression.expression, scope)
+                expression.type = checkExpression(expression.expression, scope)
 
                 val variable = scope.findVariable(expression.identifier!!.literal)
 
@@ -152,6 +180,13 @@ class Checker {
                             expression.identifier.pos,
                             "Variable ${expression.identifier.literal} is not mutable",
                             "Declare variable ${expression.identifier.literal} with `mut` keyword"
+                        )
+                    }
+
+                    if (expression.expression?.type == PrimitiveType.Unit) {
+                        reports += Error(
+                            expression.expression.pos,
+                            "Could not store void type into variable"
                         )
                     }
 
@@ -170,23 +205,114 @@ class Checker {
 
                 expression.type
             }
-            is IdentifierExpression -> {
-                val variable = scope.findVariable(expression.name!!.literal)
+            is IdentifierCallExpression -> {
+                if (expression.ownerReference != null) {
+                    // Appointed class field
+                    val field = scope.findField(expression.ownerReference.path, expression.name!!.literal)
 
-                if (variable == null) {
-                    reports += Error(
-                        expression.name.pos,
-                        "Variable ${expression.name.pos} does not exist in current context"
-                    )
+                    if (field == null) {
+                        reports += Error(
+                            expression.pos,
+                            "Field ${expression.name.literal} does not exist in class ${expression.ownerReference.path}"
+                        )
+                    } else {
+                        if (!field.companion) {
+                            reports += Error(
+                                expression.pos,
+                                "Field ${expression.name.literal} exists in non-companion context but is called from other context"
+                            )
+                        }
+                        // TODO: Check accessor
+
+                        expression.type = field.type
+                    }
+
+                    field?.type
+                } else if (expression.previousExpression != null) {
+                    // Chain calling
+                    val previousType = checkExpression(expression.previousExpression, scope)
+                    val field = scope.findField(previousType?.typeName, expression.name!!.literal)
+
+                    if (field == null) {
+                        reports += Error(
+                            expression.pos,
+                            "Field ${expression.name.literal} does not exist in class ${previousType?.typeName}"
+                        )
+                    } else {
+                        expression.type = field.type
+                    }
+
+                    expression.type
                 } else {
-                    expression.type = variable.type
-                    expression.index = scope.findVariableIndex(expression.name.literal)
+                    // Local variable / current class field
+                    val variable = scope.findVariable(expression.name!!.literal)
+
+                    if (variable == null) {
+                        reports += Error(
+                            expression.pos,
+                            "Variable ${expression.name} does not exist in current context"
+                        )
+                    } else {
+                        expression.type = variable.type
+                        expression.index = scope.findVariableIndex(expression.name.literal)
+                    }
+
+                    variable?.type
+                }
+            }
+            is FunctionCallExpression -> {
+                val argumentTypes = expression.arguments.map {
+                    checkExpression(it, scope)
                 }
 
-                variable?.type
+                val previousType = checkExpression(expression.previousExpression, scope)
+
+                // Check function call expression's context, e.g companion context
+                val functionSignature =
+                    scope.findFunction(expression.ownerReference?.path ?: previousType?.typeName, expression.name!!.literal, argumentTypes)
+
+                if (functionSignature == null) {
+                    // No function matched
+                    reports += Error(
+                        expression.pos!!,
+                        "Function ${expression.name.literal} does not exist in current context"
+                    )
+                } else {
+                    if (functionSignature.ownerReference == expression.ownerReference) {
+                        // Function's owner class is same as current class
+                        if (expression.previousExpression == null) {
+                            if (expression.inCompanionContext && !functionSignature.companion) {
+                                reports += Error(
+                                    expression.pos!!,
+                                    "Function ${expression.name.literal} exists in non-companion context but it's called from companion context",
+                                    "Consider move its declaration into companion context"
+                                )
+                            }
+                        }
+                        // TODO: Check accessor for chain calling
+                    } else {
+                        // Function's owner class is outside this context
+                        if (expression.previousExpression == null) {
+                            if (!functionSignature.companion) {
+                                reports += Error(
+                                    expression.pos!!,
+                                    "Function ${expression.name.literal} exists in non-companion context but is called from other context",
+                                    "Consider move its declaration into companion context"
+                                )
+                            }
+                            // TODO: Check accessor
+                        }
+                        // TODO: Check accessor for chain calling
+                    }
+
+                    expression.type = functionSignature.returnType
+                    expression.referenceFunctionSignature = functionSignature
+                }
+
+                expression.type
             }
             is UnaryExpression -> {
-                checkExpression(expression.expression, scope)
+                expression.type = checkExpression(expression.expression, scope)
 
                 expression.type
             }

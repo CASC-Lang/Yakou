@@ -17,6 +17,12 @@ object TypeUtil {
         if (reference == null) null
         else asType(reference.toString())
 
+    fun asType(clazz: Class<*>?): Type? =
+        if (clazz == null) null
+        else PrimitiveType.values.find {
+            it.type() == clazz
+        } ?: asType(clazz.name)
+
     private fun asArrayType(name: String): ArrayType? =
         if (name.substring(name.length - 2 until name.length) == "[]") {
             val baseType = asType(name.substring(0 until name.length - 2))

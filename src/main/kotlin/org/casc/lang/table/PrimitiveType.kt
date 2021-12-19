@@ -7,9 +7,9 @@ enum class PrimitiveType(
     override val descriptor: String,
     override val internalName: String = descriptor,
     val clazzType: Class<*>?,
-    private val opcodeSet: OpcodeSets?
+    opcodeSet: OpcodeSets?
 ) : Type {
-    Unit("unit", "V", "void", Void::class.java, null),
+    Unit("unit", "V", "void", Void::class.javaPrimitiveType, null),
     Bool("bool", "Z", "boolean", Boolean::class.java, OpcodeSets.Integer),
     Char("char", "C", "char", kotlin.Char::class.java, OpcodeSets.Integer),
     I8("i8", "B", "byte", Byte::class.java, OpcodeSets.Integer),

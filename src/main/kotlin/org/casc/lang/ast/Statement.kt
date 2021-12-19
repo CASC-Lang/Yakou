@@ -9,7 +9,7 @@ sealed class Statement {
         val operator: Token?,
         val expression: Expression?,
         var index: Int? = null,
-        override val position: Position? = mutKeyword?.pos ?: name?.pos
+        override val position: Position? = (mutKeyword?.pos ?: name?.pos)?.extend(expression?.pos)
     ) : Statement()
 
     data class ExpressionStatement(

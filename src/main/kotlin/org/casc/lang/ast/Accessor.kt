@@ -1,6 +1,7 @@
 package org.casc.lang.ast
 
 import org.objectweb.asm.Opcodes
+import java.lang.reflect.Modifier
 
 enum class Accessor(val access: Int) {
     Pub(Opcodes.ACC_PUBLIC),        // Public
@@ -20,6 +21,13 @@ enum class Accessor(val access: Int) {
             "intl" -> Intl
             "priv" -> Priv
             else -> Pub
+        }
+
+        fun fromModifier(flag: Int): Accessor = when {
+            Modifier.isPublic(flag) -> Pub
+            Modifier.isProtected(flag) -> Prot
+            Modifier.isPrivate(flag) -> Priv
+            else -> Intl
         }
     }
 }

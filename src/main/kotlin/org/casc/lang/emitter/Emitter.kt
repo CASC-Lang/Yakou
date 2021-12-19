@@ -8,6 +8,7 @@ import org.casc.lang.table.TypeUtil
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
+import kotlin.math.exp
 import java.io.File as JFile
 
 class Emitter(private val outDir: JFile, private val files: List<File>) {
@@ -106,10 +107,63 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                 }
             }
             is AssignmentExpression -> emitAssignment(methodVisitor, expression)
-            is IdentifierExpression -> {
-                val variableIndex = expression.index!!
+            is IdentifierCallExpression -> {
+                if (expression.ownerReference != null) {
+                    // Appointed class field
+                    methodVisitor.visitFieldInsn(
+                        Opcodes.GETSTATIC,
+                        expression.ownerReference.internalName(),
+                        expression.name!!.literal,
+                        expression.type!!.descriptor
+                    )
+                } else if (expression.previousExpression != null) {
+                    // Chain Calling
+                    emitExpression(methodVisitor, expression.previousExpression!!)
 
-                methodVisitor.visitVarInsn(expression.type!!.loadOpcode, variableIndex)
+                    methodVisitor.visitFieldInsn(
+                        Opcodes.GETSTATIC,
+                        expression.previousExpression?.type?.internalName,
+                        expression.name!!.literal,
+                        expression.type!!.descriptor
+                    )
+                } else {
+                    // Local variables / current class fields
+                    val variableIndex = expression.index!!
+
+                    methodVisitor.visitVarInsn(expression.type!!.loadOpcode, variableIndex)
+                }
+            }
+            is FunctionCallExpression -> {
+                val functionSignature = expression.referenceFunctionSignature!!
+
+                // Emit Chain calling expression
+                if (expression.previousExpression != null)
+                    emitExpression(methodVisitor, expression.previousExpression!!)
+
+                // Emit arguments
+                expression.arguments.forEach {
+                    emitExpression(methodVisitor, it!!)
+                }
+
+                if (functionSignature.companion) {
+                    // Use INVOKESTATIC or INVOKESPECIAL to call functions, depends on function itself is ctor or sth
+                    methodVisitor.visitMethodInsn(
+                        Opcodes.INVOKESTATIC, // TODO: Support complex calling
+                        functionSignature.ownerReference.internalName(),
+                        functionSignature.name,
+                        functionSignature.descriptor,
+                        false // TODO: Support interface function calling
+                    )
+                } else {
+                    // Use INVOKEVIRTUAL instead
+                    methodVisitor.visitMethodInsn(
+                        Opcodes.INVOKEVIRTUAL,
+                        functionSignature.ownerReference.internalName(),
+                        functionSignature.name,
+                        functionSignature.descriptor,
+                        false // TODO: Support interface function calling
+                    )
+                }
             }
             is UnaryExpression -> {
                 emitExpression(methodVisitor, expression.expression!!)
@@ -154,7 +208,7 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             emitExpression(methodVisitor, expression.expression!!)
         }
 
-        if (inAssignment) {
+        if (inAssignment || expression.retainLastValue) {
             // Duplicates value since there is another assignment going on
             val finalType = expression.expression.castTo ?: expression.expression.type!!
             if (finalType == PrimitiveType.F64 || finalType == PrimitiveType.I64) methodVisitor.visitInsn(Opcodes.DUP2)

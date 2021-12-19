@@ -124,6 +124,7 @@ class Lexer(val chunkedSource: List<String>) {
                         else -> tokens.charToken(source, TokenType.Colon)
                     }
                     ',' -> tokens.charToken(source, TokenType.Comma)
+                    '.' -> tokens.charToken(source, TokenType.Dot)
                     '=' -> tokens.charToken(source, TokenType.Equal)
                     '+' -> tokens.charToken(source, TokenType.Plus)
                     '-' -> tokens.charToken(source, TokenType.Minus)
