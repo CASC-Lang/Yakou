@@ -461,15 +461,16 @@ class Checker {
 
                         expression.type = ArrayType(latestInferredType!!)
 
-                        fun changeBaseType(type: ArrayType) {
-                            if (type.baseType is ArrayType) {
-                                changeBaseType(type.baseType as ArrayType)
-                            } else type.baseType = (expression.type as ArrayType).getFoundationType()
+                        fun changeBaseType(type: ArrayType?) {
+                            if (type == null) return
+                            else if (type.baseType is ArrayType) changeBaseType(type.baseType as ArrayType)
+                            else type.baseType = (expression.type as ArrayType).getFoundationType()
                         }
 
                         if ((expression.type as ArrayType).baseType is ArrayType) {
                             expression.expressions.forEach {
-                                changeBaseType(it!!.type as ArrayType)
+                                if (it?.type != null)
+                                    changeBaseType(it.type as ArrayType)
                             }
                         }
                     }

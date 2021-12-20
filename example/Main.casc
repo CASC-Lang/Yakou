@@ -6,7 +6,7 @@ impl A {
     comp {
         mut fn main(s: str[]) {
 
-            mut c := {{1}, {4D}}
+            mut c := {{1, 2L}, {3F, 4D}, {1}}
             mut f := java::lang::Long.compare(1L, 2L)
             java::lang::System.out.println(kek())
         }
