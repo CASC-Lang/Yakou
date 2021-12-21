@@ -173,6 +173,8 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             is UnaryExpression -> {
                 emitExpression(methodVisitor, expression.expression!!)
 
+                emitAutoCast(methodVisitor, expression)
+
                 when (expression.operator?.type) {
                     TokenType.Minus -> methodVisitor.visitInsn((expression.type!! as PrimitiveType).negOpcode)
                     TokenType.Plus -> {} // No effect
@@ -187,6 +189,8 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                 if (expression.right!!.castTo != null)
                     emitAutoCast(methodVisitor, expression.right!!.type!!, expression.right!!.castTo!!)
 
+                emitAutoCast(methodVisitor, expression)
+
                 val type = (expression.type!! as PrimitiveType)
                 val opcode = when (expression.operator?.type) {
                     TokenType.Plus -> type.addOpcode
@@ -200,33 +204,29 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                 methodVisitor.visitInsn(opcode!!)
             }
             is ArrayInitialization -> {
-                methodVisitor.visitLdcInsn(expression.expressions.size)
+                methodVisitor.visitLdcInsn(expression.elements.size)
 
                 val baseType = (expression.type as ArrayType).baseType
 
-                if (baseType is ArrayType || baseType is ClassType || baseType == PrimitiveType.Str)
-                    methodVisitor.visitTypeInsn(Opcodes.ANEWARRAY, expression.type?.descriptor?.drop(1)) // Cut down one dimension
-                else methodVisitor.visitIntInsn(Opcodes.NEWARRAY, (baseType as PrimitiveType).typeOpcode)
+                if (baseType is ArrayType || baseType is ClassType || baseType == PrimitiveType.Str) {
+                    methodVisitor.visitTypeInsn(Opcodes.ANEWARRAY, baseType.descriptor) // Cut down one dimension
+                } else methodVisitor.visitIntInsn(Opcodes.NEWARRAY, (baseType as PrimitiveType).typeOpcode)
 
                 methodVisitor.visitInsn(Opcodes.DUP)
 
-                expression.expressions.forEachIndexed { i, it ->
+                expression.elements.forEachIndexed { i, it ->
                     methodVisitor.visitLdcInsn(i)
 
                     emitExpression(methodVisitor, it!!)
 
-                    if (it.type is PrimitiveType && baseType is PrimitiveType) {
-                        val opcode = TypeUtil.findPrimitiveCastOpcode(it.type as PrimitiveType, baseType)
-
-                        if (opcode != null) methodVisitor.visitInsn(opcode)
-                    }
-
                     methodVisitor.visitInsn((expression.type as ArrayType).getContentStoreOpcode()!!)
 
-                    if (i != expression.expressions.lastIndex) methodVisitor.visitInsn(Opcodes.DUP)
+                    if (i != expression.elements.lastIndex) methodVisitor.visitInsn(Opcodes.DUP)
                 }
             }
         }
+
+        emitAutoCast(methodVisitor, expression)
     }
 
     private fun emitAssignment(
@@ -265,11 +265,22 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
         if (from is PrimitiveType && to is PrimitiveType) {
             val opcode = TypeUtil.findPrimitiveCastOpcode(
                 from,
-                to as PrimitiveType
+                to
             )
 
             if (opcode != null)
                 methodVisitor.visitInsn(opcode)
+        } else if (from is ClassType && to is PrimitiveType) {
+            // Boxed primitive type casting
+            val primitiveFromClazz = PrimitiveType.fromClass(from.type())
+
+            methodVisitor.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                from.internalName,
+                "${to.internalName}Value",
+                "()${to.descriptor}",
+                false
+            )
         }
         // TODO: Class-cast-to-class support
     }

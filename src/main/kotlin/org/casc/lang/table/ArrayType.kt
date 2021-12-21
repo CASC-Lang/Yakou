@@ -1,6 +1,5 @@
 package org.casc.lang.table
 
-import org.casc.lang.compilation.Preference
 import org.objectweb.asm.Opcodes
 import java.lang.reflect.Array
 
@@ -10,6 +9,17 @@ data class ArrayType(
     override val descriptor: String = "[${baseType.descriptor}",
     override val internalName: String = "${baseType.internalName}[]"
 ) : Type {
+    companion object {
+        fun fromDimension(baseType: Type, dimension: Int): Type {
+            var arrayType = baseType
+
+            for (i in 0 until dimension)
+                arrayType = ArrayType(arrayType)
+
+            return arrayType
+        }
+    }
+
     override fun type(): Class<*> =
         Array.newInstance(baseType.type(), 0).javaClass
 
@@ -33,11 +43,16 @@ data class ArrayType(
     fun getFoundationType(): Type {
         var lastType = baseType
 
-        while (lastType is ArrayType) {
+        while (lastType is ArrayType)
             lastType = lastType.baseType
-        }
 
         return lastType
+    }
+
+    fun setFoundationType(type: Type) {
+        if (baseType is ArrayType) {
+            (baseType as ArrayType).setFoundationType(type)
+        } else baseType = type
     }
 
     fun getContentLoadOpcode(): Int? = when (baseType) {

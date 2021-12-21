@@ -54,8 +54,11 @@ object TypeUtil {
                 if (from == PrimitiveType.I32 && to == PrimitiveType.Char) true // Special case
                 else if (!from.isNumericType() || !to.isNumericType()) false
                 else PrimitiveType.promotionTable[from]!! < PrimitiveType.promotionTable[to]!!
-            } else if (to.type() != from.type()) false // TODO: Investigate should unboxed type able to auto-cast
-            else false
+            } else if (from.type() == to.type()) true
+            else canCast(from, PrimitiveType.fromClass(to.type()))
+        } else if (from is ClassType && to is PrimitiveType) {
+            if (from.type() == to.type()) true
+            else canCast(PrimitiveType.fromClass(from.type()), to)
         } else false // TODO: Support Inheritance Checking
 
     fun findPrimitiveCastOpcode(from: PrimitiveType, to: PrimitiveType): Int? =

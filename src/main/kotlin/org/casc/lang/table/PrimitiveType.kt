@@ -7,18 +7,19 @@ enum class PrimitiveType(
     override val descriptor: String,
     override val internalName: String = descriptor,
     private val clazzType: Class<*>?,
+    private val wrapperClass: Class<*>?,
     opcodeSet: OpcodeSets?
 ) : Type {
-    Unit("unit", "V", "void", Void::class.javaPrimitiveType, null),
-    Bool("bool", "Z", "boolean", Boolean::class.java, OpcodeSets.Integer),
-    Char("char", "C", "char", kotlin.Char::class.java, OpcodeSets.Integer),
-    I8("i8", "B", "byte", Byte::class.java, OpcodeSets.Integer),
-    I16("i16", "S", "short", Short::class.java, OpcodeSets.Integer),
-    I32("i32", "I", "int", Int::class.java, OpcodeSets.Integer),
-    I64("i64", "J", "long", Long::class.java, OpcodeSets.Long),
-    F32("f32", "F", "float", Float::class.java, OpcodeSets.Float),
-    F64("f64", "D", "double", Double::class.java, OpcodeSets.Double),
-    Str("str", "Ljava/lang/String;", "java.lang.String", String::class.java, OpcodeSets.Object);
+    Unit("unit", "V", "void", Void::class.javaPrimitiveType, Void::class.java, null),
+    Bool("bool", "Z", "boolean", Boolean::class.java, Boolean::class.javaObjectType, OpcodeSets.Integer),
+    Char("char", "C", "char", kotlin.Char::class.java, kotlin.Char::class.javaObjectType, OpcodeSets.Integer),
+    I8("i8", "B", "byte", Byte::class.java, Byte::class.javaObjectType, OpcodeSets.Integer),
+    I16("i16", "S", "short", Short::class.java, Short::class.javaObjectType, OpcodeSets.Integer),
+    I32("i32", "I", "int", Int::class.java, Int::class.javaObjectType, OpcodeSets.Integer),
+    I64("i64", "J", "long", Long::class.java, Long::class.javaObjectType, OpcodeSets.Long),
+    F32("f32", "F", "float", Float::class.java, Float::class.javaObjectType, OpcodeSets.Float),
+    F64("f64", "D", "double", Double::class.java, Double::class.javaObjectType, OpcodeSets.Double),
+    Str("str", "Ljava/lang/String;", "java.lang.String", String::class.java, null, OpcodeSets.Object);
 
     companion object {
         val values = values()
@@ -30,6 +31,12 @@ enum class PrimitiveType(
             I16 to 0,
             I8 to 0,
         )
+
+        fun fromClass(clazz: Class<*>?): PrimitiveType? =
+            if (clazz == null) null
+            else values.find {
+                it.wrapperClass == clazz || it.clazzType == clazz
+            }
     }
 
     override fun type(): Class<*>? =

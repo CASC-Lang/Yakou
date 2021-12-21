@@ -1,15 +1,14 @@
 package org.casc.lang.ast
 
-import org.casc.lang.table.FunctionSignature
-import org.casc.lang.table.PrimitiveType
-import org.casc.lang.table.Reference
-import org.casc.lang.table.Type
+import org.casc.lang.table.*
 
 sealed class Expression {
     abstract val pos: Position?
     var type: Type? = null // Provided by Checker Unit
-    var referencedExpression: Expression? = null // Used when returned object's of expression member is called
     var castTo: Type? = null
+
+    // Exceptions: PreviousExpression does not count as sub Expression
+    open fun getExpressions(): List<Expression?>? = null
 
     data class IntegerLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression() {
         fun removeTypeSuffix() {
@@ -61,7 +60,10 @@ sealed class Expression {
         var referenceFunctionSignature: FunctionSignature? = null, // Needs to be provided by checker
         var previousExpression: Expression? = null, // Used in chain calling, e.g. Identifier `a` in a.lol()
         override val pos: Position? = name?.pos?.extend(arguments.lastOrNull()?.pos)?.extend()
-    ) : Expression()
+    ) : Expression() {
+        override fun getExpressions(): List<Expression?> =
+            arguments
+    }
 
     data class AssignmentExpression(
         val identifier: Token?,
@@ -71,19 +73,28 @@ sealed class Expression {
         var isFieldAssignment: Boolean = false,
         var index: Int? = null,
         override val pos: Position? = identifier?.pos?.extend(expression?.pos)
-    ) : Expression()
+    ) : Expression() {
+        override fun getExpressions(): List<Expression?> =
+            listOf(expression)
+    }
 
     data class UnaryExpression(
         val operator: Token?,
         val expression: Expression?,
         override val pos: Position? = operator?.pos?.extend(expression?.pos)
-    ) : Expression()
+    ) : Expression() {
+        override fun getExpressions(): List<Expression?>? =
+            listOf(expression)
+    }
 
     // TODO: Allows objects in BinaryExpression for further feature implementation such as Operator Overloading
     data class BinaryExpression(
         var left: Expression?, val operator: Token?, var right: Expression?,
         override val pos: Position? = left?.pos?.extend(right?.pos)
     ) : Expression() {
+        override fun getExpressions(): List<Expression?> =
+            listOf(left, right)
+
         // Perform promotion on expressions, promotion only checks until i32, in the end, promotion will assign its final type
         fun promote() {
             for (type in PrimitiveType.promotionTable.keys.toList().dropLast(2)) {
@@ -104,7 +115,10 @@ sealed class Expression {
 
     data class ArrayInitialization(
         val inferTypeReference: Reference?,
-        val expressions: List<Expression?>,
+        val elements: List<Expression?>,
         override val pos: Position?
-    ) : Expression()
+    ) : Expression() {
+        override fun getExpressions(): List<Expression?> =
+            elements
+    }
 }
