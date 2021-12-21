@@ -350,27 +350,16 @@ class Checker {
             }
             is ArrayInitialization -> {
                 if (expression.inferTypeReference != null) {
-                    val inferType = checkType(expression.inferTypeReference, scope)
-
-                    if (inferType == null) reports.reportUnknownTypeSymbol(expression.inferTypeReference)
-                    else {
-                        val elementTypes = mutableListOf<Type?>()
-
-                        expression.elements.forEach {
-                            elementTypes += checkExpression(it, scope)
+                    when (val inferType = checkType(expression.inferTypeReference, scope)) {
+                        null -> reports.reportUnknownTypeSymbol(expression.inferTypeReference)
+                        !is ArrayType -> {
+                            reports += Error(
+                                expression.inferTypeReference.position,
+                                "Inferred type must be array type",
+                                "Consider add [] after type name"
+                            )
                         }
-
-                        elementTypes.forEachIndexed { i, it ->
-                            if (!TypeUtil.canCast(it, inferType)) {
-                                reports.reportTypeMismatch(
-                                    expression.elements[i]?.pos,
-                                    inferType,
-                                    it
-                                )
-                            }
-                        }
-
-                        expression.type = ArrayType(inferType)
+                        else -> checkArrayType(expression, scope, inferType.baseType)
                     }
                 } else {
                     if (expression.elements.isEmpty()) {
@@ -380,127 +369,7 @@ class Checker {
                             "Consider adding at least one element or declare its type"
                         )
                     } else {
-                        // TODO: Support Object's promotion?
-                        val expressionTypes = mutableListOf<Type?>()
-
-                        expression.elements.forEach {
-                            expressionTypes += checkExpression(it, scope)
-                        }
-
-                        val firstInferredType = expressionTypes.first()
-                        var latestInferredType = firstInferredType
-
-                        if (firstInferredType is ArrayType && expressionTypes.any { it !is ArrayType }) {
-                            // Must be non-castable type relationship since any other types (including array itself)
-                            // cannot automatically cast into array.
-                            expressionTypes.forEachIndexed { i, type ->
-                                reports.reportTypeMismatch(
-                                    expression.elements[i]?.pos,
-                                    type,
-                                    firstInferredType
-                                )
-                            }
-                        } else {
-                            when (firstInferredType) {
-                                is ArrayType -> {
-                                    // Checks all types' dimension is same as first element's dimension
-                                    val firstTypeDimension = firstInferredType.getDimension()
-
-                                    expressionTypes.forEachIndexed { i, type ->
-                                        // Check their dimensions first
-                                        val dimension = (type as ArrayType).getDimension() // Already checked
-
-                                        if (firstTypeDimension != dimension) {
-                                            reports += Error(
-                                                expression.elements[i]?.pos,
-                                                "Dimension mismatch, requires $firstTypeDimension-dimension array but got $dimension-array"
-                                            )
-                                        } else {
-                                            // Then tries to infer their final type
-                                            // TODO: Support Object's promotion here
-                                            val latestFoundationType =
-                                                (latestInferredType as ArrayType).getFoundationType()
-                                            val currentFoundationType = type.getFoundationType()
-
-                                            if (latestFoundationType !is PrimitiveType && currentFoundationType !is PrimitiveType) {
-                                                // TODO: Support Object's Promotion here
-                                            } else {
-                                                if (!TypeUtil.canCast(latestFoundationType, currentFoundationType)) {
-                                                    if (latestFoundationType is PrimitiveType && currentFoundationType is PrimitiveType) {
-                                                        if (!latestFoundationType.isNumericType() || !currentFoundationType.isNumericType()) {
-                                                            reports.reportTypeMismatch(
-                                                                expression.elements[i]?.pos,
-                                                                latestFoundationType,
-                                                                expressionTypes[i]
-                                                            )
-                                                        }
-                                                        // If both are numeric types, it would be fine since current type is able to promote into latest inferred type
-                                                    } else {
-                                                        reports.reportTypeMismatch(
-                                                            expression.elements[i]?.pos,
-                                                            latestFoundationType,
-                                                            expressionTypes[i]
-                                                        )
-                                                    }
-                                                    // Boxed type cannot be promoted, and it's checked in canCast
-                                                } else {
-                                                    if (i == expressionTypes.lastIndex &&
-                                                        currentFoundationType is ClassType) {
-                                                        // Covert boxed type into primitive type
-                                                        val currentPrimitiveType = PrimitiveType.fromClass(currentFoundationType.type())
-
-                                                        if (currentPrimitiveType != null) {
-                                                            type.setFoundationType(currentPrimitiveType)
-                                                            latestInferredType = type
-                                                        }
-                                                    } else latestInferredType = type
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                is PrimitiveType -> {
-                                    expressionTypes.forEachIndexed { i, type ->
-                                        if (type is PrimitiveType && !TypeUtil.canCast(latestInferredType, type)) {
-                                            if (!type.isNumericType() || !type.isNumericType()) {
-                                                reports.reportTypeMismatch(
-                                                    expression.elements[i]?.pos,
-                                                    expressionTypes[i],
-                                                    latestInferredType
-                                                )
-                                            }
-                                            // If both are numeric types, it would be fine since current type is able to promote into latest inferred type
-                                        } else latestInferredType = type
-                                    }
-                                }
-                                else -> {
-                                    // TODO: Support Object's Promotion
-                                }
-                            }
-                        }
-
-                        if (latestInferredType != null)
-                            expression.type = ArrayType(latestInferredType!!)
-
-                        val latestFoundationType =
-                            if (latestInferredType is ArrayType) (latestInferredType as ArrayType).getFoundationType()
-                            else latestInferredType
-
-                        if (latestFoundationType != null) {
-                            expression.elements.forEach {
-                                traverseArrayTree(it, { expr ->
-                                    expr.castTo = latestFoundationType
-                                }, { expr ->
-                                    val currentNodeType = (expr.type as ArrayType)
-
-                                    currentNodeType.baseType = ArrayType.fromDimension(
-                                        latestFoundationType,
-                                        currentNodeType.getDimension() - 1
-                                    )
-                                    currentNodeType.setFoundationType(latestFoundationType)
-                                })
-                            }
-                        }
+                        checkArrayType(expression, scope)
                     }
                 }
 
@@ -510,8 +379,138 @@ class Checker {
         }
     }
 
+    private fun checkArrayType(expression: ArrayInitialization, scope: Scope, forcedFinalType: Type? = null) {
+        // TODO: Support Object's promotion?
+        val forceFinalType = forcedFinalType != null
+        val expressionTypes = mutableListOf<Type?>()
+
+        expression.elements.forEach {
+            expressionTypes += checkExpression(it, scope)
+        }
+
+        val firstInferredType = if (forceFinalType) forcedFinalType else expressionTypes.first()
+        var latestInferredType = firstInferredType
+
+        if (firstInferredType is ArrayType && expressionTypes.any { it !is ArrayType }) {
+            // Must be non-castable type relationship since any other types (including array itself)
+            // cannot automatically cast into array.
+            expressionTypes.forEachIndexed { i, type ->
+                reports.reportTypeMismatch(
+                    expression.elements[i]?.pos,
+                    type,
+                    firstInferredType
+                )
+            }
+        } else {
+            when (firstInferredType) {
+                is ArrayType -> {
+                    // Checks all types' dimension is same as first element's dimension
+                    val firstTypeDimension = firstInferredType.getDimension()
+
+                    expressionTypes.forEachIndexed { i, type ->
+                        // Check their dimensions first
+                        val dimension = (type as ArrayType).getDimension() // Already checked
+
+                        if (firstTypeDimension != dimension) {
+                            reports += Error(
+                                expression.elements[i]?.pos,
+                                "Dimension mismatch, requires $firstTypeDimension-dimension array but got $dimension-array"
+                            )
+                        } else {
+                            // Then tries to infer their final type
+                            // TODO: Support Object's promotion here
+                            val latestFoundationType =
+                                (latestInferredType as ArrayType).getFoundationType()
+                            val currentFoundationType = type.getFoundationType()
+
+                            if (latestFoundationType !is PrimitiveType && currentFoundationType !is PrimitiveType) {
+                                // TODO: Support Object's Promotion here
+                            } else {
+                                if (!TypeUtil.canCast(latestFoundationType, currentFoundationType)) {
+                                    if (!forceFinalType && latestFoundationType is PrimitiveType && currentFoundationType is PrimitiveType) {
+                                        if (!latestFoundationType.isNumericType() || !currentFoundationType.isNumericType()) {
+                                            reports.reportTypeMismatch(
+                                                expression.elements[i]?.pos,
+                                                latestFoundationType,
+                                                expressionTypes[i]
+                                            )
+                                        }
+                                        // If both are numeric types, it would be fine since current type is able to promote into latest inferred type
+                                    } else {
+                                        reports.reportTypeMismatch(
+                                            expression.elements[i]?.pos,
+                                            latestFoundationType,
+                                            expressionTypes[i]
+                                        )
+                                    }
+                                    // Boxed type cannot be promoted, and it's checked in canCast
+                                } else {
+                                    if (i == expressionTypes.lastIndex &&
+                                        currentFoundationType is ClassType
+                                    ) {
+                                        // Covert boxed type into primitive type
+                                        val currentPrimitiveType = PrimitiveType.fromClass(currentFoundationType.type())
+
+                                        if (currentPrimitiveType != null) {
+                                            if (!forceFinalType) {
+                                                type.setFoundationType(currentPrimitiveType)
+                                                latestInferredType = type
+                                            } else {
+                                                type.setFoundationType(forcedFinalType!!)
+                                            }
+                                        }
+                                    } else if (!forceFinalType) latestInferredType = type
+                                }
+                            }
+                        }
+                    }
+                }
+                is PrimitiveType -> {
+                    expressionTypes.forEachIndexed { i, type ->
+                        if (type is PrimitiveType && !TypeUtil.canCast(latestInferredType, type)) {
+                            if (!type.isNumericType() || !type.isNumericType()) {
+                                reports.reportTypeMismatch(
+                                    expression.elements[i]?.pos,
+                                    expressionTypes[i],
+                                    latestInferredType
+                                )
+                            }
+                            // If both are numeric types, it would be fine since current type is able to promote into latest inferred type
+                        } else latestInferredType = type
+                    }
+                }
+                else -> {
+                    // TODO: Support Object's Promotion
+                }
+            }
+        }
+
+        if (latestInferredType != null)
+            expression.type = ArrayType(latestInferredType!!)
+
+        val latestFoundationType =
+            if (latestInferredType is ArrayType) (latestInferredType as ArrayType).getFoundationType()
+            else latestInferredType
+
+        if (latestFoundationType != null) {
+            expression.elements.forEach {
+                traverseArrayTree(it, { expr ->
+                    expr.castTo = latestFoundationType
+                }, { expr ->
+                    val currentNodeType = (expr.type as ArrayType)
+
+                    currentNodeType.baseType = ArrayType.fromDimension(
+                        latestFoundationType,
+                        currentNodeType.getDimension() - 1
+                    )
+                    currentNodeType.setFoundationType(latestFoundationType)
+                })
+            }
+        }
+    }
+
     // Used to traverse through array structure and do specific job, e.g. assigning final cast type
-    fun traverseArrayTree(
+    private fun traverseArrayTree(
         expression: Expression?,
         lastNodeAction: (Expression) -> Unit,
         nodeAction: (Expression) -> Unit

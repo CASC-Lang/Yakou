@@ -5,7 +5,7 @@ class A {
 impl A {
     comp {
         mut fn main(s: str[]) {
-            mut c := {{{java::lang::Integer.valueOf(1)}, {2}, {3L}}, {{4}, {5}, {6F}}, {{7}, {8}, {java::lang::Double.valueOf(9D)}}}
+            mut c := i32[][][]{{{java::lang::Integer.valueOf(1)}, {2}, {3L}}, {{4}, {5}, {6F}}, {{7}, {8}, {java::lang::Double.valueOf(9D)}}}
         }
 
         fn kek(): i64 {
