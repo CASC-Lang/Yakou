@@ -31,7 +31,7 @@ class Checker {
         clazz.functions = clazz.functions.map {
             checkFunction(it, classScope)
         }
-        clazz.functions.forEach {
+        clazz.functions.forEachIndexed { i, it ->
             checkFunctionBody(it, Scope(classScope))
         }
 
@@ -59,7 +59,7 @@ class Checker {
             validationPass = false
         } else {
             function.parameterTypes = function.parameters.map {
-                val type = checkParameter(it, scope)
+                val type = checkType(it.type, scope)
 
                 if (type == null) {
                     reports.reportUnknownTypeSymbol(it.type!!)
@@ -84,9 +84,7 @@ class Checker {
                 } else type
             }
 
-        if (validationPass) {
-            scope.registerFunctionSignature(function)
-        }
+        if (validationPass) scope.registerFunctionSignature(function)
 
         return function
     }
@@ -94,16 +92,12 @@ class Checker {
     // Called right after function signature checking is complete
     private fun checkFunctionBody(function: Function, scope: Scope) {
         function.statements.forEach {
+            function.parameters.forEachIndexed { i, parameter ->
+                scope.registerVariable(false, parameter.name!!.literal, function.parameterTypes?.get(i))
+            }
+
             checkStatement(it, scope, function.returnType)
         }
-    }
-
-    private fun checkParameter(parameter: Parameter, scope: Scope): Type? {
-        val type = checkType(parameter.type, scope)
-
-        scope.registerVariable(false, parameter.name!!.literal, type)
-
-        return type
     }
 
     private fun checkType(reference: Reference?, scope: Scope): Type? =
@@ -173,7 +167,7 @@ class Checker {
                 expression.type
             }
             is AssignmentExpression -> {
-                expression.type = checkExpression(expression.expression, scope)
+                val expressionType = checkExpression(expression.expression, scope)
 
                 val variable = scope.findVariable(expression.identifier!!.literal)
 
@@ -191,9 +185,9 @@ class Checker {
                         )
                     }
 
-                    if (expression.expression?.type == PrimitiveType.Unit) {
+                    if (expressionType == PrimitiveType.Unit) {
                         reports += Error(
-                            expression.expression.pos,
+                            expression.expression?.pos,
                             "Could not store void type into variable"
                         )
                     }
@@ -202,10 +196,11 @@ class Checker {
                     expression.index = scope.findVariableIndex(expression.identifier.literal)
                 }
 
-                if (!TypeUtil.canCast(expression.type, variable?.type)) {
+                if (!TypeUtil.canCast(expressionType, variable?.type)) {
                     reports.reportTypeMismatch(expression.identifier.pos, variable?.type, expression.type)
                 } else {
-                    expression.castTo = variable?.type
+                    expression.expression?.castTo = variable?.type
+                    expression.type = variable?.type
                 }
 
                 expression.type
@@ -371,6 +366,24 @@ class Checker {
                     } else {
                         checkArrayType(expression, scope)
                     }
+                }
+
+                expression.type
+            }
+            is ArrayDeclaration -> {
+                expression.type = checkType(expression.baseTypeReference, scope)
+
+                expression.dimensionExpressions.forEach {
+                    // Dimension expression's type must be able to cast into i32
+                    val type = checkExpression(it, scope)
+
+                    if (!TypeUtil.canCast(type, PrimitiveType.I32)) {
+                        reports.reportTypeMismatch(
+                            it?.pos,
+                            PrimitiveType.I32,
+                            type
+                        )
+                    } else it?.castTo = PrimitiveType.I32
                 }
 
                 expression.type

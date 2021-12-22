@@ -121,4 +121,10 @@ sealed class Expression {
         override fun getExpressions(): List<Expression?> =
             elements
     }
+
+    data class ArrayDeclaration(
+        val baseTypeReference: Reference?,
+        val dimensionExpressions: List<Expression?>,
+        override val pos: Position?
+    ) : Expression()
 }

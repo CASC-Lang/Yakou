@@ -338,7 +338,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
     }
 
     private fun parseExpression(inCompanionContext: Boolean, retainValue: Boolean = false): Expression? =
-        parseAssignment(retainValue, inCompanionContext)
+        parseAssignment(inCompanionContext, retainValue)
 
     private fun parseAssignment(inCompanionContext: Boolean, retainValue: Boolean = false): Expression? {
         var expression = if (peekMultiple(2) == listOf(TokenType.Identifier, TokenType.Equal)) {
@@ -360,7 +360,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             if (peek()?.type == TokenType.OpenParenthesis) {
                 consume()
 
-                val arguments = parseArguments()
+                val arguments = parseArguments(inCompanionContext)
 
                 assert(TokenType.CloseParenthesis)
 
@@ -432,7 +432,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             // Function Call
             consume()
 
-            val arguments = parseArguments()
+            val arguments = parseArguments(inCompanionContext)
 
             assert(TokenType.CloseParenthesis)
 
@@ -457,7 +457,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
                 consume()
 
                 while (peek()?.type != TokenType.CloseBrace) {
-                    expressions += parseExpression(true, inCompanionContext)
+                    expressions += parseExpression(inCompanionContext, true)
 
                     if (peek()?.type == TokenType.Comma) consume()
                     else break
@@ -476,7 +476,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
                 // Companion function calling
                 consume()
 
-                val arguments = parseArguments()
+                val arguments = parseArguments(inCompanionContext)
 
                 assert(TokenType.CloseParenthesis)
 
@@ -495,6 +495,35 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
 
             while (peek()?.type == TokenType.OpenBracket) {
                 consume()
+
+                if (peek()?.type != TokenType.CloseBracket) {
+                    // Array Declaration, e.g. int[10][10]{}
+                    // TODO: Support array stream initialization, e.g. int[10][10]{ it => expr }
+                    val dimensionExpressions = mutableListOf<Expression?>()
+
+                    while (true) {
+                        dimensionExpressions += parseExpression(inCompanionContext, true)
+
+                        val closeBracket = assert(TokenType.CloseBracket)
+
+                        name?.pos?.extend(closeBracket?.pos)
+
+                        if (peek()?.type == TokenType.OpenBracket) consume()
+                        else break
+                    }
+
+                    assert(TokenType.OpenBrace)
+                    val closeBrace = assert(TokenType.CloseBrace)
+
+                    classPath += "[]".repeat(dimensionExpressions.size)
+
+                    return ArrayDeclaration(
+                        Reference(classPath ?: "", classPath ?: "", name?.pos),
+                        dimensionExpressions,
+                        name?.pos?.extend(closeBrace?.pos)
+                    )
+                }
+
                 val closeBracket = assert(TokenType.CloseBracket)
 
                 name?.pos?.extend(closeBracket?.pos)
@@ -514,12 +543,12 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
                 else break
             }
 
-            assert(TokenType.CloseBrace)
+            val closeBrace = assert(TokenType.CloseBrace)
 
             return ArrayInitialization(
                 Reference(classPath ?: "", classPath ?: "", name?.pos),
                 expressions,
-                name?.pos
+                name?.pos?.extend(closeBrace?.pos)
             )
         } else {
             if (peek()?.type == TokenType.Dot) {
@@ -553,11 +582,11 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         )
     }
 
-    private fun parseArguments(): List<Expression?> {
+    private fun parseArguments(inCompanionContext: Boolean): List<Expression?> {
         val arguments = arrayListOf<Expression?>()
 
         while (peek()?.type != TokenType.CloseParenthesis) {
-            arguments += parseExpression(true)
+            arguments += parseExpression(inCompanionContext, true)
 
             if (peek()?.type == TokenType.Comma) {
                 consume()

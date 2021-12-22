@@ -14,3 +14,4 @@ typealias AssignmentExpression = Expression.AssignmentExpression
 typealias UnaryExpression = Expression.UnaryExpression
 typealias BinaryExpression = Expression.BinaryExpression
 typealias ArrayInitialization = Expression.ArrayInitialization
+typealias ArrayDeclaration = Expression.ArrayDeclaration

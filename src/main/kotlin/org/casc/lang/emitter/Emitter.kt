@@ -224,6 +224,22 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                     if (i != expression.elements.lastIndex) methodVisitor.visitInsn(Opcodes.DUP)
                 }
             }
+            is ArrayDeclaration -> {
+                expression.dimensionExpressions.forEach {
+                    emitExpression(methodVisitor, it!!)
+                }
+
+                if (expression.dimensionExpressions.size > 1) {
+                    methodVisitor.visitMultiANewArrayInsn(
+                        expression.type?.descriptor,
+                        expression.dimensionExpressions.size
+                    )
+                } else if (expression.type is PrimitiveType) {
+                    methodVisitor.visitIntInsn(Opcodes.NEWARRAY, (expression.type as PrimitiveType).typeOpcode)
+                } else {
+                    methodVisitor.visitTypeInsn(Opcodes.ANEWARRAY, expression.type?.descriptor)
+                }
+            }
         }
 
         emitAutoCast(methodVisitor, expression)
@@ -247,12 +263,12 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             else methodVisitor.visitInsn(Opcodes.DUP)
         }
 
-        emitAutoCast(methodVisitor, expression)
-
         methodVisitor.visitVarInsn(
-            expression.castTo?.storeOpcode ?: expression.expression.type!!.storeOpcode,
+            expression.expression.castTo?.storeOpcode ?: expression.expression.type!!.storeOpcode,
             expression.index!!
         )
+
+        emitAutoCast(methodVisitor, expression)
     }
 
     private fun emitAutoCast(methodVisitor: MethodVisitor, expression: Expression) {
@@ -271,12 +287,21 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             if (opcode != null)
                 methodVisitor.visitInsn(opcode)
         } else if (from is ClassType && to is PrimitiveType) {
-            // Boxed primitive type casting
+            // Boxed primitive type casting, e.g. Integer -> int
             methodVisitor.visitMethodInsn(
                 Opcodes.INVOKEVIRTUAL,
                 from.internalName,
                 "${to.internalName}Value",
                 "()${to.descriptor}",
+                false
+            )
+        } else if (from is PrimitiveType && to is ClassType) {
+            // Boxed primitive type casting, e.g. int -> Integer
+            methodVisitor.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                to.internalName,
+                "valueOf",
+                "(${from.descriptor})${to.descriptor}",
                 false
             )
         }

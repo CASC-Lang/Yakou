@@ -5,11 +5,7 @@ class A {
 impl A {
     comp {
         mut fn main(s: str[]) {
-            mut c := i32[][]{{1}}
-        }
-
-        fn kek(): i64 {
-            return 1S
+            mut a := i32[1][1 + 2]{}
         }
     }
 }
