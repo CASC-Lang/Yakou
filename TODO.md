@@ -5,7 +5,7 @@
 
 - [ ] package declaration
 - [ ] usage
-- [ ] array declaration
+- [x] array declaration
 - [ ] array indexing (assignment)
 - [ ] block
 - [ ] loops
