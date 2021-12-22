@@ -170,6 +170,12 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                     )
                 }
             }
+            is IndexExpression -> {
+                emitExpression(methodVisitor, expression.previousExpression!!)
+                emitExpression(methodVisitor, expression.indexExpression!!)
+
+                methodVisitor.visitInsn((expression.previousExpression.type as ArrayType).getContentLoadOpcode()!!)
+            }
             is UnaryExpression -> {
                 emitExpression(methodVisitor, expression.expression!!)
 
@@ -229,15 +235,17 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                     emitExpression(methodVisitor, it!!)
                 }
 
+                val baseType = (expression.type as ArrayType).baseType
+
                 if (expression.dimensionExpressions.size > 1) {
                     methodVisitor.visitMultiANewArrayInsn(
                         expression.type?.descriptor,
                         expression.dimensionExpressions.size
                     )
-                } else if (expression.type is PrimitiveType) {
-                    methodVisitor.visitIntInsn(Opcodes.NEWARRAY, (expression.type as PrimitiveType).typeOpcode)
+                } else if (baseType is PrimitiveType) {
+                    methodVisitor.visitIntInsn(Opcodes.NEWARRAY, baseType.typeOpcode)
                 } else {
-                    methodVisitor.visitTypeInsn(Opcodes.ANEWARRAY, expression.type?.descriptor)
+                    methodVisitor.visitTypeInsn(Opcodes.ANEWARRAY, baseType.descriptor)
                 }
             }
         }

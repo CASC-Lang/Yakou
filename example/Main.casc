@@ -5,7 +5,11 @@ class A {
 impl A {
     comp {
         mut fn main(s: str[]) {
-            mut a := i32[1][1 + 2]{}
+            mut a := i32:[1]{}
+            mut b := i32:[][][]{}
+            mut c := {1}
+
+            java::lang::System.out.println(a[0])
         }
     }
 }

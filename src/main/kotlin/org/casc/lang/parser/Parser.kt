@@ -351,34 +351,49 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             parseBinaryExpression(inCompanionContext = inCompanionContext)
         }
 
-        while (peek()?.type == TokenType.Dot) {
-            // Chain calling
-            consume()
-
-            val name = assert(TokenType.Identifier)
-
-            if (peek()?.type == TokenType.OpenParenthesis) {
+        while (true) {
+            if (peek()?.type == TokenType.Dot) {
+                // Chain calling
                 consume()
 
-                val arguments = parseArguments(inCompanionContext)
+                val name = assert(TokenType.Identifier)
 
-                assert(TokenType.CloseParenthesis)
+                if (peek()?.type == TokenType.OpenParenthesis) {
+                    consume()
 
-                val pos = name?.pos?.extend(arguments.lastOrNull()?.pos)?.extend()
+                    val arguments = parseArguments(inCompanionContext)
 
-                expression = FunctionCallExpression(
-                    null,
-                    name,
-                    arguments,
-                    inCompanionContext,
-                    previousExpression = expression,
-                    pos = pos
+                    assert(TokenType.CloseParenthesis)
+
+                    val pos = name?.pos?.extend(arguments.lastOrNull()?.pos)?.extend()
+
+                    expression = FunctionCallExpression(
+                        null,
+                        name,
+                        arguments,
+                        inCompanionContext,
+                        previousExpression = expression,
+                        pos = pos
+                    )
+                } else {
+                    val pos = name?.pos?.extend(name.pos)
+
+                    expression = IdentifierCallExpression(null, name, previousExpression = expression, pos = pos)
+                }
+            } else if (peek()?.type == TokenType.OpenBracket) {
+                // Index expression
+                consume()
+
+                val indexExpression = parseExpression(inCompanionContext, true)
+
+                val closeBracket = assert(TokenType.CloseBracket)
+
+                expression = IndexExpression(
+                    expression,
+                    indexExpression,
+                    expression?.pos?.extend(closeBracket?.pos)
                 )
-            } else {
-                val pos = name?.pos?.extend(name.pos)
-
-                expression = IdentifierCallExpression(null, name, previousExpression = expression, pos = pos)
-            }
+            } else break
         }
 
         return expression
@@ -443,30 +458,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             consume()
             val classPath = parseQualifiedName(prependPath = "${name?.literal}.", startPos = name?.pos)
 
-            if (peek()?.type == TokenType.OpenBrace || peek()?.type == TokenType.OpenBracket) {
-                // Process array type of initialization
-                while (peek()?.type == TokenType.OpenBracket) {
-                    consume()
-                    assert(TokenType.CloseBracket)
-
-                    classPath?.path += "[]"
-                }
-
-                // Type-inferred array initialization
-                val expressions = arrayListOf<Expression?>()
-                consume()
-
-                while (peek()?.type != TokenType.CloseBrace) {
-                    expressions += parseExpression(inCompanionContext, true)
-
-                    if (peek()?.type == TokenType.Comma) consume()
-                    else break
-                }
-
-                val closeBrace = assert(TokenType.CloseBrace)
-
-                return ArrayInitialization(classPath, expressions, name?.pos?.extend(closeBrace?.pos))
-            }
+            if (peek()?.type == TokenType.Colon) return parseArrayInitialization(inCompanionContext, classPath)
 
             assert(TokenType.Dot)
 
@@ -489,68 +481,8 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
 
                 IdentifierCallExpression(classPath, memberName, pos = pos)
             }
-        } else if (peek()?.type == TokenType.OpenBrace || peek()?.type == TokenType.OpenBracket) {
-            // Process array type of initialization
-            var classPath = name?.literal
-
-            while (peek()?.type == TokenType.OpenBracket) {
-                consume()
-
-                if (peek()?.type != TokenType.CloseBracket) {
-                    // Array Declaration, e.g. int[10][10]{}
-                    // TODO: Support array stream initialization, e.g. int[10][10]{ it => expr }
-                    val dimensionExpressions = mutableListOf<Expression?>()
-
-                    while (true) {
-                        dimensionExpressions += parseExpression(inCompanionContext, true)
-
-                        val closeBracket = assert(TokenType.CloseBracket)
-
-                        name?.pos?.extend(closeBracket?.pos)
-
-                        if (peek()?.type == TokenType.OpenBracket) consume()
-                        else break
-                    }
-
-                    assert(TokenType.OpenBrace)
-                    val closeBrace = assert(TokenType.CloseBrace)
-
-                    classPath += "[]".repeat(dimensionExpressions.size)
-
-                    return ArrayDeclaration(
-                        Reference(classPath ?: "", classPath ?: "", name?.pos),
-                        dimensionExpressions,
-                        name?.pos?.extend(closeBrace?.pos)
-                    )
-                }
-
-                val closeBracket = assert(TokenType.CloseBracket)
-
-                name?.pos?.extend(closeBracket?.pos)
-
-                classPath += "[]"
-            }
-
-            // Type-inferred array initialization
-            // TODO: Support usage
-            val expressions = arrayListOf<Expression?>()
-            consume()
-
-            while (peek()?.type != TokenType.CloseBrace) {
-                expressions += parseExpression(true, inCompanionContext)
-
-                if (peek()?.type == TokenType.Comma) consume()
-                else break
-            }
-
-            val closeBrace = assert(TokenType.CloseBrace)
-
-            return ArrayInitialization(
-                Reference(classPath ?: "", classPath ?: "", name?.pos),
-                expressions,
-                name?.pos?.extend(closeBrace?.pos)
-            )
-        } else {
+        } else if (peek()?.type == TokenType.Colon) parseArrayInitialization(inCompanionContext, Reference(name))
+        else {
             if (peek()?.type == TokenType.Dot) {
                 // Companion member calling, e.g. Class.field, Class.func()
                 // TODO: Support usage first
@@ -560,26 +492,81 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         }
     }
 
-    // parseArrayInitialization parses array initialization that didn't specific its type
-    private fun parseArrayInitialization(inCompanionContext: Boolean): Expression {
-        val openBrace = next()
+    // parseArrayInitialization parses array initialization & declaration
+    private fun parseArrayInitialization(inCompanionContext: Boolean, typeReference: Reference? = null): Expression {
+        return if (peek()?.type == TokenType.Colon && typeReference != null) {
+            // Array declaration (`int:[10]{}`) or Array Initialization (`int:[]{...}`)
+            consume()
 
-        val expressions = mutableListOf<Expression?>()
+            val dimensionElements = mutableListOf<Expression?>()
 
-        while (peek()?.type != TokenType.CloseBrace) {
-            expressions += parseExpression(inCompanionContext, true)
+            while (peek()?.type != TokenType.OpenBrace) {
+                consume()
 
-            if (peek()?.type == TokenType.Comma) consume()
-            else break
+                if (peek()?.type != TokenType.CloseBracket) {
+                    // Array declaration
+                    dimensionElements += parseExpression(inCompanionContext, true)
+                }
+
+                val closeBracket = assert(TokenType.CloseBracket)
+
+                typeReference.path += "[]"
+
+                if (dimensionElements.isEmpty()) {
+                    typeReference.position?.extend(closeBracket?.pos)
+                }
+            }
+
+            assert(TokenType.OpenBrace)
+
+            if (dimensionElements.isEmpty()) {
+                // Array initialization
+                val elements = mutableListOf<Expression?>()
+
+                while (peek()?.type != TokenType.CloseBrace) {
+                    elements += parseExpression(inCompanionContext, true)
+
+                    if (peek()?.type == TokenType.Comma) consume()
+                    else break
+                }
+
+                val closeBrace = assert(TokenType.CloseBrace)
+
+                ArrayInitialization(
+                    typeReference,
+                    elements,
+                    typeReference.position?.copy()?.extend(closeBrace?.pos)
+                )
+            } else {
+                // Array Declaration
+                val closeBrace = assert(TokenType.CloseBrace)
+
+                ArrayDeclaration(
+                    typeReference,
+                    dimensionElements,
+                    typeReference.position?.copy()?.extend(closeBrace?.pos)
+                )
+            }
+        } else {
+            val openBrace = assert(TokenType.OpenBrace)
+
+            val expressions = mutableListOf<Expression?>()
+
+            while (peek()?.type != TokenType.CloseBrace) {
+                expressions += parseExpression(inCompanionContext, true)
+
+                if (peek()?.type == TokenType.Comma) consume()
+                else break
+            }
+
+            val closeBrace = assert(TokenType.CloseBrace)
+
+            ArrayInitialization(
+                null,
+                expressions,
+                openBrace?.pos?.extend(closeBrace?.pos)
+            )
         }
-
-        val closeBrace = assert(TokenType.CloseBrace)
-
-        return ArrayInitialization(
-            null,
-            expressions,
-            openBrace?.pos?.extend(closeBrace?.pos)
-        )
     }
 
     private fun parseArguments(inCompanionContext: Boolean): List<Expression?> {

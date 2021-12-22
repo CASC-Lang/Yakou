@@ -316,6 +316,27 @@ class Checker {
 
                 expression.type
             }
+            is IndexExpression -> {
+                val previousExpressionType = checkExpression(expression.previousExpression, scope)
+                val indexExpressionType = checkExpression(expression.indexExpression, scope)
+
+                if (previousExpressionType !is ArrayType) {
+                    reports += Error(
+                        expression.previousExpression?.pos,
+                        "Could not index non-array type"
+                    )
+                } else expression.type = previousExpressionType.baseType
+
+                if (!TypeUtil.canCast(indexExpressionType, PrimitiveType.I32)) {
+                    reports.reportTypeMismatch(
+                        expression.indexExpression?.pos,
+                        PrimitiveType.I32,
+                        indexExpressionType
+                    )
+                } else expression.indexExpression?.castTo = PrimitiveType.I32
+
+                expression.type
+            }
             is UnaryExpression -> {
                 val type = checkExpression(expression.expression, scope)
 

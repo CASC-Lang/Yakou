@@ -65,6 +65,15 @@ sealed class Expression {
             arguments
     }
 
+    data class IndexExpression(
+        val previousExpression: Expression?,
+        val indexExpression: Expression?,
+        override val pos: Position? = previousExpression?.pos?.extend(indexExpression?.pos)
+    ) : Expression() {
+        override fun getExpressions(): List<Expression?> =
+            listOf(previousExpression, indexExpression)
+    }
+
     data class AssignmentExpression(
         val identifier: Token?,
         val operator: Token?,
@@ -126,5 +135,8 @@ sealed class Expression {
         val baseTypeReference: Reference?,
         val dimensionExpressions: List<Expression?>,
         override val pos: Position?
-    ) : Expression()
+    ) : Expression() {
+        override fun getExpressions(): List<Expression?> =
+            dimensionExpressions
+    }
 }

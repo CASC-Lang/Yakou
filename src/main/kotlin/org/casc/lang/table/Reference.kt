@@ -1,8 +1,11 @@
 package org.casc.lang.table
 
 import org.casc.lang.ast.Position
+import org.casc.lang.ast.Token
 
 data class Reference(var path: String, val className: String, val position: Position?) {
+    constructor(token: Token?) : this(token?.literal ?: "", token?.literal ?: "", token?.pos)
+
     companion object {
         fun fromClass(clazz: Class<*>): Reference {
             val path = clazz.name
