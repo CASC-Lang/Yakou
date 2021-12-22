@@ -1,3 +1,2 @@
-
-rootProject.name = "Cyphoon"
+rootProject.name = "CASC"
 

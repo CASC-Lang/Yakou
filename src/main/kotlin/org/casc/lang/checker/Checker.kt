@@ -359,7 +359,7 @@ class Checker {
                                 "Consider add [] after type name"
                             )
                         }
-                        else -> checkArrayType(expression, scope, inferType.baseType)
+                        else -> checkArrayType(expression, scope, inferType.baseType, expression.inferTypeReference.position)
                     }
                 } else {
                     if (expression.elements.isEmpty()) {
@@ -379,7 +379,7 @@ class Checker {
         }
     }
 
-    private fun checkArrayType(expression: ArrayInitialization, scope: Scope, forcedFinalType: Type? = null) {
+    private fun checkArrayType(expression: ArrayInitialization, scope: Scope, forcedFinalType: Type? = null, inferTypePos: Position? = null) {
         // TODO: Support Object's promotion?
         val forceFinalType = forcedFinalType != null
         val expressionTypes = mutableListOf<Type?>()
@@ -397,8 +397,8 @@ class Checker {
             expressionTypes.forEachIndexed { i, type ->
                 reports.reportTypeMismatch(
                     expression.elements[i]?.pos,
-                    type,
-                    firstInferredType
+                    firstInferredType,
+                    type
                 )
             }
         } else {
@@ -467,7 +467,12 @@ class Checker {
                 }
                 is PrimitiveType -> {
                     expressionTypes.forEachIndexed { i, type ->
-                        if (type is PrimitiveType && !TypeUtil.canCast(latestInferredType, type)) {
+                        if (type is ArrayType) {
+                            reports += Error(
+                                expression.elements[i]?.pos,
+                                "Dimension mismatch, requires 1-dimension array but got ${type.getDimension()}-array"
+                            )
+                        } else if (type is PrimitiveType && !TypeUtil.canCast(latestInferredType, type)) {
                             if (!type.isNumericType() || !type.isNumericType()) {
                                 reports.reportTypeMismatch(
                                     expression.elements[i]?.pos,

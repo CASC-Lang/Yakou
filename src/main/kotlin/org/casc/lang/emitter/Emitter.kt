@@ -272,8 +272,6 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                 methodVisitor.visitInsn(opcode)
         } else if (from is ClassType && to is PrimitiveType) {
             // Boxed primitive type casting
-            val primitiveFromClazz = PrimitiveType.fromClass(from.type())
-
             methodVisitor.visitMethodInsn(
                 Opcodes.INVOKEVIRTUAL,
                 from.internalName,

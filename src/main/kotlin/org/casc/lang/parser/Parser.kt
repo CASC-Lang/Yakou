@@ -495,7 +495,9 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
 
             while (peek()?.type == TokenType.OpenBracket) {
                 consume()
-                assert(TokenType.CloseBracket)
+                val closeBracket = assert(TokenType.CloseBracket)
+
+                name?.pos?.extend(closeBracket?.pos)
 
                 classPath += "[]"
             }
