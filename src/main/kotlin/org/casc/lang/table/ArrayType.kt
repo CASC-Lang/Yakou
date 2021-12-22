@@ -7,7 +7,7 @@ data class ArrayType(
     var baseType: Type,
     override val typeName: String = "${baseType.typeName}[]",
     override val descriptor: String = "[${baseType.descriptor}",
-    override val internalName: String = "${baseType.internalName}[]"
+    override val internalName: String = "[${baseType.internalName}"
 ) : Type {
     companion object {
         fun fromDimension(baseType: Type, dimension: Int): Type {

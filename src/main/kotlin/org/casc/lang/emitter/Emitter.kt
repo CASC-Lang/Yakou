@@ -212,11 +212,18 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             is ArrayInitialization -> {
                 methodVisitor.visitLdcInsn(expression.elements.size)
 
-                val baseType = (expression.type as ArrayType).baseType
-
-                if (baseType is ArrayType || baseType is ClassType || baseType == PrimitiveType.Str) {
-                    methodVisitor.visitTypeInsn(Opcodes.ANEWARRAY, baseType.descriptor) // Cut down one dimension
-                } else methodVisitor.visitIntInsn(Opcodes.NEWARRAY, (baseType as PrimitiveType).typeOpcode)
+                when (val baseType = (expression.type as ArrayType).baseType) {
+                    is ArrayType -> methodVisitor.visitTypeInsn(
+                        Opcodes.ANEWARRAY,
+                        baseType.descriptor
+                    )
+                    // Cut down one dimension
+                    is ClassType, PrimitiveType.Str -> methodVisitor.visitTypeInsn(
+                        Opcodes.ANEWARRAY,
+                        baseType.internalName
+                    )
+                    else -> methodVisitor.visitIntInsn(Opcodes.NEWARRAY, (baseType as PrimitiveType).typeOpcode)
+                }
 
                 methodVisitor.visitInsn(Opcodes.DUP)
 
@@ -245,7 +252,7 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                 } else if (baseType is PrimitiveType) {
                     methodVisitor.visitIntInsn(Opcodes.NEWARRAY, baseType.typeOpcode)
                 } else {
-                    methodVisitor.visitTypeInsn(Opcodes.ANEWARRAY, baseType.descriptor)
+                    methodVisitor.visitTypeInsn(Opcodes.ANEWARRAY, baseType.internalName)
                 }
             }
         }

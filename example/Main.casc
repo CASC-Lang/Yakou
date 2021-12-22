@@ -9,6 +9,10 @@ impl A {
             mut b := i32:[][][]{}
             mut c := {1}
 
+            mut d := java::lang::System:[1]{}
+            mut e := java::lang::System:[][][]{}
+            mut f := { java::lang::System.out }
+
             java::lang::System.out.println(a[0])
         }
     }
