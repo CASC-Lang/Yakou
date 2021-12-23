@@ -5,9 +5,15 @@ class Main {
 impl Main {
     comp {
         mut fn main(s: str[]) {
-            mut a := "\u00A9"
+            if true {
+                mut a := 1
+            } else {
+                mut a := 0
 
-            java::lang::System.out.println(a)
+                if true {
+                    mut b := 1
+                }
+            }
         }
     }
 }

@@ -110,7 +110,7 @@ class Checker {
 
                 if (!scope.registerVariable(statement.mutKeyword != null, statement.name!!.literal, expressionType)) {
                     reports += Error(
-                        statement.position!!,
+                        statement.pos!!,
                         "Variable ${statement.name.literal} is already declared in same context"
                     )
                 } else {
@@ -124,10 +124,35 @@ class Checker {
                     statement.index = scope.findVariableIndex(statement.name.literal)
                 }
             }
+            is IfStatement -> {
+                val conditionType = checkExpression(statement.condition, scope)
+
+                if (conditionType?.type() == Boolean::class.javaObjectType) {
+                    // Cast condition into bool
+                    statement.condition?.castTo = PrimitiveType.Bool
+                } else if (conditionType != PrimitiveType.Bool) {
+                    reports.reportTypeMismatch(
+                        statement.condition?.pos,
+                        PrimitiveType.Bool,
+                        conditionType
+                    )
+                }
+
+                checkStatement(statement.trueStatement!!, scope)
+
+                if (statement.elseStatement != null) {
+                    checkStatement(statement.elseStatement, scope)
+                }
+            }
+            is BlockStatement -> {
+                statement.statements.forEach {
+                    checkStatement(it!!, Scope(scope))
+                }
+            }
             is ExpressionStatement -> {
                 if (statement.expression !is AssignmentExpression && statement.expression !is FunctionCallExpression) {
                     reports += Error(
-                        statement.position,
+                        statement.pos,
                         "Unused expression",
                         "Consider remove this line"
                     )
@@ -139,7 +164,7 @@ class Checker {
                 val expressionType = checkExpression(statement.expression, scope)
 
                 if (!TypeUtil.canCast(expressionType, returnType)) {
-                    reports.reportTypeMismatch(statement.position!!, returnType, expressionType)
+                    reports.reportTypeMismatch(statement.pos!!, returnType, expressionType)
                 } else statement.returnType = returnType
             }
         }

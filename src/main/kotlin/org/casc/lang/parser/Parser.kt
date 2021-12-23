@@ -245,14 +245,11 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             assert(TokenType.OpenParenthesis)
             val parameters = parseParameters()
             assert(TokenType.CloseParenthesis)
-            val returnType: Reference?
 
-            if (peek()?.type == TokenType.Colon) {
+            val returnType = if (peek()?.type == TokenType.Colon) {
                 consume()
-                returnType = parseQualifiedName(true)
-            } else {
-                returnType = null
-            }
+                parseQualifiedName(true)
+            } else null
 
             assert(TokenType.OpenBrace)
             val statements = parseStatements(compKeyword != null)
@@ -310,31 +307,64 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
     private fun parseStatements(inCompanionContext: Boolean = false): List<Statement> {
         val statements = mutableListOf<Statement>()
 
-        while (pos < tokens.size && peek()?.type != TokenType.CloseBrace) {
-            val mutKeyword =
-                if (peek()?.isMutKeyword() == true) next()
-                else null
-
-            if (peekMultiple(2) == listOf(TokenType.Identifier, TokenType.ColonEqual)) {
-                // Variable Declaration
-                val name = next()
-                val operator = next()
-                val expression = parseAssignment(inCompanionContext)
-
-                statements += VariableDeclaration(
-                    mutKeyword,
-                    name,
-                    operator,
-                    expression
-                )
-            } else if (peek()?.isReturnKeyword() == true) {
-                consume()
-
-                statements += ReturnStatement(parseExpression(inCompanionContext, true))
-            } else statements += ExpressionStatement(parseExpression(inCompanionContext))
-        }
+        while (pos < tokens.size && peek()?.type != TokenType.CloseBrace)
+            statements += parseStatement(inCompanionContext)
 
         return statements
+    }
+
+    private fun parseStatement(inCompanionContext: Boolean = false): Statement {
+        val mutKeyword =
+            if (peek()?.isMutKeyword() == true) next()
+            else null
+
+        return if (peekMultiple(2) == listOf(TokenType.Identifier, TokenType.ColonEqual)) {
+            // Variable declaration
+            val name = next()
+            val operator = next()
+            val expression = parseAssignment(inCompanionContext)
+
+            VariableDeclaration(
+                mutKeyword,
+                name,
+                operator,
+                expression
+            )
+        } else if (peek()?.isReturnKeyword() == true) {
+            // Return statement
+            val returnKeyword = next()
+            val expression = parseExpression(inCompanionContext, true)
+
+            ReturnStatement(expression, pos = returnKeyword?.pos?.extend(expression?.pos))
+        } else if (peek()?.isIfKeyword() == true) {
+            // if-else statement
+            val ifKeyword = next()
+            val condition = parseExpression(inCompanionContext, true)
+
+            val trueStatement = parseStatement(inCompanionContext)
+
+            val elseStatement = if (peek()?.isElseKeyword() == true) {
+                consume()
+                parseStatement(inCompanionContext)
+            } else null
+
+            IfStatement(
+                condition,
+                trueStatement,
+                elseStatement,
+                ifKeyword?.pos?.extend(trueStatement.pos)
+            )
+        } else if (peek()?.type == TokenType.OpenBrace) {
+            // Block statement
+            val openBrace = next()
+            val statements = parseStatements(inCompanionContext)
+            val closeBrace = assert(TokenType.CloseBrace)
+
+            BlockStatement(
+                statements,
+                openBrace?.pos?.extend(closeBrace?.pos)
+            )
+        } else ExpressionStatement(parseExpression(inCompanionContext))
     }
 
     private fun parseExpression(inCompanionContext: Boolean, retainValue: Boolean = false): Expression? =

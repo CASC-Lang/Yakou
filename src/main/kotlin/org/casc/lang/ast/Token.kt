@@ -15,6 +15,12 @@ data class Token(var literal: String, val type: TokenType, val pos: Position) {
     fun isMutKeyword(): Boolean =
         literal == "mut"
 
+    fun isIfKeyword(): Boolean =
+        literal == "if"
+
+    fun isElseKeyword(): Boolean =
+        literal == "else"
+
     fun isReturnKeyword(): Boolean =
         literal == "return"
 

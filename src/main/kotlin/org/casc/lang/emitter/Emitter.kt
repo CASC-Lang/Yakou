@@ -69,13 +69,38 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
         val label = Label()
 
         methodVisitor.visitLabel(label)
-        methodVisitor.visitLineNumber(statement.position?.lineNumber!!, label)
+        methodVisitor.visitLineNumber(statement.pos?.lineNumber!!, label)
 
         when (statement) {
             is VariableDeclaration -> {
                 emitExpression(methodVisitor, statement.expression!!)
 
                 methodVisitor.visitVarInsn(statement.expression.type!!.storeOpcode, statement.index!!)
+            }
+            is IfStatement -> {
+                emitExpression(methodVisitor, statement.condition!!)
+
+                val hasElseStatement = statement.elseStatement != null
+                val elseLabel = Label()
+                val endLabel = if (hasElseStatement) Label() else null
+
+                methodVisitor.visitJumpInsn(Opcodes.IFEQ, elseLabel)
+
+                emitStatement(methodVisitor, statement.trueStatement!!)
+
+                if (hasElseStatement) methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
+                methodVisitor.visitLabel(elseLabel)
+
+                if (hasElseStatement) {
+                    emitStatement(methodVisitor, statement.elseStatement!!)
+
+                    methodVisitor.visitLabel(endLabel)
+                }
+            }
+            is BlockStatement -> {
+                statement.statements.forEach {
+                    emitStatement(methodVisitor, it!!)
+                }
             }
             is ExpressionStatement -> {
                 emitExpression(methodVisitor, statement.expression!!)

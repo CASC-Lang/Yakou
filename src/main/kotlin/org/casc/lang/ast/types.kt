@@ -2,6 +2,8 @@ package org.casc.lang.ast
 
 // Statements
 typealias VariableDeclaration = Statement.VariableDeclaration
+typealias IfStatement = Statement.IfStatement
+typealias BlockStatement = Statement.BlockStatement
 typealias ExpressionStatement = Statement.ExpressionStatement
 typealias ReturnStatement = Statement.ReturnStatement
 

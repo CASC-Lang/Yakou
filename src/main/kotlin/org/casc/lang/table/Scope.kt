@@ -11,7 +11,13 @@ data class Scope(
     var functions: MutableSet<FunctionSignature> = mutableSetOf(),
     var variables: MutableList<Variable> = mutableListOf()
 ) {
-    constructor(parent: Scope) : this(false, parent.classPath, parent.usages, parent.functions, parent.variables)
+    constructor(parent: Scope) : this(
+        false,
+        parent.classPath,
+        parent.usages.toMutableSet(),
+        parent.functions.toMutableSet(),
+        parent.variables.toMutableList()
+    )
 
     /**
      * registerFunctionSignature must be called after checker assigned types to function object
