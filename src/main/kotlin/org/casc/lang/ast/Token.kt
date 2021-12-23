@@ -21,6 +21,9 @@ data class Token(var literal: String, val type: TokenType, val pos: Position) {
     fun isElseKeyword(): Boolean =
         literal == "else"
 
+    fun isForKeyword(): Boolean =
+        literal == "for"
+
     fun isReturnKeyword(): Boolean =
         literal == "return"
 

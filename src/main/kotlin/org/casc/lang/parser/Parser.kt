@@ -364,6 +364,27 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
                 statements,
                 openBrace?.pos?.extend(closeBrace?.pos)
             )
+        } else if (peek()?.isForKeyword() == true) {
+            // Java-style For loop
+            val forKeyword = next()
+            val initExpression = parseExpression(inCompanionContext)
+
+            assert(TokenType.SemiColon)
+
+            val condition = parseExpression(inCompanionContext, true)
+
+            assert(TokenType.SemiColon)
+
+            val postExpression = parseExpression(inCompanionContext)
+            val statements = parseStatements(inCompanionContext)
+
+            JForStatement(
+                initExpression,
+                condition,
+                postExpression,
+                statements,
+                forKeyword?.pos?.extend(statements.lastOrNull()?.pos)
+            )
         } else ExpressionStatement(parseExpression(inCompanionContext))
     }
 
@@ -428,7 +449,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
                 "null" -> NullLiteral(next())
                 else -> parseSecondaryExpression(inCompanionContext)
             }
-            TokenType.OpenBrace -> parseArrayInitialization(inCompanionContext)
+            TokenType.Colon -> parseArrayInitialization(inCompanionContext)
             else -> null
         }
 
@@ -592,7 +613,8 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
                 )
             }
         } else {
-            val openBrace = assert(TokenType.OpenBrace)
+            val colon = assert(TokenType.Colon)
+            assert(TokenType.OpenBrace)
 
             val expressions = mutableListOf<Expression?>()
 
@@ -608,7 +630,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             ArrayInitialization(
                 null,
                 expressions,
-                openBrace?.pos?.extend(closeBrace?.pos)
+                colon?.pos?.extend(closeBrace?.pos)
             )
         }
     }

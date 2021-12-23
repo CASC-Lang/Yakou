@@ -103,7 +103,12 @@ class Checker {
     private fun checkType(reference: Reference?, scope: Scope): Type? =
         scope.findType(reference)
 
-    private fun checkStatement(statement: Statement, scope: Scope, returnType: Type? = null) {
+    private fun checkStatement(
+        statement: Statement,
+        scope: Scope,
+        returnType: Type? = null,
+        useSameScope: Boolean = false
+    ) {
         when (statement) {
             is VariableDeclaration -> {
                 val expressionType = checkExpression(statement.expression, scope)
@@ -127,10 +132,9 @@ class Checker {
             is IfStatement -> {
                 val conditionType = checkExpression(statement.condition, scope)
 
-                if (conditionType?.type() == Boolean::class.javaObjectType) {
-                    // Cast condition into bool
+                if (TypeUtil.canCast(conditionType, PrimitiveType.Bool)) {
                     statement.condition?.castTo = PrimitiveType.Bool
-                } else if (conditionType != PrimitiveType.Bool) {
+                } else {
                     reports.reportTypeMismatch(
                         statement.condition?.pos,
                         PrimitiveType.Bool,
@@ -144,9 +148,34 @@ class Checker {
                     checkStatement(statement.elseStatement, scope)
                 }
             }
+            is JForStatement -> {
+                val innerScope = Scope(scope)
+
+                checkExpression(statement.initExpression, innerScope)
+
+                if (statement.condition != null) {
+                    val conditionType = checkExpression(statement.condition, innerScope)
+
+                    if (TypeUtil.canCast(conditionType, PrimitiveType.Bool)) {
+                        statement.condition.castTo = PrimitiveType.Bool
+                    } else {
+                        reports.reportTypeMismatch(
+                            statement.condition.pos,
+                            PrimitiveType.Bool,
+                            conditionType
+                        )
+                    }
+                }
+
+                checkExpression(statement.postExpression, innerScope)
+
+                statement.statements.forEach {
+                    checkStatement(it!!, innerScope, useSameScope = true)
+                }
+            }
             is BlockStatement -> {
                 statement.statements.forEach {
-                    checkStatement(it!!, Scope(scope))
+                    checkStatement(it!!, if (useSameScope) scope else Scope(scope))
                 }
             }
             is ExpressionStatement -> {

@@ -21,6 +21,14 @@ sealed class Statement {
         override val pos: Position?
     ) : Statement()
 
+    data class JForStatement(
+        val initExpression: Expression?,
+        val condition: Expression?,
+        val postExpression: Expression?,
+        val statements: List<Statement?>,
+        override val pos: Position?
+    ) : Statement()
+
     data class BlockStatement(
         val statements: List<Statement?>,
         override val pos: Position?

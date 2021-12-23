@@ -11,11 +11,12 @@
 - [x] char Literal
 - [x] bool literal
 - [x] null literal
+- [x] is-else expression
 - [ ] comparison operators
 - [ ] null check
 - [ ] block
 - [ ] loops
-- - [ ] for loop (C loop)
+- - [x] for loop (Java loop)
 - - [ ] while loop
 - - [ ] do-while loop
 

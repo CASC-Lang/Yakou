@@ -5,14 +5,8 @@ class Main {
 impl Main {
     comp {
         mut fn main(s: str[]) {
-            if true {
-                mut a := 1
-            } else {
-                mut a := 0
+            for ;; {
 
-                if true {
-                    mut b := 1
-                }
             }
         }
     }

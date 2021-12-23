@@ -97,6 +97,31 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                     methodVisitor.visitLabel(endLabel)
                 }
             }
+            is JForStatement -> {
+                if (statement.initExpression != null)
+                    emitExpression(methodVisitor, statement.initExpression)
+
+                val startLabel = Label()
+                val endLabel = Label()
+
+                methodVisitor.visitLabel(startLabel)
+
+                if (statement.condition != null)
+                    emitExpression(methodVisitor, statement.condition)
+                else methodVisitor.visitInsn(Opcodes.ICONST_1)
+
+                methodVisitor.visitJumpInsn(Opcodes.IFEQ, endLabel)
+
+                statement.statements.forEach {
+                    emitStatement(methodVisitor, it!!)
+                }
+
+                if (statement.postExpression != null)
+                    emitExpression(methodVisitor, statement.postExpression)
+
+                methodVisitor.visitJumpInsn(Opcodes.GOTO, startLabel)
+                methodVisitor.visitLabel(endLabel)
+            }
             is BlockStatement -> {
                 statement.statements.forEach {
                     emitStatement(methodVisitor, it!!)
