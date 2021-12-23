@@ -5,7 +5,7 @@ class Main {
 impl Main {
     comp {
         mut fn main(s: str[]) {
-            mut a := "Simon Says: \"Hello World!\""
+            mut a := "\u00A9"
 
             java::lang::System.out.println(a)
         }

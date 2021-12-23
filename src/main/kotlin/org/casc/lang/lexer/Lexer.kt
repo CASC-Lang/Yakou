@@ -129,12 +129,9 @@ class Lexer(val chunkedSource: List<String>) {
                 // String Literal
                 if (source[pos] == '"') {
                     val start = pos++
-                    val stringStart = pos
                     var builder = ""
 
                     while (pos < source.length && source[pos] != '"') {
-                        builder += source[pos++]
-
                         when (source[pos]) {
                             '"' -> break
                             '\\' -> {
@@ -150,6 +147,26 @@ class Lexer(val chunkedSource: List<String>) {
                                     'f' -> builder += "\u000c"
                                     '\'' -> builder += "\'"
                                     '\"' -> builder += "\""
+                                    'u' -> {
+                                        // Escaped unicode literal
+                                        var unicodeHexBuilder = ""
+
+                                        for (i in 0 until 4) {
+                                            if (source[pos].digitToIntOrNull() != null || source[pos] in 'A'..'F') {
+                                                unicodeHexBuilder += source[pos++]
+                                            } else {
+                                                reports += Error(
+                                                    Position(lineNumber, pos),
+                                                    "Invalid hexadecimal digit ${source[pos++]} for unicode literal"
+                                                )
+                                            }
+                                        }
+
+                                        val hex = unicodeHexBuilder.chunked(2).map { Integer.parseInt(it, 16) }
+
+                                        builder += Char((hex[0] shl 8) or hex[1])
+
+                                    }
                                     else -> {
                                         reports += Error(
                                             Position(lineNumber, pos - 2, pos - 1),
@@ -158,6 +175,7 @@ class Lexer(val chunkedSource: List<String>) {
                                     }
                                 }
                             }
+                            else -> builder += source[pos++]
                         }
                     }
 
