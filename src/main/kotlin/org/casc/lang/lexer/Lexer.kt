@@ -130,19 +130,41 @@ class Lexer(val chunkedSource: List<String>) {
                 if (source[pos] == '"') {
                     val start = pos++
                     val stringStart = pos
+                    var builder = ""
 
-                    while (pos < source.length) {
-                        pos++
+                    while (pos < source.length && source[pos] != '"') {
+                        builder += source[pos++]
 
                         when (source[pos]) {
                             '"' -> break
+                            '\\' -> {
+                                // Escaped characters
+                                pos++
+
+                                when (source[pos++]) {
+                                    '\\' -> builder += "\\"
+                                    't' -> builder += "\t"
+                                    'b' -> builder += "\b"
+                                    'n' -> builder += "\n"
+                                    'r' -> builder += "\r"
+                                    'f' -> builder += "\u000c"
+                                    '\'' -> builder += "\'"
+                                    '\"' -> builder += "\""
+                                    else -> {
+                                        reports += Error(
+                                            Position(lineNumber, pos - 2, pos - 1),
+                                            "Unknown escaped character"
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
 
                     val end = pos++
 
                     tokens += Token(
-                        source.substring(stringStart until end),
+                        builder,
                         TokenType.StringLiteral,
                         Position(lineNumber, start, end)
                     )
