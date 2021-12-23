@@ -44,6 +44,10 @@ sealed class Expression {
             literal?.literal?.endsWith('D') ?: false
     }
 
+    data class CharLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression()
+
+    data class StrLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression()
+
     data class BoolLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression()
 
     data class NullLiteral(val literal: Token?, override val pos: Position? = literal?.pos): Expression()

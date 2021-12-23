@@ -3,6 +3,7 @@ package org.casc.lang.ast
 enum class TokenType {
     Identifier,
     IntegerLiteral,
+    CharLiteral,
     StringLiteral,
     FloatLiteral,
     OpenBrace,

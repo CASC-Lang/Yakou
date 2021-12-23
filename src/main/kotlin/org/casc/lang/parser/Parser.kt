@@ -391,6 +391,8 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         var expression = when (peek()?.type) {
             TokenType.IntegerLiteral -> IntegerLiteral(next())
             TokenType.FloatLiteral -> FloatLiteral(next())
+            TokenType.CharLiteral -> CharLiteral(next())
+            TokenType.StringLiteral -> StrLiteral(next())
             TokenType.Identifier -> when (peek()?.literal) {
                 "true", "false" -> BoolLiteral(next())
                 "null" -> NullLiteral(next())

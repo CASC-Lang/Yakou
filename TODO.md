@@ -7,8 +7,8 @@
 - [ ] usage
 - [x] array declaration
 - [x] array indexing (assignment)
-- [ ] string literal
-- [ ] char Literal
+- [x] string literal
+- [x] char Literal
 - [x] bool literal
 - [x] null literal
 - [ ] comparison operators

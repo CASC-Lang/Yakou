@@ -117,6 +117,16 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                     methodVisitor.visitLdcInsn(expression.literal!!.literal.toFloat())
                 }
             }
+            is CharLiteral -> {
+                val char = expression.literal!!.literal[0]
+
+                methodVisitor.visitLdcInsn(char.code)
+            }
+            is StrLiteral -> {
+                val string = expression.literal!!.literal
+
+                methodVisitor.visitLdcInsn(string)
+            }
             is BoolLiteral -> when (expression.literal?.literal) {
                 "false" -> methodVisitor.visitInsn(Opcodes.ICONST_0)
                 "true" -> methodVisitor.visitInsn(Opcodes.ICONST_1)

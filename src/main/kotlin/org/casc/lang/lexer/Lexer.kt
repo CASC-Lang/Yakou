@@ -1,6 +1,5 @@
 package org.casc.lang.lexer
 
-import org.casc.lang.ast.Expression
 import org.casc.lang.ast.Position
 import org.casc.lang.ast.Token
 import org.casc.lang.ast.TokenType
@@ -97,6 +96,55 @@ class Lexer(val chunkedSource: List<String>) {
                         source.substring(start until pos),
                         TokenType.Identifier,
                         Position(lineNumber, start, pos)
+                    )
+                    continue
+                }
+
+                // Char Literal
+                if (source[pos] == '\'') {
+                    val start = pos++
+                    val charPos = pos++
+
+                    if (source[pos] != '\'') {
+                        while (source[pos] != '\'')
+                            pos++
+
+                        reports += Error(
+                            Position(lineNumber, charPos, pos),
+                            "Too many characters for char literal",
+                            "Char literal only allows one character"
+                        )
+                    }
+
+                    val end = pos++
+
+                    tokens += Token(
+                        source[charPos],
+                        TokenType.CharLiteral,
+                        Position(lineNumber, start, end)
+                    )
+                    continue
+                }
+
+                // String Literal
+                if (source[pos] == '"') {
+                    val start = pos++
+                    val stringStart = pos
+
+                    while (pos < source.length) {
+                        pos++
+
+                        when (source[pos]) {
+                            '"' -> break
+                        }
+                    }
+
+                    val end = pos++
+
+                    tokens += Token(
+                        source.substring(stringStart until end),
+                        TokenType.StringLiteral,
+                        Position(lineNumber, start, end)
                     )
                     continue
                 }

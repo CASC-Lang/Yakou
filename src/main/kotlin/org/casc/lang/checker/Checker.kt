@@ -166,6 +166,16 @@ class Checker {
 
                 expression.type
             }
+            is CharLiteral -> {
+                expression.type = PrimitiveType.Char
+
+                expression.type
+            }
+            is StrLiteral -> {
+                expression.type = PrimitiveType.Str
+
+                expression.type
+            }
             is BoolLiteral -> {
                 expression.type = PrimitiveType.Bool
 

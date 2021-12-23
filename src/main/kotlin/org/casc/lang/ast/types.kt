@@ -8,6 +8,8 @@ typealias ReturnStatement = Statement.ReturnStatement
 // Expressions
 typealias IntegerLiteral = Expression.IntegerLiteral
 typealias FloatLiteral = Expression.FloatLiteral
+typealias CharLiteral = Expression.CharLiteral
+typealias StrLiteral = Expression.StrLiteral
 typealias BoolLiteral = Expression.BoolLiteral
 typealias NullLiteral = Expression.NullLiteral
 typealias IdentifierCallExpression = Expression.IdentifierCallExpression

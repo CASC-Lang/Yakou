@@ -5,7 +5,7 @@ class Main {
 impl Main {
     comp {
         mut fn main(s: str[]) {
-            mut a := true
+            mut a := "ab"
 
             java::lang::System.out.println(a)
         }
