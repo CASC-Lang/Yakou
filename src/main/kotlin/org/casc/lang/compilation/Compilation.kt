@@ -4,6 +4,7 @@ import org.casc.lang.checker.Checker
 import org.casc.lang.emitter.Emitter
 import org.casc.lang.lexer.Lexer
 import org.casc.lang.parser.Parser
+import java.io.BufferedReader
 import java.io.File
 
 class Compilation(val file: File) {
@@ -58,6 +59,18 @@ class Compilation(val file: File) {
              * only JVM backend is available at this moment.
              */
             Emitter(file.parentFile, checkResult).emit()
+
+            if (Preference.compileAndRun) {
+                val isWindows = System.getProperty("os.name").lowercase().startsWith("windows")
+                val process = Runtime.getRuntime().exec(
+                    if (isWindows) "cmd.exe /c cd ${file.parentFile.absolutePath} && java ${file.nameWithoutExtension}"
+                    else "sh -c cd ${file.parentFile.absolutePath} && java ${file.nameWithoutExtension}"
+                )
+
+                BufferedReader(process.inputReader())
+                    .lines()
+                    .forEach(::println)
+            }
         }
     }
 }

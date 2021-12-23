@@ -44,6 +44,10 @@ sealed class Expression {
             literal?.literal?.endsWith('D') ?: false
     }
 
+    data class BoolLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression()
+
+    data class NullLiteral(val literal: Token?, override val pos: Position? = literal?.pos): Expression()
+
     data class IdentifierCallExpression(
         val ownerReference: Reference?, // Companion field calling
         val name: Token?,

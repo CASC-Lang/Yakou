@@ -1,22 +1,13 @@
-class A {
+class Main {
 
 }
 
-impl A {
+impl Main {
     comp {
         mut fn main(s: str[]) {
-            mut a := i32:[1][2]{}
-            mut b := 1
-            mut c := {1}
+            mut a := true
 
-            a()[0] = a[0][1] = c[0] = b = 4
-
-            java::lang::System.out.println(a[0][1])
-            java::lang::System.out.println(c[0])
-        }
-
-        fn a(): i32[] {
-            return { 1 }
+            java::lang::System.out.println(a)
         }
     }
 }

@@ -166,6 +166,16 @@ class Checker {
 
                 expression.type
             }
+            is BoolLiteral -> {
+                expression.type = PrimitiveType.Bool
+
+                expression.type
+            }
+            is NullLiteral -> {
+                expression.type = PrimitiveType.Null
+
+                expression.type
+            }
             is AssignmentExpression -> {
                 val leftType = checkExpression(expression.leftExpression, scope)
                 val rightType = checkExpression(expression.rightExpression, scope)
@@ -193,6 +203,10 @@ class Checker {
                                 expression.rightExpression?.pos,
                                 "Could not store void type into variable"
                             )
+                        }
+
+                        if (rightType == PrimitiveType.Null) {
+                            variable.type = PrimitiveType.Null
                         }
 
                         expression.leftExpression.isAssignedBy = true

@@ -11,4 +11,5 @@ object Preference {
             classLoader = URLClassLoader(arrayOf(value.toURI().toURL()))
             field = value
         }
+    var compileAndRun = false
 }

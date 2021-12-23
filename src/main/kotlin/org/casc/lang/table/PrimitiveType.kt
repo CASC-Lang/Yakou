@@ -10,6 +10,8 @@ enum class PrimitiveType(
     private val wrapperClass: Class<*>?,
     opcodeSet: OpcodeSets?
 ) : Type {
+    // Null is only used for type check, never used in Emitter unit
+    Null("null", "", "", null, null, OpcodeSets.Object),
     Unit("unit", "V", "void", Void::class.javaPrimitiveType, Void::class.java, null),
     Bool("bool", "Z", "boolean", Boolean::class.java, Boolean::class.javaObjectType, OpcodeSets.Integer),
     Char("char", "C", "char", kotlin.Char::class.java, kotlin.Char::class.javaObjectType, OpcodeSets.Integer),
@@ -24,10 +26,10 @@ enum class PrimitiveType(
     companion object {
         val values = values()
         val promotionTable = linkedMapOf(
-            F64 to 4,
-            F32 to 3,
-            I64 to 2,
-            I32 to 1,
+            F64 to 3,
+            F32 to 2,
+            I64 to 1,
+            I32 to 0,
             I16 to 0,
             I8 to 0,
         )

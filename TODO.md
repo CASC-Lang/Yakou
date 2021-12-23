@@ -8,6 +8,11 @@
 - [x] array declaration
 - [x] array indexing (assignment)
 - [ ] string literal
+- [ ] char Literal
+- [x] bool literal
+- [x] null literal
+- [ ] comparison operators
+- [ ] null check
 - [ ] block
 - [ ] loops
 - - [ ] for loop (C loop)

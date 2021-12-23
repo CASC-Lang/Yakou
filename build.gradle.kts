@@ -16,6 +16,7 @@ dependencies {
 
     implementation("org.ow2.asm:asm:9.2")
     implementation("com.diogonunes:JColor:5.2.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
 }
 
 tasks.test {

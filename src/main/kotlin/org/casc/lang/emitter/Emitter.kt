@@ -117,6 +117,11 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                     methodVisitor.visitLdcInsn(expression.literal!!.literal.toFloat())
                 }
             }
+            is BoolLiteral -> when (expression.literal?.literal) {
+                "false" -> methodVisitor.visitInsn(Opcodes.ICONST_0)
+                "true" -> methodVisitor.visitInsn(Opcodes.ICONST_1)
+            }
+            is NullLiteral -> methodVisitor.visitInsn(Opcodes.ACONST_NULL)
             is AssignmentExpression -> emitAssignment(methodVisitor, expression)
             is IdentifierCallExpression -> {
                 if (expression.ownerReference != null) {
@@ -334,7 +339,7 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
 
             if (opcode != null)
                 methodVisitor.visitInsn(opcode)
-        } else if (from is ClassType && to is PrimitiveType) {
+        } else if (from is ClassType && to is PrimitiveType && to != PrimitiveType.Null) {
             // Boxed primitive type casting, e.g. Integer -> int
             methodVisitor.visitMethodInsn(
                 Opcodes.INVOKEVIRTUAL,
@@ -343,7 +348,7 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                 "()${to.descriptor}",
                 false
             )
-        } else if (from is PrimitiveType && to is ClassType) {
+        } else if (from is PrimitiveType && to is ClassType && from != PrimitiveType.Null) {
             // Boxed primitive type casting, e.g. int -> Integer
             methodVisitor.visitMethodInsn(
                 Opcodes.INVOKESTATIC,

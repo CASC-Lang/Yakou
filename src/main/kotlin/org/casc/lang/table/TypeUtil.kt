@@ -50,14 +50,20 @@ object TypeUtil {
         if (from == null || to == null) false
         else if (from == to) true
         else if (from is PrimitiveType) {
-            if (to is PrimitiveType) {
+            if (from == PrimitiveType.Null) {
+                when (to) {
+                    PrimitiveType.Str, PrimitiveType.Null -> true
+                    else -> to !is PrimitiveType
+                }
+            } else if (to is PrimitiveType) {
                 if (from == PrimitiveType.I32 && to == PrimitiveType.Char) true // Special case
                 else if (!from.isNumericType() || !to.isNumericType()) false
-                else PrimitiveType.promotionTable[from]!! < PrimitiveType.promotionTable[to]!!
+                else PrimitiveType.promotionTable[from]!! <= PrimitiveType.promotionTable[to]!!
             } else if (from.type() == to.type()) true
             else canCast(from, PrimitiveType.fromClass(to.type()))
         } else if (from is ClassType && to is PrimitiveType) {
-            if (from.type() == to.type()) true
+            if (to == PrimitiveType.Null) true
+            else if (from.type() == to.type()) true
             else canCast(PrimitiveType.fromClass(from.type()), to)
         } else false // TODO: Support Inheritance Checking
 

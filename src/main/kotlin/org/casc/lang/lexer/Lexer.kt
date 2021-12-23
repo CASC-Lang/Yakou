@@ -1,5 +1,6 @@
 package org.casc.lang.lexer
 
+import org.casc.lang.ast.Expression
 import org.casc.lang.ast.Position
 import org.casc.lang.ast.Token
 import org.casc.lang.ast.TokenType
