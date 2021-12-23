@@ -4,6 +4,7 @@ import org.casc.lang.ast.*
 import org.casc.lang.ast.Function
 import org.casc.lang.table.*
 import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import java.io.File as JFile
@@ -65,6 +66,11 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
     }
 
     private fun emitStatement(methodVisitor: MethodVisitor, statement: Statement) {
+        val label = Label()
+
+        methodVisitor.visitLabel(label)
+        methodVisitor.visitLineNumber(statement.position?.lineNumber!!, label)
+
         when (statement) {
             is VariableDeclaration -> {
                 emitExpression(methodVisitor, statement.expression!!)
@@ -133,9 +139,11 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                     )
                 } else {
                     // Local variables / current class fields
-                    val variableIndex = expression.index!!
+                    if (!expression.isAssignedBy) {
+                        val variableIndex = expression.index!!
 
-                    methodVisitor.visitVarInsn(expression.type!!.loadOpcode, variableIndex)
+                        methodVisitor.visitVarInsn(expression.type!!.loadOpcode, variableIndex)
+                    }
                 }
             }
             is FunctionCallExpression -> {
@@ -174,7 +182,8 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                 emitExpression(methodVisitor, expression.previousExpression!!)
                 emitExpression(methodVisitor, expression.indexExpression!!)
 
-                methodVisitor.visitInsn((expression.previousExpression.type as ArrayType).getContentLoadOpcode()!!)
+                if (!expression.isAssignedBy)
+                    methodVisitor.visitInsn((expression.previousExpression.type as ArrayType).getContentLoadOpcode()!!)
             }
             is UnaryExpression -> {
                 emitExpression(methodVisitor, expression.expression!!)
@@ -184,6 +193,7 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                 when (expression.operator?.type) {
                     TokenType.Minus -> methodVisitor.visitInsn((expression.type!! as PrimitiveType).negOpcode)
                     TokenType.Plus -> {} // No effect
+                    else -> {}
                 }
             }
             is BinaryExpression -> {
@@ -265,23 +275,46 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
         expression: AssignmentExpression,
         inAssignment: Boolean = false
     ) {
-        if (expression.expression is AssignmentExpression) {
-            emitAssignment(methodVisitor, expression.expression, true)
+        emitExpression(methodVisitor, expression.leftExpression!!)
+
+        if (expression.rightExpression is AssignmentExpression) {
+            emitAssignment(methodVisitor, expression.rightExpression, true)
         } else {
-            emitExpression(methodVisitor, expression.expression!!)
+            emitExpression(methodVisitor, expression.rightExpression!!)
         }
 
         if (inAssignment || expression.retainLastValue) {
             // Duplicates value since there is another assignment going on
-            val finalType = expression.expression.castTo ?: expression.expression.type!!
-            if (finalType == PrimitiveType.F64 || finalType == PrimitiveType.I64) methodVisitor.visitInsn(Opcodes.DUP2)
-            else methodVisitor.visitInsn(Opcodes.DUP)
+            val finalType = expression.rightExpression.castTo ?: expression.rightExpression.type!!
+            val requireLargeDup = finalType == PrimitiveType.F64 || finalType == PrimitiveType.I64
+
+            when (expression.leftExpression) {
+                is IndexExpression ->
+                    methodVisitor.visitInsn(if (requireLargeDup) Opcodes.DUP2_X2 else Opcodes.DUP_X2)
+                else ->
+                    methodVisitor.visitInsn(if (requireLargeDup) Opcodes.DUP2 else Opcodes.DUP)
+            }
         }
 
-        methodVisitor.visitVarInsn(
-            expression.expression.castTo?.storeOpcode ?: expression.expression.type!!.storeOpcode,
-            expression.index!!
-        )
+        // Store Values based on left expression's type
+        when (expression.leftExpression) {
+            is IndexExpression -> {
+                methodVisitor.visitInsn((expression.leftExpression.previousExpression?.type as ArrayType).getContentStoreOpcode()!!)
+            }
+            is IdentifierCallExpression -> {
+                // TODO: Implement field assignment
+                methodVisitor.visitVarInsn(
+                    expression.leftExpression.type!!.storeOpcode,
+                    expression.leftExpression.index!!
+                )
+            }
+            else -> {}
+        }
+
+//        methodVisitor.visitVarInsn(
+//            expression.rightExpression.castTo?.storeOpcode ?: expression.rightExpression.type!!.storeOpcode,
+//            expression.index!!
+//        )
 
         emitAutoCast(methodVisitor, expression)
     }

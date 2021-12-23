@@ -167,40 +167,49 @@ class Checker {
                 expression.type
             }
             is AssignmentExpression -> {
-                val expressionType = checkExpression(expression.expression, scope)
+                val leftType = checkExpression(expression.leftExpression, scope)
+                val rightType = checkExpression(expression.rightExpression, scope)
 
-                val variable = scope.findVariable(expression.identifier!!.literal)
+                if (expression.leftExpression is IdentifierCallExpression) {
+                    // TODO: Implement field assignment
+                    val variable = scope.findVariable(expression.leftExpression.name!!.literal)
 
-                if (variable == null) {
-                    reports += Error(
-                        expression.identifier.pos,
-                        "Variable ${expression.identifier.literal} does not exist in this context"
-                    )
-                } else {
-                    if (!variable.mutable) {
+                    if (variable == null) {
                         reports += Error(
-                            expression.identifier.pos,
-                            "Variable ${expression.identifier.literal} is not mutable",
-                            "Declare variable ${expression.identifier.literal} with `mut` keyword"
+                            expression.leftExpression.pos,
+                            "Variable ${expression.leftExpression.name.literal} does not exist in this context"
                         )
-                    }
+                    } else {
+                        if (!variable.mutable) {
+                            reports += Error(
+                                expression.leftExpression.pos,
+                                "Variable ${expression.leftExpression.name.literal} is not mutable",
+                                "Declare variable ${expression.leftExpression.name.literal} with `mut` keyword"
+                            )
+                        }
 
-                    if (expressionType == PrimitiveType.Unit) {
-                        reports += Error(
-                            expression.expression?.pos,
-                            "Could not store void type into variable"
-                        )
-                    }
+                        if (rightType == PrimitiveType.Unit) {
+                            reports += Error(
+                                expression.rightExpression?.pos,
+                                "Could not store void type into variable"
+                            )
+                        }
 
-                    expression.isFieldAssignment = false
-                    expression.index = scope.findVariableIndex(expression.identifier.literal)
+                        expression.leftExpression.isAssignedBy = true
+                    }
+                } else if (expression.leftExpression is IndexExpression) {
+                    expression.leftExpression.isAssignedBy = expression.rightExpression !is IndexExpression
                 }
 
-                if (!TypeUtil.canCast(expressionType, variable?.type)) {
-                    reports.reportTypeMismatch(expression.identifier.pos, variable?.type, expression.type)
+                if (!TypeUtil.canCast(rightType, expression.leftExpression?.type)) {
+                    reports.reportTypeMismatch(
+                        expression.rightExpression?.pos,
+                        expression.leftExpression?.type,
+                        rightType
+                    )
                 } else {
-                    expression.expression?.castTo = variable?.type
-                    expression.type = variable?.type
+                    expression.rightExpression?.castTo = leftType
+                    expression.type = leftType
                 }
 
                 expression.type
@@ -375,7 +384,12 @@ class Checker {
                                 "Consider add [] after type name"
                             )
                         }
-                        else -> checkArrayType(expression, scope, inferType.baseType, expression.inferTypeReference.position)
+                        else -> checkArrayType(
+                            expression,
+                            scope,
+                            inferType.baseType,
+                            expression.inferTypeReference.position
+                        )
                     }
                 } else {
                     if (expression.elements.isEmpty()) {
@@ -413,7 +427,12 @@ class Checker {
         }
     }
 
-    private fun checkArrayType(expression: ArrayInitialization, scope: Scope, forcedFinalType: Type? = null, inferTypePos: Position? = null) {
+    private fun checkArrayType(
+        expression: ArrayInitialization,
+        scope: Scope,
+        forcedFinalType: Type? = null,
+        inferTypePos: Position? = null
+    ) {
         // TODO: Support Object's promotion?
         val forceFinalType = forcedFinalType != null
         val expressionTypes = mutableListOf<Type?>()

@@ -5,15 +5,18 @@ class A {
 impl A {
     comp {
         mut fn main(s: str[]) {
-            mut a := i32:[1]{}
-            mut b := i32:[][][]{}
+            mut a := i32:[1][2]{}
+            mut b := 1
             mut c := {1}
 
-            mut d := java::lang::System:[1]{}
-            mut e := java::lang::System:[][][]{}
-            mut f := { java::lang::System.out }
+            a()[0] = a[0][1] = c[0] = b = 4
 
-            java::lang::System.out.println(a[0])
+            java::lang::System.out.println(a[0][1])
+            java::lang::System.out.println(c[0])
+        }
+
+        fn a(): i32[] {
+            return { 1 }
         }
     }
 }

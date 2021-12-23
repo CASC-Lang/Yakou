@@ -6,7 +6,8 @@
 - [ ] package declaration
 - [ ] usage
 - [x] array declaration
-- [ ] array indexing (assignment)
+- [x] array indexing (assignment)
+- [ ] string literal
 - [ ] block
 - [ ] loops
 - - [ ] for loop (C loop)

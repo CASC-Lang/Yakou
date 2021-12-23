@@ -341,59 +341,15 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         parseAssignment(inCompanionContext, retainValue)
 
     private fun parseAssignment(inCompanionContext: Boolean, retainValue: Boolean = false): Expression? {
-        var expression = if (peekMultiple(2) == listOf(TokenType.Identifier, TokenType.Equal)) {
-            val name = next()
+        var expression = parseBinaryExpression(0, inCompanionContext)
+
+        while (peek()?.type == TokenType.Equal) {
+            // Assignment
             val operator = next()
-            val expression = parseExpression(inCompanionContext, retainValue)
 
-            AssignmentExpression(name, operator, expression, retainValue)
-        } else {
-            parseBinaryExpression(inCompanionContext = inCompanionContext)
-        }
+            val rightExpression = parseExpression(inCompanionContext, true)
 
-        while (true) {
-            if (peek()?.type == TokenType.Dot) {
-                // Chain calling
-                consume()
-
-                val name = assert(TokenType.Identifier)
-
-                if (peek()?.type == TokenType.OpenParenthesis) {
-                    consume()
-
-                    val arguments = parseArguments(inCompanionContext)
-
-                    assert(TokenType.CloseParenthesis)
-
-                    val pos = name?.pos?.extend(arguments.lastOrNull()?.pos)?.extend()
-
-                    expression = FunctionCallExpression(
-                        null,
-                        name,
-                        arguments,
-                        inCompanionContext,
-                        previousExpression = expression,
-                        pos = pos
-                    )
-                } else {
-                    val pos = name?.pos?.extend(name.pos)
-
-                    expression = IdentifierCallExpression(null, name, previousExpression = expression, pos = pos)
-                }
-            } else if (peek()?.type == TokenType.OpenBracket) {
-                // Index expression
-                consume()
-
-                val indexExpression = parseExpression(inCompanionContext, true)
-
-                val closeBracket = assert(TokenType.CloseBracket)
-
-                expression = IndexExpression(
-                    expression,
-                    indexExpression,
-                    expression?.pos?.extend(closeBracket?.pos)
-                )
-            } else break
+            expression = AssignmentExpression(expression, operator, rightExpression, retainValue, )
         }
 
         return expression
@@ -431,14 +387,66 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         return left
     }
 
-    private fun parsePrimaryExpression(inCompanionContext: Boolean): Expression? =
-        when (peek()?.type) {
+    private fun parsePrimaryExpression(inCompanionContext: Boolean): Expression? {
+        var expression = when (peek()?.type) {
             TokenType.IntegerLiteral -> IntegerLiteral(next())
             TokenType.FloatLiteral -> FloatLiteral(next())
             TokenType.Identifier -> parseSecondaryExpression(inCompanionContext)
             TokenType.OpenBrace -> parseArrayInitialization(inCompanionContext)
             else -> null
         }
+
+        if (expression is IdentifierCallExpression || expression is FunctionCallExpression) {
+            while (true) {
+                if (peek()?.type == TokenType.Dot) {
+                    // Chain calling
+                    consume()
+
+                    val name = assert(TokenType.Identifier)
+
+                    if (peek()?.type == TokenType.OpenParenthesis) {
+                        // Member function
+                        consume()
+
+                        val arguments = parseArguments(inCompanionContext)
+
+                        assert(TokenType.CloseParenthesis)
+
+                        val pos = name?.pos?.extend(arguments.lastOrNull()?.pos)?.extend()
+
+                        expression = FunctionCallExpression(
+                            null,
+                            name,
+                            arguments,
+                            inCompanionContext,
+                            previousExpression = expression,
+                            pos = pos
+                        )
+                    } else {
+                        // Member field
+                        val pos = name?.pos?.extend(name.pos)
+
+                        expression = IdentifierCallExpression(null, name, previousExpression = expression, pos = pos)
+                    }
+                } else if (peek()?.type == TokenType.OpenBracket) {
+                    // Index expression
+                    consume()
+
+                    val indexExpression = parseExpression(inCompanionContext, true)
+
+                    val closeBracket = assert(TokenType.CloseBracket)
+
+                    expression = IndexExpression(
+                        expression,
+                        indexExpression,
+                        pos = expression?.pos?.extend(closeBracket?.pos)
+                    )
+                } else break
+            }
+        }
+
+        return expression
+    }
 
     private fun parseSecondaryExpression(inCompanionContext: Boolean): Expression {
         val name = next()

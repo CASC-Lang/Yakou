@@ -48,6 +48,7 @@ sealed class Expression {
         val ownerReference: Reference?, // Companion field calling
         val name: Token?,
         var index: Int? = null,
+        var isAssignedBy: Boolean = false,
         var previousExpression: Expression? = null, // Used in chain calling, e.g. Identifier `a` in a.lol
         override val pos: Position? = name?.pos
     ) : Expression()
@@ -68,23 +69,24 @@ sealed class Expression {
     data class IndexExpression(
         val previousExpression: Expression?,
         val indexExpression: Expression?,
+        var isAssignedBy: Boolean = false,
         override val pos: Position? = previousExpression?.pos?.extend(indexExpression?.pos)
     ) : Expression() {
         override fun getExpressions(): List<Expression?> =
             listOf(previousExpression, indexExpression)
     }
 
+    // Specifically used by local variable assignment
+    // TODO: change identifier into expression
     data class AssignmentExpression(
-        val identifier: Token?,
+        val leftExpression: Expression?,
         val operator: Token?,
-        val expression: Expression?,
+        val rightExpression: Expression?,
         val retainLastValue: Boolean, // If assignment doesn't happen in pure ExpressionStatement, then it must retain its final value
-        var isFieldAssignment: Boolean = false,
-        var index: Int? = null,
-        override val pos: Position? = identifier?.pos?.extend(expression?.pos)
+        override val pos: Position? = leftExpression?.pos?.extend(rightExpression?.pos)
     ) : Expression() {
         override fun getExpressions(): List<Expression?> =
-            listOf(expression)
+            listOf(rightExpression)
     }
 
     data class UnaryExpression(
