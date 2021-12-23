@@ -111,6 +111,8 @@ sealed class Expression {
         var left: Expression?, val operator: Token?, var right: Expression?,
         override val pos: Position? = left?.pos?.extend(right?.pos)
     ) : Expression() {
+        var isComparison = false
+
         override fun getExpressions(): List<Expression?> =
             listOf(left, right)
 

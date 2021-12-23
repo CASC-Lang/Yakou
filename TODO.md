@@ -12,11 +12,13 @@
 - [x] bool literal
 - [x] null literal
 - [x] is-else expression
-- [ ] comparison operators
+- [x] comparison operators
+- [ ] shift operators
 - [ ] null check
-- [ ] block
+- [x] block
 - [ ] loops
-- - [x] for loop (Java loop)
+- - [x] for loop (Java loop) NOTE: WILL REMOVE AFTER 
+- - [ ] range for loop
 - - [ ] while loop
 - - [ ] do-while loop
 

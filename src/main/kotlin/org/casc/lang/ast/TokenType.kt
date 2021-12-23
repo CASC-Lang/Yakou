@@ -18,7 +18,14 @@ enum class TokenType {
     SemiColon,
     Comma,
     Dot,
+    Bang,
     Equal,
+    EqualEqual,
+    BangEqual,
+    Greater,
+    GreaterEqual,
+    Lesser,
+    LesserEqual,
     Plus,
     Minus,
     Star,
@@ -26,13 +33,15 @@ enum class TokenType {
     Percentage;
 
     fun unaryPrecedence(): Int = when (this) {
-        Plus, Minus -> 6
+        Plus, Minus, Bang -> 6
         else -> 0
     }
 
     fun binaryPrecedence(): Int = when (this) {
         Star, Slash, Percentage -> 5
         Plus, Minus -> 4
+        Greater, GreaterEqual, Lesser, LesserEqual -> 3
+        EqualEqual, BangEqual -> 2
         else -> 0
     }
 }

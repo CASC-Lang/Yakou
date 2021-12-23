@@ -253,12 +253,14 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             is UnaryExpression -> {
                 emitExpression(methodVisitor, expression.expression!!)
 
-                emitAutoCast(methodVisitor, expression)
-
-                when (expression.operator?.type) {
-                    TokenType.Minus -> methodVisitor.visitInsn((expression.type!! as PrimitiveType).negOpcode)
-                    TokenType.Plus -> {} // No effect
-                    else -> {}
+                if (expression.operator?.type == TokenType.Bang) {
+                    emitComparisonExpression(methodVisitor, expression)
+                } else {
+                    when (expression.operator?.type) {
+                        TokenType.Minus -> methodVisitor.visitInsn((expression.type!! as PrimitiveType).negOpcode)
+                        TokenType.Plus -> {} // No effect
+                        else -> {}
+                    }
                 }
             }
             is BinaryExpression -> {
@@ -270,19 +272,21 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                 if (expression.right!!.castTo != null)
                     emitAutoCast(methodVisitor, expression.right!!.type!!, expression.right!!.castTo!!)
 
-                emitAutoCast(methodVisitor, expression)
+                if (expression.isComparison) {
+                    emitComparisonExpression(methodVisitor, expression)
+                } else {
+                    val type = (expression.type!! as PrimitiveType)
+                    val opcode = when (expression.operator?.type) {
+                        TokenType.Plus -> type.addOpcode
+                        TokenType.Minus -> type.subOpcode
+                        TokenType.Star -> type.mulOpcode
+                        TokenType.Slash -> type.divOpcode
+                        TokenType.Percentage -> type.remOpcode
+                        else -> null // Should not be null
+                    }
 
-                val type = (expression.type!! as PrimitiveType)
-                val opcode = when (expression.operator?.type) {
-                    TokenType.Plus -> type.addOpcode
-                    TokenType.Minus -> type.subOpcode
-                    TokenType.Star -> type.mulOpcode
-                    TokenType.Slash -> type.divOpcode
-                    TokenType.Percentage -> type.remOpcode
-                    else -> null // Should not be null
+                    methodVisitor.visitInsn(opcode!!)
                 }
-
-                methodVisitor.visitInsn(opcode!!)
             }
             is ArrayInitialization -> {
                 methodVisitor.visitLdcInsn(expression.elements.size)
@@ -376,12 +380,34 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             else -> {}
         }
 
-//        methodVisitor.visitVarInsn(
-//            expression.rightExpression.castTo?.storeOpcode ?: expression.rightExpression.type!!.storeOpcode,
-//            expression.index!!
-//        )
-
         emitAutoCast(methodVisitor, expression)
+    }
+
+    private fun emitComparisonExpression(methodVisitor: MethodVisitor, expression: Expression) {
+        val trueLabel = Label()
+        val endLabel = Label()
+
+        if (expression is BinaryExpression) {
+            val opcode = when (expression.operator!!.type) {
+                TokenType.EqualEqual -> Opcodes.IF_ICMPEQ
+                TokenType.BangEqual -> Opcodes.IF_ICMPNE
+                TokenType.Greater -> Opcodes.IF_ICMPGT
+                TokenType.GreaterEqual -> Opcodes.IF_ICMPGE
+                TokenType.Lesser -> Opcodes.IF_ICMPLT
+                TokenType.LesserEqual -> Opcodes.IF_ICMPLE
+                else -> -1 // Should not be -1
+            }
+
+            methodVisitor.visitJumpInsn(opcode, trueLabel)
+        } else if (expression is UnaryExpression) {
+            methodVisitor.visitJumpInsn(Opcodes.IFEQ, trueLabel)
+        }
+
+        methodVisitor.visitInsn(Opcodes.ICONST_0)
+        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
+        methodVisitor.visitLabel(trueLabel)
+        methodVisitor.visitInsn(Opcodes.ICONST_1)
+        methodVisitor.visitLabel(endLabel)
     }
 
     private fun emitAutoCast(methodVisitor: MethodVisitor, expression: Expression) {

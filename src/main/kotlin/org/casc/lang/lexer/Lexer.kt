@@ -215,7 +215,42 @@ class Lexer(val chunkedSource: List<String>) {
                     ';' -> tokens.charToken(source, TokenType.SemiColon)
                     ',' -> tokens.charToken(source, TokenType.Comma)
                     '.' -> tokens.charToken(source, TokenType.Dot)
-                    '=' -> tokens.charToken(source, TokenType.Equal)
+                    '!' -> when (source[pos + 1]) {
+                        '=' ->
+                            tokens += Token(
+                                source.substring(pos..pos + 1),
+                                TokenType.BangEqual,
+                                Position(lineNumber, pos, skip(2) + 1)
+                            )
+                        else -> tokens.charToken(source, TokenType.Bang)
+                    }
+                    '=' -> when (source[pos + 1]) {
+                        '=' ->
+                            tokens += Token(
+                                source.substring(pos..pos + 1),
+                                TokenType.EqualEqual,
+                                Position(lineNumber, pos, skip(2) + 1)
+                            )
+                        else -> tokens.charToken(source, TokenType.Equal)
+                    }
+                    '>' -> when (source[pos + 1]) {
+                        '=' ->
+                            tokens += Token(
+                                source.substring(pos..pos + 1),
+                                TokenType.GreaterEqual,
+                                Position(lineNumber, pos, skip(2) + 1)
+                            )
+                        else -> tokens.charToken(source, TokenType.Greater)
+                    }
+                    '<' -> when (source[pos + 1]) {
+                        '=' ->
+                            tokens += Token(
+                                source.substring(pos..pos + 1),
+                                TokenType.LesserEqual,
+                                Position(lineNumber, pos, skip(2) + 1)
+                            )
+                        else -> tokens.charToken(source, TokenType.Lesser)
+                    }
                     '+' -> tokens.charToken(source, TokenType.Plus)
                     '-' -> tokens.charToken(source, TokenType.Minus)
                     '*' -> tokens.charToken(source, TokenType.Star)

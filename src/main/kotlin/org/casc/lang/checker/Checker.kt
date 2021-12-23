@@ -425,29 +425,83 @@ class Checker {
                 expression.type
             }
             is UnaryExpression -> {
-                val type = checkExpression(expression.expression, scope)
-
-                if (type !is PrimitiveType || !type.isNumericType()) {
-                    reports += Error(
-                        expression.operator?.pos,
-                        "Could not apply unary operator on object types",
-                        "Remove this operator"
-                    )
-                } else expression.type = type
+                when (val type = checkExpression(expression.expression, scope)) {
+                    is PrimitiveType -> when (expression.operator?.type) {
+                         TokenType.Plus, TokenType.Minus -> {
+                            if (!type.isNumericType()) {
+                                reports += Error(
+                                    expression.operator.pos,
+                                    "Could not apply ${expression.operator.literal} on non-numeric type",
+                                    "Remove this operator"
+                                )
+                            } else expression.type = type
+                        }
+                        TokenType.Bang -> {
+                            if (type != PrimitiveType.Bool) {
+                                reports += Error(
+                                    expression.operator.pos,
+                                    "Could not apply ${expression.operator.literal} on non-bool type",
+                                    "Remove this operator"
+                                )
+                            } else expression.type = type
+                        }
+                        else -> {} // Should not be here
+                    }
+                    else -> {
+                        reports += Error(
+                            expression.operator?.pos,
+                            "Could not apply unary operator on object type",
+                            "Remove this operator"
+                        )
+                    }
+                }
 
                 expression.type
             }
             is BinaryExpression -> {
+                val operator = expression.operator?.type
                 val leftType = checkExpression(expression.left, scope)
                 val rightType = checkExpression(expression.right, scope)
 
-                if ((leftType !is PrimitiveType || !leftType.isNumericType()) || (rightType !is PrimitiveType || !rightType.isNumericType())) {
+                if (leftType !is PrimitiveType || rightType !is PrimitiveType) {
                     reports += Error(
                         expression.operator?.pos,
-                        "Could not apply binary operator on object types",
+                        "Could not apply binary operator on object type",
                         "Remove this operator"
                     )
-                } else expression.promote()
+                } else {
+                    when (operator) {
+                        TokenType.Plus, TokenType.Minus, TokenType.Star, TokenType.Slash, TokenType.Percentage -> {
+                            if (leftType.isNumericType() && rightType.isNumericType()) {
+                                expression.promote()
+                            } else {
+                                reports += Error(
+                                    expression.operator.pos,
+                                    "Could not apply ${expression.operator.literal} on non-numeric type",
+                                    "Remove this operator"
+                                )
+                            }
+                        }
+                        TokenType.Greater, TokenType.GreaterEqual, TokenType.Lesser, TokenType.LesserEqual -> {
+                            if (leftType.isNumericType() && rightType.isNumericType()) {
+                                expression.promote()
+                                expression.type = PrimitiveType.Bool
+                                expression.isComparison = true
+                            } else {
+                                reports += Error(
+                                    expression.operator.pos,
+                                    "Could not apply ${expression.operator.literal} on non-numeric type",
+                                    "Remove this operator"
+                                )
+                            }
+                        }
+                        TokenType.EqualEqual, TokenType.BangEqual -> {
+                            expression.type = PrimitiveType.Bool
+                            expression.isComparison = true
+                        }
+                        else -> {}
+                    }
+                }
 
                 expression.type
             }
