@@ -70,6 +70,10 @@ class Compilation(val file: File) {
                 BufferedReader(process.inputReader())
                     .lines()
                     .forEach(::println)
+
+                BufferedReader(process.errorReader())
+                    .lines()
+                    .forEach(::println)
             }
         }
     }

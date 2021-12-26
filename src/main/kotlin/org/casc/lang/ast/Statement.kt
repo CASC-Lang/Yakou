@@ -22,10 +22,10 @@ sealed class Statement {
     ) : Statement()
 
     data class JForStatement(
-        val initExpression: Expression?,
+        val initStatement: Statement?,
         val condition: Expression?,
         val postExpression: Expression?,
-        val statements: List<Statement?>,
+        val statement: Statement?,
         override val pos: Position?
     ) : Statement()
 

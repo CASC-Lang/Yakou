@@ -21,5 +21,6 @@ typealias IndexExpression = Expression.IndexExpression
 typealias AssignmentExpression = Expression.AssignmentExpression
 typealias UnaryExpression = Expression.UnaryExpression
 typealias BinaryExpression = Expression.BinaryExpression
+typealias ParenthesizedExpression = Expression.ParenthesizedExpression
 typealias ArrayInitialization = Expression.ArrayInitialization
 typealias ArrayDeclaration = Expression.ArrayDeclaration

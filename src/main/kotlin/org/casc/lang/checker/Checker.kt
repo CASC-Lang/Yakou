@@ -28,6 +28,16 @@ class Checker {
     private fun checkClass(clazz: Class): Class {
         val classScope = Scope(globalScope)
 
+        clazz.usages.mapNotNull {
+            val type = TypeUtil.asType(it)
+
+            if (type == null) {
+                reports.reportUnknownTypeSymbol(it!!)
+
+                null
+            } else it
+        }.forEach(classScope.usages::add)
+
         clazz.functions = clazz.functions.map {
             checkFunction(it, classScope)
         }
@@ -104,7 +114,7 @@ class Checker {
         scope.findType(reference)
 
     private fun checkStatement(
-        statement: Statement,
+        statement: Statement?,
         scope: Scope,
         returnType: Type? = null,
         useSameScope: Boolean = false
@@ -151,7 +161,7 @@ class Checker {
             is JForStatement -> {
                 val innerScope = Scope(scope)
 
-                checkExpression(statement.initExpression, innerScope)
+                checkStatement(statement.initStatement, innerScope, useSameScope = true)
 
                 if (statement.condition != null) {
                     val conditionType = checkExpression(statement.condition, innerScope)
@@ -169,9 +179,7 @@ class Checker {
 
                 checkExpression(statement.postExpression, innerScope)
 
-                statement.statements.forEach {
-                    checkStatement(it!!, innerScope, useSameScope = true)
-                }
+                checkStatement(statement.statement, innerScope, useSameScope = true)
             }
             is BlockStatement -> {
                 statement.statements.forEach {
@@ -196,6 +204,7 @@ class Checker {
                     reports.reportTypeMismatch(statement.pos!!, returnType, expressionType)
                 } else statement.returnType = returnType
             }
+            else -> {}
         }
     }
 
@@ -331,20 +340,32 @@ class Checker {
 
                     expression.type
                 } else {
-                    // Local variable / current class field
-                    val variable = scope.findVariable(expression.name!!.literal)
+                    // Check identifier is class name or not
+                    val classType = scope.findType(expression.name?.literal)
 
-                    if (variable == null) {
-                        reports += Error(
-                            expression.pos,
-                            "Variable ${expression.name} does not exist in current context"
-                        )
+                    if (classType != null) {
+                        // Class companion member call
+
+                        expression.type = classType
+                        expression.isClassName = true
+
+                        classType
                     } else {
-                        expression.type = variable.type
-                        expression.index = scope.findVariableIndex(expression.name.literal)
-                    }
+                        // Local variable / current class field
+                        val variable = scope.findVariable(expression.name!!.literal)
 
-                    variable?.type
+                        if (variable == null) {
+                            reports += Error(
+                                expression.pos,
+                                "Variable ${expression.name.literal} does not exist in current context"
+                            )
+                        } else {
+                            expression.type = variable.type
+                            expression.index = scope.findVariableIndex(expression.name.literal)
+                        }
+
+                        variable?.type
+                    }
                 }
             }
             is FunctionCallExpression -> {
@@ -427,7 +448,7 @@ class Checker {
             is UnaryExpression -> {
                 when (val type = checkExpression(expression.expression, scope)) {
                     is PrimitiveType -> when (expression.operator?.type) {
-                         TokenType.Plus, TokenType.Minus -> {
+                        TokenType.Plus, TokenType.Minus -> {
                             if (!type.isNumericType()) {
                                 reports += Error(
                                     expression.operator.pos,
@@ -435,6 +456,15 @@ class Checker {
                                     "Remove this operator"
                                 )
                             } else expression.type = type
+                        }
+                        TokenType.Tilde -> {
+                            if ((PrimitiveType.promotionTable[type] ?: 2) > 2) {
+                                reports += Error(
+                                    expression.operator.pos,
+                                    "Could not apply ${expression.operator.literal} on non-integer type",
+                                    "Remove this operator"
+                                )
+                            }
                         }
                         TokenType.Bang -> {
                             if (type != PrimitiveType.Bool) {
@@ -486,7 +516,6 @@ class Checker {
                             if (leftType.isNumericType() && rightType.isNumericType()) {
                                 expression.promote()
                                 expression.type = PrimitiveType.Bool
-                                expression.isComparison = true
                             } else {
                                 reports += Error(
                                     expression.operator.pos,
@@ -495,14 +524,41 @@ class Checker {
                                 )
                             }
                         }
+                        TokenType.DoublePipe, TokenType.DoubleAmpersand -> {
+                            if (leftType == PrimitiveType.Bool && rightType == PrimitiveType.Bool) {
+                                expression.type = PrimitiveType.Bool
+                            } else {
+                                reports += Error(
+                                    expression.operator.pos,
+                                    "Could not apply ${expression.operator.literal} on non-bool type",
+                                    "Remove this operator"
+                                )
+                            }
+                        }
+                        TokenType.Pipe, TokenType.Hat, TokenType.Ampersand,
+                        TokenType.DoubleGreater, TokenType.TripleGreater, TokenType.DoubleLesser -> {
+                            if ((PrimitiveType.promotionTable[leftType] ?: 2) <= 2 &&
+                                (PrimitiveType.promotionTable[rightType] ?: 2) <= 2) {
+                                expression.promote()
+                            } else {
+                                reports += Error(
+                                    expression.operator.pos,
+                                    "Could not apply ${expression.operator.literal} on non-integer type",
+                                    "Remove this operator"
+                                )
+                            }
+                        }
                         TokenType.EqualEqual, TokenType.BangEqual -> {
                             expression.type = PrimitiveType.Bool
-                            expression.isComparison = true
                         }
                         else -> {}
                     }
                 }
 
+                expression.type
+            }
+            is ParenthesizedExpression -> {
+                expression.type = checkExpression(expression.expression, scope)
                 expression.type
             }
             is ArrayInitialization -> {

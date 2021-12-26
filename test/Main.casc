@@ -1,9 +1,16 @@
+use java::{ lang::System, io::PrintStream }
+
 class Main {
 
 }
 
 impl Main {
     comp {
+        fn main(args: str[]) {
+            a := 5
+            b := 7
 
+            System.out.println(a | b)
+        }
     }
 }

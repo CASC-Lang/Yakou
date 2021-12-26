@@ -24,7 +24,8 @@ object TypeUtil {
         } ?: asType(clazz.name)
 
     private fun asArrayType(name: String): ArrayType? =
-        if (name.substring(name.length - 2 until name.length) == "[]") {
+        if (name.length < 2) null
+        else if (name.substring(name.length - 2) == "[]") {
             val baseType = asType(name.substring(0 until name.length - 2))
 
             if (baseType == null) null

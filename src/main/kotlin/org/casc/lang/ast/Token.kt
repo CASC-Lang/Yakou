@@ -3,6 +3,12 @@ package org.casc.lang.ast
 data class Token(var literal: String, val type: TokenType, val pos: Position) {
     constructor(literal: Char, type: TokenType, pos: Position): this(literal.toString(), type, pos)
 
+    fun isPackageKeyword(): Boolean =
+        literal == "package"
+
+    fun isUseKeyword(): Boolean =
+        literal == "use"
+
     fun isClassKeyword(): Boolean =
         literal == "class"
 

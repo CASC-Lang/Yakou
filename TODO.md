@@ -17,7 +17,7 @@
 - [ ] null check
 - [x] block
 - [ ] loops
-- - [x] for loop (Java loop) NOTE: WILL REMOVE AFTER 
+- - [x] for loop (Java loop)
 - - [ ] range for loop
 - - [ ] while loop
 - - [ ] do-while loop

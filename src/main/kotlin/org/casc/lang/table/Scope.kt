@@ -126,9 +126,17 @@ data class Scope(
         return index
     }
 
+    fun findType(className: String?): Type? =
+        if (className == null) null
+        else TypeUtil.asType(usages.find {
+            it.className == className
+        }) ?: TypeUtil.asType(className)
+
     fun findType(reference: Reference?): Type? =
         if (reference == null) null
-        else TypeUtil.asType(reference)
+        else TypeUtil.asType(usages.find {
+            it.className == reference.className
+        }) ?: TypeUtil.asType(reference)
 
     private fun retrieveExecutableInfo(ownerType: Type, argumentTypes: List<Type>): Pair<Class<*>, Array<Class<*>>> =
         ownerType.type()!! to argumentTypes.mapNotNull(Type::type).toTypedArray()

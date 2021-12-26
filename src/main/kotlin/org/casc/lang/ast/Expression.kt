@@ -1,6 +1,9 @@
 package org.casc.lang.ast
 
-import org.casc.lang.table.*
+import org.casc.lang.table.FunctionSignature
+import org.casc.lang.table.PrimitiveType
+import org.casc.lang.table.Reference
+import org.casc.lang.table.Type
 
 sealed class Expression {
     abstract val pos: Position?
@@ -50,7 +53,7 @@ sealed class Expression {
 
     data class BoolLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression()
 
-    data class NullLiteral(val literal: Token?, override val pos: Position? = literal?.pos): Expression()
+    data class NullLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression()
 
     data class IdentifierCallExpression(
         val ownerReference: Reference?, // Companion field calling
@@ -58,6 +61,7 @@ sealed class Expression {
         var index: Int? = null,
         var isAssignedBy: Boolean = false,
         var previousExpression: Expression? = null, // Used in chain calling, e.g. Identifier `a` in a.lol
+        var isClassName: Boolean = false,
         override val pos: Position? = name?.pos
     ) : Expression()
 
@@ -111,8 +115,6 @@ sealed class Expression {
         var left: Expression?, val operator: Token?, var right: Expression?,
         override val pos: Position? = left?.pos?.extend(right?.pos)
     ) : Expression() {
-        var isComparison = false
-
         override fun getExpressions(): List<Expression?> =
             listOf(left, right)
 
@@ -133,6 +135,11 @@ sealed class Expression {
             }
         }
     }
+
+    data class ParenthesizedExpression(
+        val expression: Expression?,
+        override val pos: Position? = expression?.pos
+    ) : Expression()
 
     data class ArrayInitialization(
         val inferTypeReference: Reference?,

@@ -98,8 +98,8 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                 }
             }
             is JForStatement -> {
-                if (statement.initExpression != null)
-                    emitExpression(methodVisitor, statement.initExpression)
+                if (statement.initStatement != null)
+                    emitStatement(methodVisitor, statement.initStatement)
 
                 val startLabel = Label()
                 val endLabel = Label()
@@ -112,9 +112,7 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
 
                 methodVisitor.visitJumpInsn(Opcodes.IFEQ, endLabel)
 
-                statement.statements.forEach {
-                    emitStatement(methodVisitor, it!!)
-                }
+                emitStatement(methodVisitor, statement.statement!!)
 
                 if (statement.postExpression != null)
                     emitExpression(methodVisitor, statement.postExpression)
@@ -202,7 +200,7 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                         expression.name!!.literal,
                         expression.type!!.descriptor
                     )
-                } else {
+                } else if (!expression.isClassName) {
                     // Local variables / current class fields
                     if (!expression.isAssignedBy) {
                         val variableIndex = expression.index!!
@@ -253,41 +251,65 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             is UnaryExpression -> {
                 emitExpression(methodVisitor, expression.expression!!)
 
-                if (expression.operator?.type == TokenType.Bang) {
-                    emitComparisonExpression(methodVisitor, expression)
-                } else {
-                    when (expression.operator?.type) {
-                        TokenType.Minus -> methodVisitor.visitInsn((expression.type!! as PrimitiveType).negOpcode)
-                        TokenType.Plus -> {} // No effect
-                        else -> {}
+                when (expression.operator?.type) {
+                    TokenType.Bang -> {
+                        emitComparisonExpression(methodVisitor, expression)
+                    }
+                    TokenType.Tilde -> when (expression.type) {
+                        PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> {
+                            methodVisitor.visitInsn(Opcodes.IXOR)
+                        }
+                        PrimitiveType.I64 -> {
+                            methodVisitor.visitInsn(Opcodes.LXOR)
+                        }
+                        else -> {} // No effect
+                    }
+                    else -> {
+                        when (expression.operator?.type) {
+                            TokenType.Minus -> methodVisitor.visitInsn((expression.type!! as PrimitiveType).negOpcode)
+                            TokenType.Plus -> {} // No effect
+                            else -> {}
+                        }
                     }
                 }
             }
             is BinaryExpression -> {
-                emitExpression(methodVisitor, expression.left!!)
-                if (expression.left!!.castTo != null)
-                    emitAutoCast(methodVisitor, expression.left!!.type!!, expression.left!!.castTo!!)
+                when (expression.operator?.type) {
+                    TokenType.DoubleAmpersand, TokenType.DoublePipe -> {
+                        emitBinaryExpressions(methodVisitor, expression.left!!, expression.right!!)
 
-                emitExpression(methodVisitor, expression.right!!)
-                if (expression.right!!.castTo != null)
-                    emitAutoCast(methodVisitor, expression.right!!.type!!, expression.right!!.castTo!!)
-
-                if (expression.isComparison) {
-                    emitComparisonExpression(methodVisitor, expression)
-                } else {
-                    val type = (expression.type!! as PrimitiveType)
-                    val opcode = when (expression.operator?.type) {
-                        TokenType.Plus -> type.addOpcode
-                        TokenType.Minus -> type.subOpcode
-                        TokenType.Star -> type.mulOpcode
-                        TokenType.Slash -> type.divOpcode
-                        TokenType.Percentage -> type.remOpcode
-                        else -> null // Should not be null
+                        emitAndOrOperators(methodVisitor, expression)
                     }
+                    TokenType.Greater, TokenType.GreaterEqual, TokenType.Lesser,
+                    TokenType.LesserEqual, TokenType.EqualEqual, TokenType.BangEqual -> {
+                        emitBinaryExpressions(methodVisitor, expression.left!!, expression.right!!)
 
-                    methodVisitor.visitInsn(opcode!!)
+                        emitComparisonExpression(methodVisitor, expression)
+                    }
+                    TokenType.Hat, TokenType.Pipe, TokenType.Ampersand,
+                    TokenType.DoubleGreater, TokenType.TripleGreater, TokenType.DoubleLesser -> {
+                        emitBinaryExpressions(methodVisitor, expression.left!!, expression.right!!)
+
+                        emitBitOperation(methodVisitor, expression)
+                    }
+                    else -> {
+                        emitBinaryExpressions(methodVisitor, expression.left!!, expression.right!!)
+
+                        val type = (expression.type!! as PrimitiveType)
+                        val opcode = when (expression.operator?.type) {
+                            TokenType.Plus -> type.addOpcode
+                            TokenType.Minus -> type.subOpcode
+                            TokenType.Star -> type.mulOpcode
+                            TokenType.Slash -> type.divOpcode
+                            TokenType.Percentage -> type.remOpcode
+                            else -> null // Should not be null
+                        }
+
+                        methodVisitor.visitInsn(opcode!!)
+                    }
                 }
             }
+            is ParenthesizedExpression -> emitExpression(methodVisitor, expression.expression!!)
             is ArrayInitialization -> {
                 methodVisitor.visitLdcInsn(expression.elements.size)
 
@@ -383,6 +405,18 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
         emitAutoCast(methodVisitor, expression)
     }
 
+    private fun emitBinaryExpressions(
+        methodVisitor: MethodVisitor,
+        leftExpression: Expression,
+        rightExpression: Expression
+    ) {
+        emitExpression(methodVisitor, leftExpression)
+        emitAutoCast(methodVisitor, leftExpression)
+
+        emitExpression(methodVisitor, rightExpression)
+        emitAutoCast(methodVisitor, rightExpression)
+    }
+
     private fun emitComparisonExpression(methodVisitor: MethodVisitor, expression: Expression) {
         val trueLabel = Label()
         val endLabel = Label()
@@ -408,6 +442,98 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
         methodVisitor.visitLabel(trueLabel)
         methodVisitor.visitInsn(Opcodes.ICONST_1)
         methodVisitor.visitLabel(endLabel)
+    }
+
+    private fun emitAndOrOperators(methodVisitor: MethodVisitor, expression: BinaryExpression) {
+        val operatorType = expression.operator!!.type
+        val trueLabel = Label()
+        val endLabel = Label()
+
+        emitExpression(methodVisitor, expression.left!!)
+        emitAutoCast(methodVisitor, expression.left!!)
+
+        if (operatorType == TokenType.DoubleAmpersand) {
+            methodVisitor.visitJumpInsn(Opcodes.IFEQ, trueLabel)
+        } else if (operatorType == TokenType.DoublePipe) {
+            methodVisitor.visitJumpInsn(Opcodes.IFNE, trueLabel)
+        }
+
+        emitExpression(methodVisitor, expression.right!!)
+        emitAutoCast(methodVisitor, expression.right!!)
+
+        if (operatorType == TokenType.DoubleAmpersand) {
+            methodVisitor.visitJumpInsn(Opcodes.IFEQ, trueLabel)
+            methodVisitor.visitInsn(Opcodes.ICONST_1)
+        } else if (operatorType == TokenType.DoublePipe) {
+            methodVisitor.visitJumpInsn(Opcodes.IFNE, trueLabel)
+            methodVisitor.visitInsn(Opcodes.ICONST_0)
+        }
+
+        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
+        methodVisitor.visitLabel(trueLabel)
+
+        if (operatorType == TokenType.DoubleAmpersand) {
+            methodVisitor.visitInsn(Opcodes.ICONST_0)
+        } else if (operatorType == TokenType.DoublePipe) {
+            methodVisitor.visitInsn(Opcodes.ICONST_1)
+        }
+
+        methodVisitor.visitLabel(endLabel)
+    }
+
+    private fun emitBitOperation(methodVisitor: MethodVisitor, expression: Expression) {
+        val operatorType = when (expression) {
+            is BinaryExpression -> expression.operator?.type
+            is UnaryExpression -> expression.operator?.type
+            else -> null
+        }
+        val type = expression.type
+
+        when (operatorType) {
+            TokenType.Hat, TokenType.Tilde -> {
+                if (type == PrimitiveType.I64) {
+                    methodVisitor.visitInsn(Opcodes.LXOR)
+                } else {
+                    methodVisitor.visitInsn(Opcodes.IXOR)
+                }
+            }
+            TokenType.Pipe -> {
+                if (type == PrimitiveType.I64) {
+                    methodVisitor.visitInsn(Opcodes.LOR)
+                } else {
+                    methodVisitor.visitInsn(Opcodes.IOR)
+                }
+            }
+            TokenType.Ampersand -> {
+                if (type == PrimitiveType.I64) {
+                    methodVisitor.visitInsn(Opcodes.LAND)
+                } else {
+                    methodVisitor.visitInsn(Opcodes.IAND)
+                }
+            }
+            TokenType.DoubleGreater -> {
+                if (type == PrimitiveType.I64) {
+                    methodVisitor.visitInsn(Opcodes.LSHR)
+                } else {
+                    methodVisitor.visitInsn(Opcodes.ISHR)
+                }
+            }
+            TokenType.TripleGreater -> {
+                if (type == PrimitiveType.I64) {
+                    methodVisitor.visitInsn(Opcodes.LUSHR)
+                } else {
+                    methodVisitor.visitInsn(Opcodes.IUSHR)
+                }
+            }
+            TokenType.DoubleLesser -> {
+                if (type == PrimitiveType.I64) {
+                    methodVisitor.visitInsn(Opcodes.LSHL)
+                } else {
+                    methodVisitor.visitInsn(Opcodes.ISHL)
+                }
+            }
+            else -> {} // No effect
+        }
     }
 
     private fun emitAutoCast(methodVisitor: MethodVisitor, expression: Expression) {

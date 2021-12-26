@@ -1,3 +1,5 @@
+use java::{ lang::System, io::PrintStream }
+
 class FizzBuzz {
 
 }
@@ -5,20 +7,19 @@ class FizzBuzz {
 impl FizzBuzz {
     comp {
         mut fn main(s: str[]) {
-            mut i := 1
-            for ; i < 100; i = i + 1 {
-                java::lang::System.out.print(i)
-                java::lang::System.out.print(" ")
+            for mut i := 1; i < 100; i = i + 1 {
+                System.out.print(i)
+                System.out.print(' ')
 
                 if i % 3 == 0 {
-                    java::lang::System.out.print("Fizz")
+                    System.out.print("Fizz")
                 }
 
                 if i % 5 == 0 {
-                    java::lang::System.out.print("Buzz")
+                    System.out.print("Buzz")
                 }
 
-                java::lang::System.out.println()
+                System.out.println()
             }
         }
     }

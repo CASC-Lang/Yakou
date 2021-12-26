@@ -81,8 +81,20 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
     }
 
     private fun parseFile(path: String): File {
-        // TODO: Package
-        // TODO: Usages
+        // Parse optional package declaration
+        val packageReference = if (peek()?.isPackageKeyword() == true) {
+            consume()
+            parseQualifiedName()
+        } else null
+
+        // Parse usages
+        val usages = mutableListOf<Reference?>()
+
+        while (peek()?.isUseKeyword() == true) {
+            consume()
+            usages += parseUsage()
+        }
+
         // Parse class declaration
         var accessor = assert(TokenType.Identifier)
         val classKeyword: Token?
@@ -133,10 +145,10 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         }
 
         assert(TokenType.OpenBrace)
-        val functions = parseFunctions(classReference)
+        val functions = parseFunctions(usages, classReference)
         assert(TokenType.CloseBrace)
 
-        val clazz = Class(accessor, classKeyword, className, functions)
+        val clazz = Class(packageReference, usages, accessor, classKeyword, className, functions)
 
         return File(path, clazz)
     }
@@ -146,6 +158,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
      */
     private fun parseQualifiedName(
         isParameter: Boolean = false,
+        isUsage: Boolean = false,
         prependPath: String = "",
         startPos: Position? = null
     ): Reference? {
@@ -153,16 +166,24 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         var nameBuilder = ""
 
         while (pos < tokens.size && peek()?.type == TokenType.Identifier) {
-            val identifier = assert(TokenType.Identifier)!!
+            val identifier = next()!!
 
             if (start == null) start = identifier.pos
 
             nameBuilder += identifier.literal
 
-            if (peek()?.type == TokenType.DoubleColon) {
-                consume()
-                nameBuilder += "."
-            } else break
+            nameBuilder += if (isUsage) {
+                if (peekMultiple(2) == listOf(TokenType.DoubleColon, TokenType.OpenBrace)) break
+                else if (peekMultiple(2) == listOf(TokenType.DoubleColon, TokenType.Identifier)) {
+                    consume()
+                    "."
+                } else break
+            } else {
+                if (peekMultiple(2) == listOf(TokenType.DoubleColon, TokenType.Identifier)) {
+                    consume()
+                    "."
+                } else break
+            }
         }
 
         if (isParameter) {
@@ -177,13 +198,43 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         return if (nameBuilder.isEmpty()) {
             null
         } else {
-            val className = nameBuilder.split("::").last()
+            val className = nameBuilder.split(".").last()
 
             Reference(prependPath + nameBuilder, className, start)
         }
     }
 
-    private fun parseFunctions(classReference: Reference?, compKeyword: Token? = null): List<Function> {
+    private fun parseUsage(prependReference: Reference? = null): List<Reference?> {
+        val references = mutableListOf<Reference?>()
+        val reference = parseQualifiedName(
+            isUsage = true,
+            prependPath = if (prependReference != null) "${prependReference.path}." else ""
+        )
+
+        if (peekMultiple(2) == listOf(TokenType.DoubleColon, TokenType.OpenBrace)) {
+            consume()
+            consume()
+
+            while (peek()?.type != TokenType.CloseBrace) {
+                references += parseUsage(reference)
+
+                if (peek()?.type == TokenType.Comma) {
+                    consume()
+                    continue
+                } else break
+            }
+
+            assert(TokenType.CloseBrace)
+        } else references += reference
+
+        return references
+    }
+
+    private fun parseFunctions(
+        usages: List<Reference?>,
+        classReference: Reference?,
+        compKeyword: Token? = null
+    ): List<Function> {
         var compScopeDeclared = false
         val functions = mutableListOf<Function>()
 
@@ -208,7 +259,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
 
                 compScopeDeclared = true
                 assert(TokenType.OpenBrace)
-                functions += parseFunctions(classReference, accessor)
+                functions += parseFunctions(usages, classReference, accessor)
                 assert(TokenType.CloseBrace)
                 continue
             }
@@ -367,7 +418,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         } else if (peek()?.isForKeyword() == true) {
             // Java-style For loop
             val forKeyword = next()
-            val initExpression = parseExpression(inCompanionContext)
+            val initStatement = parseStatement(inCompanionContext)
 
             assert(TokenType.SemiColon)
 
@@ -376,14 +427,14 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             assert(TokenType.SemiColon)
 
             val postExpression = parseExpression(inCompanionContext)
-            val statements = parseStatements(inCompanionContext)
+            val statement = parseStatement(inCompanionContext)
 
             JForStatement(
-                initExpression,
+                initStatement,
                 condition,
                 postExpression,
-                statements,
-                forKeyword?.pos?.extend(statements.lastOrNull()?.pos)
+                statement,
+                forKeyword?.pos?.extend(statement.pos)
             )
         } else ExpressionStatement(parseExpression(inCompanionContext))
     }
@@ -400,7 +451,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
 
             val rightExpression = parseExpression(inCompanionContext, true)
 
-            expression = AssignmentExpression(expression, operator, rightExpression, retainValue, )
+            expression = AssignmentExpression(expression, operator, rightExpression, retainValue)
         }
 
         return expression
@@ -450,6 +501,15 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
                 else -> parseSecondaryExpression(inCompanionContext)
             }
             TokenType.Colon -> parseArrayInitialization(inCompanionContext)
+            TokenType.OpenParenthesis -> {
+                consume()
+
+                val expression = parseExpression(inCompanionContext)
+
+                assert(TokenType.CloseParenthesis)
+
+                ParenthesizedExpression(expression)
+            }
             else -> null
         }
 
@@ -550,10 +610,11 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         else {
             if (peek()?.type == TokenType.Dot) {
                 // Companion member calling, e.g. Class.field, Class.func()
-                // TODO: Support usage first
+                IdentifierCallExpression(null, name)
+            } else {
+                // Local identifier Call, e.g local variables, local class fields
+                IdentifierCallExpression(null, name)
             }
-            // Local identifier Call, e.g local variables, local class fields
-            IdentifierCallExpression(null, name)
         }
     }
 

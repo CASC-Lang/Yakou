@@ -233,6 +233,24 @@ class Lexer(val chunkedSource: List<String>) {
                             )
                         else -> tokens.charToken(source, TokenType.Equal)
                     }
+                    '|' -> when (source[pos + 1]) {
+                        '|' ->
+                            tokens += Token(
+                                source.substring(pos..pos + 1),
+                                TokenType.DoublePipe,
+                                Position(lineNumber, pos, skip(2) + 1)
+                            )
+                        else -> tokens.charToken(source, TokenType.Pipe)
+                    }
+                    '&' -> when (source[pos + 1]) {
+                        '&' ->
+                            tokens += Token(
+                                source.substring(pos..pos + 1),
+                                TokenType.DoubleAmpersand,
+                                Position(lineNumber, pos, skip(2) + 1)
+                            )
+                        else -> tokens.charToken(source, TokenType.Ampersand)
+                    }
                     '>' -> when (source[pos + 1]) {
                         '=' ->
                             tokens += Token(
@@ -240,6 +258,20 @@ class Lexer(val chunkedSource: List<String>) {
                                 TokenType.GreaterEqual,
                                 Position(lineNumber, pos, skip(2) + 1)
                             )
+                        '>' ->
+                            tokens += if (source[pos + 2] == '>') {
+                                Token(
+                                    source.substring(pos..pos + 1),
+                                    TokenType.TripleGreater,
+                                    Position(lineNumber, pos, skip(2) + 1)
+                                )
+                            } else {
+                                Token(
+                                    source.substring(pos..pos + 2),
+                                    TokenType.DoubleGreater,
+                                    Position(lineNumber, pos, skip(3) + 2)
+                                )
+                            }
                         else -> tokens.charToken(source, TokenType.Greater)
                     }
                     '<' -> when (source[pos + 1]) {
@@ -249,8 +281,16 @@ class Lexer(val chunkedSource: List<String>) {
                                 TokenType.LesserEqual,
                                 Position(lineNumber, pos, skip(2) + 1)
                             )
+                        '<' ->
+                            tokens += Token(
+                                source.substring(pos..pos + 1),
+                                TokenType.DoubleLesser,
+                                Position(lineNumber, pos, skip(2) + 1)
+                            )
                         else -> tokens.charToken(source, TokenType.Lesser)
                     }
+                    '~' -> tokens.charToken(source, TokenType.Tilde)
+                    '^' -> tokens.charToken(source, TokenType.Hat)
                     '+' -> tokens.charToken(source, TokenType.Plus)
                     '-' -> tokens.charToken(source, TokenType.Minus)
                     '*' -> tokens.charToken(source, TokenType.Star)
