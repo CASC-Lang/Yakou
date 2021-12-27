@@ -328,6 +328,12 @@ class Checker {
                     }
                 } else if (expression.leftExpression is IndexExpression) {
                     expression.leftExpression.isAssignedBy = expression.rightExpression !is IndexExpression
+                } else {
+                    reports += Error(
+                        expression.leftExpression?.pos,
+                        "Cannot assign value to non-variable reference",
+                        "Change this into variable"
+                    )
                 }
 
                 if (!TypeUtil.canCast(rightType, expression.leftExpression?.type)) {

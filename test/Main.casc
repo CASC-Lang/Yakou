@@ -11,7 +11,7 @@ impl Main {
             mut b := 0
             mut c := 0
 
-            c = b = a++
+            c = b++ = a++
 
             sys.out.println(a)
             sys.out.println(b)

@@ -95,7 +95,7 @@ sealed class Expression {
         val operator: Token?,
         val rightExpression: Expression?,
         val retainLastValue: Boolean, // If assignment doesn't happen in pure ExpressionStatement, then it must retain its final value
-        override val pos: Position? = leftExpression?.pos?.extend(rightExpression?.pos)
+        override val pos: Position? = leftExpression?.pos?.copy()?.extend(rightExpression?.pos)
     ) : Expression() {
         override fun getExpressions(): List<Expression?> =
             listOf(rightExpression)

@@ -464,8 +464,10 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
     private fun parseAssignment(inCompanionContext: Boolean, retainValue: Boolean): Expression? {
         var expression = parseBinaryExpression(0, inCompanionContext, retainValue)
 
-        if (expression is IdentifierCallExpression && (peek()?.type == TokenType.DoublePlus || peek()?.type == TokenType.DoubleMinus))
-            expression = UnaryExpression(next(), expression, true, retainValue)
+        if (expression is IdentifierCallExpression && (peek()?.type == TokenType.DoublePlus || peek()?.type == TokenType.DoubleMinus)) {
+            val operator = next()
+            expression = UnaryExpression(operator, expression, true, retainValue, expression.copy().pos?.extend(operator?.pos))
+        }
 
         while (peek()?.type == TokenType.Equal) {
             // Assignment
