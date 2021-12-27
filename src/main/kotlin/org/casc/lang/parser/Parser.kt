@@ -163,6 +163,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         startPos: Position? = null
     ): Reference? {
         var start = startPos
+        var specifiedUsageName: String? = null
         val tokenBuilder = prependPath?.tokens?.toMutableList() ?: mutableListOf()
         var nameBuilder = ""
 
@@ -180,6 +181,15 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
                 else if (peekMultiple(2) == listOf(TokenType.DoubleColon, TokenType.Identifier)) {
                     consume()
                     "."
+                } else if (peek()?.isAsKeyword() == true) {
+                    consume()
+
+                    val specifiedName = assert(TokenType.Identifier)
+                    tokenBuilder += specifiedName
+
+                    specifiedUsageName = specifiedName?.literal
+
+                    break
                 } else break
             } else {
                 if (peekMultiple(2) == listOf(TokenType.DoubleColon, TokenType.Identifier)) {
@@ -205,7 +215,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
 
             Reference(
                 "${if (prependPath != null) "${prependPath.path}." else ""}$nameBuilder",
-                className,
+                if (isUsage && specifiedUsageName != null) specifiedUsageName else className,
                 start,
                 tokenBuilder
             )

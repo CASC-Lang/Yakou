@@ -1,4 +1,4 @@
-use java::{ lang::System, io::PrintStream }
+use java::{ lang::System as sys, io::PrintStream }
 
 class Main {
 
@@ -7,9 +7,7 @@ class Main {
 impl Main {
     comp {
         fn main(args: str[]) {
-            mut mut := 1
-
-            System.out.println('\u00E7')
+            sys.out.println('\u00E7')
         }
     }
 }

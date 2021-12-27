@@ -43,6 +43,9 @@ data class Token(var literal: String, val type: TokenType, val pos: Position) {
     fun isFnKeyword(): Boolean =
         literal == "fn"
 
+    fun isAsKeyword(): Boolean =
+        literal == "as"
+
     fun isAccessorKeyword(): Boolean =
         Accessor.validKeywords.contains(literal)
 }
