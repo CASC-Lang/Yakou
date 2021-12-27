@@ -3,6 +3,8 @@
 ### Category
 #### Language Spec
 
+##### TO BE INCLUDED IN UNIT TEST
+
 - [x] package declaration
 - [x] usage
 - [x] array declaration
@@ -14,13 +16,24 @@
 - [x] is-else expression
 - [x] comparison operators
 - [x] shift operators
-- [ ] null check
+- [x] null check
 - [x] block
+
+##### IMPLEMENTATION IN PROGRESS
+
 - [ ] loops
 - - [x] for loop (Java loop)
 - - [ ] range for loop
 - - [ ] while loop
 - - [ ] do-while loop
+- [ ] if expression (ternary expression in Java)
+- [ ] check all code paths returns value
+- [ ] primary & auxiliary constructors
+- [ ] Scoped fields
+- [ ] prefixed fields
+- [ ] inheritance
+- - [ ] class
+- - [ ] interface
 
 ### Compiler Unit
 
