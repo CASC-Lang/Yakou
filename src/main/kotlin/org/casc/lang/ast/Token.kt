@@ -3,6 +3,13 @@ package org.casc.lang.ast
 data class Token(var literal: String, val type: TokenType, val pos: Position) {
     constructor(literal: Char, type: TokenType, pos: Position): this(literal.toString(), type, pos)
 
+    companion object {
+        val keywords = arrayOf(
+            "package", "use", "class", "impl", "comp", "pub", "prot", "intl", "priv",
+            "mut", "fn", "if", "else", "for", "return", "as"
+        )
+    }
+
     fun isPackageKeyword(): Boolean =
         literal == "package"
 
@@ -33,9 +40,9 @@ data class Token(var literal: String, val type: TokenType, val pos: Position) {
     fun isReturnKeyword(): Boolean =
         literal == "return"
 
-    fun isAccessorKeyword(): Boolean =
-        Accessor.validKeywords.contains(literal)
-
     fun isFnKeyword(): Boolean =
         literal == "fn"
+
+    fun isAccessorKeyword(): Boolean =
+        Accessor.validKeywords.contains(literal)
 }

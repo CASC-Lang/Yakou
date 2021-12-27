@@ -159,14 +159,17 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
     private fun parseQualifiedName(
         isParameter: Boolean = false,
         isUsage: Boolean = false,
-        prependPath: String = "",
+        prependPath: Reference? = null,
         startPos: Position? = null
     ): Reference? {
         var start = startPos
+        val tokenBuilder = prependPath?.tokens?.toMutableList() ?: mutableListOf()
         var nameBuilder = ""
 
         while (pos < tokens.size && peek()?.type == TokenType.Identifier) {
             val identifier = next()!!
+
+            tokenBuilder += identifier
 
             if (start == null) start = identifier.pos
 
@@ -200,7 +203,12 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         } else {
             val className = nameBuilder.split(".").last()
 
-            Reference(prependPath + nameBuilder, className, start)
+            Reference(
+                "${if (prependPath != null) "${prependPath.path}." else ""}$nameBuilder",
+                className,
+                start,
+                tokenBuilder
+            )
         }
     }
 
@@ -208,7 +216,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         val references = mutableListOf<Reference?>()
         val reference = parseQualifiedName(
             isUsage = true,
-            prependPath = if (prependReference != null) "${prependReference.path}." else ""
+            prependPath = prependReference
         )
 
         if (peekMultiple(2) == listOf(TokenType.DoubleColon, TokenType.OpenBrace)) {
@@ -581,7 +589,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             // Companion member calling, e.g. path::Class.field, path::Class.func(...)
             // TODO: This also might be id::class.class
             consume()
-            val classPath = parseQualifiedName(prependPath = "${name?.literal}.", startPos = name?.pos)
+            val classPath = parseQualifiedName(prependPath = Reference(name), startPos = name?.pos)
 
             if (peek()?.type == TokenType.Colon) return parseArrayInitialization(inCompanionContext, classPath)
 

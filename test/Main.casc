@@ -7,10 +7,9 @@ class Main {
 impl Main {
     comp {
         fn main(args: str[]) {
-            a := 5
-            b := 7
+            mut mut := 1
 
-            System.out.println(a | b)
+            System.out.println('\u00E7')
         }
     }
 }

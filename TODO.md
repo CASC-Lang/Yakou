@@ -13,7 +13,7 @@
 - [x] null literal
 - [x] is-else expression
 - [x] comparison operators
-- [ ] shift operators
+- [x] shift operators
 - [ ] null check
 - [x] block
 - [ ] loops

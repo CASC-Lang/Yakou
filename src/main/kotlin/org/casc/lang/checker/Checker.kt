@@ -19,6 +19,15 @@ class Checker {
         return reports.toList() to checkedFiles
     }
 
+    private fun checkIdentifierIsKeyword(identifierToken: Token?) {
+        if (Token.keywords.contains(identifierToken?.literal)) {
+            reports += Error(
+                identifierToken?.pos,
+                "Cannot use ${identifierToken?.literal} as identifier since it's a keyword"
+            )
+        }
+    }
+
     private fun checkFile(file: File): File {
         file.clazz = checkClass(file.clazz)
 
@@ -28,7 +37,13 @@ class Checker {
     private fun checkClass(clazz: Class): Class {
         val classScope = Scope(globalScope)
 
+        checkIdentifierIsKeyword(clazz.name)
+
         clazz.usages.mapNotNull {
+            it?.tokens?.forEach { token ->
+                checkIdentifierIsKeyword(token)
+            }
+
             val type = TypeUtil.asType(it)
 
             if (type == null) {
@@ -41,7 +56,7 @@ class Checker {
         clazz.functions = clazz.functions.map {
             checkFunction(it, classScope)
         }
-        clazz.functions.forEachIndexed { i, it ->
+        clazz.functions.forEachIndexed { _, it ->
             checkFunctionBody(it, Scope(classScope))
         }
 
@@ -50,10 +65,16 @@ class Checker {
 
     // TODO: Track if-else and match branches so compiler can know whether all paths have return value or not
     private fun checkFunction(function: Function, scope: Scope): Function {
+        checkIdentifierIsKeyword(function.name)
+
         // Validate types first then register it to scope
         // Check if parameter has duplicate names
         val duplicateParameters = function.parameters
-            .groupingBy { it.name }
+            .groupingBy {
+                checkIdentifierIsKeyword(it.name)
+
+                it.name
+            }
             .eachCount()
             .filter { it.value > 1 }
         var validationPass = true
@@ -69,6 +90,8 @@ class Checker {
             validationPass = false
         } else {
             function.parameterTypes = function.parameters.map {
+                checkIdentifierIsKeyword(it.name)
+
                 val type = checkType(it.type, scope)
 
                 if (type == null) {
@@ -121,6 +144,8 @@ class Checker {
     ) {
         when (statement) {
             is VariableDeclaration -> {
+                checkIdentifierIsKeyword(statement.name)
+
                 val expressionType = checkExpression(statement.expression, scope)
 
                 if (!scope.registerVariable(statement.mutKeyword != null, statement.name!!.literal, expressionType)) {
@@ -302,7 +327,13 @@ class Checker {
                 expression.type
             }
             is IdentifierCallExpression -> {
-                if (expression.ownerReference != null) {
+                if (Token.keywords.contains(expression.name?.literal)) {
+                    reports += Error(
+                        expression.name?.pos,
+                        "Cannot use ${expression.name?.literal} as identifier since it's a keyword"
+                    )
+                    null
+                } else if (expression.ownerReference != null) {
                     // Appointed class field
                     val field = scope.findField(expression.ownerReference.path, expression.name!!.literal)
 
@@ -538,7 +569,8 @@ class Checker {
                         TokenType.Pipe, TokenType.Hat, TokenType.Ampersand,
                         TokenType.DoubleGreater, TokenType.TripleGreater, TokenType.DoubleLesser -> {
                             if ((PrimitiveType.promotionTable[leftType] ?: 2) <= 2 &&
-                                (PrimitiveType.promotionTable[rightType] ?: 2) <= 2) {
+                                (PrimitiveType.promotionTable[rightType] ?: 2) <= 2
+                            ) {
                                 expression.promote()
                             } else {
                                 reports += Error(

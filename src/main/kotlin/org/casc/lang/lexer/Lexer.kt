@@ -103,14 +103,82 @@ class Lexer(val chunkedSource: List<String>) {
                 // Char Literal
                 if (source[pos] == '\'') {
                     val start = pos++
-                    val charPos = pos++
 
-                    if (source[pos] != '\'') {
-                        while (source[pos] != '\'')
+                    val char = when (source[pos]) {
+                        '\\' -> {
+                            // Escaped characters
+                            pos++
+
+                            when (source[pos++]) {
+                                '\\' -> '\\'
+                                't' -> '\t'
+                                'b' -> '\b'
+                                'n' -> '\n'
+                                'r' -> '\r'
+                                'f' -> '\u000c'
+                                '\'' -> '\''
+                                '\"' -> '"'
+                                'u' -> {
+                                    // Escaped unicode literal
+                                    var invalidUnicodeLiteral = false
+                                    var unicodeHexBuilder = ""
+
+                                    for (i in 0 until 4) {
+                                        if (pos >= source.length) {
+                                            reports += Error(
+                                                Position(lineNumber, pos),
+                                                "Unexpected linebreak while parsing unicode literal"
+                                            )
+                                            invalidUnicodeLiteral = true
+                                            break
+                                        }
+
+                                        if (source[pos].digitToIntOrNull() != null || source[pos] in 'A'..'F') {
+                                            unicodeHexBuilder += source[pos++]
+                                        } else if (source[pos] == '\'') {
+                                            reports += Error(
+                                                Position(lineNumber, pos),
+                                                "Incomplete unicode literal ${source[pos++]}"
+                                            )
+                                            invalidUnicodeLiteral = true
+                                            break
+                                        } else {
+                                            reports += Error(
+                                                Position(lineNumber, pos),
+                                                "Invalid hexadecimal digit ${source[pos++]} for unicode literal"
+                                            )
+                                            invalidUnicodeLiteral = true
+                                            break
+                                        }
+                                    }
+
+                                    if (invalidUnicodeLiteral) {
+                                        ' '
+                                    } else {
+                                        val hex = unicodeHexBuilder.chunked(2).map { Integer.parseInt(it, 16) }
+
+                                        Char((hex[0] shl 8) or hex[1])
+                                    }
+                                }
+                                else -> {
+                                    reports += Error(
+                                        Position(lineNumber, pos - 2, pos - 1),
+                                        "Unknown escaped character"
+                                    )
+
+                                    ' '
+                                }
+                            }
+                        }
+                        else -> source[pos++]
+                    }
+
+                    if (pos < source.length && source[pos] != '\'') {
+                        while (pos < source.length && source[pos] != '\'')
                             pos++
 
                         reports += Error(
-                            Position(lineNumber, charPos, pos),
+                            Position(lineNumber, start + 2, pos - 2),
                             "Too many characters for char literal",
                             "Char literal only allows one character"
                         )
@@ -119,7 +187,7 @@ class Lexer(val chunkedSource: List<String>) {
                     val end = pos++
 
                     tokens += Token(
-                        source[charPos],
+                        char,
                         TokenType.CharLiteral,
                         Position(lineNumber, start, end)
                     )
@@ -145,7 +213,7 @@ class Lexer(val chunkedSource: List<String>) {
                                     'n' -> builder += "\n"
                                     'r' -> builder += "\r"
                                     'f' -> builder += "\u000c"
-                                    '\'' -> builder += "\'"
+                                    '\'' -> builder += "'"
                                     '\"' -> builder += "\""
                                     'u' -> {
                                         // Escaped unicode literal
