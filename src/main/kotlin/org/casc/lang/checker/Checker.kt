@@ -547,7 +547,7 @@ class Checker {
                 val leftType = checkExpression(expression.left, scope)
                 val rightType = checkExpression(expression.right, scope)
 
-                if (leftType !is PrimitiveType || rightType !is PrimitiveType) {
+                if (operator != TokenType.EqualEqual && operator != TokenType.BangEqual && (leftType !is PrimitiveType || rightType !is PrimitiveType)) {
                     reports += Error(
                         expression.operator?.pos,
                         "Could not apply binary operator on object type",
@@ -556,7 +556,7 @@ class Checker {
                 } else {
                     when (operator) {
                         TokenType.Plus, TokenType.Minus, TokenType.Star, TokenType.Slash, TokenType.Percentage -> {
-                            if (leftType.isNumericType() && rightType.isNumericType()) {
+                            if (leftType is PrimitiveType && rightType is PrimitiveType && leftType.isNumericType() && rightType.isNumericType()) {
                                 expression.promote()
                             } else {
                                 reports += Error(
@@ -567,7 +567,7 @@ class Checker {
                             }
                         }
                         TokenType.Greater, TokenType.GreaterEqual, TokenType.Lesser, TokenType.LesserEqual -> {
-                            if (leftType.isNumericType() && rightType.isNumericType()) {
+                            if (leftType is PrimitiveType && rightType is PrimitiveType && leftType.isNumericType() && rightType.isNumericType()) {
                                 expression.promote()
                                 expression.type = PrimitiveType.Bool
                             } else {
@@ -604,6 +604,24 @@ class Checker {
                             }
                         }
                         TokenType.EqualEqual, TokenType.BangEqual -> {
+                            if (leftType == PrimitiveType.Null) {
+                                if (PrimitiveType.isJvmPrimitive(rightType)) {
+                                    reports += Error(
+                                        expression.right?.pos,
+                                        "Primitive types are always not null",
+                                        "Only primitive wrapper classes could be determined to be null"
+                                    )
+                                }
+                            } else if (rightType == PrimitiveType.Null) {
+                                if (PrimitiveType.isJvmPrimitive(leftType)) {
+                                    reports += Error(
+                                        expression.left?.pos,
+                                        "Primitive types are always not null",
+                                        "Only primitive wrapper classes could be determined to be null"
+                                    )
+                                }
+                            }
+
                             expression.type = PrimitiveType.Bool
                         }
                         else -> {}

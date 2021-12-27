@@ -39,6 +39,15 @@ enum class PrimitiveType(
             else values.find {
                 it.wrapperClass == clazz || it.clazzType == clazz
             }
+
+        fun isJvmPrimitive(type: Type?): Boolean = when (type) {
+            is PrimitiveType -> {
+                type.isNumericType() || type == Bool || type == Char
+            }
+            is ClassType, is ArrayType -> false
+            null -> false
+            else -> false
+        }
     }
 
     override fun type(): Class<*>? =

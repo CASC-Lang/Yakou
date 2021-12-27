@@ -1,6 +1,5 @@
 package org.casc.lang.ast
 
-// Note: Use Kotlin data class' copy function when original pos shouldn't be manipulated
 data class Position(val lineNumber: Int, var start: Int, var end: Int) {
     constructor(lineNumber: Int, start: Int): this(lineNumber, start, start + 1)
 
@@ -20,10 +19,11 @@ data class Position(val lineNumber: Int, var start: Int, var end: Int) {
         if (other == null) this
         else if (lineNumber != other.lineNumber) this
         else {
-            if (start > other.start) start = other.start
-            if (end < other.end) end = other.end
+            val clone = copy()
+            if (start > other.start) clone.start = other.start
+            if (end < other.end) clone.end = other.end
 
-            this
+            clone
         }
 
     override fun toString(): String =

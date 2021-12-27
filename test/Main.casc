@@ -7,15 +7,14 @@ class Main {
 impl Main {
     comp {
         fn main(args: str[]) {
-            mut a := 1
+            mut a := sys.out
             mut b := 0
             mut c := 0
+            d := b == null
 
-            c = b++ = a++
-
-            sys.out.println(a)
             sys.out.println(b)
             sys.out.println(c)
+            sys.out.println(d)
         }
     }
 }

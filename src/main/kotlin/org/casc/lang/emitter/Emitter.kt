@@ -456,8 +456,12 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
 
         if (expression is BinaryExpression) {
             val opcode = when (expression.operator!!.type) {
-                TokenType.EqualEqual -> Opcodes.IF_ICMPEQ
-                TokenType.BangEqual -> Opcodes.IF_ICMPNE
+                TokenType.EqualEqual ->
+                    if (expression.getExpressions().any { it?.type == PrimitiveType.Null })
+                        Opcodes.IFNONNULL else Opcodes.IF_ICMPEQ
+                TokenType.BangEqual ->
+                    if (expression.getExpressions().any { it?.type == PrimitiveType.Null })
+                        Opcodes.IFNULL else Opcodes.IF_ICMPNE
                 TokenType.Greater -> Opcodes.IF_ICMPGT
                 TokenType.GreaterEqual -> Opcodes.IF_ICMPGE
                 TokenType.Lesser -> Opcodes.IF_ICMPLT
