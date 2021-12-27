@@ -104,9 +104,11 @@ sealed class Expression {
     data class UnaryExpression(
         val operator: Token?,
         val expression: Expression?,
+        val postfix: Boolean = false,
+        val retainValue: Boolean = false, // Only used in increment and decrement
         override val pos: Position? = operator?.pos?.extend(expression?.pos)
     ) : Expression() {
-        override fun getExpressions(): List<Expression?>? =
+        override fun getExpressions(): List<Expression?> =
             listOf(expression)
     }
 

@@ -359,8 +359,24 @@ class Lexer(val chunkedSource: List<String>) {
                     }
                     '~' -> tokens.charToken(source, TokenType.Tilde)
                     '^' -> tokens.charToken(source, TokenType.Hat)
-                    '+' -> tokens.charToken(source, TokenType.Plus)
-                    '-' -> tokens.charToken(source, TokenType.Minus)
+                    '+' -> when (source[pos + 1]) {
+                        '+' ->
+                            tokens += Token(
+                                source.substring(pos..pos + 1),
+                                TokenType.DoublePlus,
+                                Position(lineNumber, pos, skip(2) + 1)
+                            )
+                        else -> tokens.charToken(source, TokenType.Plus)
+                    }
+                    '-' -> when (source[pos + 1]) {
+                        '-' ->
+                            tokens += Token(
+                                source.substring(pos..pos + 1),
+                                TokenType.DoubleMinus,
+                                Position(lineNumber, pos, skip(2) + 1)
+                            )
+                        else -> tokens.charToken(source, TokenType.Minus)
+                    }
                     '*' -> tokens.charToken(source, TokenType.Star)
                     '/' -> tokens.charToken(source, TokenType.Slash)
                     '%' -> tokens.charToken(source, TokenType.Percentage)

@@ -36,13 +36,15 @@ enum class TokenType {
     Hat,
     Tilde,
     Plus,
+    DoublePlus,
     Minus,
+    DoubleMinus,
     Star,
     Slash,
     Percentage;
 
     fun unaryPrecedence(): Int = when (this) {
-        Plus, Minus, Tilde, Bang -> 11
+        Plus, DoublePlus, Minus, DoubleMinus, Tilde, Bang -> 11
         else -> 0
     }
 

@@ -28,7 +28,14 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
         classWriter.visit(
             61,
             Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER,
-            "${clazz.packageReference?.path?.replace('.', '/')}/${clazz.name!!.literal}",
+            "${
+                if (clazz.packageReference != null) "${
+                    clazz.packageReference.path.replace(
+                        '.',
+                        '/'
+                    )
+                }/" else ""
+            }${clazz.name!!.literal}",
             null,
             "java/lang/Object",
             null
@@ -251,7 +258,40 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             is UnaryExpression -> {
                 emitExpression(methodVisitor, expression.expression!!)
 
-                when (expression.operator?.type) {
+                when (expression.operator!!.type) {
+                    TokenType.Plus -> {} // No effect
+                    TokenType.Minus -> methodVisitor.visitInsn((expression.type!! as PrimitiveType).negOpcode)
+                    TokenType.DoublePlus, TokenType.DoubleMinus -> {
+                        if (expression.postfix) {
+                            if (expression.retainValue) methodVisitor.visitInsn(getDupOpcode(expression.type) ?: -1)
+                            methodVisitor.visitLdcInsn(1)
+
+                            if (expression.operator.type == TokenType.DoublePlus) {
+                                methodVisitor.visitInsn((expression.type!! as PrimitiveType).addOpcode)
+                            } else {
+                                methodVisitor.visitInsn((expression.type!! as PrimitiveType).subOpcode)
+                            }
+
+                            methodVisitor.visitIntInsn(
+                                expression.type!!.storeOpcode,
+                                (expression.expression as IdentifierCallExpression).index!!
+                            )
+                        } else {
+                            methodVisitor.visitLdcInsn(1)
+
+                            if (expression.operator.type == TokenType.DoublePlus) {
+                                methodVisitor.visitInsn((expression.type!! as PrimitiveType).addOpcode)
+                            } else {
+                                methodVisitor.visitInsn((expression.type!! as PrimitiveType).subOpcode)
+                            }
+
+                            if (expression.retainValue) methodVisitor.visitInsn(getDupOpcode(expression.type) ?: -1)
+                            methodVisitor.visitIntInsn(
+                                expression.type!!.storeOpcode,
+                                (expression.expression as IdentifierCallExpression).index!!
+                            )
+                        }
+                    }
                     TokenType.Bang -> {
                         emitComparisonExpression(methodVisitor, expression)
                     }
@@ -264,13 +304,7 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
                         }
                         else -> {} // No effect
                     }
-                    else -> {
-                        when (expression.operator?.type) {
-                            TokenType.Minus -> methodVisitor.visitInsn((expression.type!! as PrimitiveType).negOpcode)
-                            TokenType.Plus -> {} // No effect
-                            else -> {}
-                        }
-                    }
+                    else -> {}
                 }
             }
             is BinaryExpression -> {
@@ -377,13 +411,12 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
         if (inAssignment || expression.retainLastValue) {
             // Duplicates value since there is another assignment going on
             val finalType = expression.rightExpression.castTo ?: expression.rightExpression.type!!
-            val requireLargeDup = finalType == PrimitiveType.F64 || finalType == PrimitiveType.I64
 
             when (expression.leftExpression) {
                 is IndexExpression ->
-                    methodVisitor.visitInsn(if (requireLargeDup) Opcodes.DUP2_X2 else Opcodes.DUP_X2)
+                    methodVisitor.visitInsn(getDupOpcode(finalType, true)!!)
                 else ->
-                    methodVisitor.visitInsn(if (requireLargeDup) Opcodes.DUP2 else Opcodes.DUP)
+                    methodVisitor.visitInsn(getDupOpcode(finalType)!!)
             }
         }
 
@@ -571,5 +604,11 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
             )
         }
         // TODO: Class-cast-to-class support
+    }
+
+    private fun getDupOpcode(type: Type?, large: Boolean = false): Int? = when (type) {
+        PrimitiveType.I64, PrimitiveType.F64 -> if (large) Opcodes.DUP2_X2 else Opcodes.DUP2
+        null -> null
+        else -> if (large) Opcodes.DUP_X2 else Opcodes.DUP
     }
 }

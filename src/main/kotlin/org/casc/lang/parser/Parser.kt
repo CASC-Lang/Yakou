@@ -6,6 +6,7 @@ import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.compilation.Warning
 import org.casc.lang.table.Reference
+import kotlin.math.exp
 
 class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
     private var pos: Int = 0
@@ -391,7 +392,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             // Variable declaration
             val name = next()
             val operator = next()
-            val expression = parseAssignment(inCompanionContext)
+            val expression = parseExpression(inCompanionContext)
 
             VariableDeclaration(
                 mutKeyword,
@@ -460,8 +461,11 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
     private fun parseExpression(inCompanionContext: Boolean, retainValue: Boolean = false): Expression? =
         parseAssignment(inCompanionContext, retainValue)
 
-    private fun parseAssignment(inCompanionContext: Boolean, retainValue: Boolean = false): Expression? {
-        var expression = parseBinaryExpression(0, inCompanionContext)
+    private fun parseAssignment(inCompanionContext: Boolean, retainValue: Boolean): Expression? {
+        var expression = parseBinaryExpression(0, inCompanionContext, retainValue)
+
+        if (expression is IdentifierCallExpression && (peek()?.type == TokenType.DoublePlus || peek()?.type == TokenType.DoubleMinus))
+            expression = UnaryExpression(next(), expression, true, retainValue)
 
         while (peek()?.type == TokenType.Equal) {
             // Assignment
@@ -477,16 +481,17 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
 
     private fun parseBinaryExpression(
         parentPrecedence: Int = 0,
-        inCompanionContext: Boolean
+        inCompanionContext: Boolean,
+        retainValue: Boolean
     ): Expression? {
         var left: Expression?
         val unaryPrecedence = peek()?.type?.unaryPrecedence() ?: 0
 
         left = if (unaryPrecedence != 0 && unaryPrecedence >= parentPrecedence) {
             val operator = next()
-            val right = parseBinaryExpression(unaryPrecedence, inCompanionContext)
+            val right = parseBinaryExpression(unaryPrecedence, inCompanionContext, retainValue)
 
-            UnaryExpression(operator, right)
+            UnaryExpression(operator, right, retainValue = retainValue)
         } else parsePrimaryExpression(inCompanionContext)
 
         while (true) {
@@ -495,7 +500,7 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
             if (binaryPrecedence == 0 || binaryPrecedence <= parentPrecedence) break
 
             val operator = next()
-            val right = parseBinaryExpression(binaryPrecedence, inCompanionContext)
+            val right = parseBinaryExpression(binaryPrecedence, inCompanionContext, retainValue)
 
             left = BinaryExpression(
                 left,

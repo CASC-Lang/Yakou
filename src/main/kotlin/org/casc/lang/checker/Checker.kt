@@ -226,7 +226,11 @@ class Checker {
             }
             is ExpressionStatement -> {
                 if (statement.expression !is AssignmentExpression && statement.expression !is FunctionCallExpression) {
-                    reports += Error(
+                    if (statement.expression is UnaryExpression &&
+                        (statement.expression.operator?.type == TokenType.DoublePlus || statement.expression.operator?.type == TokenType.DoubleMinus)
+                    ) {
+                        checkExpression(statement.expression, scope)
+                    } else reports += Error(
                         statement.pos,
                         "Unused expression",
                         "Consider remove this line"
@@ -492,7 +496,7 @@ class Checker {
             is UnaryExpression -> {
                 when (val type = checkExpression(expression.expression, scope)) {
                     is PrimitiveType -> when (expression.operator?.type) {
-                        TokenType.Plus, TokenType.Minus -> {
+                        TokenType.Plus, TokenType.Minus, TokenType.DoublePlus, TokenType.DoubleMinus -> {
                             if (!type.isNumericType()) {
                                 reports += Error(
                                     expression.operator.pos,
