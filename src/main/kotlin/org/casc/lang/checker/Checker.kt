@@ -5,6 +5,7 @@ import org.casc.lang.ast.Function
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.table.*
+import java.io.File as JFile
 
 class Checker {
     companion object {
@@ -29,6 +30,18 @@ class Checker {
     }
 
     private fun checkFile(file: File): File {
+        if (file.clazz.packageReference != null) {
+            val packagePath = file.clazz.packageReference!!.path.replace('.', '/')
+
+            if (!JFile(file.path).parentFile.toPath().endsWith(packagePath)) {
+                reports += Error(
+                    file.clazz.packageReference!!.position,
+                    "Package path mismatch",
+                    "Try rename parent folders' name or rename package name"
+                )
+            }
+        }
+
         file.clazz = checkClass(file.clazz)
 
         return file

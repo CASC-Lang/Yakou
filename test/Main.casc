@@ -1,3 +1,5 @@
+package test
+
 use java::{ lang::System as sys, io::PrintStream }
 
 class Main {

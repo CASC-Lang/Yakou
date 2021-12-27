@@ -28,7 +28,7 @@ class Emitter(private val outDir: JFile, private val files: List<File>) {
         classWriter.visit(
             61,
             Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER,
-            clazz.name!!.literal,
+            "${clazz.packageReference?.path?.replace('.', '/')}/${clazz.name!!.literal}",
             null,
             "java/lang/Object",
             null

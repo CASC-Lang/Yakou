@@ -22,6 +22,9 @@ data class Token(var literal: String, val type: TokenType, val pos: Position) {
     fun isImplKeyword(): Boolean =
         literal == "impl"
 
+    fun isFnKeyword(): Boolean =
+        literal == "fn"
+
     fun isCompKeyword(): Boolean =
         literal == "comp"
 
@@ -39,9 +42,6 @@ data class Token(var literal: String, val type: TokenType, val pos: Position) {
 
     fun isReturnKeyword(): Boolean =
         literal == "return"
-
-    fun isFnKeyword(): Boolean =
-        literal == "fn"
 
     fun isAsKeyword(): Boolean =
         literal == "as"

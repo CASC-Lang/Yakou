@@ -3,8 +3,8 @@
 ### Category
 #### Language Spec
 
-- [ ] package declaration
-- [ ] usage
+- [x] package declaration
+- [x] usage
 - [x] array declaration
 - [x] array indexing (assignment)
 - [x] string literal
