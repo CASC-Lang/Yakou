@@ -1,6 +1,6 @@
 package org.casc.lang.table
 
-import org.casc.lang.compilation.Preference
+import org.casc.lang.compilation.GlobalPreference
 import org.objectweb.asm.Opcodes
 
 object TypeUtil {
@@ -33,7 +33,7 @@ object TypeUtil {
         } else null
 
     private fun getLoadedType(name: String): Type? = try {
-        val clazz = Preference.classLoader?.loadClass(name)
+        val clazz = GlobalPreference.classLoader?.loadClass(name)
 
         if (clazz == null) null
         else ClassType(clazz)

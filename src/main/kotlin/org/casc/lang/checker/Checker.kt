@@ -5,7 +5,6 @@ import org.casc.lang.ast.Function
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.table.*
-import java.io.PrintStream
 import java.io.File as JFile
 
 class Checker {

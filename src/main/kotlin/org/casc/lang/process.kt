@@ -1,7 +1,7 @@
 package org.casc.lang
 
 import org.casc.lang.compilation.Compilation
-import org.casc.lang.compilation.Preference
+import org.casc.lang.compilation.GlobalPreference
 import java.io.File
 
 fun main(args: Array<String>) {
@@ -11,7 +11,7 @@ fun main(args: Array<String>) {
     when (command) {
         "run" -> {
             hasCommand = true
-            Preference.compileAndRun = true
+            GlobalPreference.compileAndRun = true
         }
         // TODO: Commands
     }

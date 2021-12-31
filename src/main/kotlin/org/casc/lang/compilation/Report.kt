@@ -39,7 +39,7 @@ sealed class Report {
                 if (lineNumber < source.lastIndex && lineNumber.toString().length != (lineNumber + 1).toString().length) " "
                 else ""
 
-            if (Preference.enableColor) {
+            if (GlobalPreference.enableColor) {
                 print(
                     when (this) {
                         is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
@@ -55,13 +55,13 @@ sealed class Report {
                 )
             }
 
-            println(if (Preference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message)
+            println(if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message)
             println("--> $filePath:$position")
 
             if (lineNumber > 1) {
                 println(
                     "${
-                        if (Preference.enableColor) Ansi.colorize(
+                        if (GlobalPreference.enableColor) Ansi.colorize(
                             "${lineNumber - 1}$postExtend$preExtend | ",
                             reportAttribute[2]
                         ) else "${lineNumber - 1}$postExtend$preExtend | "
@@ -71,7 +71,7 @@ sealed class Report {
 
             println(
                 "${
-                    if (Preference.enableColor) Ansi.colorize(
+                    if (GlobalPreference.enableColor) Ansi.colorize(
                         "$lineNumber$postExtend | ",
                         reportAttribute[2]
                     ) else "$lineNumber$postExtend | "
@@ -80,7 +80,7 @@ sealed class Report {
             print(" ".repeat(start + 3 + lineNumber.toString().length))
             print(postExtend)
             print(
-                if (Preference.enableColor) Ansi.colorize(
+                if (GlobalPreference.enableColor) Ansi.colorize(
                     "^".repeat(end - start),
                     reportAttribute[1]
                 ) else "^".repeat(end - start)
@@ -88,7 +88,7 @@ sealed class Report {
 
             if (hint != null) {
                 println(
-                    if (Preference.enableColor) Ansi.colorize(
+                    if (GlobalPreference.enableColor) Ansi.colorize(
                         "= hint: $hint", reportAttribute[when (this) {
                             is Warning -> 0
                             is Error -> 1
@@ -102,7 +102,7 @@ sealed class Report {
             if (lineNumber < source.lastIndex) {
                 println(
                     "${
-                        if (Preference.enableColor) Ansi.colorize(
+                        if (GlobalPreference.enableColor) Ansi.colorize(
                             "${lineNumber + 1} | ",
                             reportAttribute[2]
                         ) else "${lineNumber + 1} | "

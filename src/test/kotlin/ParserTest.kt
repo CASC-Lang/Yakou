@@ -1,14 +1,13 @@
 import org.casc.lang.compilation.Compilation
-import org.casc.lang.compilation.Preference
+import org.casc.lang.compilation.GlobalPreference
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.DynamicTest
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 
-class Syntax {
+class ParserTest {
     fun String.trimBeforeEveryLineBreaks(): String {
         if (this.isBlank()) return ""
 
@@ -26,12 +25,12 @@ class Syntax {
         val tests = mutableListOf<DynamicTest>()
         val outputStream = ByteArrayOutputStream()
         val printStream = PrintStream(outputStream)
-        val fileMap = File(Compilation::class.java.classLoader.getResource("syntax")!!.file)
+        val fileMap = File(Compilation::class.java.classLoader.getResource("parser")!!.file)
             .listFiles()
             ?.groupBy { it.extension }
 
         System.setOut(printStream)
-        Preference.enableColor = false
+        GlobalPreference.enableColor = false
 
         fileMap?.get("casc")?.forEach {
             val compilation = Compilation(it)

@@ -1,6 +1,6 @@
 package org.casc.lang.table
 
-import org.casc.lang.compilation.Preference
+import org.casc.lang.compilation.GlobalPreference
 import org.objectweb.asm.Opcodes
 
 data class ClassType(
@@ -11,7 +11,7 @@ data class ClassType(
     constructor(clazz: Class<*>): this(clazz.name)
 
     override fun type(): Class<*>? = try {
-        Preference.classLoader?.loadClass(typeName)
+        GlobalPreference.classLoader?.loadClass(typeName)
     } catch (e: Exception) {
         null
     }

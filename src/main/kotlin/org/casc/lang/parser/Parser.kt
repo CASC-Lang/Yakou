@@ -6,7 +6,6 @@ import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.compilation.Warning
 import org.casc.lang.table.Reference
-import kotlin.math.exp
 
 class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
     private var pos: Int = 0

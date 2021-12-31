@@ -7,7 +7,7 @@ import org.casc.lang.parser.Parser
 import java.io.BufferedReader
 import java.io.File
 
-class Compilation(val file: File) {
+class Compilation(val file: File, val localPreference: LocalPreference? = null) {
     fun compile() {
         if (file.isDirectory) {
             // TODO: Implement Directory Compilation WIP
@@ -16,7 +16,7 @@ class Compilation(val file: File) {
 //            val parseResult = null
         } else if (file.isFile) {
             // Init Preference
-            Preference.outputDir = file.parentFile
+            GlobalPreference.outputDir = file.parentFile
 
             val filePath = "./${file.name}"
             // Compilation
@@ -60,7 +60,7 @@ class Compilation(val file: File) {
              */
             Emitter(file.parentFile, checkResult).emit()
 
-            if (Preference.compileAndRun) {
+            if ((localPreference != null && localPreference.compileAndRun) xor GlobalPreference.compileAndRun) {
                 val isWindows = System.getProperty("os.name").lowercase().startsWith("windows")
                 val process = Runtime.getRuntime().exec(
                     if (isWindows) "cmd.exe /c cd ${file.parentFile.absolutePath} && java ${file.nameWithoutExtension}"
