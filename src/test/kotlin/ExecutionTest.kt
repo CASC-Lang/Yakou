@@ -1,6 +1,7 @@
 import org.casc.lang.compilation.Compilation
 import org.casc.lang.compilation.LocalPreference
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
 import java.io.ByteArrayOutputStream
@@ -10,6 +11,8 @@ import java.io.PrintStream
 class ExecutionTest {
     @TestFactory
     fun testExecutionOutput(): List<DynamicTest> {
+        Assumptions.assumeTrue(System.getProperty("runExecutionTest").toBoolean())
+
         val tests = mutableListOf<DynamicTest>()
         val outputStream = ByteArrayOutputStream()
         val printStream = PrintStream(outputStream)

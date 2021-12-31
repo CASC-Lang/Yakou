@@ -6,6 +6,10 @@ import java.net.URLClassLoader
 abstract class AbstractPreference {
     abstract var enableColor: Boolean
     abstract var classLoader: URLClassLoader?
-    abstract var outputDir: File
+    var outputDir: File = File(System.getProperty("user.dir"))
+        set(value) {
+            classLoader = URLClassLoader(arrayOf(value.toURI().toURL()))
+            field = value
+        }
     abstract var compileAndRun: Boolean
 }

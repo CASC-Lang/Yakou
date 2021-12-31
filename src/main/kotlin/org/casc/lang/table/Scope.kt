@@ -2,9 +2,11 @@ package org.casc.lang.table
 
 import org.casc.lang.ast.Accessor
 import org.casc.lang.ast.Function
+import org.casc.lang.compilation.AbstractPreference
 import java.lang.reflect.Modifier
 
 data class Scope(
+    val preference: AbstractPreference,
     val isGlobalScope: Boolean = true,
     var classPath: String = "",
     var usages: MutableSet<Reference> = mutableSetOf(),
@@ -12,6 +14,7 @@ data class Scope(
     var variables: MutableList<Variable> = mutableListOf()
 ) {
     constructor(parent: Scope) : this(
+        parent.preference,
         false,
         parent.classPath,
         parent.usages.toMutableSet(),
@@ -42,7 +45,7 @@ data class Scope(
         if (ownerPath == null || ownerPath == classPath) findFunctionInSameClass(name, argumentTypes)
         else {
             // TODO: Support finding functions in cached classes
-            val ownerType = TypeUtil.asType(ownerPath)
+            val ownerType = TypeUtil.asType(ownerPath, preference)
 
             if (ownerType == null) null
             else {
@@ -59,7 +62,7 @@ data class Scope(
                         Accessor.fromModifier(function.modifiers),
                         name,
                         argTypes,
-                        TypeUtil.asType(function.returnType)!!
+                        TypeUtil.asType(function.returnType, preference)!!
                     )
                 } catch (e: Exception) {
                     null
@@ -93,7 +96,7 @@ data class Scope(
     fun findField(ownerPath: String?, name: String): Field? =
         if (ownerPath == null || ownerPath == classPath) null // TODO: Implement local field lookup
         else {
-            val ownerType = TypeUtil.asType(ownerPath)
+            val ownerType = TypeUtil.asType(ownerPath, preference)
 
             if (ownerType == null) null
             else {
@@ -108,7 +111,7 @@ data class Scope(
                         Modifier.isFinal(field.modifiers),
                         Accessor.fromModifier(field.modifiers),
                         name,
-                        TypeUtil.asType(field.type)!!
+                        TypeUtil.asType(field.type, preference)!!
                     )
                 } catch (e: Exception) {
                     null
@@ -130,13 +133,13 @@ data class Scope(
         if (className == null) null
         else TypeUtil.asType(usages.find {
             it.className == className
-        }) ?: TypeUtil.asType(className)
+        }, preference) ?: TypeUtil.asType(className, preference)
 
     fun findType(reference: Reference?): Type? =
         if (reference == null) null
         else TypeUtil.asType(usages.find {
             it.className == reference.className
-        }) ?: TypeUtil.asType(reference)
+        }, preference) ?: TypeUtil.asType(reference, preference)
 
     private fun retrieveExecutableInfo(ownerType: Type, argumentTypes: List<Type>): Pair<Class<*>, Array<Class<*>>> =
         ownerType.type()!! to argumentTypes.mapNotNull(Type::type).toTypedArray()

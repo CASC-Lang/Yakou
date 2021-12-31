@@ -9,6 +9,8 @@ import java.io.File
 
 class Compilation(val file: File, val localPreference: LocalPreference? = null) {
     fun compile() {
+        val pref = localPreference ?: GlobalPreference
+
         if (file.isDirectory) {
             // TODO: Implement Directory Compilation WIP
 //            val source = file.readText() // TODO: Change to readLines
@@ -16,7 +18,7 @@ class Compilation(val file: File, val localPreference: LocalPreference? = null) 
 //            val parseResult = null
         } else if (file.isFile) {
             // Init Preference
-            GlobalPreference.outputDir = file.parentFile
+            pref.outputDir = file.parentFile
 
             val filePath = "./${file.name}"
             // Compilation
@@ -47,7 +49,7 @@ class Compilation(val file: File, val localPreference: LocalPreference? = null) 
             /**
              * Checks complex syntax validity and variables' type.
              */
-            val (checkReports, checkResult) = Checker().check(parseResult)
+            val (checkReports, checkResult) = Checker(pref).check(parseResult)
 
             checkReports.forEach { it.printReport(filePath, source) }
 
@@ -60,7 +62,7 @@ class Compilation(val file: File, val localPreference: LocalPreference? = null) 
              */
             Emitter(file.parentFile, checkResult).emit()
 
-            if ((localPreference != null && localPreference.compileAndRun) xor GlobalPreference.compileAndRun) {
+            if (pref.compileAndRun) {
                 val isWindows = System.getProperty("os.name").lowercase().startsWith("windows")
                 val process = Runtime.getRuntime().exec(
                     if (isWindows) "cmd.exe /c cd ${file.parentFile.absolutePath} && java ${file.nameWithoutExtension}"

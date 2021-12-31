@@ -20,7 +20,7 @@ dependencies {
 }
 
 tasks.test {
-    useJUnitPlatform()
+     useJUnitPlatform()
 }
 
 tasks.withType<KotlinCompile>() {

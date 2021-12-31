@@ -2,16 +2,14 @@ package org.casc.lang.checker
 
 import org.casc.lang.ast.*
 import org.casc.lang.ast.Function
+import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.table.*
 import java.io.File as JFile
 
-class Checker {
-    companion object {
-        val globalScope: Scope = Scope()
-    }
-
+class Checker(private val preference: AbstractPreference) {
+    private val globalScope: Scope = Scope(preference)
     private var reports: MutableSet<Report> = mutableSetOf()
 
     fun check(files: List<File>): Pair<List<Report>, List<File>> {
@@ -57,7 +55,7 @@ class Checker {
                 checkIdentifierIsKeyword(token)
             }
 
-            val type = TypeUtil.asType(it)
+            val type = TypeUtil.asType(it, preference)
 
             if (type == null) {
                 reports.reportUnknownTypeSymbol(it!!)
