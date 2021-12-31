@@ -1,0 +1,13 @@
+class MultipleCompanionBlock {
+
+}
+
+impl MultipleCompanionBlock {
+    comp {
+
+    }
+
+    comp {
+
+    }
+}

@@ -1,0 +1,6 @@
+warning: Companion declaration scope has been declared once
+--> ./MultipleCompanionBlock.casc:10:4
+9  |
+10 |     comp {
+         ^^^^
+11 |

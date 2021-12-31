@@ -4,6 +4,7 @@ import java.io.File
 import java.net.URLClassLoader
 
 object Preference {
+    var enableColor = true
     var classLoader: URLClassLoader? = null
         private set
     var outputDir: File = File(System.getProperty("user.dir"))

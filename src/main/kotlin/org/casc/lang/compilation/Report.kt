@@ -39,43 +39,75 @@ sealed class Report {
                 if (lineNumber < source.lastIndex && lineNumber.toString().length != (lineNumber + 1).toString().length) " "
                 else ""
 
-            print(
-                when (this) {
-                    is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
-                    is Error -> Ansi.colorize("error: ", reportAttribute[1])
-                }
-            )
+            if (Preference.enableColor) {
+                print(
+                    when (this) {
+                        is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
+                        is Error -> Ansi.colorize("error: ", reportAttribute[1])
+                    }
+                )
+            } else {
+                print(
+                    when (this) {
+                        is Warning -> "warning: "
+                        is Error -> "error: "
+                    }
+                )
+            }
 
-            println(Ansi.colorize(message, reportAttribute[2]))
+            println(if (Preference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message)
             println("--> $filePath:$position")
 
             if (lineNumber > 1) {
                 println(
                     "${
-                        Ansi.colorize(
+                        if (Preference.enableColor) Ansi.colorize(
                             "${lineNumber - 1}$postExtend$preExtend | ",
                             reportAttribute[2]
-                        )
+                        ) else "${lineNumber - 1}$postExtend$preExtend | "
                     }${source[lineNumber - 2]}"
                 )
             }
 
-            println("${Ansi.colorize("$lineNumber$postExtend | ", reportAttribute[2])}${source[lineNumber - 1]}")
+            println(
+                "${
+                    if (Preference.enableColor) Ansi.colorize(
+                        "$lineNumber$postExtend | ",
+                        reportAttribute[2]
+                    ) else "$lineNumber$postExtend | "
+                }${source[lineNumber - 1]}"
+            )
             print(" ".repeat(start + 3 + lineNumber.toString().length))
             print(postExtend)
-            print(Ansi.colorize("^".repeat(end - start), reportAttribute[1]))
+            print(
+                if (Preference.enableColor) Ansi.colorize(
+                    "^".repeat(end - start),
+                    reportAttribute[1]
+                ) else "^".repeat(end - start)
+            )
 
             if (hint != null) {
-                println(Ansi.colorize("= hint: $hint", reportAttribute[when (this) {
-                    is Warning -> 0
-                    is Error -> 1
-                }]))
+                println(
+                    if (Preference.enableColor) Ansi.colorize(
+                        "= hint: $hint", reportAttribute[when (this) {
+                            is Warning -> 0
+                            is Error -> 1
+                        }]
+                    ) else "= hint: $hint"
+                )
             } else {
                 println()
             }
 
             if (lineNumber < source.lastIndex) {
-                println("${Ansi.colorize("${lineNumber + 1} | ", reportAttribute[2])}${source[lineNumber]}")
+                println(
+                    "${
+                        if (Preference.enableColor) Ansi.colorize(
+                            "${lineNumber + 1} | ",
+                            reportAttribute[2]
+                        ) else "${lineNumber + 1} | "
+                    }${source[lineNumber]}"
+                )
             }
         } else {
             when (this) {

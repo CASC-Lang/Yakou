@@ -1,20 +1,13 @@
-use java::{ lang::System as sys, io::PrintStream }
-
 class Main {
 
 }
 
 impl Main {
     comp {
-        fn main(args: str[]) {
-            mut a := sys.out
-            mut b := 0
-            mut c := 0
-            d := b == null
 
-            sys.out.println(b)
-            sys.out.println(c)
-            sys.out.println(d)
-        }
+    }
+
+    comp {
+
     }
 }
