@@ -123,7 +123,10 @@ class Compilation(val file: JFile, private val preference: AbstractPreference = 
 
                 lexReports.printReports(filePath, source)
 
-                if (lexReports.hasError()) continue
+                if (lexReports.hasError()) {
+                    queuedFiles.removeAt(i)
+                    continue
+                }
 
                 // Unit II: Parser
                 /**
@@ -134,7 +137,10 @@ class Compilation(val file: JFile, private val preference: AbstractPreference = 
 
                 parseReports.printReports(filePath, source)
 
-                if (parseReports.hasError()) continue
+                if (parseReports.hasError()) {
+                    queuedFiles.removeAt(i)
+                    continue
+                }
 
                 parsedResults += parseResult
             }
