@@ -10,7 +10,6 @@ impl Paper {
     comp {
         fn hello() {
             sys.out.println("Paper!")
-            Rock.hello()
         }
     }
 }

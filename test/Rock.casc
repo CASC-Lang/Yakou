@@ -1,13 +1,5 @@
 use java::lang::System as sys
 
-class Rock {
+class Rock
 
-}
-
-impl Rock {
-    comp {
-        fn hello() {
-            sys.out.println("Hello!")
-        }
-    }
-}
+impl Rock

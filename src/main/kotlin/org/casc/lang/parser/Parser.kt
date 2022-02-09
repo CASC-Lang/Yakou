@@ -7,6 +7,7 @@ import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.compilation.Warning
 import org.casc.lang.table.Reference
+import org.objectweb.asm.Opcodes
 
 class Parser(private val preference: AbstractPreference) {
     private var pos: Int = 0
@@ -123,15 +124,16 @@ class Parser(private val preference: AbstractPreference) {
         val className = assert(TokenType.Identifier)
         val classReference =
             if (className != null) Reference(
-                "${packageReference?.path}/${className.literal}",
+                "${packageReference?.path?.let { "${it}/" } ?: ""}${className.literal}",
                 className.literal,
                 className.pos
             )
             else null
+        var fields = listOf<Field>()
 
         if (peek()?.type == TokenType.OpenBrace) { // Member declaration is optional
             assert(TokenType.OpenBrace)
-            // TODO: Parse fields
+            fields = parseFields(usages, classReference)
             assert(TokenType.CloseBrace)
         }
 
@@ -139,15 +141,7 @@ class Parser(private val preference: AbstractPreference) {
         var functions = listOf<Function>()
 
         if (peek()?.isImplKeyword() == true) {
-            val implKeyword = assert(TokenType.Identifier)
-
-            if (implKeyword?.isImplKeyword() != true) {
-                reports += Error(
-                    last()!!.pos,
-                    "Expected implementations for class"
-                )
-            }
-
+            next()
             val implName = assert(TokenType.Identifier)
 
             if (implName?.literal != className?.literal) {
@@ -173,7 +167,7 @@ class Parser(private val preference: AbstractPreference) {
      * Used to parse type names and usage reference
      */
     private fun parseQualifiedName(
-        isParameter: Boolean = false,
+        canBeArray: Boolean = false,
         isUsage: Boolean = false,
         prependPath: Reference? = null,
         startPos: Position? = null
@@ -215,7 +209,7 @@ class Parser(private val preference: AbstractPreference) {
             }
         }
 
-        if (isParameter) {
+        if (canBeArray) {
             while (pos < tokens.size && peek()?.type == TokenType.OpenBracket) {
                 consume()
                 assert(TokenType.CloseBracket) ?: break
@@ -264,6 +258,62 @@ class Parser(private val preference: AbstractPreference) {
         return references
     }
 
+    private fun parseFields(
+        usages: List<Reference?>,
+        classReference: Reference?,
+        compKeyword: Token? = null
+    ): List<Field> {
+        var accessorToken: Token? = null
+        var mutKeyword: Token? = null
+        var compScopeDeclared = false
+        val fields = mutableListOf<Field>()
+
+        while (peek()?.type != TokenType.CloseBrace) {
+            if (peek()?.isCompKeyword() == true) {
+                val comp = next()!!
+
+                if (compScopeDeclared) {
+                    reports += Warning(
+                        comp.pos,
+                        "Companion declaration scope has been declared once"
+                    )
+                } else compScopeDeclared = true
+
+                if (compKeyword != null) {
+                    reports += Error(
+                        comp.pos,
+                        "Cannot declare nested companion declaration"
+                    )
+                }
+
+                assert(TokenType.OpenBrace)
+                fields += parseFields(usages, classReference, comp)
+                assert(TokenType.CloseBrace)
+            } else if (!(peek()?.isAccessorKeyword() == true || peek()?.isMutKeyword() == true)) {
+                // Must be a field
+                val name = assert(TokenType.Identifier)
+                assert(TokenType.Colon)
+                val typeReference = parseQualifiedName(true)
+
+                fields += Field(
+                    classReference,
+                    accessorToken,
+                    mutKeyword,
+                    compKeyword,
+                    name,
+                    typeReference
+                )
+            } else {
+                // Assume it's accessor keyword or mut keyword
+                if (peek()?.isAccessorKeyword() == true) accessorToken = next()
+                if (peek()?.isMutKeyword() == true) mutKeyword = next()
+                assert(TokenType.Colon)
+            }
+        }
+
+        return fields
+    }
+
     private fun parseFunctions(
         usages: List<Reference?>,
         classReference: Reference?,
@@ -272,7 +322,7 @@ class Parser(private val preference: AbstractPreference) {
         var compScopeDeclared = false
         val functions = mutableListOf<Function>()
 
-        while (pos < tokens.size && peek()?.type != TokenType.CloseBrace) { // Break the loop after encountered class declaration's close bracket
+        while (peek()?.type != TokenType.CloseBrace) { // Break the loop after encountered class declaration's close bracket
             var accessor = assert(TokenType.Identifier)
             var mutKeyword: Token?
 

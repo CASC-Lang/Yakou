@@ -23,7 +23,7 @@ data class Function(
             }
         })${returnType?.descriptor}"
     override val accessFlag: Int =
-        (if (mutKeyword == null) Opcodes.ACC_FINAL else 0) + accessor.access + (if (compKeyword == null) 0 else Opcodes.ACC_STATIC)
+        (mutKeyword?.let { Opcodes.ACC_FINAL } ?: 0) + accessor.access + (compKeyword?.let { Opcodes.ACC_STATIC } ?: 0)
 
     fun asSignature() =
         FunctionSignature(

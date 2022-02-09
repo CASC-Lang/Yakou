@@ -1,7 +1,13 @@
 use a::Paper
 
 class Main {
-
+comp {
+    priv:
+        b: i64
+    comp {}
+}
+pub mut:
+    a: i32
 }
 
 impl Main {

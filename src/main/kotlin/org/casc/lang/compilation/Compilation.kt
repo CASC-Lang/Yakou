@@ -5,7 +5,6 @@ import org.casc.lang.checker.Checker
 import org.casc.lang.emitter.Emitter
 import org.casc.lang.lexer.Lexer
 import org.casc.lang.parser.Parser
-import org.casc.lang.table.TypeUtil
 import java.io.BufferedReader
 import java.net.URLClassLoader
 import java.io.File as JFile
@@ -112,6 +111,8 @@ class Compilation(val file: JFile, private val preference: AbstractPreference = 
                 if (sourceFile.isFile && sourceFile.extension == "casc")
                     queuedFiles += Triple(false, sourceFile.toRelativeString(file), sourceFile.readLines())
 
+            val removeIndex = mutableListOf<Int>()
+
             for (i in 0 until queuedFiles.size) {
                 val (_, filePath, source) = queuedFiles[i]
 
@@ -124,7 +125,7 @@ class Compilation(val file: JFile, private val preference: AbstractPreference = 
                 lexReports.printReports(filePath, source)
 
                 if (lexReports.hasError()) {
-                    queuedFiles.removeAt(i)
+                    removeIndex += i
                     continue
                 }
 
@@ -138,12 +139,14 @@ class Compilation(val file: JFile, private val preference: AbstractPreference = 
                 parseReports.printReports(filePath, source)
 
                 if (parseReports.hasError()) {
-                    queuedFiles.removeAt(i)
+                    removeIndex += i
                     continue
                 }
 
                 parsedResults += parseResult
             }
+
+            for (i in removeIndex) queuedFiles.removeAt(i)
 
             for (i in 0 until queuedFiles.size) {
                 val (compiled, filePath, source) = queuedFiles[i]
