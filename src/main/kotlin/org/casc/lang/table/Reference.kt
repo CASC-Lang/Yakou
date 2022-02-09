@@ -18,6 +18,9 @@ data class Reference(var path: String, val className: String, val position: Posi
     fun internalName(): String =
         path.replace('.', '/')
 
+    fun asCascStyle(): String =
+        path.replace(".", "::")
+
     override fun toString(): String =
         path
 }

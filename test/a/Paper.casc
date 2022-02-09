@@ -1,0 +1,16 @@
+package a
+
+use java::lang::System as sys
+
+class Paper {
+
+}
+
+impl Paper {
+    comp {
+        fn hello() {
+            sys.out.println("Paper!")
+            Rock.hello()
+        }
+    }
+}

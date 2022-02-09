@@ -1,7 +1,9 @@
 package org.casc.lang.table
 
 import org.casc.lang.compilation.AbstractPreference
+import org.casc.lang.compilation.Compilation
 import org.objectweb.asm.Opcodes
+import java.net.URLClassLoader
 
 object TypeUtil {
     /**
@@ -11,7 +13,6 @@ object TypeUtil {
         asArrayType(name, preference)
             ?: getLoadedType(name, preference)
             ?: PrimitiveType.values.find { it.typeName == name }
-    //      ?: TODO: Cache un-compiled local classes so all the types are properly handled
 
     fun asType(reference: Reference?, preference: AbstractPreference): Type? =
         if (reference == null) null
@@ -33,11 +34,15 @@ object TypeUtil {
         } else null
 
     private fun getLoadedType(name: String, preference: AbstractPreference): Type? = try {
+        Compilation.compileClass(preference, name)
+
         val clazz = preference.classLoader?.loadClass(name)
 
         if (clazz == null) null
         else ClassType(clazz)
-    } catch (e: Exception) {
+    } catch (e: NoClassDefFoundError) {
+        null
+    } catch (e: ClassNotFoundException) {
         null
     }
 

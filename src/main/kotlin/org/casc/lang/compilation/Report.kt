@@ -110,13 +110,24 @@ sealed class Report {
                 )
             }
         } else {
-            when (this) {
-                is Warning -> print("warning: ")
-                is Error -> print("error: ")
+            if (GlobalPreference.enableColor) {
+                print(
+                    when (this) {
+                        is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
+                        is Error -> Ansi.colorize("error: ", reportAttribute[1])
+                    }
+                )
+            } else {
+                print(
+                    when (this) {
+                        is Warning -> "warning: "
+                        is Error -> "error: "
+                    }
+                )
             }
 
-            println(message)
-            println("--> <$filePath>(EMPTY SOURCE)")
+            println(if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message)
+            println("--> $filePath")
         }
     }
 }

@@ -2,25 +2,24 @@ package org.casc.lang.parser
 
 import org.casc.lang.ast.*
 import org.casc.lang.ast.Function
+import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.compilation.Warning
 import org.casc.lang.table.Reference
 
-class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
+class Parser(private val preference: AbstractPreference) {
     private var pos: Int = 0
     private var reports: MutableSet<Report> = mutableSetOf()
     private lateinit var tokens: List<Token>
 
-    fun parse(): Pair<List<Report>, List<File>> {
-        val files = mutableListOf<File>()
+    fun parse(path: String, tokens: List<Token>): Pair<List<Report>, File> {
+        reports.clear()
+        pos = 0
+        this.tokens = tokens
+        val file = parseFile(path)
 
-        for ((path, tokens) in lexFiles) {
-            this.tokens = tokens
-            files += parseFile(path)
-        }
-
-        return reports.toList() to files
+        return reports.toList() to file
     }
 
     private fun assert(type: TokenType): Token? = when {
@@ -116,10 +115,10 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
         val className = assert(TokenType.Identifier)
         val classReference =
             if (className != null) Reference(
-                className.literal,
+                "${packageReference?.path}/${className.literal}",
                 className.literal,
                 className.pos
-            ) // TODO: Add package path to path
+            )
             else null
         assert(TokenType.OpenBrace)
         // TODO: Parse fields
@@ -465,7 +464,8 @@ class Parser(private val lexFiles: Array<Pair<String, List<Token>>>) {
 
         if (expression is IdentifierCallExpression && (peek()?.type == TokenType.DoublePlus || peek()?.type == TokenType.DoubleMinus)) {
             val operator = next()
-            expression = UnaryExpression(operator, expression, true, retainValue, expression.copy().pos?.extend(operator?.pos))
+            expression =
+                UnaryExpression(operator, expression, true, retainValue, expression.copy().pos?.extend(operator?.pos))
         }
 
         while (peek()?.type == TokenType.Equal) {

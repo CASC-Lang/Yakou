@@ -1,13 +1,17 @@
+use a::Paper
+
 class Main {
 
 }
 
 impl Main {
     comp {
+        pub fn main(args: str[]) {
+            Paper.hello()
+        }
 
-    }
+        pub fn lol() {
 
-    comp {
-
+        }
     }
 }

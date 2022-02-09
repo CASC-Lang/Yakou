@@ -1,6 +1,7 @@
 package org.casc.lang.table
 
 import org.casc.lang.ast.Accessor
+import org.casc.lang.ast.Class as Cls
 import org.casc.lang.ast.Function
 import org.casc.lang.compilation.AbstractPreference
 import java.lang.reflect.Modifier
@@ -10,6 +11,7 @@ data class Scope(
     val isGlobalScope: Boolean = true,
     var classPath: String = "",
     var usages: MutableSet<Reference> = mutableSetOf(),
+    var classes: MutableSet<Cls> = mutableSetOf(), // Stores all cached classes, but not guarantee that it's compiled, cached files compilation is handled by TypeUtil
     var functions: MutableSet<FunctionSignature> = mutableSetOf(),
     var variables: MutableList<Variable> = mutableListOf()
 ) {
@@ -18,6 +20,7 @@ data class Scope(
         false,
         parent.classPath,
         parent.usages.toMutableSet(),
+        parent.classes.toMutableSet(),
         parent.functions.toMutableSet(),
         parent.variables.toMutableList()
     )
@@ -26,15 +29,7 @@ data class Scope(
      * registerFunctionSignature must be called after checker assigned types to function object
      */
     fun registerFunctionSignature(function: Function) {
-        functions += FunctionSignature(
-            function.ownerReference!!,
-            function.compKeyword != null,
-            function.mutKeyword != null,
-            function.accessor,
-            function.name?.literal ?: "",
-            function.parameterTypes!!.mapNotNull { it },
-            function.returnType!!
-        )
+        functions += function.asSignature()
     }
 
     fun findFunctionInSameClass(name: String, argumentTypes: List<Type?>): FunctionSignature? =
@@ -44,11 +39,14 @@ data class Scope(
     fun findFunction(ownerPath: String?, name: String, argumentTypes: List<Type?>): FunctionSignature? =
         if (ownerPath == null || ownerPath == classPath) findFunctionInSameClass(name, argumentTypes)
         else {
-            // TODO: Support finding functions in cached classes
-            val ownerType = TypeUtil.asType(ownerPath, preference)
+            val ownerType = findType(ownerPath)
 
-            if (ownerType == null) null
-            else {
+            if (ownerType == null) {
+                classes.find { it.packageReference?.path == ownerPath }
+                    ?.functions
+                    ?.find { it.name?.literal == name }
+                    ?.asSignature()
+            } else {
                 val argTypes = argumentTypes.mapNotNull { it }
 
                 try {
@@ -70,12 +68,13 @@ data class Scope(
             }
         }
 
+
     fun registerVariable(mutable: Boolean, name: String, type: Type?): Boolean {
         val index = if (variables.isEmpty()) 0
         else {
             val (_, _, lastType, lastIndex) = variables.last()
 
-            if (lastType == PrimitiveType.F64 || lastType == PrimitiveType.I64) lastIndex + 2
+            if (lastType == PrimitiveType.F64 || lastType == PrimitiveType.I64) lastIndex + 2 // f32 and f64 occupy two stack
             else lastIndex + 1
         }
         val variable = Variable(
@@ -131,9 +130,16 @@ data class Scope(
 
     fun findType(className: String?): Type? =
         if (className == null) null
-        else TypeUtil.asType(usages.find {
-            it.className == className
-        }, preference) ?: TypeUtil.asType(className, preference)
+        else {
+            val clazzName = usages.find {
+                it.className == className
+            }
+            val cachedClass = classes.find { it.packageReference?.path == (clazzName ?: className) }
+
+            if (cachedClass != null) ClassType(cachedClass.packageReference!!.path)
+            else if (clazzName != null) TypeUtil.asType(clazzName, preference)
+            else TypeUtil.asType(className, preference)
+        }
 
     fun findType(reference: Reference?): Type? =
         if (reference == null) null

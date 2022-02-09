@@ -12,8 +12,9 @@ class Checker(private val preference: AbstractPreference) {
     private val globalScope: Scope = Scope(preference)
     private var reports: MutableSet<Report> = mutableSetOf()
 
-    fun check(files: List<File>): Pair<List<Report>, List<File>> {
-        val checkedFiles = files.map(::checkFile)
+    fun check(file: File): Pair<List<Report>, File> {
+        reports.clear()
+        val checkedFiles = checkFile(file)
 
         return reports.toList() to checkedFiles
     }
@@ -70,6 +71,8 @@ class Checker(private val preference: AbstractPreference) {
         clazz.functions.forEachIndexed { _, it ->
             checkFunctionBody(it, Scope(classScope))
         }
+
+        globalScope.classes += clazz
 
         return clazz
     }

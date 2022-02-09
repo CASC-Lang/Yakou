@@ -2,6 +2,7 @@ package org.casc.lang.emitter
 
 import org.casc.lang.ast.*
 import org.casc.lang.ast.Function
+import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.table.*
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Label
@@ -9,16 +10,15 @@ import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import java.io.File as JFile
 
-class Emitter(private val outDir: JFile, private val files: List<File>) {
-    fun emit() {
-        for (file in files)
-            emit(file)
-    }
+class Emitter(private val preference: AbstractPreference) {
+    fun emit(outDir: JFile, file: File) =
+        emitFile(outDir, file)
 
-    private fun emit(file: File) {
+    private fun emitFile(outDir: JFile, file: File) {
         val bytecode = emitClass(file.clazz)
         val outFile = JFile(outDir, "/${file.clazz.name!!.literal}.class")
 
+        outDir.mkdirs()
         outFile.writeBytes(bytecode)
     }
 

@@ -3,11 +3,12 @@ package org.casc.lang.lexer
 import org.casc.lang.ast.Position
 import org.casc.lang.ast.Token
 import org.casc.lang.ast.TokenType
+import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 
 // TODO: Multi-Threaded Lexing Process
-class Lexer(val chunkedSource: List<String>) {
+class Lexer(private val preference: AbstractPreference) {
     private var lineNumber: Int = 1
     private var pos: Int = 0
 
@@ -22,7 +23,10 @@ class Lexer(val chunkedSource: List<String>) {
         else -> source[pos + offset]
     }
 
-    fun lex(): Pair<List<Report>, List<Token>> {
+    fun lex(chunkedSource: List<String>): Pair<List<Report>, List<Token>> {
+        lineNumber = 1
+        pos = 0
+
         val reports = mutableListOf<Report>()
         val tokens = mutableListOf<Token>()
 

@@ -1,9 +1,6 @@
 package org.casc.lang.ast
 
-import org.casc.lang.table.HasAccess
-import org.casc.lang.table.HasDescriptor
-import org.casc.lang.table.Reference
-import org.casc.lang.table.Type
+import org.casc.lang.table.*
 import org.objectweb.asm.Opcodes
 
 data class Function(
@@ -27,4 +24,15 @@ data class Function(
         })${returnType?.descriptor}"
     override val accessFlag: Int =
         (if (mutKeyword == null) Opcodes.ACC_FINAL else 0) + accessor.access + (if (compKeyword == null) 0 else Opcodes.ACC_STATIC)
+
+    fun asSignature() =
+        FunctionSignature(
+            ownerReference!!,
+            compKeyword != null,
+            mutKeyword != null,
+            accessor,
+            name?.literal ?: "",
+            parameterTypes!!.mapNotNull { it },
+            returnType!!
+        )
 }
