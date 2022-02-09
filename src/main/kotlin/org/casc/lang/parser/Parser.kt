@@ -22,6 +22,10 @@ class Parser(private val preference: AbstractPreference) {
         return reports.toList() to file
     }
 
+    // ================================
+    // PRIVATE UTILITY FUNCTIONS
+    // ================================
+
     private fun assert(type: TokenType): Token? = when {
         tokens.isEmpty() -> {
             reports += Error(
@@ -79,6 +83,10 @@ class Parser(private val preference: AbstractPreference) {
         if (tokens.isNotEmpty() && pos < tokens.size) pos++
     }
 
+    // =================================
+    // PARSING FUNCTIONS
+    // =================================
+
     private fun parseFile(path: String): File {
         // Parse optional package declaration
         val packageReference = if (peek()?.isPackageKeyword() == true) {
@@ -120,9 +128,12 @@ class Parser(private val preference: AbstractPreference) {
                 className.pos
             )
             else null
-        assert(TokenType.OpenBrace)
-        // TODO: Parse fields
-        assert(TokenType.CloseBrace)
+
+        if (peek()?.type == TokenType.OpenBrace) { // Member declaration is optional
+            assert(TokenType.OpenBrace)
+            // TODO: Parse fields
+            assert(TokenType.CloseBrace)
+        }
 
         // Parse major implementation
         val implKeyword = assert(TokenType.Identifier)
