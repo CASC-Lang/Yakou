@@ -136,27 +136,33 @@ class Parser(private val preference: AbstractPreference) {
         }
 
         // Parse major implementation
-        val implKeyword = assert(TokenType.Identifier)
+        var functions = listOf<Function>()
 
-        if (implKeyword?.isImplKeyword() != true) {
-            reports += Error(
-                last()!!.pos,
-                "Expected implementations for class"
-            )
+        if (peek()?.isImplKeyword() == true) {
+            val implKeyword = assert(TokenType.Identifier)
+
+            if (implKeyword?.isImplKeyword() != true) {
+                reports += Error(
+                    last()!!.pos,
+                    "Expected implementations for class"
+                )
+            }
+
+            val implName = assert(TokenType.Identifier)
+
+            if (implName?.literal != className?.literal) {
+                reports += Error(
+                    last()!!.pos,
+                    "Unexpected implementation for class ${implName?.literal}"
+                )
+            }
+
+            if (peek()?.type == TokenType.OpenBrace) {
+                assert(TokenType.OpenBrace)
+                functions = parseFunctions(usages, classReference)
+                assert(TokenType.CloseBrace)
+            }
         }
-
-        val implName = assert(TokenType.Identifier)
-
-        if (implName?.literal != className?.literal) {
-            reports += Error(
-                last()!!.pos,
-                "Unexpected implementation for class ${implName?.literal}"
-            )
-        }
-
-        assert(TokenType.OpenBrace)
-        val functions = parseFunctions(usages, classReference)
-        assert(TokenType.CloseBrace)
 
         val clazz = Class(packageReference, usages, accessor, classKeyword, className, functions)
 
