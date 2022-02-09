@@ -9,9 +9,5 @@ impl Main {
         pub fn main(args: str[]) {
             Paper.hello()
         }
-
-        pub fn lol() {
-
-        }
     }
 }

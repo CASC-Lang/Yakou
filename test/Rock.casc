@@ -8,7 +8,6 @@ impl Rock {
     comp {
         fn hello() {
             sys.out.println("Hello!")
-            Main.lol()
         }
     }
 }

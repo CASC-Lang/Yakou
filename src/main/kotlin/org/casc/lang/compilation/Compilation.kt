@@ -24,67 +24,65 @@ class Compilation(val file: JFile, private val preference: AbstractPreference = 
 
         fun compileClass(preference: AbstractPreference, classPath: String): Boolean {
             val result =
-                queuedFiles.withIndex().find { (_, it) -> it.second.split('\\', '/', '.').dropLast(1).joinToString(".") == classPath }
+                queuedFiles.withIndex()
+                    .find { (_, it) -> it.second.split('\\', '/', '.').dropLast(1).joinToString(".") == classPath }
 
             return if (result != null) {
                 val (index, fileResult) = result
+                val (compiled, filePath, source) = fileResult
 
-                if (fileResult.first) { // Already compiled
-                    true
-                } else {
-                    val (_, filePath, source) = fileResult
+                if (compiled) return true
 
-                    if (progressingCompilations.contains(filePath)) {
-                        Error("Circular compilation detected, compilation terminated.").printReport(filePath, listOf())
-                        println("Dependency tree:")
+                if (progressingCompilations.contains(filePath)) {
+                    Error("Circular compilation detected, compilation terminated.").printReport(filePath, listOf())
+                    println("Dependency tree:")
 
-                        val startIndex = progressingCompilations.indexOf(filePath)
+                    val startIndex = progressingCompilations.indexOf(filePath)
 
-                        for (i in startIndex until progressingCompilations.size) {
-                            if (startIndex == i) {
-                                print("starts from\t| ")
-                            } else if (progressingCompilations.lastIndex == i) {
-                                print("occurs here\t| ")
-                            } else {
-                                print("      |    \t| ")
-                            }
-
-                            println(progressingCompilations[i])
+                    for (i in startIndex until progressingCompilations.size) {
+                        if (startIndex == i) {
+                            print("starts from\t| ")
+                        } else if (progressingCompilations.lastIndex == i) {
+                            print("occurs here\t| ")
+                        } else {
+                            print("      |    \t| ")
                         }
 
-                        exitProcess(-1)
+                        println(progressingCompilations[i])
                     }
 
-                    progressingCompilations += filePath
-                    // Unit I and Unit II were already progressed in main
-
-                    // Unit III: Checker
-                    /**
-                     * Checks complex syntax validity and variables' type.
-                     */
-                    val (checkReports, checkResult) = checker.check(parsedResults[index])
-
-                    checkReports.printReports(filePath, source)
-
-                    if (checkReports.hasError()) return false
-
-                    // Unit IV: Emitter
-                    /**
-                     * Emits AST into backend languages, like JVM bytecode.
-                     * only JVM backend is available at this moment.
-                     */
-                    emitter.emit(JFile(preference.outputDir, JFile(filePath).parentFile?.path ?: ""), checkResult)
-
-                    // Reload class loader so JVM can load it
-                    preference.classLoader = URLClassLoader.newInstance(arrayOf(preference.outputDir.toURI().toURL()))
-
-                    // Marks file as compiled
-                    queuedFiles[index] = fileResult.copy(true)
-
-                    progressingCompilations.pop()
-
-                    true
+                    exitProcess(-1)
                 }
+
+                progressingCompilations += filePath
+                // Unit I and Unit II were already progressed in main
+
+                // Unit III: Checker
+                /**
+                 * Checks complex syntax validity and variables' type.
+                 */
+                val (checkReports, checkResult) = checker.check(parsedResults[index])
+
+                checkReports.printReports(filePath, source)
+
+                if (checkReports.hasError()) return false
+
+                // Unit IV: Emitter
+                /**
+                 * Emits AST into backend languages, like JVM bytecode.
+                 * only JVM backend is available at this moment.
+                 */
+                emitter.emit(JFile(preference.outputDir, JFile(filePath).parentFile?.path ?: ""), checkResult)
+
+                // Reload class loader so JVM can load it
+                preference.classLoader = URLClassLoader.newInstance(arrayOf(preference.outputDir.toURI().toURL()))
+
+                // Marks file as compiled
+                queuedFiles[index] = fileResult.copy(true)
+
+                progressingCompilations.pop()
+
+                true
             } else {
                 false
             }
@@ -117,55 +115,57 @@ class Compilation(val file: JFile, private val preference: AbstractPreference = 
             for (i in 0 until queuedFiles.size) {
                 val (_, filePath, source) = queuedFiles[i]
 
-                if (!queuedFiles[i].first) { // Un-compiled files
-                    // Unit I: Lexer
-                    /**
-                     * Known as lexical analyzer, handles source text parsing into token form.
-                     */
-                    val (lexReports, lexResult) = lexer.lex(source)
+                // Unit I: Lexer
+                /**
+                 * Known as lexical analyzer, handles source text parsing into token form.
+                 */
+                val (lexReports, lexResult) = lexer.lex(source)
 
-                    lexReports.printReports(filePath, source)
+                lexReports.printReports(filePath, source)
 
-                    if (lexReports.hasError()) continue
+                if (lexReports.hasError()) continue
 
-                    // Unit II: Parser
-                    /**
-                     * Parse tokens into an Abstract Syntax Tree (aka AST) for further unit to use with,
-                     * parser also asserts that the certainty of source code validity.
-                     */
-                    val (parseReports, parseResult) = parser.parse(filePath, lexResult)
+                // Unit II: Parser
+                /**
+                 * Parse tokens into an Abstract Syntax Tree (aka AST) for further unit to use with,
+                 * parser also asserts that the certainty of source code validity.
+                 */
+                val (parseReports, parseResult) = parser.parse(filePath, lexResult)
 
-                    parseReports.printReports(filePath, source)
+                parseReports.printReports(filePath, source)
 
-                    if (parseReports.hasError()) continue
+                if (parseReports.hasError()) continue
 
-                    parsedResults += parseResult
-                }
+                parsedResults += parseResult
             }
 
             for (i in 0 until queuedFiles.size) {
-                val (_, filePath, source) = queuedFiles[i]
+                val (compiled, filePath, source) = queuedFiles[i]
 
-                progressingCompilations += filePath
+                if (!compiled) {
+                    progressingCompilations += filePath
 
-                // Unit III: Checker
-                /**
-                 * Checks complex syntax validity and variables' type.
-                 */
-                val (checkReports, checkResult) = checker.check(parsedResults[i])
+                    // Unit III: Checker
+                    /**
+                     * Checks complex syntax validity and variables' type.
+                     */
+                    val (checkReports, checkResult) = checker.check(parsedResults[i])
 
-                checkReports.printReports(filePath, source)
+                    checkReports.printReports(filePath, source)
 
-                if (checkReports.hasError()) continue
+                    if (checkReports.hasError()) continue
 
-                // Unit IV: Emitter
-                /**
-                 * Emits AST into backend languages, like JVM bytecode.
-                 * only JVM backend is available at this moment.
-                 */
-                emitter.emit(JFile(preference.outputDir, JFile(filePath).parentFile?.path ?: ""), checkResult)
+                    // Unit IV: Emitter
+                    /**
+                     * Emits AST into backend languages, like JVM bytecode.
+                     * only JVM backend is available at this moment.
+                     */
+                    emitter.emit(JFile(preference.outputDir, JFile(filePath).parentFile?.path ?: ""), checkResult)
 
-                progressingCompilations.pop()
+                    queuedFiles[i] = queuedFiles[i].copy(true)
+
+                    progressingCompilations.pop()
+                }
             }
         } else if (file.isFile) {
             // Init preferenceerence
