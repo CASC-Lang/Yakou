@@ -1,4 +1,5 @@
 import org.casc.lang.ast.TokenType
+import org.casc.lang.compilation.GlobalPreference
 import org.casc.lang.lexer.Lexer
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.DynamicTest
@@ -51,8 +52,8 @@ class TokenTest {
                     val dummyText = generateDummyText(i, j, k)
 
                     tests += DynamicTest.dynamicTest("test $dummyText") {
-                        val lexer = Lexer(listOf(dummyText))
-                        val resultTokenTypes = lexer.lex().second.map { it.type }.toTypedArray()
+                        val lexer = Lexer(GlobalPreference)
+                        val resultTokenTypes = lexer.lex(listOf(dummyText)).second.map { it.type }.toTypedArray()
 
                         Assertions.assertArrayEquals(getTokenSet(i, j, k), resultTokenTypes)
                     }
