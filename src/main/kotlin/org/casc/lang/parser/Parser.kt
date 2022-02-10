@@ -162,7 +162,8 @@ class Parser(private val preference: AbstractPreference) {
             }
         }
 
-        val clazz = Class(packageReference, usages, accessor, classKeyword, className, fields, constructors, functions)
+        // TODO: Class inheritance & interface implementation etc.
+        val clazz = Class(packageReference, usages, null, listOf(), accessor, classKeyword, className, fields, constructors, functions)
 
         return File(path, clazz)
     }
@@ -466,9 +467,8 @@ class Parser(private val preference: AbstractPreference) {
                     )
                 }
 
-                consume() // `new` keyword
+                val newKeyword = next() // `new` keyword
 
-                val ownerReference = parseQualifiedName()
                 assert(TokenType.OpenParenthesis)
                 val parameters = parseParameters()
                 assert(TokenType.CloseParenthesis)
@@ -480,16 +480,18 @@ class Parser(private val preference: AbstractPreference) {
                 assert(TokenType.CloseBrace)
 
                 val constructor = Constructor(
-                    ownerReference,
+                    classReference,
+                    Reference.fromClass(Any::class.java), // TODO: Track parent class' reference
                     modifiers.find { it.isAccessorKeyword() },
                     parameters,
-                    statements
+                    statements,
+                    listOf() // TODO: Track `super` call arguments
                 )
 
                 if (!constructors.add(constructor)) {
                     // Duplicate constructors
                     reports += Error(
-                        ownerReference?.pos,
+                        newKeyword?.pos,
                         "Constructor new(${
                             parameters.mapNotNull { it.typeReference?.path }.joinToString()
                         }) has already declared in same context",

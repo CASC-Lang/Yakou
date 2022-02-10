@@ -72,6 +72,9 @@ class Checker(private val preference: AbstractPreference) {
             checkField(it, classScope)
         }
 
+        clazz.constructors = clazz.constructors.map {
+            checkConstructor(it, classScope)
+        }
         clazz.functions = clazz.functions.map {
             checkFunction(it, classScope)
         }
@@ -94,6 +97,53 @@ class Checker(private val preference: AbstractPreference) {
         scope.registerField(field)
 
         return field
+    }
+
+    private fun checkConstructor(constructor: Constructor, scope: Scope): Constructor {
+        // Validate types first then register it to scope
+        // Check if parameter has duplicate names
+        val duplicateParameters = constructor.parameters
+            .groupingBy {
+                checkIdentifierIsKeyword(it.name)
+
+                it.name
+            }
+            .eachCount()
+            .filter { it.value > 1 }
+        var validationPass = true
+
+        if (duplicateParameters.isNotEmpty()) {
+            duplicateParameters.forEach { (parameter, _) ->
+                reports += Error(
+                    parameter!!.pos,
+                    "Parameter ${parameter.literal} is already declared in constructor new(${
+                        constructor.parameters.mapNotNull { it.typeReference?.path }.joinToString()
+                    })"
+                )
+            }
+
+            validationPass = false
+        } else {
+            constructor.parameterTypes = constructor.parameters.map {
+                val type = checkType(it.typeReference, scope)
+
+                if (type == null) {
+                    reports.reportUnknownTypeSymbol(it.typeReference!!)
+
+                    return@map null
+                }
+
+                type
+            }
+        }
+
+        if (validationPass) {
+            constructor.ownerType = TypeUtil.asType(constructor.ownerReference, preference)
+            constructor.parentType = TypeUtil.asType(constructor.parentReference, preference)
+            scope.registerSignature(constructor)
+        }
+
+        return constructor
     }
 
     // TODO: Track if-else and match branches so compiler can know whether all paths have return value or not
@@ -123,8 +173,6 @@ class Checker(private val preference: AbstractPreference) {
             validationPass = false
         } else {
             function.parameterTypes = function.parameters.map {
-                checkIdentifierIsKeyword(it.name)
-
                 val type = checkType(it.typeReference, scope)
 
                 if (type == null) {
@@ -150,18 +198,27 @@ class Checker(private val preference: AbstractPreference) {
                 } else type
             }
 
-        if (validationPass) scope.registerFunctionSignature(function)
+        if (validationPass) scope.registerSignature(function)
 
         return function
     }
 
-    // Called right after function signature checking is complete
-    private fun checkFunctionBody(function: Function, scope: Scope) {
-        function.statements.forEach {
-            function.parameters.forEachIndexed { i, parameter ->
-                scope.registerVariable(false, parameter.name!!.literal, function.parameterTypes?.get(i))
-            }
+    private fun checkConstructorBody(constructor: Constructor, scope: Scope) {
+        constructor.parameters.forEachIndexed { i, parameter ->
+            scope.registerVariable(false, parameter.name!!.literal, constructor.parameterTypes?.get(i))
+        }
 
+        constructor.statements.forEach {
+            checkStatement(it, scope, PrimitiveType.Unit)
+        }
+    }
+
+    private fun checkFunctionBody(function: Function, scope: Scope) {
+        function.parameters.forEachIndexed { i, parameter ->
+            scope.registerVariable(false, parameter.name!!.literal, function.parameterTypes?.get(i))
+        }
+
+        function.statements.forEach {
             checkStatement(it, scope, function.returnType)
         }
     }

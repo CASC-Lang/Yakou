@@ -1,12 +1,9 @@
 package org.casc.lang.table
 
-import org.casc.lang.ast.Accessor
-import org.casc.lang.ast.Field
-import org.casc.lang.ast.Function
+import org.casc.lang.ast.*
 import org.casc.lang.compilation.AbstractPreference
 import java.lang.Class
 import java.lang.reflect.Modifier
-import org.casc.lang.ast.Class as Cls
 
 data class Scope(
     val preference: AbstractPreference,
@@ -14,7 +11,7 @@ data class Scope(
     var classPath: String = "",
     var usages: MutableSet<Reference> = mutableSetOf(),
     var fields: MutableSet<ClassField> = mutableSetOf(),
-    var functions: MutableSet<FunctionSignature> = mutableSetOf(),
+    var signatures: MutableSet<FunctionSignature> = mutableSetOf(),
     var variables: MutableList<Variable> = mutableListOf(),
     var isCompScope: Boolean = false
 ) {
@@ -24,7 +21,7 @@ data class Scope(
         parent.classPath.ifEmpty { classPath },
         parent.usages.toMutableSet(),
         parent.fields.toMutableSet(),
-        parent.functions.toMutableSet(),
+        parent.signatures.toMutableSet(),
         parent.variables.toMutableList(),
         isCompScope
     ) {
@@ -62,16 +59,13 @@ data class Scope(
             }
         }
 
-    /**
-     * registerFunctionSignature must be called after checker assigned types to function object
-     */
-    fun registerFunctionSignature(function: Function) {
-        functions += function.asSignature()
+    fun registerSignature(signatureObject: HasSignature) {
+        signatures += signatureObject.asSignature()
     }
 
     fun findFunctionInSameClass(name: String, argumentTypes: List<Type?>): FunctionSignature? =
         if (isGlobalScope) null
-        else functions.find { it.name == name && it.parameters.zip(argumentTypes).all { (t1, t2) -> t1 == t2 } }
+        else signatures.find { it.name == name && it.parameters.zip(argumentTypes).all { (t1, t2) -> t1 == t2 } }
 
     fun findFunction(ownerPath: String?, name: String, argumentTypes: List<Type?>): FunctionSignature? =
         if (ownerPath == null || ownerPath == classPath) findFunctionInSameClass(name, argumentTypes)

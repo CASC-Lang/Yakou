@@ -45,6 +45,10 @@ class Emitter(private val preference: AbstractPreference) {
             emitField(classWriter, it)
         }
 
+        clazz.constructors.forEach {
+            emitConstructor(classWriter, it)
+        }
+
         clazz.functions.forEach {
             emitFunction(classWriter, it)
         }
@@ -58,6 +62,37 @@ class Emitter(private val preference: AbstractPreference) {
         val classField = field.asClassField()
 
         classWriter.visitField(field.accessFlag, classField.name, field.descriptor, null, null)
+    }
+
+    private fun emitConstructor(classWriter: ClassWriter, constructor: Constructor) {
+        val methodVisitor = classWriter.visitMethod(
+            constructor.accessFlag,
+            "<init>",
+            constructor.descriptor,
+            null,
+            null
+        )
+
+        methodVisitor.visitVarInsn(Opcodes.ALOAD, 0)
+
+        // TODO: Load arguments from `super` call
+
+        methodVisitor.visitMethodInsn(
+            Opcodes.INVOKESPECIAL,
+            constructor.parentType!!.internalName,
+            "<init>",
+            constructor.descriptor,
+            false
+        )
+
+        constructor.statements.forEach {
+            emitStatement(methodVisitor, it)
+        }
+
+        methodVisitor.visitInsn(Opcodes.RETURN)
+        methodVisitor.visitCode()
+        methodVisitor.visitMaxs(-1, -1)
+        methodVisitor.visitEnd()
     }
 
     private fun emitFunction(classWriter: ClassWriter, function: Function) {
@@ -214,9 +249,8 @@ class Emitter(private val preference: AbstractPreference) {
                     // Chain Calling
                     emitExpression(methodVisitor, expression.previousExpression!!)
 
-                    // TODO: Implement GETFIELD
                     methodVisitor.visitFieldInsn(
-                        Opcodes.GETSTATIC,
+                        if (expression.isCompField) Opcodes.GETSTATIC else Opcodes.GETFIELD,
                         expression.previousExpression?.type?.internalName,
                         expression.name!!.literal,
                         expression.type!!.descriptor

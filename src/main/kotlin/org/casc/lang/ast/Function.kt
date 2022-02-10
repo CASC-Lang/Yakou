@@ -15,7 +15,7 @@ data class Function(
     val accessor: Accessor = Accessor.fromString(accessorToken?.literal),
     var parameterTypes: List<Type?>? = listOf(),
     var returnType: Type? = null
-) : HasDescriptor, HasAccess {
+) : HasDescriptor, HasAccess, HasSignature {
     override val descriptor: String
         get() = "(${
             parameterTypes?.fold("") { s, type ->
@@ -25,7 +25,7 @@ data class Function(
     override val accessFlag: Int =
         (mutKeyword?.let { Opcodes.ACC_FINAL } ?: 0) + accessor.access + (compKeyword?.let { Opcodes.ACC_STATIC } ?: 0)
 
-    fun asSignature() =
+    override fun asSignature() =
         FunctionSignature(
             ownerReference!!,
             compKeyword != null,

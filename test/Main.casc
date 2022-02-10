@@ -10,6 +10,10 @@ impl Main {
         }
     }
 
+    new() {
+
+    }
+
     fn getField() {
         a = i32:[1]{}
         a[0] = 1
