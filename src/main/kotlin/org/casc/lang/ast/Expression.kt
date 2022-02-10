@@ -56,10 +56,11 @@ sealed class Expression {
     data class NullLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression()
 
     data class IdentifierCallExpression(
-        val ownerReference: Reference?, // Companion field calling
+        var ownerReference: Reference?, // Companion field calling
         val name: Token?,
         var index: Int? = null,
         var isAssignedBy: Boolean = false,
+        var isCompField: Boolean = false,
         var previousExpression: Expression? = null, // Used in chain calling, e.g. Identifier `a` in a.lol
         var isClassName: Boolean = false,
         override val pos: Position? = name?.pos

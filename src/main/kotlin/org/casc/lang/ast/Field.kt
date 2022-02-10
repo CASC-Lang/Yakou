@@ -1,9 +1,6 @@
 package org.casc.lang.ast
 
-import org.casc.lang.table.HasAccess
-import org.casc.lang.table.HasDescriptor
-import org.casc.lang.table.Reference
-import org.casc.lang.table.Type
+import org.casc.lang.table.*
 import org.objectweb.asm.Opcodes
 
 data class Field(
@@ -14,10 +11,20 @@ data class Field(
     val name: Token?,
     val typeReference: Reference?,
     val accessor: Accessor = Accessor.fromString(accessorToken?.literal),
-    val type: Type? = null
+    var type: Type? = null
 ) : HasDescriptor, HasAccess {
     override val descriptor: String
         get() = type?.descriptor ?: ""
     override val accessFlag: Int =
         (mutKeyword?.let { Opcodes.ACC_FINAL } ?: 0) + accessor.access + (compKeyword?.let { Opcodes.ACC_STATIC } ?: 0)
+
+    fun asClassField(): ClassField =
+        ClassField(
+            ownerReference,
+            compKeyword != null,
+            mutKeyword != null,
+            accessor,
+            name?.literal ?: "<Unknown field name>",
+            type ?: PrimitiveType.Unit
+        )
 }

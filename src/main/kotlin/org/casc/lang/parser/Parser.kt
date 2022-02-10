@@ -7,6 +7,7 @@ import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.compilation.Warning
 import org.casc.lang.table.Reference
+import org.casc.lang.utils.MutableObjectSet
 import org.objectweb.asm.Opcodes
 
 class Parser(private val preference: AbstractPreference) {
@@ -158,7 +159,7 @@ class Parser(private val preference: AbstractPreference) {
             }
         }
 
-        val clazz = Class(packageReference, usages, accessor, classKeyword, className, functions)
+        val clazz = Class(packageReference, usages, accessor, classKeyword, className, fields, functions)
 
         return File(path, clazz)
     }
@@ -266,7 +267,11 @@ class Parser(private val preference: AbstractPreference) {
         var accessorToken: Token? = null
         var mutKeyword: Token? = null
         var compScopeDeclared = false
-        val fields = mutableListOf<Field>()
+        val usedFlags = mutableSetOf(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL) // Default flag is pub (final)
+        val fields = object : MutableObjectSet<Field>() {
+            override fun isDuplicate(a: Field, b: Field): Boolean =
+                a.name?.literal == b.name?.literal
+        }
 
         while (peek()?.type != TokenType.CloseBrace) {
             if (peek()?.isCompKeyword() == true) {
@@ -295,7 +300,7 @@ class Parser(private val preference: AbstractPreference) {
                 assert(TokenType.Colon)
                 val typeReference = parseQualifiedName(true)
 
-                fields += Field(
+                val field = Field(
                     classReference,
                     accessorToken,
                     mutKeyword,
@@ -303,15 +308,34 @@ class Parser(private val preference: AbstractPreference) {
                     name,
                     typeReference
                 )
+
+                if (!fields.add(field)) {
+                    reports += Error(
+                        name?.pos,
+                        "Field ${name?.literal} has already declared in same context",
+                        "Try rename this field"
+                    )
+                }
             } else {
                 // Assume it's accessor keyword or mut keyword
                 if (peek()?.isAccessorKeyword() == true) accessorToken = next()
                 if (peek()?.isMutKeyword() == true) mutKeyword = next()
                 assert(TokenType.Colon)
+
+                val currentFlag =
+                    Accessor.fromString(accessorToken?.literal).access + (mutKeyword?.let { 0 } ?: Opcodes.ACC_FINAL)
+
+                if (!usedFlags.add(currentFlag)) {
+                    reports += Error(
+                        accessorToken?.pos ?: mutKeyword?.pos,
+                        "Duplicate access flags",
+                        "Try merge current fields back to same exist access block"
+                    )
+                }
             }
         }
 
-        return fields
+        return fields.toList()
     }
 
     private fun parseFunctions(
@@ -320,7 +344,10 @@ class Parser(private val preference: AbstractPreference) {
         compKeyword: Token? = null
     ): List<Function> {
         var compScopeDeclared = false
-        val functions = mutableListOf<Function>()
+        val functions = object : MutableObjectSet<Function>() {
+            override fun isDuplicate(a: Function, b: Function): Boolean =
+                a.name?.literal == b.name?.literal && a.parameters == b.parameters
+        }
 
         while (peek()?.type != TokenType.CloseBrace) { // Break the loop after encountered class declaration's close bracket
             var accessor = assert(TokenType.Identifier)
@@ -401,10 +428,18 @@ class Parser(private val preference: AbstractPreference) {
                 statements,
             )
 
-            functions += function
+            if (!functions.add(function)) {
+                reports += Error(
+                    name?.pos,
+                    "Function ${name?.literal}(${
+                        parameters.mapNotNull { it.typeReference?.path }.joinToString()
+                    }) has already declared in same context",
+                    "Try rename this function or modify parameters' type"
+                )
+            }
         }
 
-        return functions
+        return functions.toList()
     }
 
     private fun parseParameters(): List<Parameter> {

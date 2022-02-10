@@ -41,6 +41,10 @@ class Emitter(private val preference: AbstractPreference) {
             null
         )
 
+        clazz.fields.forEach {
+            emitField(classWriter, it)
+        }
+
         clazz.functions.forEach {
             emitFunction(classWriter, it)
         }
@@ -48,6 +52,12 @@ class Emitter(private val preference: AbstractPreference) {
         classWriter.visitEnd()
 
         return classWriter.toByteArray()
+    }
+
+    private fun emitField(classWriter: ClassWriter, field: Field) {
+        val classField = field.asClassField()
+
+        classWriter.visitField(field.accessFlag, classField.name, field.descriptor, null, null)
     }
 
     private fun emitFunction(classWriter: ClassWriter, function: Function) {
@@ -60,6 +70,9 @@ class Emitter(private val preference: AbstractPreference) {
         )
 
         methodVisitor.visitCode()
+
+        if (function.compKeyword == null)
+            methodVisitor.visitVarInsn(Opcodes.ALOAD, 0) // Auto load parent object
 
         function.statements.forEach {
             emitStatement(methodVisitor, it)
@@ -190,10 +203,10 @@ class Emitter(private val preference: AbstractPreference) {
             is AssignmentExpression -> emitAssignment(methodVisitor, expression)
             is IdentifierCallExpression -> {
                 if (expression.ownerReference != null) {
-                    // Appointed class field
+                    // Appointed class field / local field
                     methodVisitor.visitFieldInsn(
-                        Opcodes.GETSTATIC,
-                        expression.ownerReference.internalName(),
+                        if (expression.isCompField) Opcodes.GETSTATIC else Opcodes.GETFIELD,
+                        expression.ownerReference!!.internalName(),
                         expression.name!!.literal,
                         expression.type!!.descriptor
                     )
@@ -201,6 +214,7 @@ class Emitter(private val preference: AbstractPreference) {
                     // Chain Calling
                     emitExpression(methodVisitor, expression.previousExpression!!)
 
+                    // TODO: Implement GETFIELD
                     methodVisitor.visitFieldInsn(
                         Opcodes.GETSTATIC,
                         expression.previousExpression?.type?.internalName,
@@ -208,11 +222,12 @@ class Emitter(private val preference: AbstractPreference) {
                         expression.type!!.descriptor
                     )
                 } else if (!expression.isClassName) {
-                    // Local variables / current class fields
+                    // Local variables
                     if (!expression.isAssignedBy) {
-                        val variableIndex = expression.index!!
+                        val index = expression.index!!
 
-                        methodVisitor.visitVarInsn(expression.type!!.loadOpcode, variableIndex)
+                        // Local variable
+                        methodVisitor.visitVarInsn(expression.type!!.loadOpcode, index)
                     }
                 }
             }

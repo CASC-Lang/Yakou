@@ -23,4 +23,22 @@ data class Reference(var path: String, val className: String, val position: Posi
 
     override fun toString(): String =
         path
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Reference
+
+        if (path != other.path) return false
+        if (className != other.className) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = path.hashCode()
+        result = 31 * result + className.hashCode()
+        return result
+    }
 }

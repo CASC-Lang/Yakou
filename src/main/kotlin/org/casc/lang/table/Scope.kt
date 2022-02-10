@@ -1,10 +1,12 @@
 package org.casc.lang.table
 
 import org.casc.lang.ast.Accessor
-import org.casc.lang.ast.Class as Cls
+import org.casc.lang.ast.Field
 import org.casc.lang.ast.Function
 import org.casc.lang.compilation.AbstractPreference
+import java.lang.Class
 import java.lang.reflect.Modifier
+import org.casc.lang.ast.Class as Cls
 
 data class Scope(
     val preference: AbstractPreference,
@@ -12,6 +14,7 @@ data class Scope(
     var classPath: String = "",
     var usages: MutableSet<Reference> = mutableSetOf(),
     var classes: MutableSet<Cls> = mutableSetOf(), // Stores all cached classes, but not guarantee that it's compiled, cached files compilation is handled by TypeUtil
+    var fields: MutableSet<ClassField> = mutableSetOf(),
     var functions: MutableSet<FunctionSignature> = mutableSetOf(),
     var variables: MutableList<Variable> = mutableListOf()
 ) {
@@ -21,9 +24,40 @@ data class Scope(
         parent.classPath,
         parent.usages.toMutableSet(),
         parent.classes.toMutableSet(),
+        parent.fields.toMutableSet(),
         parent.functions.toMutableSet(),
         parent.variables.toMutableList()
     )
+
+    fun registerField(field: Field) {
+        fields += field.asClassField()
+    }
+
+    fun findField(ownerPath: String?, name: String): ClassField? =
+        if (ownerPath == null || ownerPath == classPath) fields.find { it.name == name }
+        else {
+            val ownerType = TypeUtil.asType(ownerPath, preference)
+
+            if (ownerType == null) null
+            else {
+                val ownerClass = ownerType.type()!!
+
+                try {
+                    val field = ownerClass.getField(name)
+
+                    ClassField(
+                        Reference.fromClass(ownerClass),
+                        Modifier.isStatic(field.modifiers),
+                        Modifier.isFinal(field.modifiers),
+                        Accessor.fromModifier(field.modifiers),
+                        name,
+                        TypeUtil.asType(field.type, preference)!!
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+            }
+        }
 
     /**
      * registerFunctionSignature must be called after checker assigned types to function object
@@ -91,32 +125,6 @@ data class Scope(
 
     fun findVariable(name: String): Variable? =
         variables.find { it.name == name }
-
-    fun findField(ownerPath: String?, name: String): Field? =
-        if (ownerPath == null || ownerPath == classPath) null // TODO: Implement local field lookup
-        else {
-            val ownerType = TypeUtil.asType(ownerPath, preference)
-
-            if (ownerType == null) null
-            else {
-                val ownerClass = ownerType.type()!!
-
-                try {
-                    val field = ownerClass.getField(name)
-
-                    Field(
-                        Reference.fromClass(ownerClass),
-                        Modifier.isStatic(field.modifiers),
-                        Modifier.isFinal(field.modifiers),
-                        Accessor.fromModifier(field.modifiers),
-                        name,
-                        TypeUtil.asType(field.type, preference)!!
-                    )
-                } catch (e: Exception) {
-                    null
-                }
-            }
-        }
 
     fun findVariableIndex(name: String): Int? {
         var index: Int? = null

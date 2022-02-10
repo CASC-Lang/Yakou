@@ -1,11 +1,13 @@
 package org.casc.lang.checker
 
 import org.casc.lang.ast.*
+import org.casc.lang.ast.Field
 import org.casc.lang.ast.Function
 import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.table.*
+import kotlin.math.exp
 import java.io.File as JFile
 
 class Checker(private val preference: AbstractPreference) {
@@ -65,6 +67,10 @@ class Checker(private val preference: AbstractPreference) {
             } else it
         }.forEach(classScope.usages::add)
 
+        clazz.fields.forEach {
+            checkField(it, classScope)
+        }
+
         clazz.functions = clazz.functions.map {
             checkFunction(it, classScope)
         }
@@ -75,6 +81,20 @@ class Checker(private val preference: AbstractPreference) {
         globalScope.classes += clazz
 
         return clazz
+    }
+
+    private fun checkField(field: Field, scope: Scope): Field {
+        checkIdentifierIsKeyword(field.name)
+
+        val fieldType = scope.findType(field.typeReference)
+
+        if (fieldType == null) {
+            reports.reportUnknownTypeSymbol(field.typeReference!!)
+        } else field.type = fieldType
+
+        scope.registerField(field)
+
+        return field
     }
 
     // TODO: Track if-else and match branches so compiler can know whether all paths have return value or not
@@ -106,10 +126,10 @@ class Checker(private val preference: AbstractPreference) {
             function.parameterTypes = function.parameters.map {
                 checkIdentifierIsKeyword(it.name)
 
-                val type = checkType(it.type, scope)
+                val type = checkType(it.typeReference, scope)
 
                 if (type == null) {
-                    reports.reportUnknownTypeSymbol(it.type!!)
+                    reports.reportUnknownTypeSymbol(it.typeReference!!)
 
                     return@map null
                 }
@@ -351,20 +371,18 @@ class Checker(private val preference: AbstractPreference) {
                 expression.type
             }
             is IdentifierCallExpression -> {
-                if (Token.keywords.contains(expression.name?.literal)) {
-                    reports += Error(
-                        expression.name?.pos,
-                        "Cannot use ${expression.name?.literal} as identifier since it's a keyword"
-                    )
-                    null
-                } else if (expression.ownerReference != null) {
+                val ownerReference = expression.ownerReference
+
+                checkIdentifierIsKeyword(expression.name)
+
+                if (ownerReference != null) {
                     // Appointed class field
-                    val field = scope.findField(expression.ownerReference.path, expression.name!!.literal)
+                    val field = scope.findField(ownerReference.path, expression.name!!.literal)
 
                     if (field == null) {
                         reports += Error(
                             expression.pos,
-                            "Field ${expression.name.literal} does not exist in class ${expression.ownerReference.path}"
+                            "Field ${expression.name.literal} does not exist in class ${ownerReference.path}"
                         )
                     } else {
                         if (!field.companion) {
@@ -410,16 +428,25 @@ class Checker(private val preference: AbstractPreference) {
                         val variable = scope.findVariable(expression.name!!.literal)
 
                         if (variable == null) {
-                            reports += Error(
-                                expression.pos,
-                                "Variable ${expression.name.literal} does not exist in current context"
-                            )
+                            // Lookup for current class' field
+                            val field = scope.findField(null, expression.name.literal)
+
+                            if (field != null) {
+                                expression.type = field.type
+                                expression.isCompField = field.companion
+                                expression.ownerReference = field.ownerReference
+                            } else {
+                                reports += Error(
+                                    expression.name.pos,
+                                    "Unknown identifier ${expression.name.literal}"
+                                )
+                            }
                         } else {
                             expression.type = variable.type
                             expression.index = scope.findVariableIndex(expression.name.literal)
                         }
 
-                        variable?.type
+                        expression.type
                     }
                 }
             }
