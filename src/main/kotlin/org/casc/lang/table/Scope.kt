@@ -63,12 +63,16 @@ data class Scope(
         signatures += signatureObject.asSignature()
     }
 
-    fun findFunctionInSameClass(name: String, argumentTypes: List<Type?>): FunctionSignature? =
+    private fun findSignatureInSameClass(name: String, argumentTypes: List<Type?>): FunctionSignature? =
         if (isGlobalScope) null
-        else signatures.find { it.name == name && it.parameters.zip(argumentTypes).all { (t1, t2) -> t1 == t2 } }
+        else signatures.find {
+            it.name == name && it.parameters.size == argumentTypes.size && it.parameters.zip(
+                argumentTypes
+            ).all { (t1, t2) -> t1 == t2 }
+        }
 
-    fun findFunction(ownerPath: String?, name: String, argumentTypes: List<Type?>): FunctionSignature? =
-        if (ownerPath == null || ownerPath == classPath) findFunctionInSameClass(name, argumentTypes)
+    fun findSignature(ownerPath: String?, name: String, argumentTypes: List<Type?>): FunctionSignature? =
+        if (ownerPath == null || ownerPath == classPath) findSignatureInSameClass(name, argumentTypes)
         else {
             val ownerType = findType(ownerPath)
 

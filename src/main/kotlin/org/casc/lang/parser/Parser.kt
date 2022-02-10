@@ -483,6 +483,7 @@ class Parser(private val preference: AbstractPreference) {
                     classReference,
                     Reference.fromClass(Any::class.java), // TODO: Track parent class' reference
                     modifiers.find { it.isAccessorKeyword() },
+                    newKeyword,
                     parameters,
                     statements,
                     listOf() // TODO: Track `super` call arguments
@@ -749,7 +750,9 @@ class Parser(private val preference: AbstractPreference) {
             else -> null
         }
 
-        if (expression is IdentifierCallExpression || expression is FunctionCallExpression || expression is ConstructorCallExpression) {
+        if (expression is IdentifierCallExpression || expression is FunctionCallExpression
+            || expression is ConstructorCallExpression || expression is IndexExpression
+            || expression is ParenthesizedExpression) {
             while (true) {
                 if (peek()?.type == TokenType.Dot) {
                     // Chain calling

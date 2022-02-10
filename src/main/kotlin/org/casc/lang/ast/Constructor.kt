@@ -6,17 +6,20 @@ data class Constructor(
     val ownerReference: Reference?,
     val parentReference: Reference?,
     val accessorToken: Token?,
+    val newKeyword: Token?,
     val parameters: List<Parameter>,
     val statements: List<Statement>,
     val parentConstructorArguments: List<Expression?>,
     var ownerType: Type? = null,
     var parentType: Type? = null,
     val accessor: Accessor = Accessor.fromString(accessorToken?.literal),
-    var parameterTypes: List<Type?>? = listOf()
+    var parameterTypes: List<Type?> = listOf(),
+    var parentConstructorArgumentsTypes: List<Type?> = listOf(),
+    var parentConstructorSignature: FunctionSignature? = null
 ) : HasDescriptor, HasAccess, HasSignature {
     override val descriptor: String
         get() = "(${
-            parameterTypes?.fold("") { s, type ->
+            parameterTypes.fold("") { s, type ->
                 s + type?.descriptor
             }
         })V"

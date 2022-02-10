@@ -81,7 +81,7 @@ class Emitter(private val preference: AbstractPreference) {
             Opcodes.INVOKESPECIAL,
             constructor.parentType!!.internalName,
             "<init>",
-            constructor.descriptor,
+            constructor.parentConstructorSignature!!.descriptor,
             false
         )
 
@@ -256,12 +256,9 @@ class Emitter(private val preference: AbstractPreference) {
                         expression.type!!.descriptor
                     )
                 } else if (!expression.isClassName) {
-                    // Local variables
                     if (!expression.isAssignedBy) {
-                        val index = expression.index!!
-
                         // Local variable
-                        methodVisitor.visitVarInsn(expression.type!!.loadOpcode, index)
+                        methodVisitor.visitVarInsn(expression.type!!.loadOpcode, expression.index!!)
                     }
                 }
             }

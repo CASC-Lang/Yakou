@@ -2,21 +2,21 @@ use java::lang::System as sys
 
 class Main {
 intl mut:
-    a: i32[]
+    a: i32
 }
 
 impl Main {
     comp {
         fn main(args: str[]) {
-            new Main().print()
+            new Main(1).print()
         }
     }
 
-    new() {
-
+    new(k: i32) {
+        a = k
     }
 
     fn print() {
-        sys.out.println("Hello!")
+        sys.out.println(a)
     }
 }

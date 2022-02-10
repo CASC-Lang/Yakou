@@ -83,7 +83,10 @@ class Checker(private val preference: AbstractPreference) {
         clazz.functions = clazz.functions.map {
             checkFunction(it, classScope)
         }
-        clazz.functions.forEachIndexed { _, it ->
+        clazz.constructors.forEach {
+            checkConstructorBody(it, Scope(classScope))
+        }
+        clazz.functions.forEach {
             checkFunctionBody(it, Scope(classScope, isCompScope = it.compKeyword != null))
         }
 
@@ -142,11 +145,25 @@ class Checker(private val preference: AbstractPreference) {
             }
         }
 
-        if (validationPass) {
-            constructor.ownerType = TypeUtil.asType(constructor.ownerReference, preference)
-            constructor.parentType = TypeUtil.asType(constructor.parentReference, preference)
+        constructor.ownerType = TypeUtil.asType(constructor.ownerReference, preference)
+        constructor.parentType = TypeUtil.asType(constructor.parentReference, preference)
+
+        val superCallSignature =
+            scope.findSignature(constructor.parentReference?.path, "<init>", constructor.parentConstructorArgumentsTypes)
+
+        if (superCallSignature == null) {
+            // No super call match
+            reports += Error(
+                constructor.newKeyword?.pos,
+                "Cannot find matched super call `super`(${
+                    constructor.parentConstructorArgumentsTypes.mapNotNull { it?.typeName }.joinToString()
+                })"
+            )
+            validationPass = false
+        } else constructor.parentConstructorSignature = superCallSignature
+
+        if (validationPass)
             scope.registerSignature(constructor)
-        }
 
         return constructor
     }
@@ -209,6 +226,8 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkConstructorBody(constructor: Constructor, scope: Scope) {
+        scope.registerVariable(true, "self", constructor.ownerType)
+
         constructor.parameters.forEachIndexed { i, parameter ->
             scope.registerVariable(false, parameter.name!!.literal, constructor.parameterTypes?.get(i))
         }
@@ -477,9 +496,9 @@ class Checker(private val preference: AbstractPreference) {
                         // TODO: Check accessor
 
                         expression.type = field.type
+                        expression.isCompField = field.companion
+                        expression.ownerReference = field.ownerReference
                     }
-
-                    field?.type
                 } else if (expression.previousExpression != null) {
                     // Chain calling
                     val previousType = checkExpression(expression.previousExpression, scope)
@@ -502,8 +521,6 @@ class Checker(private val preference: AbstractPreference) {
                         expression.isCompField = field.companion
                         expression.ownerReference = field.ownerReference
                     }
-
-                    expression.type
                 } else {
                     // Check identifier is class name or not
                     val classType = scope.findType(expression.name?.literal)
@@ -544,10 +561,10 @@ class Checker(private val preference: AbstractPreference) {
                             expression.type = variable.type
                             expression.index = scope.findVariableIndex(expression.name.literal)
                         }
-
-                        expression.type
                     }
                 }
+
+                expression.type
             }
             is FunctionCallExpression -> {
                 // TODO: Support auto promotion parameter checking
@@ -558,9 +575,10 @@ class Checker(private val preference: AbstractPreference) {
                 val previousType = checkExpression(expression.previousExpression, scope)
 
                 // Check function call expression's context, e.g companion context
+                val ownerReference = expression.ownerReference?.path ?: previousType?.typeName ?: scope.classPath
                 val functionSignature =
-                    scope.findFunction(
-                        expression.ownerReference?.path ?: previousType?.typeName,
+                    scope.findSignature(
+                        ownerReference,
                         expression.name!!.literal,
                         argumentTypes
                     )
@@ -569,7 +587,9 @@ class Checker(private val preference: AbstractPreference) {
                     // No function matched
                     reports += Error(
                         expression.pos!!,
-                        "Function ${expression.name.literal} does not exist in current context"
+                        "Function $ownerReference#${expression.name.literal}(${
+                            argumentTypes.mapNotNull { it?.typeName }.joinToString()
+                        }) does not exist in current context"
                     )
                 } else {
                     if (functionSignature.ownerReference == expression.ownerReference) {
@@ -578,7 +598,9 @@ class Checker(private val preference: AbstractPreference) {
                             if (expression.inCompanionContext && !functionSignature.companion) {
                                 reports += Error(
                                     expression.pos!!,
-                                    "Function ${expression.name.literal} exists in non-companion context but it's called from companion context",
+                                    "Function $ownerReference#${expression.name.literal}(${
+                                        argumentTypes.mapNotNull { it?.typeName }.joinToString()
+                                    }) exists in non-companion context but it's called from companion context",
                                     "Consider move its declaration into companion context"
                                 )
                             }
@@ -590,7 +612,9 @@ class Checker(private val preference: AbstractPreference) {
                             if (!functionSignature.companion) {
                                 reports += Error(
                                     expression.pos!!,
-                                    "Function ${expression.name.literal} exists in non-companion context but is called from other context",
+                                    "Function $ownerReference#${expression.name.literal}(${
+                                        argumentTypes.mapNotNull { it?.typeName }.joinToString()
+                                    }) exists in non-companion context but is called from other context",
                                     "Consider move its declaration into companion context"
                                 )
                             }
@@ -611,7 +635,7 @@ class Checker(private val preference: AbstractPreference) {
                 }
 
                 // Check owner type has matched signature
-                val signature = scope.findFunction(
+                val signature = scope.findSignature(
                     expression.constructorOwnerReference?.path,
                     "<init>",
                     argumentTypes
