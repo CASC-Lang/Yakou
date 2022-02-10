@@ -317,20 +317,35 @@ class Checker(private val preference: AbstractPreference) {
                 val rightType = checkExpression(expression.rightExpression, scope)
 
                 if (expression.leftExpression is IdentifierCallExpression) {
-                    // TODO: Implement field assignment
-                    val variable = scope.findVariable(expression.leftExpression.name!!.literal)
+                    val name = expression.leftExpression.name!!.literal
+                    val variable = scope.findVariable(name)
 
                     if (variable == null) {
-                        reports += Error(
-                            expression.leftExpression.pos,
-                            "Variable ${expression.leftExpression.name.literal} does not exist in this context"
-                        )
+                        // Lookup local field
+                        val field = scope.findField(expression.leftExpression.ownerReference?.path, name)
+
+                        if (field == null) {
+                            reports += Error(
+                                expression.leftExpression.pos,
+                                "Unknown identifier $name"
+                            )
+                        } else {
+                            if (!field.mutable) {
+                                reports += Error(
+                                    expression.leftExpression.pos,
+                                    "Field $name is not mutable",
+                                    "Declare field $name with `mut` keyword"
+                                )
+                            }
+
+                            expression.leftExpression.isAssignedBy = true
+                        }
                     } else {
                         if (!variable.mutable) {
                             reports += Error(
                                 expression.leftExpression.pos,
-                                "Variable ${expression.leftExpression.name.literal} is not mutable",
-                                "Declare variable ${expression.leftExpression.name.literal} with `mut` keyword"
+                                "Variable $name is not mutable",
+                                "Declare variable $name with `mut` keyword"
                             )
                         }
 
@@ -408,7 +423,7 @@ class Checker(private val preference: AbstractPreference) {
                             "Field ${expression.name.literal} does not exist in class ${previousType?.typeName}"
                         )
                     } else {
-                        if (!field.companion) {
+                        if (!field.companion && scope.isCompScope) {
                             reports += Error(
                                 expression.name.pos,
                                 "Cannot access non-companion field ${expression.name.literal} from companion context"
@@ -416,6 +431,8 @@ class Checker(private val preference: AbstractPreference) {
                         }
 
                         expression.type = field.type
+                        expression.isCompField = field.companion
+                        expression.ownerReference = field.ownerReference
                     }
 
                     expression.type

@@ -1,11 +1,6 @@
 class Main {
-comp {
-    priv:
-        b: i64
-}
-    d: i32
 intl mut:
-    a: i32
+    a: i32[]
 }
 
 impl Main {
@@ -16,6 +11,8 @@ impl Main {
     }
 
     fn getField() {
-        d := a
+        a = i32:[1]{}
+        a[0] = 1
+        Rock.b = str:[0]{}
     }
 }

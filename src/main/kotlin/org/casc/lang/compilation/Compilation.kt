@@ -30,6 +30,7 @@ class Compilation(val file: JFile, private val preference: AbstractPreference = 
                 val (index, fileResult) = result
                 val (compiled, filePath, source) = fileResult
 
+                if (progressingCompilations.peek() == filePath) return true
                 if (compiled) return true
 
                 if (progressingCompilations.contains(filePath)) {

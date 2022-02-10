@@ -2,7 +2,8 @@ use java::lang::System as sys
 
 class Rock {
     comp {
-        b: str
+    mut:
+        b: str[]
     }
     a: str
 }

@@ -8,7 +8,7 @@ data class ClassType(
     override val internalName: String = typeName.replace('.', '/'),
     override val descriptor: String = "L$internalName;"
 ) : Type {
-    constructor(clazz: Class<*>): this(clazz.name)
+    constructor(clazz: Class<*>): this(clazz.typeName)
 
     override fun type(): Class<*>? = try {
         GlobalPreference.classLoader?.loadClass(typeName)

@@ -399,7 +399,7 @@ class Emitter(private val preference: AbstractPreference) {
                         expression.type?.descriptor,
                         expression.dimensionExpressions.size
                     )
-                } else if (baseType is PrimitiveType) {
+                } else if (baseType is PrimitiveType && baseType != PrimitiveType.Str) {
                     methodVisitor.visitIntInsn(Opcodes.NEWARRAY, baseType.typeOpcode)
                 } else {
                     methodVisitor.visitTypeInsn(Opcodes.ANEWARRAY, baseType.internalName)
@@ -415,7 +415,11 @@ class Emitter(private val preference: AbstractPreference) {
         expression: AssignmentExpression,
         inAssignment: Boolean = false
     ) {
-        emitExpression(methodVisitor, expression.leftExpression!!)
+        if (expression.leftExpression is IdentifierCallExpression && expression.leftExpression.index == null) {
+            if (!expression.leftExpression.isCompField)
+                methodVisitor.visitVarInsn(Opcodes.ALOAD, 0)
+        } else emitExpression(methodVisitor, expression.leftExpression!!)
+
 
         if (expression.rightExpression is AssignmentExpression) {
             emitAssignment(methodVisitor, expression.rightExpression, true)
@@ -441,11 +445,20 @@ class Emitter(private val preference: AbstractPreference) {
                 methodVisitor.visitInsn((expression.leftExpression.previousExpression?.type as ArrayType).getContentStoreOpcode()!!)
             }
             is IdentifierCallExpression -> {
-                // TODO: Implement field assignment
-                methodVisitor.visitVarInsn(
-                    expression.leftExpression.type!!.storeOpcode,
-                    expression.leftExpression.index!!
-                )
+                if (expression.leftExpression.index == null) {
+                    // Field assignment
+                    methodVisitor.visitFieldInsn(
+                        if (expression.leftExpression.isCompField) Opcodes.PUTSTATIC else Opcodes.PUTFIELD,
+                        expression.leftExpression.ownerReference!!.path,
+                        expression.leftExpression.name!!.literal,
+                        expression.leftExpression.type!!.descriptor
+                    )
+                } else {
+                    methodVisitor.visitVarInsn(
+                        expression.leftExpression.type!!.storeOpcode,
+                        expression.leftExpression.index!!
+                    )
+                }
             }
             else -> {}
         }

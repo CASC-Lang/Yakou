@@ -21,7 +21,7 @@ data class Scope(
     constructor(parent: Scope, classPath: String = "", isCompScope: Boolean = false) : this(
         parent.preference,
         false,
-        classPath,
+        parent.classPath.ifEmpty { classPath },
         parent.usages.toMutableSet(),
         parent.fields.toMutableSet(),
         parent.functions.toMutableSet(),

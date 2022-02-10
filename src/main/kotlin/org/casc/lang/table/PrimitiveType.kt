@@ -21,7 +21,7 @@ enum class PrimitiveType(
     I64("i64", "J", "long", Long::class.java, Long::class.javaObjectType, OpcodeSets.Long),
     F32("f32", "F", "float", Float::class.java, Float::class.javaObjectType, OpcodeSets.Float),
     F64("f64", "D", "double", Double::class.java, Double::class.javaObjectType, OpcodeSets.Double),
-    Str("str", "Ljava/lang/String;", "java.lang.String", String::class.java, null, OpcodeSets.Object);
+    Str("str", "Ljava/lang/String;", "java/lang/String", String::class.java, null, OpcodeSets.Object);
 
     companion object {
         val values = values()

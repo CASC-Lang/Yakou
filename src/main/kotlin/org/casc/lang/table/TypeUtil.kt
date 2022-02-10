@@ -11,8 +11,8 @@ object TypeUtil {
      */
     fun asType(name: String, preference: AbstractPreference): Type? =
         asArrayType(name, preference)
-            ?: getLoadedType(name, preference)
             ?: PrimitiveType.values.find { it.typeName == name }
+            ?: getLoadedType(name, preference)
 
     fun asType(reference: Reference?, preference: AbstractPreference): Type? =
         if (reference == null) null
@@ -20,6 +20,7 @@ object TypeUtil {
 
     fun asType(clazz: Class<*>?, preference: AbstractPreference): Type? =
         if (clazz == null) null
+        else if (clazz.isArray) asArrayType(clazz.typeName, preference)
         else PrimitiveType.values.find {
             it.type() == clazz
         } ?: asType(clazz.name, preference)
@@ -55,6 +56,7 @@ object TypeUtil {
     fun canCast(from: Type?, to: Type?): Boolean =
         if (from == null || to == null) false
         else if (from == to) true
+        else if (to.descriptor == to.descriptor) true // Prevent unconverted type being mismatched
         else if (from is PrimitiveType) {
             if (from == PrimitiveType.Null) {
                 when (to) {
