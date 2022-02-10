@@ -3,7 +3,7 @@ package org.casc.lang.table
 import org.casc.lang.ast.Position
 import org.casc.lang.ast.Token
 
-data class Reference(var path: String, val className: String, val position: Position?, val tokens: List<Token?> = listOf()) {
+data class Reference(var path: String, val className: String, val pos: Position?, val tokens: List<Token?> = listOf()) {
     constructor(token: Token?) : this(token?.literal ?: "", token?.literal ?: "", token?.pos, mutableListOf(token))
 
     companion object {

@@ -82,7 +82,10 @@ sealed class Report {
             print(
                 if (GlobalPreference.enableColor) Ansi.colorize(
                     "^".repeat(end - start),
-                    reportAttribute[1]
+                    when (this) {
+                        is Warning -> reportAttribute[0]
+                        is Error -> reportAttribute[1]
+                    }
                 ) else "^".repeat(end - start)
             )
 

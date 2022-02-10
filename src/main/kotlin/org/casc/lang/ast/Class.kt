@@ -9,6 +9,7 @@ data class Class(
     val classKeyword: Token?,
     val name: Token?,
     var fields: List<Field>,
+    var constructors: List<Constructor>,
     var functions: List<Function>,
     val accessor: Accessor = Accessor.fromString(accessorToken?.literal)
 )

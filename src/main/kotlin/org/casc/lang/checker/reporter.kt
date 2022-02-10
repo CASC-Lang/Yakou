@@ -9,7 +9,7 @@ import org.casc.lang.table.Type
 internal fun MutableSet<Report>.reportUnknownTypeSymbol(reference: Reference) =
     add(
         Error(
-            reference.position,
+            reference.pos,
             "Unknown type symbol ${reference.asCascStyle()}"
         )
     )

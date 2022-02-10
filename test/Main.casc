@@ -5,7 +5,7 @@ intl mut:
 
 impl Main {
     comp {
-        pub fn main(args: str[]) {
+        fn main(args: str[]) {
             e := Rock.b
         }
     }

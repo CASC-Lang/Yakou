@@ -140,6 +140,7 @@ class Parser(private val preference: AbstractPreference) {
 
         // Parse major implementation
         var functions = listOf<Function>()
+        var constructors = listOf<Constructor>()
 
         if (peek()?.isImplKeyword() == true) {
             next()
@@ -154,12 +155,14 @@ class Parser(private val preference: AbstractPreference) {
 
             if (peek()?.type == TokenType.OpenBrace) {
                 assert(TokenType.OpenBrace)
-                functions = parseFunctions(usages, classReference)
+                val (fns, ctors) = parseFunctions(usages, classReference)
+                functions = fns
+                constructors = ctors
                 assert(TokenType.CloseBrace)
             }
         }
 
-        val clazz = Class(packageReference, usages, accessor, classKeyword, className, fields, functions)
+        val clazz = Class(packageReference, usages, accessor, classKeyword, className, fields, constructors, functions)
 
         return File(path, clazz)
     }
@@ -294,7 +297,23 @@ class Parser(private val preference: AbstractPreference) {
                 assert(TokenType.OpenBrace)
                 fields += parseFields(usages, classReference, comp)
                 assert(TokenType.CloseBrace)
-            } else if (!(peek()?.isAccessorKeyword() == true || peek()?.isMutKeyword() == true)) {
+            } else if (peek()?.isAccessorKeyword() == true || peek()?.isMutKeyword() == true) {
+                // Assume it's accessor keyword or mut keyword
+                if (peek()?.isAccessorKeyword() == true) accessorToken = next()
+                if (peek()?.isMutKeyword() == true) mutKeyword = next()
+                assert(TokenType.Colon)
+
+                val currentFlag =
+                    Accessor.fromString(accessorToken?.literal).access + (mutKeyword?.let { 0 } ?: Opcodes.ACC_FINAL)
+
+                if (!usedFlags.add(currentFlag)) {
+                    reports += Error(
+                        accessorToken?.pos ?: mutKeyword?.pos,
+                        "Duplicate access flags",
+                        "Try merge current fields back to same exist access block"
+                    )
+                }
+            } else {
                 // Must be a field
                 val name = assert(TokenType.Identifier)
                 assert(TokenType.Colon)
@@ -316,22 +335,6 @@ class Parser(private val preference: AbstractPreference) {
                         "Try rename this field"
                     )
                 }
-            } else {
-                // Assume it's accessor keyword or mut keyword
-                if (peek()?.isAccessorKeyword() == true) accessorToken = next()
-                if (peek()?.isMutKeyword() == true) mutKeyword = next()
-                assert(TokenType.Colon)
-
-                val currentFlag =
-                    Accessor.fromString(accessorToken?.literal).access + (mutKeyword?.let { 0 } ?: Opcodes.ACC_FINAL)
-
-                if (!usedFlags.add(currentFlag)) {
-                    reports += Error(
-                        accessorToken?.pos ?: mutKeyword?.pos,
-                        "Duplicate access flags",
-                        "Try merge current fields back to same exist access block"
-                    )
-                }
             }
         }
 
@@ -342,104 +345,208 @@ class Parser(private val preference: AbstractPreference) {
         usages: List<Reference?>,
         classReference: Reference?,
         compKeyword: Token? = null
-    ): List<Function> {
+    ): Pair<List<Function>, List<Constructor>> {
         var compScopeDeclared = false
         val functions = object : MutableObjectSet<Function>() {
             override fun isDuplicate(a: Function, b: Function): Boolean =
                 a.name?.literal == b.name?.literal && a.parameters == b.parameters
         }
+        val constructors = object : MutableObjectSet<Constructor>() {
+            override fun isDuplicate(a: Constructor, b: Constructor): Boolean =
+                a.parameters == b.parameters
+        }
 
-        while (peek()?.type != TokenType.CloseBrace) { // Break the loop after encountered class declaration's close bracket
-            var accessor = assert(TokenType.Identifier)
-            var mutKeyword: Token?
+        blockParsing@ while (peek()?.type != TokenType.CloseBrace) { // Break the loop after encountered class declaration's close bracket
+            val modifiers = object : MutableObjectSet<Token>() {
+                override fun isDuplicate(a: Token, b: Token): Boolean =
+                    a.literal == b.literal
+            }
 
-            if (accessor?.isCompKeyword() == true) {
-                if (compScopeDeclared) {
-                    reports += Warning(
-                        accessor.pos,
-                        "Companion declaration scope has been declared once"
+            modifierParsing@ while (peek()?.isFnKeyword() != true && peek()?.isNewKeyword() != true) {
+                val nextToken = assert(TokenType.Identifier) ?: return functions.toList() to constructors.toList()
+
+                if (!nextToken.isCompKeyword() && !nextToken.isAccessorKeyword() && !nextToken.isMutKeyword()) {
+                    // Unexpected token
+                    reports += Error(
+                        nextToken.pos,
+                        "Unexpected `${nextToken.literal}`"
+                    )
+                    continue
+                }
+
+                if (nextToken.isCompKeyword()) {
+                    if (modifiers.isNotEmpty()) {
+                        // Modifier exists
+                        reports += Error(
+                            nextToken.pos,
+                            "Cannot declare `comp` block after several modifiers declared",
+                            "Remove this block"
+                        )
+                    }
+
+                    if (compScopeDeclared) {
+                        // Duplicate `comp` block
+                        reports += Error(
+                            nextToken.pos,
+                            "Duplicate `comp` block",
+                            "Remove this block"
+                        )
+                    } else compScopeDeclared = true
+
+                    if (compKeyword != null) {
+                        // Nested `comp` block
+                        reports += Error(
+                            nextToken.pos,
+                            "Cannot declare nested `comp` block",
+                            "Remove this block"
+                        )
+                    }
+
+                    assert(TokenType.OpenBrace)
+                    functions.addAll(parseFunctions(usages, classReference, nextToken).first)
+                    assert(TokenType.CloseBrace)
+                    continue@blockParsing
+                }
+
+                if (modifiers.find { it.isAccessorKeyword() } != null && nextToken.isAccessorKeyword()) {
+                    // More than two access modifiers
+                    reports += Error(
+                        nextToken.pos,
+                        "Cannot have more than two access modifiers or different access modifiers at same time",
+                        "Remove this"
                     )
                 }
+
+                if (nextToken.literal == "pub") {
+                    // Declared with `pub`
+                    reports += Warning(
+                        nextToken.pos,
+                        "Redundant `pub` keyword, all members' default access modifier is `pub`",
+                        "You can safely remove `pub`"
+                    )
+                }
+
+                if (modifiers.find { it.isMutKeyword() } != null && nextToken.isAccessorKeyword()) {
+                    // Wrong modifier sequence
+                    reports += Error(
+                        nextToken.pos,
+                        "Cannot declare access modifier after `mut` declared",
+                        "Try move this modifier before `mut`"
+                    )
+                }
+
+                if (!modifiers.add(nextToken)) {
+                    // Duplicate modifiers
+                    reports += Error(
+                        nextToken.pos,
+                        "Duplicate modifiers",
+                        "Remove this"
+                    )
+                }
+            }
+
+            if (peek()?.isNewKeyword() == true) {
+                // Constructor declaration
 
                 if (compKeyword != null) {
+                    // Constructor declared in `comp` block
                     reports += Error(
-                        accessor.pos,
-                        "Cannot declare nested companion declaration"
+                        peek()?.pos,
+                        "Cannot declare constructor in `comp` block",
+                        "Try move this constructor out of any `comp` block"
                     )
                 }
 
-                compScopeDeclared = true
+                if (modifiers.find { it.isMutKeyword() } != null) {
+                    // Constructor without `mut` keyword
+                    reports += Error(
+                        modifiers.find { it.isMutKeyword() }!!.pos,
+                        "Cannot declare constructor with `mut` keyword",
+                        "Remove this"
+                    )
+                }
+
+                consume() // `new` keyword
+
+                val ownerReference = parseQualifiedName()
+                assert(TokenType.OpenParenthesis)
+                val parameters = parseParameters()
+                assert(TokenType.CloseParenthesis)
+
+                // TODO: super parent class' constructor
+
                 assert(TokenType.OpenBrace)
-                functions += parseFunctions(usages, classReference, accessor)
+                val statements = parseStatements()
                 assert(TokenType.CloseBrace)
-                continue
-            }
 
-            if (accessor?.isAccessorKeyword() == true) {
-                mutKeyword = next()
+                val constructor = Constructor(
+                    ownerReference,
+                    modifiers.find { it.isAccessorKeyword() },
+                    parameters,
+                    statements
+                )
 
-                if (mutKeyword?.isMutKeyword() == true) {
-                    if (next()?.isFnKeyword() != true) {
-                        reports.reportExpectedFnDeclaration(peek(-1))
-                    }
-                } else if (mutKeyword?.isFnKeyword() == true) {
-                    mutKeyword = null
-                } else {
-                    reports.reportExpectedFnDeclaration(peek(-1))
+                if (!constructors.add(constructor)) {
+                    // Duplicate constructors
+                    reports += Error(
+                        ownerReference?.pos,
+                        "Constructor new(${
+                            parameters.mapNotNull { it.typeReference?.path }.joinToString()
+                        }) has already declared in same context",
+                        "Try modify parameters' type"
+                    )
                 }
-            } else if (accessor?.isMutKeyword() == true) {
-                mutKeyword = accessor
-                accessor = null
+            } else if (peek()?.isFnKeyword() == true) {
+                // Function declaration
+                consume() // `fn` keyword
 
-                if (assert(TokenType.Identifier)?.isFnKeyword() != true) {
-                    reports.reportExpectedFnDeclaration(peek(-1))
+                val name = assert(TokenType.Identifier)
+                assert(TokenType.OpenParenthesis)
+                val parameters = parseParameters()
+                assert(TokenType.CloseParenthesis)
+
+                val returnType = if (peek()?.type == TokenType.Colon) {
+                    consume()
+                    parseQualifiedName(true)
+                } else null
+
+                assert(TokenType.OpenBrace)
+                val statements = parseStatements(compKeyword != null)
+                assert(TokenType.CloseBrace)
+
+                val function = Function(
+                    classReference,
+                    modifiers.find { it.isAccessorKeyword() },
+                    modifiers.find { it.isMutKeyword() },
+                    compKeyword,
+                    name,
+                    parameters,
+                    returnType,
+                    statements,
+                )
+
+                if (!functions.add(function)) {
+                    // Duplicate functions
+                    reports += Error(
+                        name?.pos,
+                        "Function ${name?.literal}(${
+                            parameters.mapNotNull { it.typeReference?.path }.joinToString()
+                        }) has already declared in same context",
+                        "Try rename this function or modify parameters' type"
+                    )
                 }
-            } else if (accessor?.isFnKeyword() == true) {
-                accessor = null
-                mutKeyword = null
             } else {
-                reports.reportExpectedFnDeclaration(peek(-1))
+                // Unknown declaration
+                val currentToken = peek()
 
-                mutKeyword = null
-            }
-
-            val name = assert(TokenType.Identifier)
-            assert(TokenType.OpenParenthesis)
-            val parameters = parseParameters()
-            assert(TokenType.CloseParenthesis)
-
-            val returnType = if (peek()?.type == TokenType.Colon) {
-                consume()
-                parseQualifiedName(true)
-            } else null
-
-            assert(TokenType.OpenBrace)
-            val statements = parseStatements(compKeyword != null)
-            assert(TokenType.CloseBrace)
-
-            val function = Function(
-                classReference,
-                accessor,
-                mutKeyword,
-                compKeyword,
-                name,
-                parameters,
-                returnType,
-                statements,
-            )
-
-            if (!functions.add(function)) {
                 reports += Error(
-                    name?.pos,
-                    "Function ${name?.literal}(${
-                        parameters.mapNotNull { it.typeReference?.path }.joinToString()
-                    }) has already declared in same context",
-                    "Try rename this function or modify parameters' type"
+                    currentToken?.pos,
+                    "Unexpected token `${currentToken?.literal}`"
                 )
             }
         }
 
-        return functions.toList()
+        return functions.toList() to constructors.toList()
     }
 
     private fun parseParameters(): List<Parameter> {
@@ -624,6 +731,7 @@ class Parser(private val preference: AbstractPreference) {
             TokenType.Identifier -> when (peek()?.literal) {
                 "true", "false" -> BoolLiteral(next())
                 "null" -> NullLiteral(next())
+                "new" -> parseConstructorExpression(inCompanionContext)
                 else -> parseSecondaryExpression(inCompanionContext)
             }
             TokenType.Colon -> parseArrayInitialization(inCompanionContext)
@@ -689,6 +797,16 @@ class Parser(private val preference: AbstractPreference) {
         }
 
         return expression
+    }
+
+    private fun parseConstructorExpression(inCompanionContext: Boolean): Expression {
+        assert(TokenType.Identifier) // `new` keyword
+        val ownerReference = parseQualifiedName()
+        assert(TokenType.OpenParenthesis)
+        val arguments = parseArguments(inCompanionContext)
+        assert(TokenType.CloseParenthesis)
+
+        return ConstructorCallExpression(ownerReference, arguments)
     }
 
     private fun parseSecondaryExpression(inCompanionContext: Boolean): Expression {
@@ -765,7 +883,7 @@ class Parser(private val preference: AbstractPreference) {
                 typeReference.path += "[]"
 
                 if (dimensionElements.isEmpty()) {
-                    typeReference.position?.extend(closeBracket?.pos)
+                    typeReference.pos?.extend(closeBracket?.pos)
                 }
             }
 
@@ -787,7 +905,7 @@ class Parser(private val preference: AbstractPreference) {
                 ArrayInitialization(
                     typeReference,
                     elements,
-                    typeReference.position?.copy()?.extend(closeBrace?.pos)
+                    typeReference.pos?.copy()?.extend(closeBrace?.pos)
                 )
             } else {
                 // Array Declaration
@@ -796,7 +914,7 @@ class Parser(private val preference: AbstractPreference) {
                 ArrayDeclaration(
                     typeReference,
                     dimensionElements,
-                    typeReference.position?.copy()?.extend(closeBrace?.pos)
+                    typeReference.pos?.copy()?.extend(closeBrace?.pos)
                 )
             }
         } else {

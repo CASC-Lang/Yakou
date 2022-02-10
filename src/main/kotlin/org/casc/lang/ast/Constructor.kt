@@ -12,7 +12,7 @@ data class Constructor(
     val statements: List<Statement>,
     val accessor: Accessor = Accessor.fromString(accessorToken?.literal),
     var parameterTypes: List<Type?>? = listOf(),
-    val ownerType: Type?
+    var ownerType: Type? = null
 ) : HasDescriptor, HasAccess {
     override val descriptor: String
         get() = "(${

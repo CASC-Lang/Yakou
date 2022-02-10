@@ -7,10 +7,12 @@ import org.casc.lang.table.Type
 
 sealed class Expression {
     abstract val pos: Position?
-    var type: Type? = null // Provided by Checker Unit
+    /* Provided by Checker Unit */
+    var type: Type? = null
+    /* Provided by Checker Unit */
     var castTo: Type? = null
 
-    // Exceptions: PreviousExpression does not count as sub Expression
+    /* Exceptions: PreviousExpression does not count as sub Expression */
     open fun getExpressions(): List<Expression?>? = null
 
     data class IntegerLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression() {
@@ -79,6 +81,15 @@ sealed class Expression {
             arguments
     }
 
+    data class ConstructorCallExpression(
+        val constructorOwnerReference: Reference?,
+        val arguments: List<Expression?>,
+        override val pos: Position? = constructorOwnerReference?.pos
+    ) : Expression() {
+        override fun getExpressions(): List<Expression?> =
+            arguments
+    }
+
     data class IndexExpression(
         val previousExpression: Expression?,
         val indexExpression: Expression?,
@@ -89,8 +100,7 @@ sealed class Expression {
             listOf(previousExpression, indexExpression)
     }
 
-    // Specifically used by local variable assignment
-    // TODO: change identifier into expression
+    // Specifically used by local variable and field assignment
     data class AssignmentExpression(
         val leftExpression: Expression?,
         val operator: Token?,

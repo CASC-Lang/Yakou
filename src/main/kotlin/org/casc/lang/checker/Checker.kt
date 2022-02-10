@@ -7,7 +7,6 @@ import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.table.*
-import kotlin.math.exp
 import java.io.File as JFile
 
 class Checker(private val preference: AbstractPreference) {
@@ -36,7 +35,7 @@ class Checker(private val preference: AbstractPreference) {
 
             if (!JFile(file.path).parentFile.toPath().endsWith(packagePath)) {
                 reports += Error(
-                    file.clazz.packageReference!!.position,
+                    file.clazz.packageReference!!.pos,
                     "Package path mismatch",
                     "Try rename parent folders' name or rename package name"
                 )
@@ -544,6 +543,9 @@ class Checker(private val preference: AbstractPreference) {
 
                 expression.type
             }
+            is ConstructorCallExpression -> {
+                expression.type
+            }
             is IndexExpression -> {
                 val previousExpressionType = checkExpression(expression.previousExpression, scope)
                 val indexExpressionType = checkExpression(expression.indexExpression, scope)
@@ -706,7 +708,7 @@ class Checker(private val preference: AbstractPreference) {
                         null -> reports.reportUnknownTypeSymbol(expression.inferTypeReference)
                         !is ArrayType -> {
                             reports += Error(
-                                expression.inferTypeReference.position,
+                                expression.inferTypeReference.pos,
                                 "Inferred type must be array type",
                                 "Consider add [] after type name"
                             )
@@ -715,7 +717,7 @@ class Checker(private val preference: AbstractPreference) {
                             expression,
                             scope,
                             inferType.baseType,
-                            expression.inferTypeReference.position
+                            expression.inferTypeReference.pos
                         )
                     }
                 } else {

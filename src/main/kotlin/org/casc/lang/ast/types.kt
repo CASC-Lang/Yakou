@@ -17,6 +17,7 @@ typealias BoolLiteral = Expression.BoolLiteral
 typealias NullLiteral = Expression.NullLiteral
 typealias IdentifierCallExpression = Expression.IdentifierCallExpression
 typealias FunctionCallExpression = Expression.FunctionCallExpression
+typealias ConstructorCallExpression = Expression.ConstructorCallExpression
 typealias IndexExpression = Expression.IndexExpression
 typealias AssignmentExpression = Expression.AssignmentExpression
 typealias UnaryExpression = Expression.UnaryExpression
