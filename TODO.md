@@ -18,6 +18,8 @@
 - [x] shift operators
 - [x] null check
 - [x] block
+- [x] Scoped fields
+- [x] prefixed fields
 
 ##### IMPLEMENTATION IN PROGRESS
 
@@ -29,8 +31,6 @@
 - [ ] if expression (ternary expression in Java)
 - [ ] check all code paths returns value
 - [ ] primary & auxiliary constructors
-- [ ] Scoped fields
-- [ ] prefixed fields
 - [ ] inheritance
 - - [ ] class
 - - [ ] interface

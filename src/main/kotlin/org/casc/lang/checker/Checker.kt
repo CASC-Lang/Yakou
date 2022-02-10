@@ -338,6 +338,13 @@ class Checker(private val preference: AbstractPreference) {
                                 )
                             }
 
+                            if (!field.companion && field.ownerReference?.path != scope.classPath) {
+                                reports += Error(
+                                    expression.leftExpression.pos,
+                                    "Cannot access non-companion field $name from other context"
+                                )
+                            }
+
                             expression.leftExpression.isAssignedBy = true
                         }
                     } else {

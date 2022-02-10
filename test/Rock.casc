@@ -5,7 +5,8 @@ class Rock {
     mut:
         b: str[]
     }
-    a: str
+    mut:
+        a: str
 }
 
 impl Rock
