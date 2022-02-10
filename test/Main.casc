@@ -11,12 +11,11 @@ intl mut:
 impl Main {
     comp {
         pub fn main(args: str[]) {
-            e := b
+            e := Rock.a
         }
     }
 
     fn getField() {
-        e := b
         d := a
     }
 }

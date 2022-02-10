@@ -80,8 +80,6 @@ class Checker(private val preference: AbstractPreference) {
             checkFunctionBody(it, Scope(classScope, isCompScope = it.compKeyword != null))
         }
 
-        globalScope.classes += clazz
-
         return clazz
     }
 

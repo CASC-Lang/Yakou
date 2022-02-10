@@ -13,7 +13,6 @@ data class Scope(
     val isGlobalScope: Boolean = true,
     var classPath: String = "",
     var usages: MutableSet<Reference> = mutableSetOf(),
-    var classes: MutableSet<Cls> = mutableSetOf(), // Stores all cached classes, but not guarantee that it's compiled, cached files compilation is handled by TypeUtil
     var fields: MutableSet<ClassField> = mutableSetOf(),
     var functions: MutableSet<FunctionSignature> = mutableSetOf(),
     var variables: MutableList<Variable> = mutableListOf(),
@@ -24,7 +23,6 @@ data class Scope(
         false,
         classPath,
         parent.usages.toMutableSet(),
-        parent.classes.toMutableSet(),
         parent.fields.toMutableSet(),
         parent.functions.toMutableSet(),
         parent.variables.toMutableList(),
@@ -80,12 +78,7 @@ data class Scope(
         else {
             val ownerType = findType(ownerPath)
 
-            if (ownerType == null) {
-                classes.find { it.packageReference?.path == ownerPath }
-                    ?.functions
-                    ?.find { it.name?.literal == name }
-                    ?.asSignature()
-            } else {
+            if (ownerType != null) {
                 val argTypes = argumentTypes.mapNotNull { it }
 
                 try {
@@ -104,7 +97,7 @@ data class Scope(
                 } catch (e: Exception) {
                     null
                 }
-            }
+            } else null
         }
 
 
@@ -147,10 +140,8 @@ data class Scope(
             val clazzName = usages.find {
                 it.className == className
             }
-            val cachedClass = classes.find { it.packageReference?.path == (clazzName ?: className) }
 
-            if (cachedClass != null) ClassType(cachedClass.packageReference!!.path)
-            else if (clazzName != null) TypeUtil.asType(clazzName, preference)
+            if (clazzName != null) TypeUtil.asType(clazzName, preference)
             else TypeUtil.asType(className, preference)
         }
 

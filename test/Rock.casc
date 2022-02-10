@@ -1,5 +1,7 @@
 use java::lang::System as sys
 
-class Rock
+class Rock {
+    a: str
+}
 
 impl Rock
