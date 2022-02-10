@@ -1,6 +1,9 @@
 use java::lang::System as sys
 
 class Rock {
+    comp {
+        b: str
+    }
     a: str
 }
 

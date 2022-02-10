@@ -11,7 +11,7 @@ intl mut:
 impl Main {
     comp {
         pub fn main(args: str[]) {
-            e := Rock.a
+            e := Rock.b
         }
     }
 

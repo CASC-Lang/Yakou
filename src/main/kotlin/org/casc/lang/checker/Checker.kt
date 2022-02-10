@@ -408,6 +408,13 @@ class Checker(private val preference: AbstractPreference) {
                             "Field ${expression.name.literal} does not exist in class ${previousType?.typeName}"
                         )
                     } else {
+                        if (!field.companion) {
+                            reports += Error(
+                                expression.name.pos,
+                                "Cannot access non-companion field ${expression.name.literal} from companion context"
+                            )
+                        }
+
                         expression.type = field.type
                     }
 
