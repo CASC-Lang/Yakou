@@ -71,9 +71,6 @@ class Emitter(private val preference: AbstractPreference) {
 
         methodVisitor.visitCode()
 
-        if (function.compKeyword == null)
-            methodVisitor.visitVarInsn(Opcodes.ALOAD, 0) // Auto load parent object
-
         function.statements.forEach {
             emitStatement(methodVisitor, it)
         }
@@ -204,6 +201,9 @@ class Emitter(private val preference: AbstractPreference) {
             is IdentifierCallExpression -> {
                 if (expression.ownerReference != null) {
                     // Appointed class field / local field
+                    if (!expression.isCompField)
+                        methodVisitor.visitVarInsn(Opcodes.ALOAD, 0)
+
                     methodVisitor.visitFieldInsn(
                         if (expression.isCompField) Opcodes.GETSTATIC else Opcodes.GETFIELD,
                         expression.ownerReference!!.internalName(),

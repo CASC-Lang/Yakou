@@ -49,7 +49,9 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkClass(clazz: Class): Class {
-        val classScope = Scope(globalScope)
+        val classScope = Scope(
+            globalScope,
+            clazz.packageReference?.path?.let { "$it/${clazz.name!!.literal}" } ?: clazz.name!!.literal)
 
         checkIdentifierIsKeyword(clazz.name)
 
@@ -75,7 +77,7 @@ class Checker(private val preference: AbstractPreference) {
             checkFunction(it, classScope)
         }
         clazz.functions.forEachIndexed { _, it ->
-            checkFunctionBody(it, Scope(classScope))
+            checkFunctionBody(it, Scope(classScope, isCompScope = it.compKeyword != null))
         }
 
         globalScope.classes += clazz
@@ -432,6 +434,13 @@ class Checker(private val preference: AbstractPreference) {
                             val field = scope.findField(null, expression.name.literal)
 
                             if (field != null) {
+                                if (!field.companion && scope.isCompScope) {
+                                    reports += Error(
+                                        expression.name.pos,
+                                        "Cannot access non-companion field ${expression.name.literal} from companion context"
+                                    )
+                                }
+
                                 expression.type = field.type
                                 expression.isCompField = field.companion
                                 expression.ownerReference = field.ownerReference

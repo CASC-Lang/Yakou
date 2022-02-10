@@ -11,11 +11,12 @@ intl mut:
 impl Main {
     comp {
         pub fn main(args: str[]) {
-
+            e := b
         }
     }
 
     fn getField() {
+        e := b
         d := a
     }
 }

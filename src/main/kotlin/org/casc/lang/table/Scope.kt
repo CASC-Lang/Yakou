@@ -16,18 +16,23 @@ data class Scope(
     var classes: MutableSet<Cls> = mutableSetOf(), // Stores all cached classes, but not guarantee that it's compiled, cached files compilation is handled by TypeUtil
     var fields: MutableSet<ClassField> = mutableSetOf(),
     var functions: MutableSet<FunctionSignature> = mutableSetOf(),
-    var variables: MutableList<Variable> = mutableListOf()
+    var variables: MutableList<Variable> = mutableListOf(),
+    var isCompScope: Boolean = false
 ) {
-    constructor(parent: Scope) : this(
+    constructor(parent: Scope, classPath: String = "", isCompScope: Boolean = false) : this(
         parent.preference,
         false,
-        parent.classPath,
+        classPath,
         parent.usages.toMutableSet(),
         parent.classes.toMutableSet(),
         parent.fields.toMutableSet(),
         parent.functions.toMutableSet(),
-        parent.variables.toMutableList()
-    )
+        parent.variables.toMutableList(),
+        isCompScope
+    ) {
+        if (variables.isEmpty() && !isCompScope)
+            registerVariable(false, "self", ClassType(classPath))
+    }
 
     fun registerField(field: Field) {
         fields += field.asClassField()
