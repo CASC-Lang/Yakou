@@ -10,6 +10,11 @@ import org.casc.lang.table.*
 import java.io.File as JFile
 
 class Checker(private val preference: AbstractPreference) {
+    companion object {
+        private val ignoreUnusedExpressions =
+            listOf(AssignmentExpression::class.java, FunctionCallExpression::class.java, Constructor::class.java)
+    }
+
     private val globalScope: Scope = Scope(preference)
     private var reports: MutableSet<Report> = mutableSetOf()
 
@@ -302,7 +307,7 @@ class Checker(private val preference: AbstractPreference) {
                 }
             }
             is ExpressionStatement -> {
-                if (statement.expression !is AssignmentExpression && statement.expression !is FunctionCallExpression) {
+                if (statement.expression != null && !ignoreUnusedExpressions.contains(statement.expression::class.java)) {
                     if (statement.expression is UnaryExpression &&
                         (statement.expression.operator?.type == TokenType.DoublePlus || statement.expression.operator?.type == TokenType.DoubleMinus)
                     ) {
@@ -601,6 +606,30 @@ class Checker(private val preference: AbstractPreference) {
                 expression.type
             }
             is ConstructorCallExpression -> {
+                val argumentTypes = expression.arguments.map {
+                    checkExpression(it, scope)
+                }
+
+                // Check owner type has matched signature
+                val signature = scope.findFunction(
+                    expression.constructorOwnerReference?.path,
+                    "<init>",
+                    argumentTypes
+                )
+
+                if (signature == null) {
+                    // No match
+                    reports += Error(
+                        expression.pos,
+                        "Constructor ${expression.constructorOwnerReference?.asCascStyle()}#new(${
+                            argumentTypes.map { it?.typeName }.joinToString()
+                        }) does not exist"
+                    )
+                } else {
+                    expression.type = signature.returnType
+                    expression.referenceFunctionSignature = signature
+                }
+
                 expression.type
             }
             is IndexExpression -> {

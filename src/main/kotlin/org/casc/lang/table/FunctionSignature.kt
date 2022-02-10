@@ -12,5 +12,11 @@ data class FunctionSignature(
     val returnType: Type
 ) : HasDescriptor {
     override val descriptor: String =
-        "(${parameters.fold("") { s, parameter -> s + parameter.descriptor }})${returnType.descriptor}"
+        if (name == "<init>") {
+            // Constructor
+            "(${parameters.fold("") { s, parameter -> s + parameter.descriptor }})V"
+        } else {
+            // Function
+            "(${parameters.fold("") { s, parameter -> s + parameter.descriptor }})${returnType.descriptor}"
+        }
 }

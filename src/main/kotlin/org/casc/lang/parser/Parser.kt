@@ -749,7 +749,7 @@ class Parser(private val preference: AbstractPreference) {
             else -> null
         }
 
-        if (expression is IdentifierCallExpression || expression is FunctionCallExpression) {
+        if (expression is IdentifierCallExpression || expression is FunctionCallExpression || expression is ConstructorCallExpression) {
             while (true) {
                 if (peek()?.type == TokenType.Dot) {
                     // Chain calling

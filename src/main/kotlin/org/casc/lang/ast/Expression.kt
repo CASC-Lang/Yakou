@@ -84,6 +84,7 @@ sealed class Expression {
     data class ConstructorCallExpression(
         val constructorOwnerReference: Reference?,
         val arguments: List<Expression?>,
+        var referenceFunctionSignature: FunctionSignature? = null, // Needs to be provided by checker
         override val pos: Position? = constructorOwnerReference?.pos
     ) : Expression() {
         override fun getExpressions(): List<Expression?> =

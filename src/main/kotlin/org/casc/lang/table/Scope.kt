@@ -75,21 +75,42 @@ data class Scope(
             if (ownerType != null) {
                 val argTypes = argumentTypes.mapNotNull { it }
 
-                try {
-                    val (ownerClass, argumentClasses) = retrieveExecutableInfo(ownerType, argTypes)
-                    val function = ownerClass.getMethod(name, *argumentClasses)
+                if (name == "<init>") {
+                    // Constructor
+                    try {
+                        val (ownerClass, argumentClasses) = retrieveExecutableInfo(ownerType, argTypes)
+                        val constructor = ownerClass.getConstructor(*argumentClasses)
 
-                    FunctionSignature(
-                        Reference.fromClass(ownerClass),
-                        Modifier.isStatic(function.modifiers),
-                        Modifier.isFinal(function.modifiers),
-                        Accessor.fromModifier(function.modifiers),
-                        name,
-                        argTypes,
-                        TypeUtil.asType(function.returnType, preference)!!
-                    )
-                } catch (e: Exception) {
-                    null
+                        FunctionSignature(
+                            Reference.fromClass(ownerClass),
+                            companion = true,
+                            mutable = false,
+                            Accessor.fromModifier(constructor.modifiers),
+                            name,
+                            argTypes,
+                            ownerType
+                        )
+                    } catch (e: Exception) {
+                        null
+                    }
+                } else {
+                    // Function
+                    try {
+                        val (ownerClass, argumentClasses) = retrieveExecutableInfo(ownerType, argTypes)
+                        val function = ownerClass.getMethod(name, *argumentClasses)
+
+                        FunctionSignature(
+                            Reference.fromClass(ownerClass),
+                            Modifier.isStatic(function.modifiers),
+                            Modifier.isFinal(function.modifiers),
+                            Accessor.fromModifier(function.modifiers),
+                            name,
+                            argTypes,
+                            TypeUtil.asType(function.returnType, preference)!!
+                        )
+                    } catch (e: Exception) {
+                        null
+                    }
                 }
             } else null
         }

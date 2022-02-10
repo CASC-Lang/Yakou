@@ -278,7 +278,7 @@ class Emitter(private val preference: AbstractPreference) {
                 }
 
                 if (functionSignature.companion) {
-                    // Use INVOKESTATIC or INVOKESPECIAL to call functions, depends on function itself is ctor or sth
+                    // Use INVOKESTATIC
                     methodVisitor.visitMethodInsn(
                         Opcodes.INVOKESTATIC, // TODO: Support complex calling
                         functionSignature.ownerReference.internalName(),
@@ -296,6 +296,25 @@ class Emitter(private val preference: AbstractPreference) {
                         false // TODO: Support interface function calling
                     )
                 }
+            }
+            is ConstructorCallExpression -> {
+                val signature = expression.referenceFunctionSignature!!
+
+                methodVisitor.visitTypeInsn(Opcodes.NEW, signature.ownerReference.internalName())
+                methodVisitor.visitInsn(Opcodes.DUP)
+
+                // Emit arguments
+                expression.arguments.forEach {
+                    emitExpression(methodVisitor, it!!)
+                }
+
+                methodVisitor.visitMethodInsn(
+                    Opcodes.INVOKESPECIAL,
+                    signature.ownerReference.internalName(),
+                    signature.name,
+                    signature.descriptor,
+                    false
+                )
             }
             is IndexExpression -> {
                 emitExpression(methodVisitor, expression.previousExpression!!)
