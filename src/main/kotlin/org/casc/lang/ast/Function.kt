@@ -13,6 +13,7 @@ data class Function(
     val returnTypeReference: Reference?,
     val statements: List<Statement>,
     val accessor: Accessor = Accessor.fromString(accessorToken?.literal),
+    var ownerType: Type? = null,
     var parameterTypes: List<Type?>? = listOf(),
     var returnType: Type? = null
 ) : HasDescriptor, HasAccess, HasSignature {

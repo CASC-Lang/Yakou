@@ -25,7 +25,10 @@ class Checker(private val preference: AbstractPreference) {
         return reports.toList() to checkedFiles
     }
 
-    private fun checkIdentifierIsKeyword(identifierToken: Token?) {
+    private fun checkIdentifierIsKeyword(identifierToken: Token?, isVariable: Boolean = false) {
+        if (isVariable && identifierToken?.literal == "self")
+            return
+
         if (Token.keywords.contains(identifierToken?.literal)) {
             reports += Error(
                 identifierToken?.pos,
@@ -145,8 +148,8 @@ class Checker(private val preference: AbstractPreference) {
             }
         }
 
-        constructor.ownerType = TypeUtil.asType(constructor.ownerReference, preference)
-        constructor.parentType = TypeUtil.asType(constructor.parentReference, preference)
+        constructor.ownerType = checkType(constructor.ownerReference, scope)
+        constructor.parentType = checkType(constructor.parentReference, scope)
 
         val superCallSignature =
             scope.findSignature(constructor.parentReference?.path, "<init>", constructor.parentConstructorArgumentsTypes)
@@ -219,6 +222,7 @@ class Checker(private val preference: AbstractPreference) {
                     null
                 } else type
             }
+        function.ownerType = checkType(function.ownerReference, scope)
 
         if (validationPass) scope.registerSignature(function)
 
@@ -226,7 +230,7 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkConstructorBody(constructor: Constructor, scope: Scope) {
-        scope.registerVariable(true, "self", constructor.ownerType)
+        scope.registerVariable(false, "self", constructor.ownerType)
 
         constructor.parameters.forEachIndexed { i, parameter ->
             scope.registerVariable(false, parameter.name!!.literal, constructor.parameterTypes?.get(i))
@@ -238,6 +242,11 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkFunctionBody(function: Function, scope: Scope) {
+        if (function.compKeyword == null) {
+            // non-companion function
+            scope.registerVariable(false, "self", function.ownerType)
+        }
+
         function.parameters.forEachIndexed { i, parameter ->
             scope.registerVariable(false, parameter.name!!.literal, function.parameterTypes?.get(i))
         }
@@ -258,7 +267,13 @@ class Checker(private val preference: AbstractPreference) {
     ) {
         when (statement) {
             is VariableDeclaration -> {
-                checkIdentifierIsKeyword(statement.name)
+                if (statement.name?.literal == "self") {
+                    reports += Error(
+                        statement.name.pos,
+                        "Cannot declare `self` as local variable",
+                        "Rename this variable"
+                    )
+                } else checkIdentifierIsKeyword(statement.name)
 
                 val expressionType = checkExpression(statement.expression, scope)
 
@@ -475,7 +490,7 @@ class Checker(private val preference: AbstractPreference) {
             is IdentifierCallExpression -> {
                 val ownerReference = expression.ownerReference
 
-                checkIdentifierIsKeyword(expression.name)
+                checkIdentifierIsKeyword(expression.name, true)
 
                 if (ownerReference != null) {
                     // Appointed class field

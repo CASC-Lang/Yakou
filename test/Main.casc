@@ -17,6 +17,6 @@ impl Main {
     }
 
     fn print() {
-        sys.out.println(a)
+        sys.out.println(self.a)
     }
 }

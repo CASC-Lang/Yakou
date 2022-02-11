@@ -24,10 +24,7 @@ data class Scope(
         parent.signatures.toMutableSet(),
         parent.variables.toMutableList(),
         isCompScope
-    ) {
-        if (variables.isEmpty() && !isCompScope)
-            registerVariable(false, "self", ClassType(classPath))
-    }
+    )
 
     fun registerField(field: Field) {
         fields += field.asClassField()

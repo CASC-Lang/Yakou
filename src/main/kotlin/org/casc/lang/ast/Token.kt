@@ -6,7 +6,7 @@ data class Token(var literal: String, val type: TokenType, val pos: Position) {
     companion object {
         val keywords = arrayOf(
             "package", "use", "class", "impl", "comp", "pub", "prot", "intl", "priv",
-            "mut", "fn", "if", "else", "for", "return", "as", "is", "new"
+            "mut", "fn", "if", "else", "for", "return", "as", "is", "new", "self", "super"
         )
     }
 
