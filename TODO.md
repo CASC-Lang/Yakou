@@ -26,9 +26,10 @@
 
 - [ ] loops
 - - [x] for loop (Java loop)<sup id="a1">[1](#f1)</sup>
-- - [ ] range for loop
+- - [ ] range for loop<sup id="a2">[2](#f2)</sup>
 - - [ ] while loop
 - - [ ] do-while loop
+- [ ] label
 - [ ] if expression (ternary expression in Java)
 - [ ] check all code paths returns value
 - [ ] inheritance
@@ -42,4 +43,5 @@
 - [ ] more customizable compilation arguments(?)
 
 #### FOOTNOTES
-<b id="f1">1</b> Most likely will remove after range for loop is done. Due to syntax parsing collision. [↩](#a1)
+<b id="f1">1</b>. Most likely will remove after range for loop is done. Due to syntax parsing collision. [↩](#a1)
+<b id="f2">2</b>. Requires inheritance fully supported. [↩](#a2)
