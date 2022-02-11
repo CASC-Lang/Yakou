@@ -20,22 +20,26 @@
 - [x] block
 - [x] Scoped fields
 - [x] prefixed fields
+- [x] constructors
 
 ##### IMPLEMENTATION IN PROGRESS
 
 - [ ] loops
-- - [x] for loop (Java loop)
+- - [x] for loop (Java loop)<sup id="a1">[1](#f1)</sup>
 - - [ ] range for loop
 - - [ ] while loop
 - - [ ] do-while loop
 - [ ] if expression (ternary expression in Java)
 - [ ] check all code paths returns value
-- [ ] primary & auxiliary constructors
 - [ ] inheritance
 - - [ ] class
 - - [ ] interface
+- - [ ] `super` call
 
 ### Compiler Unit
 
 - [ ] multiple file compilation
 - [ ] more customizable compilation arguments(?)
+
+#### FOOTNOTES
+<b id="f1">1</b> Most likely will remove after range for loop is done. Due to syntax parsing collision. [↩](#a1)
