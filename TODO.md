@@ -43,5 +43,5 @@
 - [ ] more customizable compilation arguments(?)
 
 #### FOOTNOTES
-<b id="f1">1</b>. Most likely will remove after range for loop is done. Due to syntax parsing collision. [↩](#a1)
+<b id="f1">1</b>. Most likely will remove after range for loop is done. Due to syntax parsing collision. [↩](#a1)  
 <b id="f2">2</b>. Requires inheritance fully supported. [↩](#a2)
