@@ -2,11 +2,15 @@ use java::lang::System as sys
 
 class Rock {
     comp {
-    mut:
-        b: str[]
+        mut:
+            b: str[]
     }
     mut:
         a: str
 }
 
-impl Rock
+impl Rock {
+    new(a: str) {
+        self.a = a
+    }
+}

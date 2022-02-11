@@ -79,7 +79,6 @@ class Checker(private val preference: AbstractPreference) {
         clazz.fields.forEach {
             checkField(it, classScope)
         }
-
         clazz.constructors = clazz.constructors.map {
             checkConstructor(it, classScope)
         }
@@ -152,7 +151,11 @@ class Checker(private val preference: AbstractPreference) {
         constructor.parentType = checkType(constructor.parentReference, scope)
 
         val superCallSignature =
-            scope.findSignature(constructor.parentReference?.path, "<init>", constructor.parentConstructorArgumentsTypes)
+            scope.findSignature(
+                constructor.parentReference?.path,
+                "<init>",
+                constructor.parentConstructorArgumentsTypes
+            )
 
         if (superCallSignature == null) {
             // No super call match
@@ -230,10 +233,10 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkConstructorBody(constructor: Constructor, scope: Scope) {
-        scope.registerVariable(false, "self", constructor.ownerType)
+        scope.registerVariable(true, "self", constructor.ownerType)
 
         constructor.parameters.forEachIndexed { i, parameter ->
-            scope.registerVariable(false, parameter.name!!.literal, constructor.parameterTypes?.get(i))
+            scope.registerVariable(false, parameter.name!!.literal, constructor.parameterTypes[i])
         }
 
         constructor.statements.forEach {
@@ -244,7 +247,7 @@ class Checker(private val preference: AbstractPreference) {
     private fun checkFunctionBody(function: Function, scope: Scope) {
         if (function.compKeyword == null) {
             // non-companion function
-            scope.registerVariable(false, "self", function.ownerType)
+            scope.registerVariable(true, "self", function.ownerType)
         }
 
         function.parameters.forEachIndexed { i, parameter ->
@@ -413,12 +416,8 @@ class Checker(private val preference: AbstractPreference) {
 
                 if (expression.leftExpression is IdentifierCallExpression) {
                     val name = expression.leftExpression.name!!.literal
-                    val variable = scope.findVariable(name)
 
-                    if (variable == null) {
-                        // Lookup local field
-                        val field = scope.findField(expression.leftExpression.ownerReference?.path, name)
-
+                    fun checkFieldAssignment(field: ClassField?) {
                         if (field == null) {
                             reports += Error(
                                 expression.leftExpression.pos,
@@ -442,27 +441,40 @@ class Checker(private val preference: AbstractPreference) {
 
                             expression.leftExpression.isAssignedBy = true
                         }
+                    }
+
+                    if (expression.leftExpression.ownerReference != null) {
+                        // Field assignment
+                        checkFieldAssignment(scope.findField(expression.leftExpression.ownerReference?.path, name))
                     } else {
-                        if (!variable.mutable) {
-                            reports += Error(
-                                expression.leftExpression.pos,
-                                "Variable $name is not mutable",
-                                "Declare variable $name with `mut` keyword"
-                            )
-                        }
+                        // Current class field / local variable assignment
+                        val variable = scope.findVariable(name)
 
-                        if (rightType == PrimitiveType.Unit) {
-                            reports += Error(
-                                expression.rightExpression?.pos,
-                                "Could not store void type into variable"
-                            )
-                        }
+                        if (variable == null) {
+                            // Lookup local field
+                            checkFieldAssignment(scope.findField(scope.classPath, name))
+                        } else {
+                            if (!variable.mutable) {
+                                reports += Error(
+                                    expression.leftExpression.pos,
+                                    "Variable $name is not mutable",
+                                    "Declare variable $name with `mut` keyword"
+                                )
+                            }
 
-                        if (rightType == PrimitiveType.Null) {
-                            variable.type = PrimitiveType.Null
-                        }
+                            if (rightType == PrimitiveType.Unit) {
+                                reports += Error(
+                                    expression.rightExpression?.pos,
+                                    "Could not store void type into variable"
+                                )
+                            }
 
-                        expression.leftExpression.isAssignedBy = true
+                            if (rightType == PrimitiveType.Null) {
+                                variable.type = PrimitiveType.Null
+                            }
+
+                            expression.leftExpression.isAssignedBy = true
+                        }
                     }
                 } else if (expression.leftExpression is IndexExpression) {
                     expression.leftExpression.isAssignedBy = expression.rightExpression !is IndexExpression
@@ -492,6 +504,15 @@ class Checker(private val preference: AbstractPreference) {
 
                 checkIdentifierIsKeyword(expression.name, true)
 
+                fun checkCompanionAccessibility(field: ClassField) {
+                    if (!field.companion && scope.isCompScope) {
+                        reports += Error(
+                            expression.name?.pos,
+                            "Cannot access non-companion field ${expression.name?.literal} from companion context"
+                        )
+                    }
+                }
+
                 if (ownerReference != null) {
                     // Appointed class field
                     val field = scope.findField(ownerReference.path, expression.name!!.literal)
@@ -502,12 +523,7 @@ class Checker(private val preference: AbstractPreference) {
                             "Field ${expression.name.literal} does not exist in class ${ownerReference.path}"
                         )
                     } else {
-                        if (!field.companion) {
-                            reports += Error(
-                                expression.pos,
-                                "Field ${expression.name.literal} exists in non-companion context but is called from other context"
-                            )
-                        }
+                        checkCompanionAccessibility(field)
                         // TODO: Check accessor
 
                         expression.type = field.type
@@ -525,12 +541,7 @@ class Checker(private val preference: AbstractPreference) {
                             "Field ${expression.name.literal} does not exist in class ${previousType?.typeName}"
                         )
                     } else {
-                        if (!field.companion && scope.isCompScope) {
-                            reports += Error(
-                                expression.name.pos,
-                                "Cannot access non-companion field ${expression.name.literal} from companion context"
-                            )
-                        }
+                        checkCompanionAccessibility(field)
 
                         expression.type = field.type
                         expression.isCompField = field.companion
@@ -545,8 +556,6 @@ class Checker(private val preference: AbstractPreference) {
 
                         expression.type = classType
                         expression.isClassName = true
-
-                        classType
                     } else {
                         // Local variable / current class field
                         val variable = scope.findVariable(expression.name!!.literal)
@@ -556,12 +565,7 @@ class Checker(private val preference: AbstractPreference) {
                             val field = scope.findField(null, expression.name.literal)
 
                             if (field != null) {
-                                if (!field.companion && scope.isCompScope) {
-                                    reports += Error(
-                                        expression.name.pos,
-                                        "Cannot access non-companion field ${expression.name.literal} from companion context"
-                                    )
-                                }
+                                checkCompanionAccessibility(field)
 
                                 expression.type = field.type
                                 expression.isCompField = field.companion
@@ -841,8 +845,7 @@ class Checker(private val preference: AbstractPreference) {
                         else -> checkArrayType(
                             expression,
                             scope,
-                            inferType.baseType,
-                            expression.inferTypeReference.pos
+                            inferType.baseType
                         )
                     }
                 } else {
@@ -884,8 +887,7 @@ class Checker(private val preference: AbstractPreference) {
     private fun checkArrayType(
         expression: ArrayInitialization,
         scope: Scope,
-        forcedFinalType: Type? = null,
-        inferTypePos: Position? = null
+        forcedFinalType: Type? = null
     ) {
         // TODO: Support Object's promotion?
         val forceFinalType = forcedFinalType != null
