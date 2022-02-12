@@ -9,16 +9,18 @@ data class Scope(
     val preference: AbstractPreference,
     val isGlobalScope: Boolean = true,
     var classPath: String = "",
+    var parentClassPath: String? = null,
     var usages: MutableSet<Reference> = mutableSetOf(),
     var fields: MutableSet<ClassField> = mutableSetOf(),
     var signatures: MutableSet<FunctionSignature> = mutableSetOf(),
     var variables: MutableList<Variable> = mutableListOf(),
     var isCompScope: Boolean = false
 ) {
-    constructor(parent: Scope, classPath: String = "", isCompScope: Boolean = false) : this(
+    constructor(parent: Scope, classPath: String = "", parentClassPath: String? = null, isCompScope: Boolean = false) : this(
         parent.preference,
         false,
         parent.classPath.ifEmpty { classPath },
+        parent.parentClassPath,
         parent.usages.toMutableSet(),
         parent.fields.toMutableSet(),
         parent.signatures.toMutableSet(),

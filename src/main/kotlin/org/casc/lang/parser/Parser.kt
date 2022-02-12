@@ -51,6 +51,29 @@ class Parser(private val preference: AbstractPreference) {
         }
     }
 
+    private fun assert(predicate: (Token) -> Boolean): Token? = when {
+        tokens.isEmpty() -> {
+            reports += Error(
+                "Unable to compile empty source"
+            )
+            null
+        }
+        pos >= tokens.size -> {
+            reports += Warning(
+                "<Internal Compiler Error> Reached last token but parsing still goes on"
+            )
+            null
+        }
+        predicate(tokens[pos]) -> tokens[pos++]
+        else -> {
+            reports += Error(
+                tokens[pos].pos,
+                "Unexpected token ${tokens[pos++].type}, expected predicate $predicate"
+            )
+            null
+        }
+    }
+
     private fun peek(offset: Int = 0): Token? = when {
         tokens.isEmpty() -> null
         pos + offset >= tokens.size -> null
@@ -170,7 +193,7 @@ class Parser(private val preference: AbstractPreference) {
 
             if (peekIf(TokenType.OpenBrace)) {
                 consume()
-                val (fns, ctors) = parseFunctions(usages, classReference)
+                val (fns, ctors) = parseFunctions(usages, classReference, parentClassReference)
                 functions = fns
                 constructors = ctors
                 assert(TokenType.CloseBrace)
@@ -360,6 +383,7 @@ class Parser(private val preference: AbstractPreference) {
     private fun parseFunctions(
         usages: List<Reference?>,
         classReference: Reference?,
+        parentReference: Reference?,
         compKeyword: Token? = null
     ): Pair<List<Function>, List<Constructor>> {
         var compScopeDeclared = false
@@ -419,7 +443,7 @@ class Parser(private val preference: AbstractPreference) {
                     }
 
                     assert(TokenType.OpenBrace)
-                    functions.addAll(parseFunctions(usages, classReference, nextToken).first)
+                    functions.addAll(parseFunctions(usages, classReference, parentReference, nextToken).first)
                     assert(TokenType.CloseBrace)
                     continue@blockParsing
                 }
@@ -488,7 +512,16 @@ class Parser(private val preference: AbstractPreference) {
                 val parameters = parseParameters()
                 assert(TokenType.CloseParenthesis)
 
-                // TODO: super parent class' constructor
+                val superCallArguments = if (peekIf(TokenType.Colon)) {
+                    // `super` call
+                    consume()
+                    assert(Token::isSuperKeyword)
+                    assert(TokenType.OpenParenthesis)
+                    val arguments = parseArguments(true)
+                    assert(TokenType.CloseParenthesis)
+
+                    arguments
+                } else listOf()
 
                 assert(TokenType.OpenBrace)
                 val statements = parseStatements()
@@ -496,12 +529,12 @@ class Parser(private val preference: AbstractPreference) {
 
                 val constructor = Constructor(
                     classReference,
-                    Reference.fromClass(Any::class.java), // TODO: Track parent class' reference
+                    parentReference,
                     modifiers.find(Token::isAccessorKeyword),
                     newKeyword,
                     parameters,
                     statements,
-                    listOf() // TODO: Track `super` call arguments
+                    superCallArguments
                 )
 
                 if (!constructors.add(constructor)) {

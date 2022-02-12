@@ -58,7 +58,8 @@ class Checker(private val preference: AbstractPreference) {
     private fun checkClass(clazz: Class): Class {
         val classScope = Scope(
             globalScope,
-            clazz.packageReference?.path?.let { "$it/${clazz.name!!.literal}" } ?: clazz.name!!.literal)
+            clazz.packageReference?.path?.let { "$it/${clazz.name!!.literal}" } ?: clazz.name!!.literal
+        )
 
         checkIdentifierIsKeyword(clazz.name)
 
@@ -75,6 +76,11 @@ class Checker(private val preference: AbstractPreference) {
                 null
             } else it
         }.forEach(classScope.usages::add)
+
+        // Check parent class reference
+        if (clazz.parentClassReference != null) {
+            classScope.parentClassPath = checkType(clazz.parentClassReference, classScope)?.internalName
+        }
 
         clazz.fields.forEach {
             checkField(it, classScope)
@@ -112,6 +118,7 @@ class Checker(private val preference: AbstractPreference) {
     private fun checkConstructor(constructor: Constructor, scope: Scope): Constructor {
         // Validate types first then register it to scope
         // Check if parameter has duplicate names
+        val localScope = Scope(scope)
         val duplicateParameters = constructor.parameters
             .groupingBy {
                 checkIdentifierIsKeyword(it.name)
@@ -135,24 +142,32 @@ class Checker(private val preference: AbstractPreference) {
             validationPass = false
         } else {
             constructor.parameterTypes = constructor.parameters.map {
-                val type = checkType(it.typeReference, scope)
+                val type = checkType(it.typeReference, localScope)
 
-                if (type == null) {
-                    reports.reportUnknownTypeSymbol(it.typeReference!!)
-
-                    return@map null
-                }
+                if (type == null) reports.reportUnknownTypeSymbol(it.typeReference!!)
+                else localScope.registerVariable(it.mutable != null, it.name!!.literal, type)
 
                 type
             }
         }
 
-        constructor.ownerType = checkType(constructor.ownerReference, scope)
-        constructor.parentType = checkType(constructor.parentReference, scope)
+        if (constructor.parentReference == null)
+            constructor.parentReference = Reference.fromClass(Any::class.java)
+
+        constructor.ownerType = checkType(constructor.ownerReference, localScope)
+        constructor.parentType = checkType(constructor.parentReference, localScope)
+
+        constructor.parentConstructorArgumentsTypes = constructor.parentConstructorArguments.map {
+            val type = checkExpression(it, localScope)
+
+            if (type == null) reports.reportUnknownTypeSymbol(Reference("<Unknown>", "<Unknown>", it?.pos))
+
+            type
+        }
 
         val superCallSignature =
             scope.findSignature(
-                constructor.parentReference?.path,
+                constructor.parentReference!!.path,
                 "<init>",
                 constructor.parentConstructorArgumentsTypes
             )

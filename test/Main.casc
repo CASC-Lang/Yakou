@@ -5,14 +5,13 @@ intl mut:
     a: i32
 }
 
-impl Main {
+impl Main : Rock {
     comp {
         fn main(args: str[]) {
-            new Main(1).print()
         }
     }
 
-    new(k: i32) {
+    new(k: i32): super("lol") {
         a = k
     }
 

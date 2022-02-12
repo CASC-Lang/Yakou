@@ -4,7 +4,7 @@ import org.casc.lang.table.*
 
 data class Constructor(
     val ownerReference: Reference?,
-    val parentReference: Reference?,
+    var parentReference: Reference?,
     val accessorToken: Token?,
     val newKeyword: Token?,
     val parameters: List<Parameter>,

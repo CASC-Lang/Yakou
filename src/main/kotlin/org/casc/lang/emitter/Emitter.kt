@@ -37,7 +37,7 @@ class Emitter(private val preference: AbstractPreference) {
                 }/" else ""
             }${clazz.name!!.literal}",
             null,
-            "java/lang/Object",
+            clazz.parentClassReference?.path ?: "java/lang/Object",
             null
         )
 
@@ -75,7 +75,9 @@ class Emitter(private val preference: AbstractPreference) {
 
         methodVisitor.visitVarInsn(Opcodes.ALOAD, 0)
 
-        // TODO: Load arguments from `super` call
+        constructor.parentConstructorArguments.forEach {
+            emitExpression(methodVisitor, it!!)
+        }
 
         methodVisitor.visitMethodInsn(
             Opcodes.INVOKESPECIAL,
