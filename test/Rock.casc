@@ -9,4 +9,6 @@ impl Rock: Atom {
     new(a: str): super() {
         self.a = a
     }
+
+    fn lol() {}
 }

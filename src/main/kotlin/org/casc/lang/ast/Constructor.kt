@@ -9,6 +9,8 @@ data class Constructor(
     val newKeyword: Token?,
     val parameters: List<Parameter>,
     val statements: List<Statement>,
+    val superKeyword: Token?,
+    val selfKeyword: Token?,
     val parentConstructorArguments: List<Expression?>,
     var ownerType: Type? = null,
     var parentType: Type? = null,

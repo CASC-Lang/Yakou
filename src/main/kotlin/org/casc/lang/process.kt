@@ -4,7 +4,7 @@ import org.casc.lang.compilation.Compilation
 import org.casc.lang.compilation.GlobalPreference
 import java.io.File
 
-suspend fun main(args: Array<String>) {
+fun main(args: Array<String>) {
     var hasCommand = false
     val command = args[0]
 

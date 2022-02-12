@@ -8,6 +8,7 @@ intl mut:
 impl Main : Rock {
     comp {
         fn main(args: str[]) {
+            a := new Main()
         }
     }
 
@@ -16,7 +17,11 @@ impl Main : Rock {
         super.a = "bruh"
     }
 
+    new(): self(1) {}
+
     fn print() {
         sys.out.println(self.a)
     }
+
+    fn lol() {}
 }

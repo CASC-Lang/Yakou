@@ -190,22 +190,60 @@ class Checker(private val preference: AbstractPreference) {
             }
         }
 
-        val superCallSignature = scope.findSignature(
+        if (constructor.superKeyword != null) {
+            // `super` call
+            val superCallSignature = scope.findSignature(
                 constructor.parentReference!!.path,
                 "<init>",
                 constructor.parentConstructorArgumentsTypes
             )
 
-        if (superCallSignature == null) {
-            // No super call match
-            reports += Error(
-                constructor.newKeyword?.pos,
-                "Cannot find matched super call `super`(${
-                    constructor.parentConstructorArgumentsTypes.mapNotNull { it?.typeName }.joinToString()
-                })"
+            if (superCallSignature == null) {
+                // No super call match
+                reports += Error(
+                    constructor.newKeyword?.pos,
+                    "Cannot find matched super call `super`(${
+                        constructor.parentConstructorArgumentsTypes.mapNotNull { it?.typeName }.joinToString()
+                    })"
+                )
+                validationPass = false
+            } else constructor.parentConstructorSignature = superCallSignature
+        } else if (constructor.selfKeyword != null) {
+            // `this` call
+            val thisCallSignature = scope.findSignature(
+                constructor.ownerReference!!.path,
+                "<init>",
+                constructor.parentConstructorArgumentsTypes
             )
-            validationPass = false
-        } else constructor.parentConstructorSignature = superCallSignature
+
+            if (thisCallSignature == null) {
+                // No super call match
+                reports += Error(
+                    constructor.newKeyword?.pos,
+                    "Cannot find matched super call `this`(${
+                        constructor.parentConstructorArgumentsTypes.mapNotNull { it?.typeName }.joinToString()
+                    })"
+                )
+                validationPass = false
+            } else constructor.parentConstructorSignature = thisCallSignature
+        } else {
+            if (scope.parentClassPath != null) {
+                // Requires `super` call
+                reports += Error(
+                    constructor.newKeyword?.pos,
+                    "Class ${scope.classPath} extends class ${scope.parentClassPath} but doesn't `super` any parent class' constructor",
+                    "Add `super` call after constructor declaration"
+                )
+            } else constructor.parentConstructorSignature = FunctionSignature(
+                Reference.fromClass(Any::class.java),
+                true,
+                false,
+                Accessor.Pub,
+                "<init>",
+                listOf(),
+                PrimitiveType.Unit
+            )
+        }
 
         if (validationPass)
             scope.registerSignature(constructor)
@@ -706,7 +744,7 @@ class Checker(private val preference: AbstractPreference) {
                     reports += Error(
                         expression.pos,
                         "Constructor ${expression.constructorOwnerReference?.asCascStyle()}#new(${
-                            argumentTypes.map { it?.typeName }.joinToString()
+                            argumentTypes.mapNotNull { it?.typeName }.joinToString()
                         }) does not exist"
                     )
                 } else {

@@ -555,10 +555,17 @@ class Parser(private val preference: AbstractPreference) {
                 val parameters = parseParameters()
                 assert(TokenType.CloseParenthesis)
 
+                var superKeyword: Token? = null
+                var selfKeyword: Token? = null
                 val superCallArguments = if (peekIf(TokenType.Colon)) {
                     // `super` call
                     consume()
-                    assert(Token::isSuperKeyword)
+                    if (peekIf(Token::isSuperKeyword)) superKeyword = next()
+                    else if (peekIf(Token::isSelfKeyword)) selfKeyword = next()
+                    else reports += Error(
+                        next()?.pos,
+                        "Unexpected token, expected `super` or `self` keyword"
+                    )
                     assert(TokenType.OpenParenthesis)
                     val arguments = parseArguments(true)
                     assert(TokenType.CloseParenthesis)
@@ -577,6 +584,8 @@ class Parser(private val preference: AbstractPreference) {
                     newKeyword,
                     parameters,
                     statements,
+                    superKeyword,
+                    selfKeyword,
                     superCallArguments
                 )
 
@@ -1037,7 +1046,7 @@ class Parser(private val preference: AbstractPreference) {
     private fun parseArguments(inCompanionContext: Boolean): List<Expression?> {
         val arguments = arrayListOf<Expression?>()
 
-        while (!peekIf(TokenType.CloseBrace)) {
+        while (!peekIf(TokenType.CloseParenthesis)) {
             arguments += parseExpression(inCompanionContext, true)
 
             if (peekIf(TokenType.Comma)) {

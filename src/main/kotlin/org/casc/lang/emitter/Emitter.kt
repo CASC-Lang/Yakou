@@ -85,7 +85,9 @@ class Emitter(private val preference: AbstractPreference) {
 
         methodVisitor.visitMethodInsn(
             Opcodes.INVOKESPECIAL,
-            constructor.parentType!!.internalName,
+            if (constructor.superKeyword != null) constructor.parentType!!.internalName
+            else if (constructor.selfKeyword != null) constructor.ownerType!!.internalName
+            else "java/lang/Object",
             "<init>",
             constructor.parentConstructorSignature!!.descriptor,
             false

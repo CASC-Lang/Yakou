@@ -58,7 +58,7 @@ data class Scope(
                     ClassField(
                         Reference.fromClass(ownerClass),
                         Modifier.isStatic(field.modifiers),
-                        Modifier.isFinal(field.modifiers),
+                        !Modifier.isFinal(field.modifiers),
                         Accessor.fromModifier(field.modifiers),
                         name,
                         TypeUtil.asType(field.type, preference)!!

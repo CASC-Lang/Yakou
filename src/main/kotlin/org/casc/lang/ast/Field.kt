@@ -17,7 +17,7 @@ data class Field(
     override val descriptor: String
         get() = type?.descriptor ?: ""
     override val accessFlag: Int =
-        mutKeyword.getOrElse(Opcodes.ACC_FINAL) + accessor.access + compKeyword.getOrElse(Opcodes.ACC_STATIC)
+        mutKeyword.getOrElse(0, Opcodes.ACC_FINAL) + accessor.access + compKeyword.getOrElse(Opcodes.ACC_STATIC)
 
     fun asClassField(): ClassField =
         ClassField(
