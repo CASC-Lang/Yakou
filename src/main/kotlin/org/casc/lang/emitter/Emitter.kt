@@ -193,7 +193,7 @@ class Emitter(private val preference: AbstractPreference) {
                     // Check if function's return value is unused, if yes, then add pop or pop2 opcode
                     if (expression.type == PrimitiveType.I64 || expression.type == PrimitiveType.F64) methodVisitor.visitInsn(Opcodes.POP2)
                     else if (expression.type != PrimitiveType.Unit) methodVisitor.visitInsn(Opcodes.POP)
-                }
+                } else if (expression is ConstructorCallExpression) methodVisitor.visitInsn(Opcodes.POP)
             }
             is ReturnStatement -> {
                 emitExpression(methodVisitor, statement.expression!!)

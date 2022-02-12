@@ -14,7 +14,7 @@ import java.io.File as JFile
 class Checker(private val preference: AbstractPreference) {
     companion object {
         private val ignoreUnusedExpressions =
-            listOf(AssignmentExpression::class.java, FunctionCallExpression::class.java, Constructor::class.java)
+            listOf(AssignmentExpression::class.java, FunctionCallExpression::class.java, ConstructorCallExpression::class.java)
     }
 
     private val globalScope: Scope = Scope(preference)

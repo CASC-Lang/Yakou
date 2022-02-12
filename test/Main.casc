@@ -10,6 +10,7 @@ impl Main : Rock {
         fn main(args: str[]) {
             a := new Main()
             a.lol()
+            new Main()
         }
     }
 
