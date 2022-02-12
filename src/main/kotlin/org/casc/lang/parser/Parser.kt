@@ -57,19 +57,27 @@ class Parser(private val preference: AbstractPreference) {
         else -> tokens[pos + offset]
     }
 
+    private inline fun peekIf(predicate: (Token) -> Boolean, offset: Int = 0): Boolean =
+        peek(offset)?.let {
+            predicate(it)
+        } ?: false
+
+    private fun peekIf(type: TokenType, offset: Int = 0): Boolean =
+        peek(offset)?.let {
+            it.type == type
+        } ?: false
+
     /**
      * peekMultiple is used to determine whether a set of tokens matches specific syntax pattern.
      */
-    private fun peekMultiple(offset: Int = 1): List<TokenType?> {
-        if (offset <= 0) return listOf()
-
-        val tokenTypes = mutableListOf<TokenType?>()
+    private fun peekMultiple(offset: Int, vararg types: TokenType): Boolean {
+        if (offset <= 0 || types.size != offset) return false
 
         for (i in 0 until offset) {
-            tokenTypes += peek(i)?.type
+            if (peek(i)?.type != types[i]) return false
         }
 
-        return tokenTypes
+        return true
     }
 
     private fun last(): Token? =
@@ -91,7 +99,7 @@ class Parser(private val preference: AbstractPreference) {
 
     private fun parseFile(path: String): File {
         // Parse optional package declaration
-        val packageReference = if (peek()?.isPackageKeyword() == true) {
+        val packageReference = if (peekIf(Token::isPackageKeyword)) {
             consume()
             parseQualifiedName()
         } else null
@@ -99,7 +107,7 @@ class Parser(private val preference: AbstractPreference) {
         // Parse usages
         val usages = mutableListOf<Reference?>()
 
-        while (peek()?.isUseKeyword() == true) {
+        while (peekIf(Token::isUseKeyword)) {
             consume()
             usages += parseUsage()
         }
@@ -132,17 +140,18 @@ class Parser(private val preference: AbstractPreference) {
             else null
         var fields = listOf<Field>()
 
-        if (peek()?.type == TokenType.OpenBrace) { // Member declaration is optional
+        if (peekIf(TokenType.OpenBrace)) { // Member declaration is optional
             assert(TokenType.OpenBrace)
             fields = parseFields(usages, classReference)
             assert(TokenType.CloseBrace)
         }
 
         // Parse major implementation
+        var parentClassReference: Reference? = null
         var functions = listOf<Function>()
         var constructors = listOf<Constructor>()
 
-        if (peek()?.isImplKeyword() == true) {
+        if (peekIf(Token::isImplKeyword)) {
             next()
             val implName = assert(TokenType.Identifier)
 
@@ -153,8 +162,14 @@ class Parser(private val preference: AbstractPreference) {
                 )
             }
 
-            if (peek()?.type == TokenType.OpenBrace) {
-                assert(TokenType.OpenBrace)
+            if (peekIf(TokenType.Colon)) {
+                // Class inheritance
+                consume()
+                parentClassReference = parseQualifiedName()
+            }
+
+            if (peekIf(TokenType.OpenBrace)) {
+                consume()
                 val (fns, ctors) = parseFunctions(usages, classReference)
                 functions = fns
                 constructors = ctors
@@ -162,8 +177,8 @@ class Parser(private val preference: AbstractPreference) {
             }
         }
 
-        // TODO: Class inheritance & interface implementation etc.
-        val clazz = Class(packageReference, usages, null, listOf(), accessor, classKeyword, className, fields, constructors, functions)
+        // TODO: Class inheritance & interface implementation etc. WIP
+        val clazz = Class(packageReference, usages, parentClassReference, listOf(), accessor, classKeyword, className, fields, constructors, functions)
 
         return File(path, clazz)
     }
@@ -182,7 +197,7 @@ class Parser(private val preference: AbstractPreference) {
         val tokenBuilder = prependPath?.tokens?.toMutableList() ?: mutableListOf()
         var nameBuilder = ""
 
-        while (pos < tokens.size && peek()?.type == TokenType.Identifier) {
+        while (peekIf(TokenType.Identifier)) {
             val identifier = next()!!
 
             tokenBuilder += identifier
@@ -192,11 +207,11 @@ class Parser(private val preference: AbstractPreference) {
             nameBuilder += identifier.literal
 
             nameBuilder += if (isUsage) {
-                if (peekMultiple(2) == listOf(TokenType.DoubleColon, TokenType.OpenBrace)) break
-                else if (peekMultiple(2) == listOf(TokenType.DoubleColon, TokenType.Identifier)) {
+                if (peekMultiple(2, TokenType.DoubleColon, TokenType.OpenBrace)) break
+                else if (peekMultiple(2, TokenType.DoubleColon, TokenType.Identifier)) {
                     consume()
                     "."
-                } else if (peek()?.isAsKeyword() == true) {
+                } else if (peekIf(Token::isAsKeyword)) {
                     consume()
 
                     val specifiedName = assert(TokenType.Identifier)
@@ -207,7 +222,7 @@ class Parser(private val preference: AbstractPreference) {
                     break
                 } else break
             } else {
-                if (peekMultiple(2) == listOf(TokenType.DoubleColon, TokenType.Identifier)) {
+                if (peekMultiple(2, TokenType.DoubleColon, TokenType.Identifier)) {
                     consume()
                     "."
                 } else break
@@ -215,7 +230,7 @@ class Parser(private val preference: AbstractPreference) {
         }
 
         if (canBeArray) {
-            while (pos < tokens.size && peek()?.type == TokenType.OpenBracket) {
+            while (peekIf(TokenType.OpenBracket)) {
                 consume()
                 assert(TokenType.CloseBracket) ?: break
 
@@ -244,14 +259,14 @@ class Parser(private val preference: AbstractPreference) {
             prependPath = prependReference
         )
 
-        if (peekMultiple(2) == listOf(TokenType.DoubleColon, TokenType.OpenBrace)) {
+        if (peekMultiple(2, TokenType.DoubleColon, TokenType.OpenBrace)) {
             consume()
             consume()
 
-            while (peek()?.type != TokenType.CloseBrace) {
+            while (!peekIf(TokenType.CloseBrace)) {
                 references += parseUsage(reference)
 
-                if (peek()?.type == TokenType.Comma) {
+                if (peekIf(TokenType.Comma)) {
                     consume()
                     continue
                 } else break
@@ -277,8 +292,8 @@ class Parser(private val preference: AbstractPreference) {
                 a.name?.literal == b.name?.literal
         }
 
-        while (peek()?.type != TokenType.CloseBrace) {
-            if (peek()?.isCompKeyword() == true) {
+        while (!peekIf(TokenType.CloseBrace)) {
+            if (peekIf(Token::isCompKeyword)) {
                 val comp = next()!!
 
                 if (compScopeDeclared) {
@@ -298,10 +313,10 @@ class Parser(private val preference: AbstractPreference) {
                 assert(TokenType.OpenBrace)
                 fields += parseFields(usages, classReference, comp)
                 assert(TokenType.CloseBrace)
-            } else if (peek()?.isAccessorKeyword() == true || peek()?.isMutKeyword() == true) {
+            } else if (peekIf(Token::isAccessorKeyword) || peekIf(Token::isMutKeyword)) {
                 // Assume it's accessor keyword or mut keyword
-                if (peek()?.isAccessorKeyword() == true) accessorToken = next()
-                if (peek()?.isMutKeyword() == true) mutKeyword = next()
+                if (peekIf(Token::isAccessorKeyword)) accessorToken = next()
+                if (peekIf(Token::isMutKeyword)) mutKeyword = next()
                 assert(TokenType.Colon)
 
                 val currentFlag =
@@ -357,13 +372,13 @@ class Parser(private val preference: AbstractPreference) {
                 a.parameters == b.parameters
         }
 
-        blockParsing@ while (peek()?.type != TokenType.CloseBrace) { // Break the loop after encountered class declaration's close bracket
+        blockParsing@ while (!peekIf(TokenType.CloseBrace)) { // Break the loop after encountered class declaration's close bracket
             val modifiers = object : MutableObjectSet<Token>() {
                 override fun isDuplicate(a: Token, b: Token): Boolean =
                     a.literal == b.literal
             }
 
-            modifierParsing@ while (peek()?.isFnKeyword() != true && peek()?.isNewKeyword() != true) {
+            modifierParsing@ while (!peekIf(Token::isFnKeyword) && !peekIf(Token::isNewKeyword)) {
                 val nextToken = assert(TokenType.Identifier) ?: return functions.toList() to constructors.toList()
 
                 if (!nextToken.isCompKeyword() && !nextToken.isAccessorKeyword() && !nextToken.isMutKeyword()) {
@@ -409,7 +424,7 @@ class Parser(private val preference: AbstractPreference) {
                     continue@blockParsing
                 }
 
-                if (modifiers.find { it.isAccessorKeyword() } != null && nextToken.isAccessorKeyword()) {
+                if (modifiers.find(Token::isAccessorKeyword) != null && nextToken.isAccessorKeyword()) {
                     // More than two access modifiers
                     reports += Error(
                         nextToken.pos,
@@ -427,7 +442,7 @@ class Parser(private val preference: AbstractPreference) {
                     )
                 }
 
-                if (modifiers.find { it.isMutKeyword() } != null && nextToken.isAccessorKeyword()) {
+                if (modifiers.find(Token::isMutKeyword) != null && nextToken.isAccessorKeyword()) {
                     // Wrong modifier sequence
                     reports += Error(
                         nextToken.pos,
@@ -446,7 +461,7 @@ class Parser(private val preference: AbstractPreference) {
                 }
             }
 
-            if (peek()?.isNewKeyword() == true) {
+            if (peekIf(Token::isNewKeyword)) {
                 // Constructor declaration
 
                 if (compKeyword != null) {
@@ -458,10 +473,10 @@ class Parser(private val preference: AbstractPreference) {
                     )
                 }
 
-                if (modifiers.find { it.isMutKeyword() } != null) {
+                if (modifiers.find(Token::isMutKeyword) != null) {
                     // Constructor without `mut` keyword
                     reports += Error(
-                        modifiers.find { it.isMutKeyword() }!!.pos,
+                        modifiers.find(Token::isMutKeyword)!!.pos,
                         "Cannot declare constructor with `mut` keyword",
                         "Remove this"
                     )
@@ -482,7 +497,7 @@ class Parser(private val preference: AbstractPreference) {
                 val constructor = Constructor(
                     classReference,
                     Reference.fromClass(Any::class.java), // TODO: Track parent class' reference
-                    modifiers.find { it.isAccessorKeyword() },
+                    modifiers.find(Token::isAccessorKeyword),
                     newKeyword,
                     parameters,
                     statements,
@@ -499,7 +514,7 @@ class Parser(private val preference: AbstractPreference) {
                         "Try modify parameters' type"
                     )
                 }
-            } else if (peek()?.isFnKeyword() == true) {
+            } else if (peekIf(Token::isFnKeyword)) {
                 // Function declaration
                 consume() // `fn` keyword
 
@@ -508,7 +523,7 @@ class Parser(private val preference: AbstractPreference) {
                 val parameters = parseParameters()
                 assert(TokenType.CloseParenthesis)
 
-                val returnType = if (peek()?.type == TokenType.Colon) {
+                val returnType = if (peekIf(TokenType.Colon)) {
                     consume()
                     parseQualifiedName(true)
                 } else null
@@ -519,8 +534,8 @@ class Parser(private val preference: AbstractPreference) {
 
                 val function = Function(
                     classReference,
-                    modifiers.find { it.isAccessorKeyword() },
-                    modifiers.find { it.isMutKeyword() },
+                    modifiers.find(Token::isAccessorKeyword),
+                    modifiers.find(Token::isMutKeyword),
                     compKeyword,
                     name,
                     parameters,
@@ -555,11 +570,11 @@ class Parser(private val preference: AbstractPreference) {
     private fun parseParameters(): List<Parameter> {
         val parameters = mutableListOf<Parameter>()
 
-        while (peek()?.type == TokenType.Identifier) {
+        while (peekIf(TokenType.Identifier)) {
             var mutableKeyword = next()
             val parameterName: Token?
 
-            if (mutableKeyword?.literal == "mut") {
+            if (mutableKeyword?.isMutKeyword() == true) {
                 parameterName = assert(TokenType.Identifier)
             } else {
                 parameterName = mutableKeyword
@@ -576,7 +591,7 @@ class Parser(private val preference: AbstractPreference) {
                 type
             )
 
-            if (peek()?.type == TokenType.Comma) {
+            if (peekIf(TokenType.Comma)) {
                 consume()
             } else break
         }
@@ -587,7 +602,7 @@ class Parser(private val preference: AbstractPreference) {
     private fun parseStatements(inCompanionContext: Boolean = false): List<Statement> {
         val statements = mutableListOf<Statement>()
 
-        while (pos < tokens.size && peek()?.type != TokenType.CloseBrace)
+        while (!peekIf(TokenType.CloseBrace))
             statements += parseStatement(inCompanionContext)
 
         return statements
@@ -595,10 +610,10 @@ class Parser(private val preference: AbstractPreference) {
 
     private fun parseStatement(inCompanionContext: Boolean = false): Statement {
         val mutKeyword =
-            if (peek()?.isMutKeyword() == true) next()
+            if (peekIf(Token::isMutKeyword)) next()
             else null
 
-        return if (peekMultiple(2) == listOf(TokenType.Identifier, TokenType.ColonEqual)) {
+        return if (peekMultiple(2, TokenType.Identifier, TokenType.ColonEqual)) {
             // Variable declaration
             val name = next()
             val operator = next()
@@ -610,20 +625,20 @@ class Parser(private val preference: AbstractPreference) {
                 operator,
                 expression
             )
-        } else if (peek()?.isReturnKeyword() == true) {
+        } else if (peekIf(Token::isReturnKeyword)) {
             // Return statement
             val returnKeyword = next()
             val expression = parseExpression(inCompanionContext, true)
 
             ReturnStatement(expression, pos = returnKeyword?.pos?.extend(expression?.pos))
-        } else if (peek()?.isIfKeyword() == true) {
+        } else if (peekIf(Token::isIfKeyword)) {
             // if-else statement
             val ifKeyword = next()
             val condition = parseExpression(inCompanionContext, true)
 
             val trueStatement = parseStatement(inCompanionContext)
 
-            val elseStatement = if (peek()?.isElseKeyword() == true) {
+            val elseStatement = if (peekIf(Token::isElseKeyword)) {
                 consume()
                 parseStatement(inCompanionContext)
             } else null
@@ -634,7 +649,7 @@ class Parser(private val preference: AbstractPreference) {
                 elseStatement,
                 ifKeyword?.pos?.extend(trueStatement.pos)
             )
-        } else if (peek()?.type == TokenType.OpenBrace) {
+        } else if (peekIf(TokenType.OpenBrace)) {
             // Block statement
             val openBrace = next()
             val statements = parseStatements(inCompanionContext)
@@ -644,7 +659,7 @@ class Parser(private val preference: AbstractPreference) {
                 statements,
                 openBrace?.pos?.extend(closeBrace?.pos)
             )
-        } else if (peek()?.isForKeyword() == true) {
+        } else if (peekIf(Token::isForKeyword)) {
             // Java-style For loop
             val forKeyword = next()
             val initStatement = parseStatement(inCompanionContext)
@@ -674,13 +689,13 @@ class Parser(private val preference: AbstractPreference) {
     private fun parseAssignment(inCompanionContext: Boolean, retainValue: Boolean): Expression? {
         var expression = parseBinaryExpression(0, inCompanionContext, retainValue)
 
-        if (expression is IdentifierCallExpression && (peek()?.type == TokenType.DoublePlus || peek()?.type == TokenType.DoubleMinus)) {
+        if (expression is IdentifierCallExpression && (peekIf(TokenType.DoublePlus) || peekIf(TokenType.DoubleMinus))) {
             val operator = next()
             expression =
                 UnaryExpression(operator, expression, true, retainValue, expression.copy().pos?.extend(operator?.pos))
         }
 
-        while (peek()?.type == TokenType.Equal) {
+        while (peekIf(TokenType.Equal)) {
             // Assignment
             val operator = next()
 
@@ -754,13 +769,13 @@ class Parser(private val preference: AbstractPreference) {
             || expression is ConstructorCallExpression || expression is IndexExpression
             || expression is ParenthesizedExpression) {
             while (true) {
-                if (peek()?.type == TokenType.Dot) {
+                if (peekIf(TokenType.Dot)) {
                     // Chain calling
                     consume()
 
                     val name = assert(TokenType.Identifier)
 
-                    if (peek()?.type == TokenType.OpenParenthesis) {
+                    if (peekIf(TokenType.OpenParenthesis)) {
                         // Member function
                         consume()
 
@@ -784,7 +799,7 @@ class Parser(private val preference: AbstractPreference) {
 
                         expression = IdentifierCallExpression(null, name, previousExpression = expression, pos = pos)
                     }
-                } else if (peek()?.type == TokenType.OpenBracket) {
+                } else if (peekIf(TokenType.OpenBracket)) {
                     // Index expression
                     consume()
 
@@ -817,7 +832,7 @@ class Parser(private val preference: AbstractPreference) {
     private fun parseSecondaryExpression(inCompanionContext: Boolean): Expression {
         val name = next()
 
-        return if (peek()?.type == TokenType.OpenParenthesis) {
+        return if (peekIf(TokenType.OpenParenthesis)) {
             // Function Call
             consume()
 
@@ -826,19 +841,19 @@ class Parser(private val preference: AbstractPreference) {
             assert(TokenType.CloseParenthesis)
 
             FunctionCallExpression(null, name, arguments, inCompanionContext)
-        } else if (peek()?.type == TokenType.DoubleColon) {
+        } else if (peekIf(TokenType.DoubleColon)) {
             // Companion member calling, e.g. path::Class.field, path::Class.func(...)
             // TODO: This also might be id::class.class
             consume()
             val classPath = parseQualifiedName(prependPath = Reference(name), startPos = name?.pos)
 
-            if (peek()?.type == TokenType.Colon) return parseArrayInitialization(inCompanionContext, classPath)
+            if (peekIf(TokenType.Colon)) return parseArrayInitialization(inCompanionContext, classPath)
 
             assert(TokenType.Dot)
 
             val memberName = assert(TokenType.Identifier)
 
-            if (peek()?.type == TokenType.OpenParenthesis) {
+            if (peekIf(TokenType.OpenParenthesis)) {
                 // Companion function calling
                 consume()
 
@@ -855,9 +870,9 @@ class Parser(private val preference: AbstractPreference) {
 
                 IdentifierCallExpression(classPath, memberName, pos = pos)
             }
-        } else if (peek()?.type == TokenType.Colon) parseArrayInitialization(inCompanionContext, Reference(name))
+        } else if (peekIf(TokenType.Colon)) parseArrayInitialization(inCompanionContext, Reference(name))
         else {
-            if (peek()?.type == TokenType.Dot) {
+            if (peekIf(TokenType.Dot)) {
                 // Companion member calling, e.g. Class.field, Class.func()
                 IdentifierCallExpression(null, name)
             } else {
@@ -869,16 +884,31 @@ class Parser(private val preference: AbstractPreference) {
 
     // parseArrayInitialization parses array initialization & declaration
     private fun parseArrayInitialization(inCompanionContext: Boolean, typeReference: Reference? = null): Expression {
-        return if (peek()?.type == TokenType.Colon && typeReference != null) {
+        fun collectArrayElements(): Pair<List<Expression?>, Token?> {
+            val elements = mutableListOf<Expression?>()
+
+            while (!peekIf(TokenType.CloseBrace)) {
+                elements += parseExpression(inCompanionContext, true)
+
+                if (peekIf(TokenType.Comma)) consume()
+                else break
+            }
+
+            val closeBrace = assert(TokenType.CloseBrace)
+
+            return elements to closeBrace
+        }
+
+        return if (peekIf(TokenType.Colon) && typeReference != null) {
             // Array declaration (`int:[10]{}`) or Array Initialization (`int:[]{...}`)
             consume()
 
             val dimensionElements = mutableListOf<Expression?>()
 
-            while (peek()?.type != TokenType.OpenBrace) {
+            while (!peekIf(TokenType.OpenBrace)) {
                 consume()
 
-                if (peek()?.type != TokenType.CloseBracket) {
+                if (!peekIf(TokenType.CloseBracket)) {
                     // Array declaration
                     dimensionElements += parseExpression(inCompanionContext, true)
                 }
@@ -896,16 +926,7 @@ class Parser(private val preference: AbstractPreference) {
 
             if (dimensionElements.isEmpty()) {
                 // Array initialization
-                val elements = mutableListOf<Expression?>()
-
-                while (peek()?.type != TokenType.CloseBrace) {
-                    elements += parseExpression(inCompanionContext, true)
-
-                    if (peek()?.type == TokenType.Comma) consume()
-                    else break
-                }
-
-                val closeBrace = assert(TokenType.CloseBrace)
+                val (elements, closeBrace) = collectArrayElements()
 
                 ArrayInitialization(
                     typeReference,
@@ -926,20 +947,11 @@ class Parser(private val preference: AbstractPreference) {
             val colon = assert(TokenType.Colon)
             assert(TokenType.OpenBrace)
 
-            val expressions = mutableListOf<Expression?>()
-
-            while (peek()?.type != TokenType.CloseBrace) {
-                expressions += parseExpression(inCompanionContext, true)
-
-                if (peek()?.type == TokenType.Comma) consume()
-                else break
-            }
-
-            val closeBrace = assert(TokenType.CloseBrace)
+            val (elements, closeBrace) = collectArrayElements()
 
             ArrayInitialization(
                 null,
-                expressions,
+                elements,
                 colon?.pos?.extend(closeBrace?.pos)
             )
         }
@@ -948,10 +960,10 @@ class Parser(private val preference: AbstractPreference) {
     private fun parseArguments(inCompanionContext: Boolean): List<Expression?> {
         val arguments = arrayListOf<Expression?>()
 
-        while (peek()?.type != TokenType.CloseParenthesis) {
+        while (!peekIf(TokenType.CloseBrace)) {
             arguments += parseExpression(inCompanionContext, true)
 
-            if (peek()?.type == TokenType.Comma) {
+            if (peekIf(TokenType.Comma)) {
                 consume()
             } else break
         }
