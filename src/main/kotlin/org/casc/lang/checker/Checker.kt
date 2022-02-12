@@ -14,7 +14,11 @@ import java.io.File as JFile
 class Checker(private val preference: AbstractPreference) {
     companion object {
         private val ignoreUnusedExpressions =
-            listOf(AssignmentExpression::class.java, FunctionCallExpression::class.java, ConstructorCallExpression::class.java)
+            listOf(
+                AssignmentExpression::class.java,
+                FunctionCallExpression::class.java,
+                ConstructorCallExpression::class.java
+            )
     }
 
     private val globalScope: Scope = Scope(preference)
@@ -119,6 +123,14 @@ class Checker(private val preference: AbstractPreference) {
         }
         clazz.functions.forEach {
             checkFunctionBody(it, Scope(classScope, isCompScope = it.compKeyword != null))
+
+            if (!checkControlFlow(it.statements, it.returnType)) {
+                // Not all code path returns value
+                reports += Error(
+                    it.name?.pos,
+                    "Not all code path returns value"
+                )
+            }
         }
 
         return clazz
@@ -237,8 +249,8 @@ class Checker(private val preference: AbstractPreference) {
                 )
             } else constructor.parentConstructorSignature = FunctionSignature(
                 Reference.fromClass(Any::class.java),
-                true,
-                false,
+                companion = true,
+                mutable = false,
                 Accessor.Pub,
                 "<init>",
                 listOf(),
@@ -352,7 +364,7 @@ class Checker(private val preference: AbstractPreference) {
         }
 
         function.statements.forEach {
-            checkStatement(it, scope, function.returnType)
+            checkStatement(it, scope, function.returnType ?: PrimitiveType.Unit)
         }
     }
 
@@ -362,7 +374,7 @@ class Checker(private val preference: AbstractPreference) {
     private fun checkStatement(
         statement: Statement?,
         scope: Scope,
-        returnType: Type? = null,
+        returnType: Type,
         useSameScope: Boolean = false
     ) {
         when (statement) {
@@ -408,16 +420,16 @@ class Checker(private val preference: AbstractPreference) {
                     )
                 }
 
-                checkStatement(statement.trueStatement!!, scope)
+                checkStatement(statement.trueStatement!!, scope, returnType)
 
                 if (statement.elseStatement != null) {
-                    checkStatement(statement.elseStatement, scope)
+                    checkStatement(statement.elseStatement, scope, returnType)
                 }
             }
             is JForStatement -> {
                 val innerScope = Scope(scope)
 
-                checkStatement(statement.initStatement, innerScope, useSameScope = true)
+                checkStatement(statement.initStatement, innerScope, returnType, useSameScope = true)
 
                 if (statement.condition != null) {
                     val conditionType = checkExpression(statement.condition, innerScope)
@@ -435,11 +447,11 @@ class Checker(private val preference: AbstractPreference) {
 
                 checkExpression(statement.postExpression, innerScope)
 
-                checkStatement(statement.statement, innerScope, useSameScope = true)
+                checkStatement(statement.statement, innerScope, returnType, useSameScope = true)
             }
             is BlockStatement -> {
                 statement.statements.forEach {
-                    checkStatement(it!!, if (useSameScope) scope else Scope(scope))
+                    checkStatement(it!!, if (useSameScope) scope else Scope(scope), returnType)
                 }
             }
             is ExpressionStatement -> {
@@ -1159,6 +1171,25 @@ class Checker(private val preference: AbstractPreference) {
                     }
                 } else lastNodeAction(expression)
             } else lastNodeAction(expression)
+        }
+    }
+
+    /**
+     * checkControlFlow does not check every return's type, which is already done by previous process
+     */
+    private fun checkControlFlow(statements: List<Statement?>, returnType: Type?): Boolean {
+        val lastStatement = statements.lastOrNull()
+
+        return if (returnType == PrimitiveType.Unit) true
+        else when (lastStatement) {
+            is ReturnStatement -> true
+            is IfStatement -> {
+                if (lastStatement.elseStatement == null) false
+                else checkControlFlow(listOf(lastStatement.trueStatement), returnType) &&
+                        checkControlFlow(listOf(lastStatement.elseStatement), returnType)
+            }
+            is BlockStatement -> checkControlFlow(lastStatement.statements, returnType)
+            else -> false
         }
     }
 }

@@ -21,6 +21,7 @@
 - [x] Scoped fields
 - [x] constructors
 - [x] method overriding
+- [x] check all code paths returns value
 
 ##### IMPLEMENTATION IN PROGRESS
 
@@ -32,7 +33,6 @@
 - [ ] label
 - [ ] access checking
 - [ ] if expression (ternary expression in Java)
-- [ ] check all code paths returns value
 - [ ] generic
 - [ ] <type>.class
 - [ ] inheritance
