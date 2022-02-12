@@ -19,7 +19,6 @@
 - [x] null check
 - [x] block
 - [x] Scoped fields
-- [x] prefixed fields
 - [x] constructors
 - [x] method overriding
 
@@ -35,6 +34,7 @@
 - [ ] if expression (ternary expression in Java)
 - [ ] check all code paths returns value
 - [ ] generic
+- [ ] <type>.class
 - [ ] inheritance
 - - [x] class
 - - [ ] abstract class
