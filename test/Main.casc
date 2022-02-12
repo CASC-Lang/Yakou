@@ -23,5 +23,5 @@ impl Main : Rock {
         sys.out.println(self.a)
     }
 
-    fn lol() {}
+    ovrd fn lol() {}
 }

@@ -116,9 +116,9 @@ class Parser(private val preference: AbstractPreference) {
         if (tokens.isNotEmpty() && pos < tokens.size) pos++
     }
 
-    // =================================
+    // ================================
     // PARSING FUNCTIONS
-    // =================================
+    // ================================
 
     private fun parseFile(path: String): File {
         // Parse optional package declaration
@@ -177,7 +177,7 @@ class Parser(private val preference: AbstractPreference) {
                     reports += Error(
                         nextToken.pos,
                         "Duplicate modifiers",
-                        "Remove this"
+                        "Remove this modifier"
                     )
                 }
             }
@@ -448,7 +448,7 @@ class Parser(private val preference: AbstractPreference) {
             modifierParsing@ while (!peekIf(Token::isFnKeyword) && !peekIf(Token::isNewKeyword)) {
                 val nextToken = assert(TokenType.Identifier) ?: return functions.toList() to constructors.toList()
 
-                if (!nextToken.isCompKeyword() && !nextToken.isAccessorKeyword() && !nextToken.isMutKeyword()) {
+                if (!nextToken.isCompKeyword() && !nextToken.isAccessorKeyword() && !nextToken.isMutKeyword() && !nextToken.isOvrdKeyword()) {
                     // Unexpected token
                     reports += Error(
                         nextToken.pos,
@@ -509,6 +509,13 @@ class Parser(private val preference: AbstractPreference) {
                     )
                 }
 
+                /**
+                 * Function modifier declaration sequence:
+                 * (pub#1 / prot / intl / priv) (ovrd) (mut) fn
+                 *
+                 * #1: Will generate a warning by default.
+                 */
+
                 if (modifiers.find(Token::isMutKeyword) != null && nextToken.isAccessorKeyword()) {
                     // Wrong modifier sequence
                     reports += Error(
@@ -518,12 +525,30 @@ class Parser(private val preference: AbstractPreference) {
                     )
                 }
 
+                if (modifiers.find(Token::isMutKeyword) != null && nextToken.isOvrdKeyword()) {
+                    // Wrong modifier sequence
+                    reports += Error(
+                        nextToken.pos,
+                        "Cannot declare `ovrd` after `mut` declared",
+                        "Try move this modifier before `mut`"
+                    )
+                }
+
+                if (modifiers.find(Token::isOvrdKeyword) != null && nextToken.isAccessorKeyword()) {
+                    // Wrong modifier sequence
+                    reports += Error(
+                        nextToken.pos,
+                        "Cannot declare access modifier after `ovrd` declared",
+                        "Try move this modifier before `ovrd`"
+                    )
+                }
+
                 if (!modifiers.add(nextToken)) {
                     // Duplicate modifiers
                     reports += Error(
                         nextToken.pos,
                         "Duplicate modifiers",
-                        "Remove this"
+                        "Remove this modifier"
                     )
                 }
             }
@@ -540,8 +565,17 @@ class Parser(private val preference: AbstractPreference) {
                     )
                 }
 
+                if (modifiers.find(Token::isOvrdKeyword) != null) {
+                    // Constructor with `ovrd` keyword
+                    reports += Error(
+                        modifiers.find(Token::isMutKeyword)!!.pos,
+                        "Cannot declare constructor with `ovrd` keyword",
+                        "Remove this"
+                    )
+                }
+
                 if (modifiers.find(Token::isMutKeyword) != null) {
-                    // Constructor without `mut` keyword
+                    // Constructor with `mut` keyword
                     reports += Error(
                         modifiers.find(Token::isMutKeyword)!!.pos,
                         "Cannot declare constructor with `mut` keyword",
@@ -620,6 +654,7 @@ class Parser(private val preference: AbstractPreference) {
                 val function = Function(
                     classReference,
                     modifiers.find(Token::isAccessorKeyword),
+                    modifiers.find(Token::isOvrdKeyword),
                     modifiers.find(Token::isMutKeyword),
                     compKeyword,
                     name,

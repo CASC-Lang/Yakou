@@ -7,6 +7,7 @@ import org.objectweb.asm.Opcodes
 data class Function(
     val ownerReference: Reference?,
     val accessorToken: Token?,
+    val ovrdKeyword: Token?,
     val mutKeyword: Token?,
     val compKeyword: Token?,
     val name: Token?,
@@ -25,7 +26,7 @@ data class Function(
             }
         })${returnType?.descriptor}"
     override val accessFlag: Int =
-        mutKeyword.getOrElse(Opcodes.ACC_FINAL) + accessor.access + compKeyword.getOrElse(Opcodes.ACC_STATIC)
+        mutKeyword.getOrElse(0, Opcodes.ACC_FINAL) + accessor.access + compKeyword.getOrElse(Opcodes.ACC_STATIC)
 
     override fun asSignature() =
         FunctionSignature(

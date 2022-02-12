@@ -21,6 +21,7 @@
 - [x] Scoped fields
 - [x] prefixed fields
 - [x] constructors
+- [x] method overriding
 
 ##### IMPLEMENTATION IN PROGRESS
 
@@ -34,7 +35,6 @@
 - [ ] if expression (ternary expression in Java)
 - [ ] check all code paths returns value
 - [ ] generic
-- [ ] method overriding
 - [ ] inheritance
 - - [x] class
 - - [ ] abstract class

@@ -58,6 +58,9 @@ data class Token(var literal: String, val type: TokenType, val pos: Position) {
     fun isSuperKeyword(): Boolean =
         literal == "super"
 
+    fun isOvrdKeyword(): Boolean =
+        literal == "ovrd"
+
     fun isAccessorKeyword(): Boolean =
         Accessor.validKeywords.contains(literal)
 }

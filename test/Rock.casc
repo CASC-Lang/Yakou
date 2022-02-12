@@ -10,5 +10,5 @@ impl Rock: Atom {
         self.a = a
     }
 
-    fn lol() {}
+    mut fn lol() {}
 }
