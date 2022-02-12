@@ -9,7 +9,6 @@ import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import java.net.URLClassLoader
-import java.nio.file.*
 import java.io.File as JFile
 
 class Emitter(private val preference: AbstractPreference) {
@@ -186,12 +185,18 @@ class Emitter(private val preference: AbstractPreference) {
                 }
             }
             is ExpressionStatement -> {
-                emitExpression(methodVisitor, statement.expression!!)
+                val expression = statement.expression!!
+
+                emitExpression(methodVisitor, expression)
+
+                if (expression is FunctionCallExpression) {
+                    // Check if function's return value is unused, if yes, then add pop or pop2 opcode
+                    if (expression.type == PrimitiveType.I64 || expression.type == PrimitiveType.F64) methodVisitor.visitInsn(Opcodes.POP2)
+                    else if (expression.type != PrimitiveType.Unit) methodVisitor.visitInsn(Opcodes.POP)
+                }
             }
             is ReturnStatement -> {
                 emitExpression(methodVisitor, statement.expression!!)
-
-                emitAutoCast(methodVisitor, statement.expression.type!!, statement.returnType!!)
 
                 methodVisitor.visitInsn(statement.returnType!!.returnOpcode)
             }
@@ -481,6 +486,7 @@ class Emitter(private val preference: AbstractPreference) {
 
         if (expression.rightExpression is AssignmentExpression) {
             emitAssignment(methodVisitor, expression.rightExpression, true)
+            emitAutoCast(methodVisitor, expression.rightExpression)
         } else {
             emitExpression(methodVisitor, expression.rightExpression!!)
         }
@@ -520,8 +526,6 @@ class Emitter(private val preference: AbstractPreference) {
             }
             else -> {}
         }
-
-        emitAutoCast(methodVisitor, expression)
     }
 
     private fun emitBinaryExpressions(
@@ -530,10 +534,7 @@ class Emitter(private val preference: AbstractPreference) {
         rightExpression: Expression
     ) {
         emitExpression(methodVisitor, leftExpression)
-        emitAutoCast(methodVisitor, leftExpression)
-
         emitExpression(methodVisitor, rightExpression)
-        emitAutoCast(methodVisitor, rightExpression)
     }
 
     private fun emitComparisonExpression(methodVisitor: MethodVisitor, expression: Expression) {
@@ -567,13 +568,15 @@ class Emitter(private val preference: AbstractPreference) {
         methodVisitor.visitLabel(endLabel)
     }
 
-    private fun emitAndOrOperators(methodVisitor: MethodVisitor, expression: BinaryExpression) {
+    private fun emitAndOrOperators(
+        methodVisitor: MethodVisitor,
+        expression: BinaryExpression
+    ) {
         val operatorType = expression.operator!!.type
         val trueLabel = Label()
         val endLabel = Label()
 
         emitExpression(methodVisitor, expression.left!!)
-        emitAutoCast(methodVisitor, expression.left!!)
 
         if (operatorType == TokenType.DoubleAmpersand) {
             methodVisitor.visitJumpInsn(Opcodes.IFEQ, trueLabel)
@@ -582,7 +585,6 @@ class Emitter(private val preference: AbstractPreference) {
         }
 
         emitExpression(methodVisitor, expression.right!!)
-        emitAutoCast(methodVisitor, expression.right!!)
 
         if (operatorType == TokenType.DoubleAmpersand) {
             methodVisitor.visitJumpInsn(Opcodes.IFEQ, trueLabel)

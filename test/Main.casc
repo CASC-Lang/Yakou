@@ -9,6 +9,7 @@ impl Main : Rock {
     comp {
         fn main(args: str[]) {
             a := new Main()
+            a.lol()
         }
     }
 
@@ -23,5 +24,7 @@ impl Main : Rock {
         sys.out.println(self.a)
     }
 
-    ovrd fn lol() {}
+    ovrd fn lol(): i32 {
+        return 1
+    }
 }

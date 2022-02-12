@@ -10,5 +10,7 @@ impl Rock: Atom {
         self.a = a
     }
 
-    mut fn lol() {}
+    mut fn lol(): i32 {
+        return 1
+    }
 }
