@@ -76,7 +76,7 @@ class Emitter(private val preference: AbstractPreference) {
         methodVisitor.visitVarInsn(Opcodes.ALOAD, 0)
 
         constructor.parentConstructorArguments.forEach {
-            emitExpression(methodVisitor, it!!)
+            if (it != null) emitExpression(methodVisitor, it)
         }
 
         methodVisitor.visitMethodInsn(

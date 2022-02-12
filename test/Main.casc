@@ -12,7 +12,8 @@ impl Main : Rock {
     }
 
     new(k: i32): super("lol") {
-        a = k
+        self.a = k
+        super.a = "bruh"
     }
 
     fn print() {

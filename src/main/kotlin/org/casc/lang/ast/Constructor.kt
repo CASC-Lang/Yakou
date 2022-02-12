@@ -33,7 +33,7 @@ data class Constructor(
             mutable = false,
             accessor,
             "<init>",
-            parameterTypes!!.mapNotNull { it },
+            parameterTypes.mapNotNull { it },
             ownerType!!
         )
 }

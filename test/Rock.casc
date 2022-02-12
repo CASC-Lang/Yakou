@@ -9,8 +9,8 @@ class Rock {
         a: str
 }
 
-impl Rock {
-    new(a: str) {
+impl Rock: Atom {
+    new(a: str): super() {
         self.a = a
     }
 }

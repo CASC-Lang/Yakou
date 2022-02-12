@@ -1,0 +1,6 @@
+class Atom
+
+impl Atom {
+    new() {
+    }
+}

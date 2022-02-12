@@ -34,9 +34,10 @@
 - [ ] if expression (ternary expression in Java)
 - [ ] check all code paths returns value
 - [ ] inheritance
-- - [ ] class
+- - [x] class
+- - [ ] abstract class
 - - [ ] interface
-- - [ ] `super` call
+- - [x] `super` call
 
 ### Compiler Unit
 

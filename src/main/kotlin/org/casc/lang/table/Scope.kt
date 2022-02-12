@@ -26,7 +26,11 @@ data class Scope(
         parent.signatures.toMutableSet(),
         parent.variables.toMutableList(),
         isCompScope
-    )
+    ) {
+        if (variables.isEmpty() && !isCompScope) {
+            registerVariable(true, "self", findType(classPath))
+        }
+    }
 
     fun registerField(field: Field) {
         fields += field.asClassField()
@@ -140,7 +144,13 @@ data class Scope(
     }
 
     fun findVariable(name: String): Variable? =
-        variables.find { it.name == name }
+        if (!isCompScope && (name == "self" || name == "super")) {
+            when (name) {
+                "self" -> Variable(true, "self", findType(classPath), 0)
+                "super" -> Variable(true, "super", findType(parentClassPath), 0)
+                else -> null // Should not happen
+            }
+        } else variables.find { it.name == name }
 
     fun findVariableIndex(name: String): Int? {
         var index: Int? = null
@@ -165,6 +175,7 @@ data class Scope(
 
     fun findType(reference: Reference?): Type? =
         if (reference == null) null
+        else if (reference.path == classPath) ClassType(reference.path)
         else TypeUtil.asType(usages.find {
             it.className == reference.className
         }, preference) ?: TypeUtil.asType(reference, preference)

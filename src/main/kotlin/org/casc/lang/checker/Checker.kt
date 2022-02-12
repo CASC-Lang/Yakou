@@ -26,7 +26,7 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkIdentifierIsKeyword(identifierToken: Token?, isVariable: Boolean = false) {
-        if (isVariable && identifierToken?.literal == "self")
+        if (isVariable && (identifierToken?.literal == "self" || identifierToken?.literal == "super"))
             return
 
         if (Token.keywords.contains(identifierToken?.literal)) {
@@ -157,12 +157,15 @@ class Checker(private val preference: AbstractPreference) {
         constructor.ownerType = checkType(constructor.ownerReference, localScope)
         constructor.parentType = checkType(constructor.parentReference, localScope)
 
-        constructor.parentConstructorArgumentsTypes = constructor.parentConstructorArguments.map {
-            val type = checkExpression(it, localScope)
+        constructor.parentConstructorArgumentsTypes = constructor.parentConstructorArguments.mapNotNull {
+            if (it == null) null
+            else {
+                val type = checkExpression(it, localScope)
 
-            if (type == null) reports.reportUnknownTypeSymbol(Reference("<Unknown>", "<Unknown>", it?.pos))
+                if (type == null) reports.reportUnknownTypeSymbol(Reference("<Unknown>", "<Unknown>", it?.pos))
 
-            type
+                type
+            }
         }
 
         val superCallSignature =
@@ -248,8 +251,6 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkConstructorBody(constructor: Constructor, scope: Scope) {
-        scope.registerVariable(true, "self", constructor.ownerType)
-
         constructor.parameters.forEachIndexed { i, parameter ->
             scope.registerVariable(false, parameter.name!!.literal, constructor.parameterTypes[i])
         }
@@ -260,11 +261,6 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkFunctionBody(function: Function, scope: Scope) {
-        if (function.compKeyword == null) {
-            // non-companion function
-            scope.registerVariable(true, "self", function.ownerType)
-        }
-
         function.parameters.forEachIndexed { i, parameter ->
             scope.registerVariable(false, parameter.name!!.literal, function.parameterTypes?.get(i))
         }
@@ -285,20 +281,22 @@ class Checker(private val preference: AbstractPreference) {
     ) {
         when (statement) {
             is VariableDeclaration -> {
-                if (statement.name?.literal == "self") {
+                val name = statement.name!!.literal
+
+                if (name == "self" || name == "super") {
                     reports += Error(
                         statement.name.pos,
-                        "Cannot declare `self` as local variable",
+                        "Cannot declare `$name` as local variable",
                         "Rename this variable"
                     )
                 } else checkIdentifierIsKeyword(statement.name)
 
                 val expressionType = checkExpression(statement.expression, scope)
 
-                if (!scope.registerVariable(statement.mutKeyword != null, statement.name!!.literal, expressionType)) {
+                if (!scope.registerVariable(statement.mutKeyword != null, name, expressionType)) {
                     reports += Error(
                         statement.pos!!,
-                        "Variable ${statement.name.literal} is already declared in same context"
+                        "Variable $name is already declared in same context"
                     )
                 } else {
                     if (expressionType == PrimitiveType.Unit) {
@@ -308,7 +306,7 @@ class Checker(private val preference: AbstractPreference) {
                         )
                     }
 
-                    statement.index = scope.findVariableIndex(statement.name.literal)
+                    statement.index = scope.findVariableIndex(name)
                 }
             }
             is IfStatement -> {
@@ -447,7 +445,7 @@ class Checker(private val preference: AbstractPreference) {
                                 )
                             }
 
-                            if (!field.companion && field.ownerReference?.path != scope.classPath) {
+                            if (!field.companion && field.ownerReference?.path != scope.classPath && field.ownerReference?.path != scope.parentClassPath) {
                                 reports += Error(
                                     expression.leftExpression.pos,
                                     "Cannot access non-companion field $name from other context"
@@ -458,7 +456,14 @@ class Checker(private val preference: AbstractPreference) {
                         }
                     }
 
-                    if (expression.leftExpression.ownerReference != null) {
+                    if (name == "this" || name == "self") {
+                        // Attempt to override whole owner class
+                        reports += Error(
+                            expression.leftExpression.pos,
+                            "Cannot assign current class or parent class while executing its function",
+                            "Remove this line"
+                        )
+                    } else if (expression.leftExpression.ownerReference != null) {
                         // Field assignment
                         checkFieldAssignment(scope.findField(expression.leftExpression.ownerReference?.path, name))
                     } else {
