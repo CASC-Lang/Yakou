@@ -25,6 +25,6 @@ impl Main : Rock {
     }
 
     ovrd fn lol(): i32 {
-        return 1
+        return super.lol()
     }
 }

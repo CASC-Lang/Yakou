@@ -299,7 +299,7 @@ class Emitter(private val preference: AbstractPreference) {
                 } else {
                     // Use INVOKEVIRTUAL instead
                     methodVisitor.visitMethodInsn(
-                        Opcodes.INVOKEVIRTUAL,
+                        if (expression.superCall) Opcodes.INVOKESPECIAL else Opcodes.INVOKEVIRTUAL,
                         functionSignature.ownerReference.internalName(),
                         functionSignature.name,
                         functionSignature.descriptor,

@@ -73,6 +73,7 @@ sealed class Expression {
         val name: Token?,
         val arguments: List<Expression?>,
         val inCompanionContext: Boolean = false,
+        var superCall: Boolean = false,
         var referenceFunctionSignature: FunctionSignature? = null, // Needs to be provided by checker
         var previousExpression: Expression? = null, // Used in chain calling, e.g. Identifier `a` in a.lol()
         override val pos: Position? = name?.pos?.extend(arguments.lastOrNull()?.pos)?.extend()

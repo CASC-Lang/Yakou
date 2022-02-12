@@ -542,8 +542,8 @@ class Checker(private val preference: AbstractPreference) {
                         }
                     }
 
-                    if (name == "this" || name == "self") {
-                        // Attempt to override whole owner class
+                    if (name == "self" || name == "super") {
+                        // Attempt to override whole owner / parent class
                         reports += Error(
                             expression.leftExpression.pos,
                             "Cannot assign current class or parent class while executing its function",
@@ -653,6 +653,14 @@ class Checker(private val preference: AbstractPreference) {
                         expression.isCompField = field.companion
                         expression.ownerReference = field.ownerReference
                     }
+                } else if (expression.name?.literal == "self" || expression.name?.literal == "super") {
+                    expression.type = when (expression.name.literal) {
+                        "self" -> scope.findType(scope.classPath)
+                        "super" -> scope.findType(scope.parentClassPath)
+                        else -> null
+                    }
+
+                    expression.index = 0
                 } else {
                     // Check identifier is class name or not
                     val classType = scope.findType(expression.name?.literal)
@@ -693,11 +701,15 @@ class Checker(private val preference: AbstractPreference) {
             }
             is FunctionCallExpression -> {
                 // TODO: Support auto promotion parameter checking
+                val previousExpression = expression.previousExpression
                 val argumentTypes = expression.arguments.map {
                     checkExpression(it, scope)
                 }
 
-                val previousType = checkExpression(expression.previousExpression, scope)
+                val previousType = checkExpression(previousExpression, scope)
+
+                if (previousExpression is IdentifierCallExpression && previousExpression.name?.literal == "super")
+                    expression.superCall = true
 
                 // Check function call expression's context, e.g companion context
                 val ownerReference = expression.ownerReference?.path ?: previousType?.typeName ?: scope.classPath
@@ -719,7 +731,7 @@ class Checker(private val preference: AbstractPreference) {
                 } else {
                     if (functionSignature.ownerReference == expression.ownerReference) {
                         // Function's owner class is same as current class
-                        if (expression.previousExpression == null) {
+                        if (previousExpression == null) {
                             if (expression.inCompanionContext && !functionSignature.companion) {
                                 reports += Error(
                                     expression.pos!!,
@@ -733,7 +745,7 @@ class Checker(private val preference: AbstractPreference) {
                         // TODO: Check accessor for chain calling
                     } else {
                         // Function's owner class is outside this context
-                        if (expression.previousExpression == null) {
+                        if (previousExpression == null) {
                             if (!functionSignature.companion) {
                                 reports += Error(
                                     expression.pos!!,
