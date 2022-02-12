@@ -8,6 +8,8 @@ import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
+import java.net.URLClassLoader
+import java.nio.file.*
 import java.io.File as JFile
 
 class Emitter(private val preference: AbstractPreference) {
@@ -20,6 +22,8 @@ class Emitter(private val preference: AbstractPreference) {
 
         outDir.mkdirs()
         outFile.writeBytes(bytecode)
+
+        preference.classLoader = URLClassLoader.newInstance(arrayOf(preference.outputDir.toURI().toURL()))
     }
 
     private fun emitClass(clazz: Class): ByteArray {
@@ -27,7 +31,7 @@ class Emitter(private val preference: AbstractPreference) {
 
         classWriter.visit(
             61,
-            Opcodes.ACC_PUBLIC + Opcodes.ACC_SUPER,
+            clazz.accessFlag,
             "${
                 if (clazz.packageReference != null) "${
                     clazz.packageReference.path.replace(

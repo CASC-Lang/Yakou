@@ -4,9 +4,11 @@ import org.casc.lang.ast.*
 import org.casc.lang.ast.Field
 import org.casc.lang.ast.Function
 import org.casc.lang.compilation.AbstractPreference
+import org.casc.lang.compilation.Compilation
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.table.*
+import java.lang.reflect.Modifier
 import java.io.File as JFile
 
 class Checker(private val preference: AbstractPreference) {
@@ -18,7 +20,7 @@ class Checker(private val preference: AbstractPreference) {
     private val globalScope: Scope = Scope(preference)
     private var reports: MutableSet<Report> = mutableSetOf()
 
-    fun check(file: File): Pair<List<Report>, File> {
+     fun check(file: File): Pair<List<Report>, File> {
         reports.clear()
         val checkedFiles = checkFile(file)
 
@@ -37,7 +39,7 @@ class Checker(private val preference: AbstractPreference) {
         }
     }
 
-    private fun checkFile(file: File): File {
+    private  fun checkFile(file: File): File {
         if (file.clazz.packageReference != null) {
             val packagePath = file.clazz.packageReference!!.path.replace('.', '/')
 
@@ -55,7 +57,7 @@ class Checker(private val preference: AbstractPreference) {
         return file
     }
 
-    private fun checkClass(clazz: Class): Class {
+    private  fun checkClass(clazz: Class): Class {
         val classScope = Scope(
             globalScope,
             clazz.packageReference?.path?.let { "$it/${clazz.name!!.literal}" } ?: clazz.name!!.literal
@@ -79,7 +81,27 @@ class Checker(private val preference: AbstractPreference) {
 
         // Check parent class reference
         if (clazz.parentClassReference != null) {
-            classScope.parentClassPath = checkType(clazz.parentClassReference, classScope)?.internalName
+            val parentClassType = checkType(clazz.parentClassReference, classScope)
+
+            classScope.parentClassPath = parentClassType?.internalName
+
+            if (parentClassType != null) {
+                val parentCachedFile = Compilation.parsedResults.find { it.clazz.getFullPath() == parentClassType.internalName }
+
+                if (parentCachedFile != null && parentCachedFile.clazz.mutKeyword == null) {
+                    reports += Error(
+                        clazz.parentClassReference.pos,
+                        "Cannot inherit from final class ${clazz.parentClassReference.asCascStyle()}",
+                        "Add `mut` to class ${clazz.parentClassReference.asCascStyle()}"
+                    )
+                } else if (parentClassType.type()?.let { Modifier.isFinal(it.modifiers) } == true) {
+                    reports += Error(
+                        clazz.parentClassReference.pos,
+                        "Cannot inherit from final class ${clazz.parentClassReference.asCascStyle()}",
+                        "Add `mut` to class ${clazz.parentClassReference.asCascStyle()}"
+                    )
+                }
+            }
         }
 
         clazz.fields.forEach {
@@ -101,7 +123,7 @@ class Checker(private val preference: AbstractPreference) {
         return clazz
     }
 
-    private fun checkField(field: Field, scope: Scope): Field {
+    private  fun checkField(field: Field, scope: Scope): Field {
         checkIdentifierIsKeyword(field.name)
 
         val fieldType = scope.findType(field.typeReference)
@@ -115,7 +137,7 @@ class Checker(private val preference: AbstractPreference) {
         return field
     }
 
-    private fun checkConstructor(constructor: Constructor, scope: Scope): Constructor {
+    private  fun checkConstructor(constructor: Constructor, scope: Scope): Constructor {
         // Validate types first then register it to scope
         // Check if parameter has duplicate names
         val localScope = Scope(scope)
@@ -162,14 +184,13 @@ class Checker(private val preference: AbstractPreference) {
             else {
                 val type = checkExpression(it, localScope)
 
-                if (type == null) reports.reportUnknownTypeSymbol(Reference("<Unknown>", "<Unknown>", it?.pos))
+                if (type == null) reports.reportUnknownTypeSymbol(Reference("<Unknown>", "<Unknown>", it.pos))
 
                 type
             }
         }
 
-        val superCallSignature =
-            scope.findSignature(
+        val superCallSignature = scope.findSignature(
                 constructor.parentReference!!.path,
                 "<init>",
                 constructor.parentConstructorArgumentsTypes
@@ -193,7 +214,7 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     // TODO: Track if-else and match branches so compiler can know whether all paths have return value or not
-    private fun checkFunction(function: Function, scope: Scope): Function {
+    private  fun checkFunction(function: Function, scope: Scope): Function {
         checkIdentifierIsKeyword(function.name)
 
         // Validate types first then register it to scope
@@ -250,7 +271,7 @@ class Checker(private val preference: AbstractPreference) {
         return function
     }
 
-    private fun checkConstructorBody(constructor: Constructor, scope: Scope) {
+    private  fun checkConstructorBody(constructor: Constructor, scope: Scope) {
         constructor.parameters.forEachIndexed { i, parameter ->
             scope.registerVariable(false, parameter.name!!.literal, constructor.parameterTypes[i])
         }
@@ -260,7 +281,7 @@ class Checker(private val preference: AbstractPreference) {
         }
     }
 
-    private fun checkFunctionBody(function: Function, scope: Scope) {
+    private  fun checkFunctionBody(function: Function, scope: Scope) {
         function.parameters.forEachIndexed { i, parameter ->
             scope.registerVariable(false, parameter.name!!.literal, function.parameterTypes?.get(i))
         }
@@ -270,10 +291,10 @@ class Checker(private val preference: AbstractPreference) {
         }
     }
 
-    private fun checkType(reference: Reference?, scope: Scope): Type? =
+    private  fun checkType(reference: Reference?, scope: Scope): Type? =
         scope.findType(reference)
 
-    private fun checkStatement(
+    private  fun checkStatement(
         statement: Statement?,
         scope: Scope,
         returnType: Type? = null,
@@ -382,7 +403,7 @@ class Checker(private val preference: AbstractPreference) {
         }
     }
 
-    private fun checkExpression(expression: Expression?, scope: Scope): Type? {
+    private  fun checkExpression(expression: Expression?, scope: Scope): Type? {
         return when (expression) {
             is IntegerLiteral -> {
                 expression.type = when {
@@ -904,7 +925,7 @@ class Checker(private val preference: AbstractPreference) {
         }
     }
 
-    private fun checkArrayType(
+    private  fun checkArrayType(
         expression: ArrayInitialization,
         scope: Scope,
         forcedFinalType: Type? = null

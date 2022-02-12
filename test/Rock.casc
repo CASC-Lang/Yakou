@@ -1,10 +1,6 @@
 use java::lang::System as sys
 
-class Rock {
-    comp {
-        mut:
-            b: str[]
-    }
+mut class Rock {
     mut:
         a: str
 }

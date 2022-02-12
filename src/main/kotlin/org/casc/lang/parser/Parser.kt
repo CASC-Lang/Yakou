@@ -136,23 +136,54 @@ class Parser(private val preference: AbstractPreference) {
         }
 
         // Parse class declaration
-        var accessor = assert(TokenType.Identifier)
-        val classKeyword: Token?
+        val modifiers = object : MutableObjectSet<Token>() {
+            override fun isDuplicate(a: Token, b: Token): Boolean =
+                a.literal == b.literal
+        }
 
-        if (accessor?.isClassKeyword() == true) { // If class has no modifier, then we move accessor token to class token
-            classKeyword = accessor
-            accessor = null
-        } else {
-            classKeyword = assert(TokenType.Identifier)
+        while (!peekIf(Token::isClassKeyword)) {
+            val nextToken = next()
 
-            if (classKeyword?.isClassKeyword() != true) {
-                reports += Error(
-                    last()!!.pos,
-                    "Expected class declaration"
-                )
+            if (nextToken != null) {
+                if (modifiers.find(Token::isAccessorKeyword) != null && nextToken.isAccessorKeyword()) {
+                    // More than two access modifiers
+                    reports += Error(
+                        nextToken.pos,
+                        "Cannot have more than two access modifiers or different access modifiers at same time",
+                        "Remove this"
+                    )
+                }
+
+                if (nextToken.literal == "pub") {
+                    // Declared with `pub`
+                    reports += Warning(
+                        nextToken.pos,
+                        "Redundant `pub` keyword, all members' default access modifier is `pub`",
+                        "You can safely remove `pub`"
+                    )
+                }
+
+                if (modifiers.find(Token::isMutKeyword) != null && nextToken.isAccessorKeyword()) {
+                    // Wrong modifier sequence
+                    reports += Error(
+                        nextToken.pos,
+                        "Cannot declare access modifier after `mut` declared",
+                        "Try move this modifier before `mut`"
+                    )
+                }
+
+                if (!modifiers.add(nextToken)) {
+                    // Duplicate modifiers
+                    reports += Error(
+                        nextToken.pos,
+                        "Duplicate modifiers",
+                        "Remove this"
+                    )
+                }
             }
         }
 
+        val classKeyword = assert(Token::isClassKeyword)
         val className = assert(TokenType.Identifier)
         val classReference =
             if (className != null) Reference(
@@ -200,8 +231,20 @@ class Parser(private val preference: AbstractPreference) {
             }
         }
 
-        // TODO: Class inheritance & interface implementation etc. WIP
-        val clazz = Class(packageReference, usages, parentClassReference, listOf(), accessor, classKeyword, className, fields, constructors, functions)
+        // TODO: Abstract class inheritance & interface implementation etc. WIP
+        val clazz = Class(
+            packageReference,
+            usages,
+            parentClassReference,
+            listOf(),
+            modifiers.find(Token::isAccessorKeyword),
+            modifiers.find(Token::isMutKeyword),
+            classKeyword,
+            className,
+            fields,
+            constructors,
+            functions
+        )
 
         return File(path, clazz)
     }
@@ -800,7 +843,8 @@ class Parser(private val preference: AbstractPreference) {
 
         if (expression is IdentifierCallExpression || expression is FunctionCallExpression
             || expression is ConstructorCallExpression || expression is IndexExpression
-            || expression is ParenthesizedExpression) {
+            || expression is ParenthesizedExpression
+        ) {
             while (true) {
                 if (peekIf(TokenType.Dot)) {
                     // Chain calling

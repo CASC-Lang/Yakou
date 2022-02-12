@@ -1,5 +1,6 @@
 package org.casc.lang.compilation
 
+import kotlinx.coroutines.*
 import org.casc.lang.ast.File
 import org.casc.lang.checker.Checker
 import org.casc.lang.emitter.Emitter
@@ -7,14 +8,15 @@ import org.casc.lang.lexer.Lexer
 import org.casc.lang.parser.Parser
 import java.io.BufferedReader
 import java.net.URLClassLoader
-import java.io.File as JFile
 import java.util.*
 import kotlin.system.exitProcess
+import java.io.File as JFile
 
 class Compilation(val file: JFile, private val preference: AbstractPreference = GlobalPreference) {
     companion object {
         private var queuedFiles: MutableList<Triple<Boolean, String, List<String>>> = mutableListOf()
-        private var parsedResults: MutableList<File> = mutableListOf()
+        var parsedResults: MutableList<File> = mutableListOf()
+            private set
         private var progressingCompilations: Stack<String> = Stack()
         private lateinit var lexer: Lexer
         private lateinit var parser: Parser
@@ -61,7 +63,7 @@ class Compilation(val file: JFile, private val preference: AbstractPreference = 
                 /**
                  * Checks complex syntax validity and variables' type.
                  */
-                val (checkReports, checkResult) = checker.check(parsedResults[index])
+                val (checkReports, checkResult) = Checker(preference).check(parsedResults[index])
 
                 checkReports.printReports(filePath, source)
 
@@ -73,9 +75,6 @@ class Compilation(val file: JFile, private val preference: AbstractPreference = 
                  * only JVM backend is available at this moment.
                  */
                 emitter.emit(JFile(preference.outputDir, JFile(filePath).parentFile?.path ?: ""), checkResult)
-
-                // Reload class loader so JVM can load it
-                preference.classLoader = URLClassLoader.newInstance(arrayOf(preference.outputDir.toURI().toURL()))
 
                 // Marks file as compiled
                 queuedFiles[index] = fileResult.copy(true)

@@ -33,6 +33,8 @@
 - [ ] access checking
 - [ ] if expression (ternary expression in Java)
 - [ ] check all code paths returns value
+- [ ] generic
+- [ ] method overriding
 - [ ] inheritance
 - - [x] class
 - - [ ] abstract class

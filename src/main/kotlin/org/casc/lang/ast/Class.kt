@@ -1,6 +1,9 @@
 package org.casc.lang.ast
 
+import org.casc.lang.table.HasAccess
 import org.casc.lang.table.Reference
+import org.casc.lang.utils.getOrElse
+import org.objectweb.asm.Opcodes
 
 data class Class(
     val packageReference: Reference?,
@@ -8,10 +11,17 @@ data class Class(
     val parentClassReference: Reference?,
     val interfaceReferences: List<Reference?>,
     val accessorToken: Token?,
+    val mutKeyword: Token?,
     val classKeyword: Token?,
     val name: Token?,
     var fields: List<Field>,
     var constructors: List<Constructor>,
     var functions: List<Function>,
     val accessor: Accessor = Accessor.fromString(accessorToken?.literal)
-)
+) : HasAccess {
+    override val accessFlag: Int =
+        Opcodes.ACC_SUPER + accessor.access + mutKeyword.getOrElse(0, Opcodes.ACC_FINAL)
+
+    fun getFullPath(): String =
+        packageReference?.let { "${it.path}/${name!!.literal}" } ?: name!!.literal
+}

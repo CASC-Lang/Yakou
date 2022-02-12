@@ -9,23 +9,23 @@ object TypeUtil {
     /**
      * asType takes qualified type name and globe scope to lookup types
      */
-    fun asType(name: String, preference: AbstractPreference): Type? =
+     fun asType(name: String, preference: AbstractPreference): Type? =
         asArrayType(name, preference)
             ?: PrimitiveType.values.find { it.typeName == name }
             ?: getLoadedType(name, preference)
 
-    fun asType(reference: Reference?, preference: AbstractPreference): Type? =
+     fun asType(reference: Reference?, preference: AbstractPreference): Type? =
         if (reference == null) null
         else asType(reference.toString(), preference)
 
-    fun asType(clazz: Class<*>?, preference: AbstractPreference): Type? =
+     fun asType(clazz: Class<*>?, preference: AbstractPreference): Type? =
         if (clazz == null) null
         else if (clazz.isArray) asArrayType(clazz.typeName, preference)
         else PrimitiveType.values.find {
             it.type() == clazz
         } ?: asType(clazz.name, preference)
 
-    private fun asArrayType(name: String, preference: AbstractPreference): ArrayType? =
+    private  fun asArrayType(name: String, preference: AbstractPreference): ArrayType? =
         if (name.length < 2) null
         else if (name.substring(name.length - 2) == "[]") {
             val baseType = asType(name.substring(0 until name.length - 2), preference)
@@ -34,7 +34,7 @@ object TypeUtil {
             else ArrayType(baseType)
         } else null
 
-    private fun getLoadedType(name: String, preference: AbstractPreference): Type? = try {
+    private  fun getLoadedType(name: String, preference: AbstractPreference): Type? = try {
         Compilation.compileClass(preference, name)
 
         val clazz = preference.classLoader?.loadClass(name)
@@ -47,10 +47,10 @@ object TypeUtil {
         null
     }
 
-    fun checkType(name: String, preference: AbstractPreference): Boolean =
+     fun checkType(name: String, preference: AbstractPreference): Boolean =
         asType(name, preference) != null
 
-    fun checkType(reference: Reference?, preference: AbstractPreference): Boolean =
+     fun checkType(reference: Reference?, preference: AbstractPreference): Boolean =
         asType(reference, preference) != null
 
     fun canCast(from: Type?, to: Type?): Boolean =

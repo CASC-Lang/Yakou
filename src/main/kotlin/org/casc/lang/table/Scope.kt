@@ -2,6 +2,7 @@ package org.casc.lang.table
 
 import org.casc.lang.ast.*
 import org.casc.lang.compilation.AbstractPreference
+import org.casc.lang.compilation.Compilation
 import java.lang.Class
 import java.lang.reflect.Modifier
 
@@ -16,7 +17,12 @@ data class Scope(
     var variables: MutableList<Variable> = mutableListOf(),
     var isCompScope: Boolean = false
 ) {
-    constructor(parent: Scope, classPath: String = "", parentClassPath: String? = null, isCompScope: Boolean = false) : this(
+    constructor(
+        parent: Scope,
+        classPath: String = "",
+        parentClassPath: String? = null,
+        isCompScope: Boolean = false
+    ) : this(
         parent.preference,
         false,
         parent.classPath.ifEmpty { classPath },
@@ -28,7 +34,8 @@ data class Scope(
         isCompScope
     ) {
         if (variables.isEmpty() && !isCompScope) {
-            registerVariable(true, "self", findType(classPath))
+            // Insert a dummy variable
+            registerVariable(true, "dummy", null)
         }
     }
 
@@ -164,18 +171,14 @@ data class Scope(
 
     fun findType(className: String?): Type? =
         if (className == null) null
-        else {
-            val clazzName = usages.find {
-                it.className == className
-            }
-
-            if (clazzName != null) TypeUtil.asType(clazzName, preference)
-            else TypeUtil.asType(className, preference)
-        }
+        else if (className == classPath.split('/').lastOrNull()) ClassType(classPath)
+        else TypeUtil.asType(usages.find {
+            it.className == className
+        }, preference) ?: TypeUtil.asType(className, preference)
 
     fun findType(reference: Reference?): Type? =
         if (reference == null) null
-        else if (reference.path == classPath) ClassType(reference.path)
+        else if (reference.path == classPath) ClassType(classPath)
         else TypeUtil.asType(usages.find {
             it.className == reference.className
         }, preference) ?: TypeUtil.asType(reference, preference)
