@@ -5,6 +5,7 @@ import org.casc.lang.ast.Token
 
 data class Reference(var path: String, val className: String, val pos: Position?, val tokens: List<Token?> = listOf()) {
     constructor(token: Token?) : this(token?.literal ?: "", token?.literal ?: "", token?.pos, mutableListOf(token))
+    constructor(path: String): this(path, path.split('.').lastOrNull() ?: "", null)
 
     companion object {
         fun fromClass(clazz: Class<*>): Reference {
@@ -18,8 +19,14 @@ data class Reference(var path: String, val className: String, val pos: Position?
     fun internalName(): String =
         path.replace('.', '/')
 
+    fun getPackagePath(): String =
+        path.split('.').dropLast(1).joinToString(".")
+
     fun asCascStyle(): String =
         path.replace(".", "::")
+
+    fun isSamePackage(reference: Reference?): Boolean =
+        getPackagePath() == reference?.getPackagePath()
 
     override fun toString(): String =
         path

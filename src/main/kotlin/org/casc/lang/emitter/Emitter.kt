@@ -30,7 +30,7 @@ class Emitter(private val preference: AbstractPreference) {
 
         classWriter.visit(
             61,
-            clazz.accessFlag,
+            clazz.flag,
             "${
                 if (clazz.packageReference != null) "${
                     clazz.packageReference.path.replace(
@@ -64,12 +64,12 @@ class Emitter(private val preference: AbstractPreference) {
     private fun emitField(classWriter: ClassWriter, field: Field) {
         val classField = field.asClassField()
 
-        classWriter.visitField(field.accessFlag, classField.name, field.descriptor, null, null)
+        classWriter.visitField(field.flag, classField.name, field.descriptor, null, null)
     }
 
     private fun emitConstructor(classWriter: ClassWriter, constructor: Constructor) {
         val methodVisitor = classWriter.visitMethod(
-            constructor.accessFlag,
+            constructor.flag,
             "<init>",
             constructor.descriptor,
             null,
@@ -104,7 +104,7 @@ class Emitter(private val preference: AbstractPreference) {
 
     private fun emitFunction(classWriter: ClassWriter, function: Function) {
         val methodVisitor = classWriter.visitMethod(
-            function.accessFlag,
+            function.flag,
             function.name!!.literal,
             function.descriptor,
             null,

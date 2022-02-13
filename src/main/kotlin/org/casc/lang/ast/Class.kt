@@ -1,6 +1,6 @@
 package org.casc.lang.ast
 
-import org.casc.lang.table.HasAccess
+import org.casc.lang.table.HasFlag
 import org.casc.lang.table.Reference
 import org.casc.lang.utils.getOrElse
 import org.objectweb.asm.Opcodes
@@ -18,8 +18,8 @@ data class Class(
     var constructors: List<Constructor>,
     var functions: List<Function>,
     val accessor: Accessor = Accessor.fromString(accessorToken?.literal)
-) : HasAccess {
-    override val accessFlag: Int =
+) : HasFlag {
+    override val flag: Int =
         Opcodes.ACC_SUPER + accessor.access + mutKeyword.getOrElse(0, Opcodes.ACC_FINAL)
 
     fun getFullPath(): String =

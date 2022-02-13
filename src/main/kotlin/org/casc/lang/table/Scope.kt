@@ -2,14 +2,18 @@ package org.casc.lang.table
 
 import org.casc.lang.ast.*
 import org.casc.lang.compilation.AbstractPreference
-import org.casc.lang.compilation.Compilation
+import org.casc.lang.compilation.Error
+import org.casc.lang.utils.getOrElse
 import java.lang.Class
 import java.lang.reflect.Modifier
 
 data class Scope(
     val preference: AbstractPreference,
+    var companion: Boolean,
+    var mutable: Boolean,
+    var accessor: Accessor,
+    var classPath: String,
     val isGlobalScope: Boolean = true,
-    var classPath: String = "",
     var parentClassPath: String? = null,
     var usages: MutableSet<Reference> = mutableSetOf(),
     var fields: MutableSet<ClassField> = mutableSetOf(),
@@ -19,13 +23,18 @@ data class Scope(
 ) {
     constructor(
         parent: Scope,
+        companion: Boolean? = null,
+        mutable: Boolean? = null,
+        accessor: Accessor? = null,
         classPath: String = "",
-        parentClassPath: String? = null,
         isCompScope: Boolean = false
     ) : this(
         parent.preference,
-        false,
+        companion ?: parent.companion,
+        mutable ?: parent.mutable,
+        accessor ?: parent.accessor,
         parent.classPath.ifEmpty { classPath },
+        false,
         parent.parentClassPath,
         parent.usages.toMutableSet(),
         parent.fields.toMutableSet(),
@@ -82,51 +91,75 @@ data class Scope(
         }
 
     fun findSignature(ownerPath: String?, name: String, argumentTypes: List<Type?>): FunctionSignature? =
-        if (ownerPath == null || ownerPath == classPath) findSignatureInSameClass(name, argumentTypes)
+        if (ownerPath == null) findSignatureInSameClass(name, argumentTypes)
         else {
-            val ownerType = findType(ownerPath)
+            val currentClassSignature = if (ownerPath == classPath) findSignatureInSameClass(name, argumentTypes)
+            else null
 
-            if (ownerType != null) {
-                val argTypes = argumentTypes.mapNotNull { it }
+            if (currentClassSignature != null) currentClassSignature
+            else {
 
-                if (name == "<init>") {
-                    // Constructor
-                    try {
-                        val (ownerClass, argumentClasses) = retrieveExecutableInfo(ownerType, argTypes)
-                        val constructor = ownerClass.getConstructor(*argumentClasses)
+                val ownerType = findType(ownerPath)
 
-                        FunctionSignature(
-                            Reference.fromClass(ownerClass),
-                            companion = true,
-                            mutable = false,
-                            Accessor.fromModifier(constructor.modifiers),
-                            name,
-                            argTypes,
-                            ownerType
-                        )
-                    } catch (e: Exception) {
-                        null
+                if (ownerType != null) {
+                    val argTypes = argumentTypes.mapNotNull { it }
+
+                    if (name == "<init>") {
+                        // Constructor
+                        try {
+                            val (ownerClass, argumentClasses) = retrieveExecutableInfo(ownerType, argTypes)
+                            val constructor = ownerClass.getConstructor(*argumentClasses)
+
+                            FunctionSignature(
+                                Reference.fromClass(ownerClass),
+                                companion = true,
+                                mutable = false,
+                                Accessor.fromModifier(constructor.modifiers),
+                                name,
+                                argTypes,
+                                ownerType
+                            )
+                        } catch (e: Exception) {
+                            null
+                        }
+                    } else {
+                        // Function
+                        try {
+
+                            var (ownerClass, argumentClasses) =
+                                if (ownerPath == classPath) retrieveExecutableInfo(
+                                    findType(parentClassPath) ?: ClassType(Any::class.java), argTypes
+                                )
+                                else retrieveExecutableInfo(ownerType, argTypes)
+                            var signature: FunctionSignature? = null
+
+                            do {
+                                try {
+                                    val function = ownerClass.getMethod(name, *argumentClasses)
+
+                                    signature = FunctionSignature(
+                                        Reference.fromClass(ownerClass),
+                                        Modifier.isStatic(function.modifiers),
+                                        Modifier.isFinal(function.modifiers),
+                                        Accessor.fromModifier(function.modifiers),
+                                        name,
+                                        argTypes,
+                                        TypeUtil.asType(function.returnType, preference)!!
+                                    )
+
+                                    break
+                                } catch (e: Throwable) {
+                                    ownerClass = ownerClass.superclass
+                                }
+                            } while (ownerClass != Any::class.java)
+
+                            signature
+                        } catch (e: Throwable) {
+                            null
+                        }
                     }
-                } else {
-                    // Function
-                    try {
-                        val (ownerClass, argumentClasses) = retrieveExecutableInfo(ownerType, argTypes)
-                        val function = ownerClass.getMethod(name, *argumentClasses)
-
-                        FunctionSignature(
-                            Reference.fromClass(ownerClass),
-                            Modifier.isStatic(function.modifiers),
-                            Modifier.isFinal(function.modifiers),
-                            Accessor.fromModifier(function.modifiers),
-                            name,
-                            argTypes,
-                            TypeUtil.asType(function.returnType, preference)!!
-                        )
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
-            } else null
+                } else null
+            }
         }
 
 
@@ -169,19 +202,33 @@ data class Scope(
         return index
     }
 
-    fun findType(className: String?): Type? =
-        if (className == null) null
-        else if (className == classPath.split('/').lastOrNull()) ClassType(classPath)
-        else TypeUtil.asType(usages.find {
+    fun findType(className: String?): Type? = when (className) {
+        null -> null
+        classPath.split('/').lastOrNull() -> ClassType(classPath, accessor)
+        else -> TypeUtil.asType(usages.find {
             it.className == className
         }, preference) ?: TypeUtil.asType(className, preference)
+    }
 
     fun findType(reference: Reference?): Type? =
         if (reference == null) null
-        else if (reference.path == classPath) ClassType(classPath)
+        else if (reference.path == classPath) ClassType(classPath, accessor)
         else TypeUtil.asType(usages.find {
             it.className == reference.className
         }, preference) ?: TypeUtil.asType(reference, preference)
+
+    fun isChildType(parentType: Type?, childType: Type?): Boolean =
+        parentType?.type()?.isAssignableFrom(childType?.type() ?: Any::class.java).getOrElse()
+
+    fun isChildType(parentReference: Reference?, childReference: Reference?): Boolean = when {
+        childReference == null -> false
+        parentReference == childReference -> false
+        childReference.path == classPath -> isChildType(findType(parentReference), findType(parentClassPath))
+        else -> isChildType(findType(parentReference), findType(childReference))
+    }
+
+    fun isChildType(parentReference: Reference?): Boolean =
+        isChildType(parentReference, Reference(classPath))
 
     private fun retrieveExecutableInfo(ownerType: Type, argumentTypes: List<Type>): Pair<Class<*>, Array<Class<*>>> =
         ownerType.type()!! to argumentTypes.mapNotNull(Type::type).toTypedArray()

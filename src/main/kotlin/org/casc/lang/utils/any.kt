@@ -11,3 +11,6 @@ fun <T, R> T?.getOrElse(notNullValue: R, value: R): R =
 fun <T> T?.getOrElse(notNullValue: Int): Int =
     if (this != null) notNullValue
     else 0
+
+fun <T> T?.getOrElse(): Boolean =
+    this != null

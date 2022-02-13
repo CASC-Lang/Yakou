@@ -13,10 +13,10 @@ data class Field(
     val typeReference: Reference?,
     val accessor: Accessor = Accessor.fromString(accessorToken?.literal),
     var type: Type? = null
-) : HasDescriptor, HasAccess {
+) : HasDescriptor, HasFlag {
     override val descriptor: String
         get() = type?.descriptor ?: ""
-    override val accessFlag: Int =
+    override val flag: Int =
         mutKeyword.getOrElse(0, Opcodes.ACC_FINAL) + accessor.access + compKeyword.getOrElse(Opcodes.ACC_STATIC)
 
     fun asClassField(): ClassField =

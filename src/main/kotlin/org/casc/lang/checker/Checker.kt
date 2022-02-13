@@ -8,6 +8,7 @@ import org.casc.lang.compilation.Compilation
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.table.*
+import org.casc.lang.utils.getOrElse
 import java.lang.reflect.Modifier
 import java.io.File as JFile
 
@@ -21,7 +22,7 @@ class Checker(private val preference: AbstractPreference) {
             )
     }
 
-    private val globalScope: Scope = Scope(preference)
+    private val topScope: Scope = Scope(preference, companion = false, mutable = false, Accessor.Pub, "")
     private var reports: MutableSet<Report> = mutableSetOf()
 
     fun check(file: File): Pair<List<Report>, File> {
@@ -43,6 +44,15 @@ class Checker(private val preference: AbstractPreference) {
         }
     }
 
+    private fun checkAccessible(currentScope: Scope, target: HasAccessor, targetOwnerClass: Type): Boolean =
+        when (target.accessor) {
+            Accessor.Pub -> true
+            Accessor.Prot -> targetOwnerClass.type()
+                ?.isAssignableFrom(currentScope.findType(currentScope.classPath)?.type() ?: Any::class.java).getOrElse()
+            Accessor.Intl -> targetOwnerClass.isSamePackage(currentScope.findType(currentScope.classPath))
+            Accessor.Priv -> false
+        }
+
     private fun checkFile(file: File): File {
         if (file.clazz.packageReference != null) {
             val packagePath = file.clazz.packageReference!!.path.replace('.', '/')
@@ -63,7 +73,10 @@ class Checker(private val preference: AbstractPreference) {
 
     private fun checkClass(clazz: Class): Class {
         val classScope = Scope(
-            globalScope,
+            topScope,
+            false, // TODO: Allow (nested) class has `comp`
+            clazz.mutKeyword != null,
+            clazz.accessor,
             clazz.packageReference?.path?.let { "$it/${clazz.name!!.literal}" } ?: clazz.name!!.literal
         )
 
@@ -203,61 +216,6 @@ class Checker(private val preference: AbstractPreference) {
             }
         }
 
-        if (constructor.superKeyword != null) {
-            // `super` call
-            val superCallSignature = scope.findSignature(
-                constructor.parentReference!!.path,
-                "<init>",
-                constructor.parentConstructorArgumentsTypes
-            )
-
-            if (superCallSignature == null) {
-                // No super call match
-                reports += Error(
-                    constructor.newKeyword?.pos,
-                    "Cannot find matched super call `super`(${
-                        constructor.parentConstructorArgumentsTypes.mapNotNull { it?.typeName }.joinToString()
-                    })"
-                )
-                validationPass = false
-            } else constructor.parentConstructorSignature = superCallSignature
-        } else if (constructor.selfKeyword != null) {
-            // `this` call
-            val thisCallSignature = scope.findSignature(
-                constructor.ownerReference!!.path,
-                "<init>",
-                constructor.parentConstructorArgumentsTypes
-            )
-
-            if (thisCallSignature == null) {
-                // No super call match
-                reports += Error(
-                    constructor.newKeyword?.pos,
-                    "Cannot find matched super call `this`(${
-                        constructor.parentConstructorArgumentsTypes.mapNotNull { it?.typeName }.joinToString()
-                    })"
-                )
-                validationPass = false
-            } else constructor.parentConstructorSignature = thisCallSignature
-        } else {
-            if (scope.parentClassPath != null) {
-                // Requires `super` call
-                reports += Error(
-                    constructor.newKeyword?.pos,
-                    "Class ${scope.classPath} extends class ${scope.parentClassPath} but doesn't `super` any parent class' constructor",
-                    "Add `super` call after constructor declaration"
-                )
-            } else constructor.parentConstructorSignature = FunctionSignature(
-                Reference.fromClass(Any::class.java),
-                companion = true,
-                mutable = false,
-                Accessor.Pub,
-                "<init>",
-                listOf(),
-                PrimitiveType.Unit
-            )
-        }
-
         if (validationPass)
             scope.registerSignature(constructor)
 
@@ -349,6 +307,59 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkConstructorBody(constructor: Constructor, scope: Scope) {
+        if (constructor.superKeyword != null) {
+            // `super` call
+            val superCallSignature = scope.findSignature(
+                constructor.parentReference!!.path,
+                "<init>",
+                constructor.parentConstructorArgumentsTypes
+            )
+
+            if (superCallSignature == null) {
+                // No super call match
+                reports += Error(
+                    constructor.newKeyword?.pos,
+                    "Cannot find matched super call `super`(${
+                        constructor.parentConstructorArgumentsTypes.mapNotNull { it?.typeName }.joinToString()
+                    })"
+                )
+            } else constructor.parentConstructorSignature = superCallSignature
+        } else if (constructor.selfKeyword != null) {
+            // `this` call
+            val thisCallSignature = scope.findSignature(
+                constructor.ownerReference!!.path,
+                "<init>",
+                constructor.parentConstructorArgumentsTypes
+            )
+
+            if (thisCallSignature == null) {
+                // No super call match
+                reports += Error(
+                    constructor.newKeyword?.pos,
+                    "Cannot find matched super call `this`(${
+                        constructor.parentConstructorArgumentsTypes.mapNotNull { it?.typeName }.joinToString()
+                    })"
+                )
+            } else constructor.parentConstructorSignature = thisCallSignature
+        } else {
+            if (scope.parentClassPath != null) {
+                // Requires `super` call
+                reports += Error(
+                    constructor.newKeyword?.pos,
+                    "Class ${scope.classPath} extends class ${scope.parentClassPath} but doesn't `super` any parent class' constructor",
+                    "Add `super` call after constructor declaration"
+                )
+            } else constructor.parentConstructorSignature = FunctionSignature(
+                Reference.fromClass(Any::class.java),
+                companion = true,
+                mutable = false,
+                Accessor.Pub,
+                "<init>",
+                listOf(),
+                PrimitiveType.Unit
+            )
+        }
+
         constructor.parameters.forEachIndexed { i, parameter ->
             scope.registerVariable(false, parameter.name!!.literal, constructor.parameterTypes[i])
         }
@@ -642,7 +653,7 @@ class Checker(private val preference: AbstractPreference) {
                         )
                     } else {
                         checkCompanionAccessibility(field)
-                        // TODO: Check accessor
+                        checkAccessible(scope, field, field.type)
 
                         expression.type = field.type
                         expression.isCompField = field.companion
@@ -660,6 +671,7 @@ class Checker(private val preference: AbstractPreference) {
                         )
                     } else {
                         checkCompanionAccessibility(field)
+                        checkAccessible(scope, field, field.type)
 
                         expression.type = field.type
                         expression.isCompField = field.companion
@@ -741,6 +753,8 @@ class Checker(private val preference: AbstractPreference) {
                         }) does not exist in current context"
                     )
                 } else {
+                    checkAccessible(scope, functionSignature, checkType(functionSignature.ownerReference, scope)!!)
+
                     if (functionSignature.ownerReference == expression.ownerReference) {
                         // Function's owner class is same as current class
                         if (previousExpression == null) {
@@ -754,7 +768,6 @@ class Checker(private val preference: AbstractPreference) {
                                 )
                             }
                         }
-                        // TODO: Check accessor for chain calling
                     } else {
                         // Function's owner class is outside this context
                         if (previousExpression == null) {
@@ -767,9 +780,11 @@ class Checker(private val preference: AbstractPreference) {
                                     "Consider move its declaration into companion context"
                                 )
                             }
-                            // TODO: Check accessor
-                        }
-                        // TODO: Check accessor for chain calling
+                        } else if (scope.isChildType(
+                                functionSignature.ownerReference,
+                                Reference(previousType?.typeName ?: scope.classPath)
+                            )
+                        ) expression.superCall = true
                     }
 
                     expression.type = functionSignature.returnType
@@ -799,6 +814,8 @@ class Checker(private val preference: AbstractPreference) {
                         }) does not exist"
                     )
                 } else {
+                    checkAccessible(scope, signature, checkType(signature.ownerReference, scope)!!)
+
                     expression.type = signature.returnType
                     expression.referenceFunctionSignature = signature
                 }

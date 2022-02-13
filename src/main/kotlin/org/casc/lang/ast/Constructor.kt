@@ -18,14 +18,14 @@ data class Constructor(
     var parameterTypes: List<Type?> = listOf(),
     var parentConstructorArgumentsTypes: List<Type?> = listOf(),
     var parentConstructorSignature: FunctionSignature? = null
-) : HasDescriptor, HasAccess, HasSignature {
+) : HasDescriptor, HasFlag, HasSignature {
     override val descriptor: String
         get() = "(${
             parameterTypes.fold("") { s, type ->
                 s + type?.descriptor
             }
         })V"
-    override val accessFlag: Int =
+    override val flag: Int =
         accessor.access
 
     override fun asSignature(): FunctionSignature =

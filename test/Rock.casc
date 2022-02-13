@@ -10,6 +10,10 @@ impl Rock: Atom {
         self.a = a
     }
 
+    fn print() {
+        sys.out.println(self.a)
+    }
+
     mut fn lol(): i32 {
         return 1
     }

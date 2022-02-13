@@ -6,7 +6,7 @@ data class ClassField(
     val ownerReference: Reference?,
     val companion: Boolean,
     val mutable: Boolean,
-    val accessor: Accessor,
+    override val accessor: Accessor,
     val name: String,
     val type: Type
-)
+) : HasAccessor
