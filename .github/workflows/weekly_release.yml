@@ -36,5 +36,5 @@ jobs:
         # Artifact name
         name: CASC-Weekly-${{ steps.date.outputs.date }}.jar
         # A file, directory or wildcard pattern that describes what to upload
-        path: ./gradle/libs/CASC-0.0.1.jar
+        path: ./build/libs/CASC-0.0.1.jar
         # The desired behavior if no files are found using the provided path.
