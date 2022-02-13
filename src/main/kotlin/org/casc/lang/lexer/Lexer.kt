@@ -24,6 +24,9 @@ class Lexer(private val preference: AbstractPreference) {
     }
 
     fun lex(chunkedSource: List<String>): Pair<List<Report>, List<Token>> {
+        if (chunkedSource.isEmpty())
+            return listOf(Error("Unable to lex an empty source file")) to listOf()
+
         lineNumber = 1
         pos = 0
 

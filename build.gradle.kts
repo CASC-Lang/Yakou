@@ -25,9 +25,24 @@ application {
 }
 
 tasks.test {
-     useJUnitPlatform()
+    useJUnitPlatform()
 }
 
-tasks.withType<KotlinCompile>() {
+tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "17"
+}
+
+tasks.jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        attributes["Main-Class"] = application.mainClass
+    }
+
+    from({
+        configurations.runtimeClasspath
+            .get()
+            .filter { it.name.endsWith("jar") }
+            .map(::zipTree)
+    })
 }
