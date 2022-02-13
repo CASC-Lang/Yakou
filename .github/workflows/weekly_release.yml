@@ -19,6 +19,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Get current date
+      id: date
+      run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
     - name: Set up JDK 17
       uses: actions/setup-java@v2
       with:
@@ -30,11 +33,30 @@ jobs:
       run: ./gradlew build
     - name: Jar built files with Gradle
       run: ./gradlew jar
+    - name: Create release
+      uses: actions/create-release@v1
+      id: create_release
+      with:
+        draft: false
+        prerelease: false
+        release_name: ${{ steps.version.outputs.version }}
+        tag_name: ${{ github.ref }}
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+    - name: Upload Jar file to release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./build/libs/CASC-0.0.1.zip
+        asset_name: CASC-Weekly-${{ steps.date.outputs.date }}.zip
+        asset_content_type: application/zip
     - name: Publish Jar file
       uses: actions/upload-artifact@v2.3.1
       with:
         # Artifact name
-        name: CASC-Weekly-${{ steps.date.outputs.date }}.jar
+        name: CASC-Weekly-${{ steps.date.outputs.date }}.zip
         # A file, directory or wildcard pattern that describes what to upload
         path: ./build/libs/CASC-0.0.1.jar
         # The desired behavior if no files are found using the provided path.
