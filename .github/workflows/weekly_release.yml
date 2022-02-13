@@ -49,7 +49,7 @@ jobs:
         GITHUB_TOKEN: ${{ github.token }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build/libs/CASC-0.0.1.zip
+        asset_path: ./build/libs/CASC-0.0.1.jar
         asset_name: CASC-Weekly-${{ steps.date.outputs.date }}.zip
         asset_content_type: application/zip
     - name: Publish Jar file
