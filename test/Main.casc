@@ -1,3 +1,6 @@
+
+
+
 use java::lang::System as sys
 
 class Main {
@@ -10,7 +13,7 @@ impl Main : Rock {
         fn main(args: str[]) {
             a := new Main()
             a.lol()
-            new Main()
+            b := null
         }
     }
 
@@ -27,6 +30,8 @@ impl Main : Rock {
 
     ovrd fn lol(): i32 {
         if true {
+            return 1
         } else return 1
     }
 }
+

@@ -46,7 +46,6 @@ enum class PrimitiveType(
             }
             is ClassType, is ArrayType -> false
             null -> false
-            else -> false
         }
     }
 
