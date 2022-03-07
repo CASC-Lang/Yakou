@@ -15,11 +15,11 @@ class Parser(private val preference: AbstractPreference) {
     private var reports: MutableSet<Report> = mutableSetOf()
     private lateinit var tokens: List<Token>
 
-    fun parse(path: String, tokens: List<Token>): Pair<List<Report>, File> {
+    fun parse(path: String, relativeFilePath: String, tokens: List<Token>): Pair<List<Report>, File> {
         reports.clear()
         pos = 0
         this.tokens = tokens
-        val file = parseFile(path)
+        val file = parseFile(path, relativeFilePath)
 
         return reports.toList() to file
     }
@@ -120,7 +120,7 @@ class Parser(private val preference: AbstractPreference) {
     // PARSING FUNCTIONS
     // ================================
 
-    private fun parseFile(path: String): File {
+    private fun parseFile(path: String, relativeFilePath: String): File {
         // Parse optional package declaration
         val packageReference = if (peekIf(Token::isPackageKeyword)) {
             consume()
@@ -246,7 +246,7 @@ class Parser(private val preference: AbstractPreference) {
             functions
         )
 
-        return File(path, clazz)
+        return File(path, relativeFilePath, clazz)
     }
 
     /**
