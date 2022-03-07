@@ -21,8 +21,6 @@ class Emitter(private val preference: AbstractPreference) {
 
         outDir.mkdirs()
         outFile.writeBytes(bytecode)
-
-        preference.classLoader = URLClassLoader.newInstance(arrayOf(preference.outputDir.toURI().toURL()))
     }
 
     private fun emitClass(clazz: Class): ByteArray {
