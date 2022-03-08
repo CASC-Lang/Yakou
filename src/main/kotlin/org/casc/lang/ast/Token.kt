@@ -1,7 +1,7 @@
 package org.casc.lang.ast
 
 data class Token(var literal: String, val type: TokenType, val pos: Position) {
-    constructor(literal: Char, type: TokenType, pos: Position): this(literal.toString(), type, pos)
+    constructor(literal: Char, type: TokenType, pos: Position) : this(literal.toString(), type, pos)
 
     companion object {
         val keywords = arrayOf(

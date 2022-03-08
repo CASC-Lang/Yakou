@@ -1,7 +1,7 @@
 package org.casc.lang.ast
 
 data class Position(val lineNumber: Int, var start: Int, var end: Int) {
-    constructor(lineNumber: Int, start: Int): this(lineNumber, start, start + 1)
+    constructor(lineNumber: Int, start: Int) : this(lineNumber, start, start + 1)
 
     fun extend(start: Int = 0, end: Int = 1): Position {
         if (start == 0) {

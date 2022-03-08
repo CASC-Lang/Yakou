@@ -8,30 +8,30 @@ object TypeUtil {
      * By given full qualified type name, which might either be an array class type, a CASC-defined primitive type
      * , or a class type, will return either ArrayType, PrimitiveType, or ClassType.
      */
-     fun asType(reference: Reference?, preference: AbstractPreference): Type? =
+    fun asType(reference: Reference?, preference: AbstractPreference): Type? =
         reference?.let {
-             asArrayType(reference, preference)
-                 ?: PrimitiveType.values.find { it.typeName == reference.fullQualifiedPath }
-                 ?: Table.findType(reference)
-                 ?: try {
-                     val clazz = preference.classLoader?.loadClass(reference.fullQualifiedPath)
+            asArrayType(reference, preference)
+                ?: PrimitiveType.values.find { it.typeName == reference.fullQualifiedPath }
+                ?: Table.findType(reference)
+                ?: try {
+                    val clazz = preference.classLoader?.loadClass(reference.fullQualifiedPath)
 
-                     if (clazz == null) null
-                     else ClassType(clazz)
-                 } catch (_: java.lang.Exception) {
-                     null
-                 }
-         }
+                    if (clazz == null) null
+                    else ClassType(clazz)
+                } catch (_: java.lang.Exception) {
+                    null
+                }
+        }
 
-     fun asType(clazz: Class<*>?, preference: AbstractPreference): Type? = when {
-         clazz == null -> null
-         clazz.isArray -> asArrayType(Reference.fromClass(clazz), preference)
-         else -> PrimitiveType.values.find {
-             it.type() == clazz
-         } ?: asType(Reference.fromClass(clazz), preference)
-     }
+    fun asType(clazz: Class<*>?, preference: AbstractPreference): Type? = when {
+        clazz == null -> null
+        clazz.isArray -> asArrayType(Reference.fromClass(clazz), preference)
+        else -> PrimitiveType.values.find {
+            it.type() == clazz
+        } ?: asType(Reference.fromClass(clazz), preference)
+    }
 
-    private  fun asArrayType(reference: Reference, preference: AbstractPreference): ArrayType? {
+    private fun asArrayType(reference: Reference, preference: AbstractPreference): ArrayType? {
         val name = reference.fullQualifiedPath
         return when {
             name.length < 2 -> null

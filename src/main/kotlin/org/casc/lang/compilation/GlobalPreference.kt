@@ -3,7 +3,7 @@ package org.casc.lang.compilation
 import java.io.File
 import java.net.URLClassLoader
 
-object GlobalPreference: AbstractPreference() {
+object GlobalPreference : AbstractPreference() {
     override var enableColor = true
     override var classLoader: URLClassLoader? = null
     override var compileAndRun = false

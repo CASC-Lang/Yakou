@@ -7,8 +7,10 @@ import org.casc.lang.table.Type
 
 sealed class Expression {
     abstract val pos: Position?
+
     /* Provided by Checker Unit */
     var type: Type? = null
+
     /* Provided by Checker Unit */
     var castTo: Type? = null
 

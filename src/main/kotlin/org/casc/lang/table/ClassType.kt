@@ -12,7 +12,11 @@ data class ClassType(
     override val internalName: String = typeName.replace('.', '/'),
     override val descriptor: String = "L$internalName;"
 ) : Type, HasAccessor {
-    constructor(clazz: Class<*>): this(clazz.typeName, Accessor.fromModifier(clazz.modifiers), Modifier.isFinal(clazz.modifiers))
+    constructor(clazz: Class<*>) : this(
+        clazz.typeName,
+        Accessor.fromModifier(clazz.modifiers),
+        Modifier.isFinal(clazz.modifiers)
+    )
 
     override fun type(): Class<*>? = try {
         GlobalPreference.classLoader?.loadClass(typeName)

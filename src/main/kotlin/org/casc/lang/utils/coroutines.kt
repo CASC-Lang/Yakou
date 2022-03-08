@@ -8,8 +8,8 @@ fun <T, R> List<T>.pmap(functor: suspend (T) -> R): List<R> = runBlocking {
     map { async(Dispatchers.Default) { functor(it) } }.map { it.await() }
 }
 
-fun <T, R : Any> List<T?>.pmapNotNull(functor: suspend (T) -> R): List<R> = runBlocking {
-    mapNotNull { it?.let { async(Dispatchers.Default) { functor(it) } } }.map { it.await() }
+fun <T, R> List<T?>.pmapNotNull(functor: suspend (T) -> R?): List<R> = runBlocking {
+    map { it?.let { async(Dispatchers.Default) { functor(it) } } }.mapNotNull { it?.await() }
 }
 
 fun <T> List<T>.pforeach(functor: suspend (T) -> Unit) = runBlocking {

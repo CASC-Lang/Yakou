@@ -1,11 +1,6 @@
 package org.casc.lang.checker
 
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
 import org.casc.lang.ast.*
-import org.casc.lang.ast.Field
 import org.casc.lang.ast.Function
 import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.compilation.Error

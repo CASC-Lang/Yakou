@@ -23,5 +23,6 @@ data class Class(
         Opcodes.ACC_SUPER + accessor.access + mutKeyword.getOrElse(0, Opcodes.ACC_FINAL)
 
     fun getReference(): Reference =
-        Reference(packageReference?.let { "${it.fullQualifiedPath}/${name!!.literal}" } ?: name!!.literal, name!!.literal)
+        Reference(packageReference?.let { "${it.fullQualifiedPath}/${name!!.literal}" } ?: name!!.literal,
+            name!!.literal)
 }

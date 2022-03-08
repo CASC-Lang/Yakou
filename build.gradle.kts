@@ -17,6 +17,7 @@ dependencies {
 
     implementation("org.ow2.asm:asm:9.2")
     implementation("com.diogonunes:JColor:5.2.0")
+    implementation("it.unimi.dsi:fastutil-core:8.5.8")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
 }
 

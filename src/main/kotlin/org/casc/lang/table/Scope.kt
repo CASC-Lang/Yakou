@@ -1,14 +1,15 @@
 package org.casc.lang.table
 
 import org.casc.lang.ast.Accessor
-import org.casc.lang.ast.Class as Cls
 import org.casc.lang.ast.Field
 import org.casc.lang.ast.HasSignature
 import org.casc.lang.ast.Parameter
 import org.casc.lang.compilation.AbstractPreference
-import org.casc.lang.utils.getOrElse
-import java.lang.reflect.Modifier
 import org.casc.lang.utils.eq
+import org.casc.lang.utils.getOrElse
+import java.lang.Class
+import java.lang.reflect.Modifier
+import org.casc.lang.ast.Class as Cls
 
 data class Scope(
     val preference: AbstractPreference,

@@ -1,17 +1,16 @@
 package org.casc.lang.compilation
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.runBlocking
-import org.casc.lang.ast.File
-import org.casc.lang.ast.Token
 import org.casc.lang.checker.Checker
 import org.casc.lang.emitter.Emitter
 import org.casc.lang.lexer.Lexer
 import org.casc.lang.parser.Parser
 import org.casc.lang.table.Table
-import org.casc.lang.utils.*
+import org.casc.lang.utils.Quadruple
+import org.casc.lang.utils.call
+import org.casc.lang.utils.pmap
+import org.casc.lang.utils.pmapNotNull
 import java.io.BufferedReader
+import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 import java.io.File as JFile
 
@@ -25,108 +24,92 @@ class Compilation(
         private fun List<Report>.hasError(): Boolean = this.filterIsInstance<Error>().isNotEmpty()
     }
 
+    @OptIn(ExperimentalTime::class)
     fun compile() {
         if (file.isDirectory) {
             preference.outputDir = JFile(file.parentFile.path, "/out")
             preference.outputDir.mkdir()
 
             // Compilations
-            file.walk().filter { it.isFile && it.extension == "casc" }.toList().map {
-                val source = it.readLines()
-                val filePath = it.toRelativeString(file)
+            val a = measureTimedValue {
+                file.walk().filter { it.isFile && it.extension == "casc" }.toList().pmapNotNull {
+                    val source = it.readLines()
+                    val relativeFilePath = it.toRelativeString(file)
 
-                // Unit I: Lexer
-                /**
-                 * Known as lexical analyzer, handles source text parsing into token form.
-                 */
-                val (lexReports, lexResults) = Lexer(preference).lex(it.readLines())
+                    // Unit I: Lexer
+                    /**
+                     * Known as lexical analyzer, handles source text parsing into token form.
+                     */
+                    val (lexReports, lexResult) = Lexer(preference).lex(it.readLines())
 
-                lexReports.printReports(filePath, source)
+                    lexReports.printReports(relativeFilePath, source)
 
-                if (lexReports.hasError()) Quintuple(lexReports, null, it.absolutePath, filePath, source)
-                else Quintuple(lexReports, lexResults, it.absolutePath, filePath, source)
-            }.mapNotNull {
-                it.first.printReports(it.fourth, it.fifth)
+                    if (lexReports.hasError()) return@pmapNotNull null
 
-                if (it.first.hasError() || it.second == null) null
-                else Quadruple(it.second, it.third, it.fourth, it.fifth)
-            }.pmap {
-                val (lexResult, absoluteFilePath, filePath, source) = it
+                    // Unit II: Parser
+                    /**
+                     * Parse tokens into an Abstract Syntax Tree (aka AST) for further unit to use with,
+                     * parser also asserts that the certainty of source code validity.
+                     */
+                    val (parseReports, parseResult) =
+                        Parser(preference).parse(it.path, relativeFilePath, lexResult)
 
-                // Unit II: Parser
-                /**
-                 * Parse tokens into an Abstract Syntax Tree (aka AST) for further unit to use with,
-                 * parser also asserts that the certainty of source code validity.
-                 */
-                val (parseReports, parseResult) =
-                    Parser(preference).parse(absoluteFilePath, filePath, lexResult)
+                    parseReports.printReports(relativeFilePath, source)
 
-                parseReports.printReports(filePath, source)
+                    if (parseReports.hasError()) return@pmapNotNull null
 
-                if (parseReports.hasError()) Quadruple(parseReports, null, filePath, source)
-                else Quadruple(parseReports, parseResult, filePath, source)
-            }.mapNotNull {
-                it.first.printReports(it.third, it.fourth)
+                    Triple(parseResult, relativeFilePath, source)
+                }.pmapNotNull {
+                    val (parseResult, relativeFilePath, source) = it
 
-                if (it.second == null) null
-                else {
                     // Caches class for dummy type checking, used in declaration checking
-                    Table.cachedClasses += it.second.clazz.getReference() to it.second
+                    Table.cachedClasses += parseResult.clazz.getReference() to parseResult
 
-                    Triple(it.second, it.third, it.fourth)
-                }
-            }.pmap {
-                val (file, filePath, source) = it
+                    // Unit III: Checker
+                    /**
+                     * Checks complex syntax validity and variables' type.
+                     *
+                     * Phase I:
+                     * Check all AST declaration's validity
+                     */
+                    val checker = Checker(preference)
+                    val (declarationCheckingReports, checkedFile, classScope) = checker.checkDeclaration(parseResult)
 
-                // Unit III: Checker
-                /**
-                 * Checks complex syntax validity and variables' type.
-                 *
-                 * Phase I:
-                 * Check all AST declaration's validity
-                 */
-                val checker = Checker(preference)
-                val (declarationCheckingReports, checkedFile, classScope) = checker.checkDeclaration(file)
+                    declarationCheckingReports.printReports(relativeFilePath, source)
 
-                Quintuple(checkedFile, classScope, declarationCheckingReports, filePath, source)
-            }.call(Table.cachedClasses::clear).mapNotNull {
-                it.third.printReports(it.fourth, it.fifth)
+                    if (declarationCheckingReports.hasError()) return@pmapNotNull null
 
-                if (it.third.hasError()) null
-                else {
+                    Quadruple(checkedFile, classScope, relativeFilePath, source)
+                }.call(Table.cachedClasses::clear).map {
                     Table.cachedClasses += it.first.clazz.getReference() to it.first
 
-                    Quadruple(it.first, it.second, it.fourth, it.fifth)
+                    Quadruple(it.first, it.second, it.third, it.fourth)
+                }.pmap {
+                    val (file, scope, relativeFilePath, source) = it
+
+                    /**
+                     * Phase II:
+                     * Check all AST declaration's body's validity
+                     */
+                    val checker = Checker(preference)
+                    val (checkReports, checkResult) = checker.check(file, scope)
+
+                    checkReports.printReports(relativeFilePath, source)
+
+                    if (checkReports.hasError()) return@pmap
+
+                    // Unit IV: Emitter
+                    /**
+                     * Emits AST into backend languages, like JVM bytecode.
+                     * only JVM backend is available at this moment.
+                     */
+                    Emitter(preference).emit(
+                        JFile(preference.outputDir, JFile(file.relativeFilePath)?.parentFile?.path ?: ""),
+                        checkResult
+                    )
                 }
-            }.pmap {
-                val (file, scope, filePath, source) = it
-
-                /**
-                 * Phase II:
-                 * Check all AST declaration's body's validity
-                 */
-                val checker = Checker(preference)
-                val (checkReports, checkResult) = checker.check(file, scope)
-
-                Quadruple(checkReports, if (checkReports.hasError()) null else checkResult, filePath, source)
-            }.mapNotNull {
-                it.first.printReports(it.third, it.fourth)
-
-                if (it.first.hasError() || it.second == null) null
-                else Triple(it.second, it.third, it.fourth)
-            }.pmap {
-                val (file, _, _) = it
-
-                // Unit IV: Emitter
-                /**
-                 * Emits AST into backend languages, like JVM bytecode.
-                 * only JVM backend is available at this moment.
-                 */
-                Emitter(preference).emit(
-                    JFile(preference.outputDir, JFile(file.relativeFilePath)?.parentFile?.path ?: ""),
-                    file
-                )
             }
+            println(a)
         } else if (file.isFile) {
             // Init preferenceerence
             preference.outputDir = file.parentFile

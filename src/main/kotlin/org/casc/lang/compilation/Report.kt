@@ -30,6 +30,8 @@ sealed class Report {
     }
 
     fun printReport(filePath: String, source: List<String>) {
+        var finalMessage = ""
+
         if (position != null) {
             val (lineNumber, start, end) = position!!
             val preExtend =
@@ -39,98 +41,93 @@ sealed class Report {
                 if (lineNumber < source.lastIndex && lineNumber.toString().length != (lineNumber + 1).toString().length) " "
                 else ""
 
-            if (GlobalPreference.enableColor) {
-                print(
+            finalMessage += when {
+                GlobalPreference.enableColor -> {
                     when (this) {
                         is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
                         is Error -> Ansi.colorize("error: ", reportAttribute[1])
                     }
-                )
-            } else {
-                print(
+                }
+                else -> {
                     when (this) {
                         is Warning -> "warning: "
                         is Error -> "error: "
                     }
-                )
+                }
             }
+            finalMessage += "\n"
 
-            println(if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message)
-            println("--> $filePath:$position")
+            finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
+            finalMessage += "\n--> $filePath:$position\n"
 
             if (lineNumber > 1) {
-                println(
+                finalMessage +=
                     "${
                         if (GlobalPreference.enableColor) Ansi.colorize(
                             "${lineNumber - 1}$postExtend$preExtend | ",
                             reportAttribute[2]
                         ) else "${lineNumber - 1}$postExtend$preExtend | "
-                    }${source[lineNumber - 2]}"
-                )
+                    }${source[lineNumber - 2]}\n"
             }
 
-            println(
+            finalMessage +=
                 "${
                     if (GlobalPreference.enableColor) Ansi.colorize(
                         "$lineNumber$postExtend | ",
                         reportAttribute[2]
                     ) else "$lineNumber$postExtend | "
-                }${source[lineNumber - 1]}"
-            )
-            print(" ".repeat(start + 3 + lineNumber.toString().length))
-            print(postExtend)
-            print(
-                if (GlobalPreference.enableColor) Ansi.colorize(
-                    "^".repeat(end - start),
-                    when (this) {
-                        is Warning -> reportAttribute[0]
-                        is Error -> reportAttribute[1]
-                    }
-                ) else "^".repeat(end - start)
-            )
+                }${source[lineNumber - 1]}\n"
+
+            finalMessage += " ".repeat(start + 3 + lineNumber.toString().length)
+            finalMessage += postExtend
+            finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(
+                "^".repeat(end - start),
+                when (this) {
+                    is Warning -> reportAttribute[0]
+                    is Error -> reportAttribute[1]
+                }
+            ) else "^".repeat(end - start)
 
             if (hint != null) {
-                println(
-                    if (GlobalPreference.enableColor) Ansi.colorize(
-                        "= hint: $hint", reportAttribute[when (this) {
-                            is Warning -> 0
-                            is Error -> 1
-                        }]
-                    ) else "= hint: $hint"
-                )
+                finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(
+                    "= hint: $hint", reportAttribute[when (this) {
+                        is Warning -> 0
+                        is Error -> 1
+                    }]
+                ) else "= hint: $hint\n"
             } else {
-                println()
+                finalMessage += "\n"
             }
 
             if (lineNumber < source.lastIndex) {
-                println(
-                    "${
-                        if (GlobalPreference.enableColor) Ansi.colorize(
-                            "${lineNumber + 1} | ",
-                            reportAttribute[2]
-                        ) else "${lineNumber + 1} | "
-                    }${source[lineNumber]}"
-                )
+                finalMessage += "${
+                    if (GlobalPreference.enableColor) Ansi.colorize(
+                        "${lineNumber + 1} | ",
+                        reportAttribute[2]
+                    ) else "${lineNumber + 1} | "
+                }${source[lineNumber]}\n"
             }
         } else {
-            if (GlobalPreference.enableColor) {
-                print(
+            finalMessage += when {
+                GlobalPreference.enableColor -> {
                     when (this) {
                         is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
                         is Error -> Ansi.colorize("error: ", reportAttribute[1])
                     }
-                )
-            } else {
-                print(
+                }
+                else -> {
                     when (this) {
                         is Warning -> "warning: "
                         is Error -> "error: "
                     }
-                )
+                }
             }
+            finalMessage += "\n"
 
-            println(if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message)
-            println("--> $filePath")
+            finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
+            finalMessage += "\n--> $filePath\n"
         }
+
+        print(finalMessage)
     }
 }

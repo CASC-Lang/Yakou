@@ -1,5 +1,6 @@
 package org.casc.lang.table
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 import org.casc.lang.ast.File
 import org.casc.lang.ast.Class as Cls
 
@@ -11,7 +12,7 @@ import org.casc.lang.ast.Class as Cls
 */
 object Table {
     // Full qualified class name to File object
-    var cachedClasses: HashMap<Reference, File> = hashMapOf()
+    var cachedClasses: Object2ObjectOpenHashMap<Reference, File> = Object2ObjectOpenHashMap()
 
     /**
      * By given full qualified class path (including package path) will return a ClassType if exists or null

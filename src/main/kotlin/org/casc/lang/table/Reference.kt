@@ -10,9 +10,14 @@ import org.casc.lang.ast.Token
  *
  * NOTE: Pass type name (separated by dot) instead of internal name (separated by slash)
  */
-data class Reference(var fullQualifiedPath: String, val className: String, val pos: Position? = null, val tokens: List<Token?> = listOf()) {
+data class Reference(
+    var fullQualifiedPath: String,
+    val className: String,
+    val pos: Position? = null,
+    val tokens: List<Token?> = listOf()
+) {
     constructor(token: Token?) : this(token?.literal ?: "", token?.literal ?: "", token?.pos, mutableListOf(token))
-    constructor(path: String): this(path, path.split('.').lastOrNull() ?: "", null)
+    constructor(path: String) : this(path, path.split('.').lastOrNull() ?: "", null)
 
     companion object {
         fun fromClass(clazz: Class<*>): Reference {
