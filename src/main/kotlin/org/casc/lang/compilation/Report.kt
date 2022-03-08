@@ -30,7 +30,20 @@ sealed class Report {
     }
 
     fun printReport(filePath: String, source: List<String>) {
-        var finalMessage = ""
+        var finalMessage = when {
+            GlobalPreference.enableColor -> {
+                when (this) {
+                    is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
+                    is Error -> Ansi.colorize("error: ", reportAttribute[1])
+                }
+            }
+            else -> {
+                when (this) {
+                    is Warning -> "warning: "
+                    is Error -> "error: "
+                }
+            }
+        }
 
         if (position != null) {
             val (lineNumber, start, end) = position!!
@@ -40,21 +53,6 @@ sealed class Report {
             val postExtend =
                 if (lineNumber < source.lastIndex && lineNumber.toString().length != (lineNumber + 1).toString().length) " "
                 else ""
-
-            finalMessage += when {
-                GlobalPreference.enableColor -> {
-                    when (this) {
-                        is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
-                        is Error -> Ansi.colorize("error: ", reportAttribute[1])
-                    }
-                }
-                else -> {
-                    when (this) {
-                        is Warning -> "warning: "
-                        is Error -> "error: "
-                    }
-                }
-            }
 
             finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
             finalMessage += "\n--> $filePath:$position\n"
@@ -107,21 +105,6 @@ sealed class Report {
                 }${source[lineNumber]}\n"
             }
         } else {
-            finalMessage += when {
-                GlobalPreference.enableColor -> {
-                    when (this) {
-                        is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
-                        is Error -> Ansi.colorize("error: ", reportAttribute[1])
-                    }
-                }
-                else -> {
-                    when (this) {
-                        is Warning -> "warning: "
-                        is Error -> "error: "
-                    }
-                }
-            }
-
             finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
             finalMessage += "\n--> $filePath\n"
         }
