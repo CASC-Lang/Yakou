@@ -27,6 +27,9 @@ data class ArrayType(
     override val storeOpcode: Int = Opcodes.ASTORE
     override val returnOpcode: Int = Opcodes.ARETURN
 
+    override fun asCASCStyle(): String =
+        "${getFoundationType().asCASCStyle()}${"[]".repeat(getDimension())}"
+
     fun getDimension(): Int {
         var dim = 1
         var lastType = baseType

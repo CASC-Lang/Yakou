@@ -15,11 +15,11 @@ class Parser(private val preference: AbstractPreference) {
     private var reports: MutableSet<Report> = mutableSetOf()
     private lateinit var tokens: List<Token>
 
-    fun parse(path: String, tokens: List<Token>): Pair<List<Report>, File> {
+    fun parse(path: String, relativeFilePath: String, tokens: List<Token>): Pair<List<Report>, File> {
         reports.clear()
         pos = 0
         this.tokens = tokens
-        val file = parseFile(path)
+        val file = parseFile(path, relativeFilePath)
 
         return reports.toList() to file
     }
@@ -120,7 +120,7 @@ class Parser(private val preference: AbstractPreference) {
     // PARSING FUNCTIONS
     // ================================
 
-    private fun parseFile(path: String): File {
+    private fun parseFile(path: String, relativeFilePath: String): File {
         // Parse optional package declaration
         val packageReference = if (peekIf(Token::isPackageKeyword)) {
             consume()
@@ -187,7 +187,7 @@ class Parser(private val preference: AbstractPreference) {
         val className = assert(TokenType.Identifier)
         val classReference =
             if (className != null) Reference(
-                "${packageReference?.path?.let { "${it}/" } ?: ""}${className.literal}",
+                "${packageReference?.fullQualifiedPath?.let { "${it}/" } ?: ""}${className.literal}",
                 className.literal,
                 className.pos
             )
@@ -246,7 +246,7 @@ class Parser(private val preference: AbstractPreference) {
             functions
         )
 
-        return File(path, clazz)
+        return File(path, relativeFilePath, clazz)
     }
 
     /**
@@ -310,7 +310,7 @@ class Parser(private val preference: AbstractPreference) {
             val className = nameBuilder.split(".").last()
 
             Reference(
-                "${if (prependPath != null) "${prependPath.path}." else ""}$nameBuilder",
+                "${if (prependPath != null) "${prependPath.fullQualifiedPath}." else ""}$nameBuilder",
                 if (isUsage && specifiedUsageName != null) specifiedUsageName else className,
                 start,
                 tokenBuilder
@@ -628,7 +628,7 @@ class Parser(private val preference: AbstractPreference) {
                     reports += Error(
                         newKeyword?.pos,
                         "Constructor new(${
-                            parameters.mapNotNull { it.typeReference?.path }.joinToString()
+                            parameters.mapNotNull { it.typeReference?.fullQualifiedPath }.joinToString()
                         }) has already declared in same context",
                         "Try modify parameters' type"
                     )
@@ -668,7 +668,7 @@ class Parser(private val preference: AbstractPreference) {
                     reports += Error(
                         name?.pos,
                         "Function ${name?.literal}(${
-                            parameters.mapNotNull { it.typeReference?.path }.joinToString()
+                            parameters.mapNotNull { it.typeReference?.fullQualifiedPath }.joinToString()
                         }) has already declared in same context",
                         "Try rename this function or modify parameters' type"
                     )
@@ -1036,7 +1036,7 @@ class Parser(private val preference: AbstractPreference) {
 
                 val closeBracket = assert(TokenType.CloseBracket)
 
-                typeReference.path += "[]"
+                typeReference.fullQualifiedPath += "[]"
 
                 if (dimensionElements.isEmpty()) {
                     typeReference.pos?.extend(closeBracket?.pos)

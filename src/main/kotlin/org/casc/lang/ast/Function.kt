@@ -36,6 +36,6 @@ data class Function(
             accessor,
             name?.literal ?: "",
             parameterTypes!!.mapNotNull { it },
-            returnType!!
+            returnType ?: PrimitiveType.Unit
         )
 }

@@ -1,181 +1,115 @@
 package org.casc.lang.compilation
 
-import kotlinx.coroutines.*
-import org.casc.lang.ast.File
 import org.casc.lang.checker.Checker
 import org.casc.lang.emitter.Emitter
 import org.casc.lang.lexer.Lexer
 import org.casc.lang.parser.Parser
+import org.casc.lang.table.Table
+import org.casc.lang.utils.Quadruple
+import org.casc.lang.utils.call
+import org.casc.lang.utils.pmap
+import org.casc.lang.utils.pmapNotNull
 import java.io.BufferedReader
-import java.net.URLClassLoader
-import java.util.*
-import kotlin.system.exitProcess
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTimedValue
 import java.io.File as JFile
 
-class Compilation(val file: JFile, private val preference: AbstractPreference = GlobalPreference) {
+class Compilation(
+    val file: JFile, private val preference: AbstractPreference = GlobalPreference
+) {
     companion object {
-        private var queuedFiles: MutableList<Triple<Boolean, String, List<String>>> = mutableListOf()
-        var parsedResults: MutableList<File> = mutableListOf()
-            private set
-        private var progressingCompilations: Stack<String> = Stack()
-        private lateinit var lexer: Lexer
-        private lateinit var parser: Parser
-        private lateinit var checker: Checker
-        private lateinit var emitter: Emitter
-
-        fun compileClass(preference: AbstractPreference, classPath: String): Boolean {
-            val result =
-                queuedFiles.withIndex()
-                    .find { (_, it) -> it.second.split('\\', '/', '.').dropLast(1).joinToString(".") == classPath }
-
-            return if (result != null) {
-                val (index, fileResult) = result
-                val (compiled, filePath, source) = fileResult
-
-                if (progressingCompilations.peek() == filePath) return true
-                if (compiled) return true
-
-                if (progressingCompilations.contains(filePath)) {
-                    Error("Circular compilation detected, compilation terminated.").printReport(filePath, listOf())
-                    println("Dependency tree:")
-
-                    val startIndex = progressingCompilations.indexOf(filePath)
-
-                    for (i in startIndex until progressingCompilations.size) {
-                        if (startIndex == i) {
-                            print("starts from\t| ")
-                        } else if (progressingCompilations.lastIndex == i) {
-                            print("occurs here\t| ")
-                        } else {
-                            print("      |    \t| ")
-                        }
-
-                        println(progressingCompilations[i])
-                    }
-
-                    exitProcess(-1)
-                }
-
-                progressingCompilations += filePath
-                // Unit I and Unit II were already progressed in main
-
-                // Unit III: Checker
-                /**
-                 * Checks complex syntax validity and variables' type.
-                 */
-                val (checkReports, checkResult) = Checker(preference).check(parsedResults[index])
-
-                checkReports.printReports(filePath, source)
-
-                if (checkReports.hasError()) return false
-
-                // Unit IV: Emitter
-                /**
-                 * Emits AST into backend languages, like JVM bytecode.
-                 * only JVM backend is available at this moment.
-                 */
-                emitter.emit(JFile(preference.outputDir, JFile(filePath).parentFile?.path ?: ""), checkResult)
-
-                // Marks file as compiled
-                queuedFiles[index] = fileResult.copy(true)
-
-                progressingCompilations.pop()
-
-                true
-            } else {
-                false
-            }
-        }
-
         private fun List<Report>.printReports(fileName: String, source: List<String>) =
             this.forEach { it.printReport(fileName, source) }
 
-        private fun List<Report>.hasError(): Boolean =
-            this.filterIsInstance<Error>().isNotEmpty()
+        private fun List<Report>.hasError(): Boolean = this.filterIsInstance<Error>().isNotEmpty()
     }
 
-    init {
-        lexer = Lexer(preference)
-        parser = Parser(preference)
-        checker = Checker(preference)
-        emitter = Emitter(preference)
-    }
-
+    @OptIn(ExperimentalTime::class)
     fun compile() {
         if (file.isDirectory) {
             preference.outputDir = JFile(file.parentFile.path, "/out")
             preference.outputDir.mkdir()
 
             // Compilations
-            for (sourceFile in file.walk())
-                if (sourceFile.isFile && sourceFile.extension == "casc")
-                    queuedFiles += Triple(false, sourceFile.toRelativeString(file), sourceFile.readLines())
+            val a = measureTimedValue {
+                file.walk().filter { it.isFile && it.extension == "casc" }.toList().pmapNotNull {
+                    val source = it.readLines()
+                    val relativeFilePath = it.toRelativeString(file)
 
-            val removeIndex = mutableListOf<Int>()
+                    // Unit I: Lexer
+                    /**
+                     * Known as lexical analyzer, handles source text parsing into token form.
+                     */
+                    val (lexReports, lexResult) = Lexer(preference).lex(it.readLines())
 
-            for (i in 0 until queuedFiles.size) {
-                val (_, filePath, source) = queuedFiles[i]
+                    lexReports.printReports(relativeFilePath, source)
 
-                // Unit I: Lexer
-                /**
-                 * Known as lexical analyzer, handles source text parsing into token form.
-                 */
-                val (lexReports, lexResult) = lexer.lex(source)
+                    if (lexReports.hasError()) return@pmapNotNull null
 
-                lexReports.printReports(filePath, source)
+                    // Unit II: Parser
+                    /**
+                     * Parse tokens into an Abstract Syntax Tree (aka AST) for further unit to use with,
+                     * parser also asserts that the certainty of source code validity.
+                     */
+                    val (parseReports, parseResult) =
+                        Parser(preference).parse(it.path, relativeFilePath, lexResult)
 
-                if (lexReports.hasError()) {
-                    removeIndex += i
-                    continue
-                }
+                    parseReports.printReports(relativeFilePath, source)
 
-                // Unit II: Parser
-                /**
-                 * Parse tokens into an Abstract Syntax Tree (aka AST) for further unit to use with,
-                 * parser also asserts that the certainty of source code validity.
-                 */
-                val (parseReports, parseResult) = parser.parse(filePath, lexResult)
+                    if (parseReports.hasError()) return@pmapNotNull null
 
-                parseReports.printReports(filePath, source)
+                    Triple(parseResult, relativeFilePath, source)
+                }.pmapNotNull {
+                    val (parseResult, relativeFilePath, source) = it
 
-                if (parseReports.hasError()) {
-                    removeIndex += i
-                    continue
-                }
-
-                parsedResults += parseResult
-            }
-
-            for (i in removeIndex) queuedFiles.removeAt(i)
-
-            for (i in 0 until queuedFiles.size) {
-                val (compiled, filePath, source) = queuedFiles[i]
-
-                if (!compiled) {
-                    progressingCompilations += filePath
+                    // Caches class for dummy type checking, used in declaration checking
+                    Table.cachedClasses += parseResult.clazz.getReference() to parseResult
 
                     // Unit III: Checker
                     /**
                      * Checks complex syntax validity and variables' type.
+                     *
+                     * Phase I:
+                     * Check all AST declaration's validity
                      */
-                    val (checkReports, checkResult) = checker.check(parsedResults[i])
+                    val checker = Checker(preference)
+                    val (declarationCheckingReports, checkedFile, classScope) = checker.checkDeclaration(parseResult)
 
-                    checkReports.printReports(filePath, source)
+                    declarationCheckingReports.printReports(relativeFilePath, source)
 
-                    if (checkReports.hasError()) continue
+                    if (declarationCheckingReports.hasError()) return@pmapNotNull null
+
+                    Quadruple(checkedFile, classScope, relativeFilePath, source)
+                }.call(Table.cachedClasses::clear).map {
+                    Table.cachedClasses += it.first.clazz.getReference() to it.first
+
+                    Quadruple(it.first, it.second, it.third, it.fourth)
+                }.pmap {
+                    val (file, scope, relativeFilePath, source) = it
+
+                    /**
+                     * Phase II:
+                     * Check all AST declaration's body's validity
+                     */
+                    val checker = Checker(preference)
+                    val (checkReports, checkResult) = checker.check(file, scope)
+
+                    checkReports.printReports(relativeFilePath, source)
+
+                    if (checkReports.hasError()) return@pmap
 
                     // Unit IV: Emitter
                     /**
                      * Emits AST into backend languages, like JVM bytecode.
                      * only JVM backend is available at this moment.
                      */
-                    emitter.emit(JFile(preference.outputDir, JFile(filePath).parentFile?.path ?: ""), checkResult)
-
-                    queuedFiles[i] = queuedFiles[i].copy(true)
-
-                    progressingCompilations.pop()
+                    Emitter(preference).emit(
+                        JFile(preference.outputDir, JFile(file.relativeFilePath)?.parentFile?.path ?: ""),
+                        checkResult
+                    )
                 }
             }
+            println(a)
         } else if (file.isFile) {
             // Init preferenceerence
             preference.outputDir = file.parentFile
@@ -188,7 +122,7 @@ class Compilation(val file: JFile, private val preference: AbstractPreference = 
             /**
              * Known as lexical analyzer, handles source text parsing into token form.
              */
-            val (lexReports, lexResult) = lexer.lex(source)
+            val (lexReports, lexResult) = Lexer(preference).lex(source)
 
             lexReports.printReports(outputFileName, source)
 
@@ -199,7 +133,9 @@ class Compilation(val file: JFile, private val preference: AbstractPreference = 
              * Parse tokens into an Abstract Syntax Tree (aka AST) for further unit to use with,
              * parser also asserts that the certainty of source code validity.
              */
-            val (parseReports, parseResult) = parser.parse(file.absolutePath, lexResult)
+            val (parseReports, parseResult) = Parser(preference).parse(
+                file.absolutePath, file.toRelativeString(preference.outputDir), lexResult
+            )
 
             parseReports.printReports(outputFileName, source)
 
@@ -209,7 +145,14 @@ class Compilation(val file: JFile, private val preference: AbstractPreference = 
             /**
              * Checks complex syntax validity and variables' type.
              */
-            val (checkReports, checkResult) = checker.check(parseResult)
+            val checker = Checker(preference)
+            val (declarationReports, declarationCheckedFile, scope) = checker.checkDeclaration(parseResult)
+
+            declarationReports.printReports(outputFileName, source)
+
+            if (declarationReports.hasError()) return
+
+            val (checkReports, checkResult) = checker.check(declarationCheckedFile, scope)
 
             checkReports.printReports(outputFileName, source)
 
@@ -220,7 +163,7 @@ class Compilation(val file: JFile, private val preference: AbstractPreference = 
              * Emits AST into backend languages, like JVM bytecode.
              * only JVM backend is available at this moment.
              */
-            emitter.emit(file.parentFile, checkResult)
+            Emitter(preference).emit(file.parentFile, checkResult)
 
             if (preference.compileAndRun) {
                 val isWindows = System.getProperty("os.name").lowercase().startsWith("windows")
@@ -229,13 +172,9 @@ class Compilation(val file: JFile, private val preference: AbstractPreference = 
                     else "sh -c cd ${file.parentFile.absolutePath} && java ${file.nameWithoutExtension}"
                 )
 
-                BufferedReader(process.inputReader())
-                    .lines()
-                    .forEach(::println)
+                BufferedReader(process.inputReader()).lines().forEach(::println)
 
-                BufferedReader(process.errorReader())
-                    .lines()
-                    .forEach(::println)
+                BufferedReader(process.errorReader()).lines().forEach(::println)
             }
         }
     }

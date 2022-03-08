@@ -8,7 +8,6 @@ import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
-import java.net.URLClassLoader
 import java.io.File as JFile
 
 class Emitter(private val preference: AbstractPreference) {
@@ -21,8 +20,6 @@ class Emitter(private val preference: AbstractPreference) {
 
         outDir.mkdirs()
         outFile.writeBytes(bytecode)
-
-        preference.classLoader = URLClassLoader.newInstance(arrayOf(preference.outputDir.toURI().toURL()))
     }
 
     private fun emitClass(clazz: Class): ByteArray {
@@ -33,14 +30,14 @@ class Emitter(private val preference: AbstractPreference) {
             clazz.flag,
             "${
                 if (clazz.packageReference != null) "${
-                    clazz.packageReference.path.replace(
+                    clazz.packageReference.fullQualifiedPath.replace(
                         '.',
                         '/'
                     )
                 }/" else ""
             }${clazz.name!!.literal}",
             null,
-            clazz.parentClassReference?.path ?: "java/lang/Object",
+            clazz.parentClassReference?.fullQualifiedPath ?: "java/lang/Object",
             null
         )
 
@@ -191,7 +188,9 @@ class Emitter(private val preference: AbstractPreference) {
 
                 if (expression is FunctionCallExpression) {
                     // Check if function's return value is unused, if yes, then add pop or pop2 opcode
-                    if (expression.type == PrimitiveType.I64 || expression.type == PrimitiveType.F64) methodVisitor.visitInsn(Opcodes.POP2)
+                    if (expression.type == PrimitiveType.I64 || expression.type == PrimitiveType.F64) methodVisitor.visitInsn(
+                        Opcodes.POP2
+                    )
                     else if (expression.type != PrimitiveType.Unit) methodVisitor.visitInsn(Opcodes.POP)
                 } else if (expression is ConstructorCallExpression) methodVisitor.visitInsn(Opcodes.POP)
             }
@@ -513,7 +512,7 @@ class Emitter(private val preference: AbstractPreference) {
                     // Field assignment
                     methodVisitor.visitFieldInsn(
                         if (expression.leftExpression.isCompField) Opcodes.PUTSTATIC else Opcodes.PUTFIELD,
-                        expression.leftExpression.ownerReference!!.path,
+                        expression.leftExpression.ownerReference!!.fullQualifiedPath,
                         expression.leftExpression.name!!.literal,
                         expression.leftExpression.type!!.descriptor
                     )

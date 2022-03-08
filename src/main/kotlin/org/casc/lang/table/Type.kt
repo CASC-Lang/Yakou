@@ -9,8 +9,13 @@ sealed interface Type : HasDescriptor {
     val storeOpcode: Int
     val returnOpcode: Int
 
+    fun asCASCStyle(): String
+
     fun getPackagePath(): String =
         typeName.split('.').dropLast(1).joinToString(".")
+
+    fun getReference(): Reference =
+        Reference(typeName)
 
     fun isSamePackage(type: Type?): Boolean = when (this) {
         is PrimitiveType -> type is PrimitiveType

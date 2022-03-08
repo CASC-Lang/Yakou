@@ -1,10 +1,8 @@
 package org.casc.lang.checker
 
 import org.casc.lang.ast.*
-import org.casc.lang.ast.Field
 import org.casc.lang.ast.Function
 import org.casc.lang.compilation.AbstractPreference
-import org.casc.lang.compilation.Compilation
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.table.*
@@ -22,14 +20,88 @@ class Checker(private val preference: AbstractPreference) {
             )
     }
 
-    private val topScope: Scope = Scope(preference, companion = false, mutable = false, Accessor.Pub, "")
+    private lateinit var topScope: Scope
     private var reports: MutableSet<Report> = mutableSetOf()
 
-    fun check(file: File): Pair<List<Report>, File> {
-        reports.clear()
-        val checkedFiles = checkFile(file)
+    fun checkDeclaration(file: File): Triple<List<Report>, File, Scope> {
+        val (checkedClass, scope) = checkClassDeclaration(file.clazz, file.path)
 
-        return reports.toList() to checkedFiles
+        file.clazz = checkedClass
+
+        return Triple(reports.toList(), file, scope)
+    }
+
+    private fun checkClassDeclaration(clazz: Class, filePath: String): Pair<Class, Scope> {
+        topScope = Scope(preference, companion = false, mutable = false, Accessor.Pub, clazz.getReference())
+
+        val classScope = Scope(
+            topScope,
+            false, // TODO: Allow (nested) class has `comp`
+            clazz.mutKeyword != null,
+            clazz.accessor,
+            clazz.packageReference
+        )
+
+        if (clazz.packageReference != null) {
+            val packagePath = clazz.packageReference.fullQualifiedPath.replace('.', '/')
+
+            if (!JFile(filePath).parentFile.toPath().endsWith(packagePath)) {
+                reports += Error(
+                    clazz.packageReference.pos,
+                    "Package path mismatch",
+                    "Try rename parent folders' name or rename package name"
+                )
+            }
+        }
+
+        checkIdentifierIsKeyword(clazz.name)
+
+        if (clazz.parentClassReference != null) {
+            val parentClassType = findType(clazz.parentClassReference, classScope)
+
+            classScope.parentClassPath = parentClassType?.getReference()
+
+            if (parentClassType != null) {
+                if (parentClassType !is ClassType) {
+                    reports += Error(
+                        clazz.parentClassReference.pos,
+                        "Cannot inherit from non-class type ${parentClassType.asCASCStyle()}"
+                    )
+                } else if (!parentClassType.mutable) {
+                    reports += Error(
+                        clazz.parentClassReference.pos,
+                        "Cannot inherit from final class ${parentClassType.asCASCStyle()}",
+                        "Add `mut` to class ${parentClassType.asCASCStyle()}"
+                    )
+                } else if (parentClassType.type()?.let { Modifier.isFinal(it.modifiers) } == true) {
+                    reports += Error(
+                        clazz.parentClassReference.pos,
+                        "Cannot inherit from final class ${parentClassType.asCASCStyle()}",
+                        "Add `mut` to class ${parentClassType.asCASCStyle()}"
+                    )
+                }
+            } else {
+                reports.reportUnknownTypeSymbol(clazz.parentClassReference)
+            }
+        }
+
+        clazz.fields.forEach {
+            checkField(it, classScope)
+        }
+        clazz.constructors = clazz.constructors.map {
+            checkConstructor(it, classScope)
+        }
+        clazz.functions = clazz.functions.map {
+            checkFunction(it, classScope)
+        }
+
+        return clazz to classScope
+    }
+
+    fun check(file: File, classScope: Scope): Pair<List<Report>, File> {
+        val checkedFile = checkFile(file, classScope)
+
+        return reports.toList() to checkedFile
     }
 
     private fun checkIdentifierIsKeyword(identifierToken: Token?, isVariable: Boolean = false) {
@@ -48,39 +120,20 @@ class Checker(private val preference: AbstractPreference) {
         when (target.accessor) {
             Accessor.Pub -> true
             Accessor.Prot -> targetOwnerClass.type()
-                ?.isAssignableFrom(currentScope.findType(currentScope.classPath)?.type() ?: Any::class.java).getOrElse()
-            Accessor.Intl -> targetOwnerClass.isSamePackage(currentScope.findType(currentScope.classPath))
+                ?.isAssignableFrom(currentScope.findType(currentScope.classReference)?.type() ?: Any::class.java)
+                .getOrElse()
+            Accessor.Intl -> targetOwnerClass.isSamePackage(currentScope.findType(currentScope.classReference))
             Accessor.Priv -> false
         }
 
-    private fun checkFile(file: File): File {
-        if (file.clazz.packageReference != null) {
-            val packagePath = file.clazz.packageReference!!.path.replace('.', '/')
-
-            if (!JFile(file.path).parentFile.toPath().endsWith(packagePath)) {
-                reports += Error(
-                    file.clazz.packageReference!!.pos,
-                    "Package path mismatch",
-                    "Try rename parent folders' name or rename package name"
-                )
-            }
-        }
-
-        file.clazz = checkClass(file.clazz)
+    private fun checkFile(file: File, classScope: Scope): File {
+        file.clazz = checkClass(file.clazz, classScope)
 
         return file
     }
 
-    private fun checkClass(clazz: Class): Class {
-        val classScope = Scope(
-            topScope,
-            false, // TODO: Allow (nested) class has `comp`
-            clazz.mutKeyword != null,
-            clazz.accessor,
-            clazz.packageReference?.path?.let { "$it/${clazz.name!!.literal}" } ?: clazz.name!!.literal
-        )
-
-        checkIdentifierIsKeyword(clazz.name)
+    private fun checkClass(clazz: Class, classScope: Scope): Class {
+        topScope = Scope(preference, companion = false, mutable = false, Accessor.Pub, clazz.getReference())
 
         clazz.usages.mapNotNull {
             it?.tokens?.forEach { token ->
@@ -96,41 +149,6 @@ class Checker(private val preference: AbstractPreference) {
             } else it
         }.forEach(classScope.usages::add)
 
-        // Check parent class reference
-        if (clazz.parentClassReference != null) {
-            val parentClassType = checkType(clazz.parentClassReference, classScope)
-
-            classScope.parentClassPath = parentClassType?.internalName
-
-            if (parentClassType != null) {
-                val parentCachedFile =
-                    Compilation.parsedResults.find { it.clazz.getFullPath() == parentClassType.internalName }
-
-                if (parentCachedFile != null && parentCachedFile.clazz.mutKeyword == null) {
-                    reports += Error(
-                        clazz.parentClassReference.pos,
-                        "Cannot inherit from final class ${clazz.parentClassReference.asCascStyle()}",
-                        "Add `mut` to class ${clazz.parentClassReference.asCascStyle()}"
-                    )
-                } else if (parentClassType.type()?.let { Modifier.isFinal(it.modifiers) } == true) {
-                    reports += Error(
-                        clazz.parentClassReference.pos,
-                        "Cannot inherit from final class ${clazz.parentClassReference.asCascStyle()}",
-                        "Add `mut` to class ${clazz.parentClassReference.asCascStyle()}"
-                    )
-                }
-            }
-        }
-
-        clazz.fields.forEach {
-            checkField(it, classScope)
-        }
-        clazz.constructors = clazz.constructors.map {
-            checkConstructor(it, classScope)
-        }
-        clazz.functions = clazz.functions.map {
-            checkFunction(it, classScope)
-        }
         clazz.constructors.forEach {
             checkConstructorBody(it, Scope(classScope))
         }
@@ -182,7 +200,7 @@ class Checker(private val preference: AbstractPreference) {
                 reports += Error(
                     parameter!!.pos,
                     "Parameter ${parameter.literal} is already declared in constructor new(${
-                        constructor.parameters.mapNotNull { it.typeReference?.path }.joinToString()
+                        constructor.parameters.mapNotNull { it.typeReference?.fullQualifiedPath }.joinToString()
                     })"
                 )
             }
@@ -190,7 +208,7 @@ class Checker(private val preference: AbstractPreference) {
             validationPass = false
         } else {
             constructor.parameterTypes = constructor.parameters.map {
-                val type = checkType(it.typeReference, localScope)
+                val type = findType(it.typeReference, localScope)
 
                 if (type == null) reports.reportUnknownTypeSymbol(it.typeReference!!)
                 else localScope.registerVariable(it.mutable != null, it.name!!.literal, type)
@@ -202,8 +220,8 @@ class Checker(private val preference: AbstractPreference) {
         if (constructor.parentReference == null)
             constructor.parentReference = Reference.fromClass(Any::class.java)
 
-        constructor.ownerType = checkType(constructor.ownerReference, localScope)
-        constructor.parentType = checkType(constructor.parentReference, localScope)
+        constructor.ownerType = findType(constructor.ownerReference, localScope)
+        constructor.parentType = findType(constructor.parentReference, localScope)
 
         constructor.parentConstructorArgumentsTypes = constructor.parentConstructorArguments.mapNotNull {
             if (it == null) null
@@ -249,7 +267,7 @@ class Checker(private val preference: AbstractPreference) {
             validationPass = false
         } else {
             function.parameterTypes = function.parameters.map {
-                val type = checkType(it.typeReference, scope)
+                val type = findType(it.typeReference, scope)
 
                 if (type == null) {
                     reports.reportUnknownTypeSymbol(it.typeReference!!)
@@ -264,7 +282,7 @@ class Checker(private val preference: AbstractPreference) {
         function.returnType =
             if (function.returnTypeReference == null) PrimitiveType.Unit
             else {
-                val type = checkType(function.returnTypeReference, scope)
+                val type = findType(function.returnTypeReference, scope)
 
                 if (type == null) {
                     reports.reportUnknownTypeSymbol(function.returnTypeReference)
@@ -273,7 +291,7 @@ class Checker(private val preference: AbstractPreference) {
                     null
                 } else type
             }
-        function.ownerType = checkType(function.ownerReference, scope)
+        function.ownerType = findType(function.ownerReference, scope)
 
         // Check is overriding parent function
         if (scope.parentClassPath != null) {
@@ -310,7 +328,7 @@ class Checker(private val preference: AbstractPreference) {
         if (constructor.superKeyword != null) {
             // `super` call
             val superCallSignature = scope.findSignature(
-                constructor.parentReference!!.path,
+                constructor.parentReference,
                 "<init>",
                 constructor.parentConstructorArgumentsTypes
             )
@@ -327,7 +345,7 @@ class Checker(private val preference: AbstractPreference) {
         } else if (constructor.selfKeyword != null) {
             // `this` call
             val thisCallSignature = scope.findSignature(
-                constructor.ownerReference!!.path,
+                constructor.ownerReference,
                 "<init>",
                 constructor.parentConstructorArgumentsTypes
             )
@@ -346,7 +364,7 @@ class Checker(private val preference: AbstractPreference) {
                 // Requires `super` call
                 reports += Error(
                     constructor.newKeyword?.pos,
-                    "Class ${scope.classPath} extends class ${scope.parentClassPath} but doesn't `super` any parent class' constructor",
+                    "Class ${scope.classReference} extends class ${scope.parentClassPath} but doesn't `super` any parent class' constructor",
                     "Add `super` call after constructor declaration"
                 )
             } else constructor.parentConstructorSignature = FunctionSignature(
@@ -379,7 +397,7 @@ class Checker(private val preference: AbstractPreference) {
         }
     }
 
-    private fun checkType(reference: Reference?, scope: Scope): Type? =
+    private fun findType(reference: Reference?, scope: Scope): Type? =
         scope.findType(reference)
 
     private fun checkStatement(
@@ -554,7 +572,7 @@ class Checker(private val preference: AbstractPreference) {
                                 )
                             }
 
-                            if (!field.companion && field.ownerReference?.path != scope.classPath && field.ownerReference?.path != scope.parentClassPath) {
+                            if (!field.companion && field.ownerReference != scope.classReference && field.ownerReference != scope.parentClassPath) {
                                 reports += Error(
                                     expression.leftExpression.pos,
                                     "Cannot access non-companion field $name from other context"
@@ -574,14 +592,14 @@ class Checker(private val preference: AbstractPreference) {
                         )
                     } else if (expression.leftExpression.ownerReference != null) {
                         // Field assignment
-                        checkFieldAssignment(scope.findField(expression.leftExpression.ownerReference?.path, name))
+                        checkFieldAssignment(scope.findField(expression.leftExpression.ownerReference, name))
                     } else {
                         // Current class field / local variable assignment
                         val variable = scope.findVariable(name)
 
                         if (variable == null) {
                             // Lookup local field
-                            checkFieldAssignment(scope.findField(scope.classPath, name))
+                            checkFieldAssignment(scope.findField(scope.classReference, name))
                         } else {
                             if (!variable.mutable) {
                                 reports += Error(
@@ -644,12 +662,12 @@ class Checker(private val preference: AbstractPreference) {
 
                 if (ownerReference != null) {
                     // Appointed class field
-                    val field = scope.findField(ownerReference.path, expression.name!!.literal)
+                    val field = scope.findField(ownerReference, expression.name!!.literal)
 
                     if (field == null) {
                         reports += Error(
                             expression.pos,
-                            "Field ${expression.name.literal} does not exist in class ${ownerReference.path}"
+                            "Field ${expression.name.literal} does not exist in class ${ownerReference.fullQualifiedPath}"
                         )
                     } else {
                         checkCompanionAccessibility(field)
@@ -662,7 +680,7 @@ class Checker(private val preference: AbstractPreference) {
                 } else if (expression.previousExpression != null) {
                     // Chain calling
                     val previousType = checkExpression(expression.previousExpression, scope)
-                    val field = scope.findField(previousType?.typeName, expression.name!!.literal)
+                    val field = scope.findField(previousType?.getReference(), expression.name!!.literal)
 
                     if (field == null) {
                         reports += Error(
@@ -679,7 +697,7 @@ class Checker(private val preference: AbstractPreference) {
                     }
                 } else if (expression.name?.literal == "self" || expression.name?.literal == "super") {
                     expression.type = when (expression.name.literal) {
-                        "self" -> scope.findType(scope.classPath)
+                        "self" -> scope.findType(scope.classReference)
                         "super" -> scope.findType(scope.parentClassPath)
                         else -> null
                     }
@@ -687,7 +705,7 @@ class Checker(private val preference: AbstractPreference) {
                     expression.index = 0
                 } else {
                     // Check identifier is class name or not
-                    val classType = scope.findType(expression.name?.literal)
+                    val classType = scope.findType(Reference(expression.name!!.literal))
 
                     if (classType != null) {
                         // Class companion member call
@@ -696,7 +714,7 @@ class Checker(private val preference: AbstractPreference) {
                         expression.isClassName = true
                     } else {
                         // Local variable / current class field
-                        val variable = scope.findVariable(expression.name!!.literal)
+                        val variable = scope.findVariable(expression.name.literal)
 
                         if (variable == null) {
                             // Lookup for current class' field
@@ -736,7 +754,7 @@ class Checker(private val preference: AbstractPreference) {
                     expression.superCall = true
 
                 // Check function call expression's context, e.g companion context
-                val ownerReference = expression.ownerReference?.path ?: previousType?.typeName ?: scope.classPath
+                val ownerReference = expression.ownerReference ?: previousType?.getReference() ?: scope.classReference
                 val functionSignature =
                     scope.findSignature(
                         ownerReference,
@@ -753,7 +771,7 @@ class Checker(private val preference: AbstractPreference) {
                         }) does not exist in current context"
                     )
                 } else {
-                    checkAccessible(scope, functionSignature, checkType(functionSignature.ownerReference, scope)!!)
+                    checkAccessible(scope, functionSignature, findType(functionSignature.ownerReference, scope)!!)
 
                     if (functionSignature.ownerReference == expression.ownerReference) {
                         // Function's owner class is same as current class
@@ -782,7 +800,7 @@ class Checker(private val preference: AbstractPreference) {
                             }
                         } else if (scope.isChildType(
                                 functionSignature.ownerReference,
-                                Reference(previousType?.typeName ?: scope.classPath)
+                                previousType?.getReference() ?: scope.classReference
                             )
                         ) expression.superCall = true
                     }
@@ -800,7 +818,7 @@ class Checker(private val preference: AbstractPreference) {
 
                 // Check owner type has matched signature
                 val signature = scope.findSignature(
-                    expression.constructorOwnerReference?.path,
+                    expression.constructorOwnerReference,
                     "<init>",
                     argumentTypes
                 )
@@ -809,12 +827,12 @@ class Checker(private val preference: AbstractPreference) {
                     // No match
                     reports += Error(
                         expression.pos,
-                        "Constructor ${expression.constructorOwnerReference?.asCascStyle()}#new(${
+                        "Constructor ${expression.constructorOwnerReference?.asCASCStyle()}#new(${
                             argumentTypes.mapNotNull { it?.typeName }.joinToString()
                         }) does not exist"
                     )
                 } else {
-                    checkAccessible(scope, signature, checkType(signature.ownerReference, scope)!!)
+                    checkAccessible(scope, signature, findType(signature.ownerReference, scope)!!)
 
                     expression.type = signature.returnType
                     expression.referenceFunctionSignature = signature
@@ -980,7 +998,7 @@ class Checker(private val preference: AbstractPreference) {
             }
             is ArrayInitialization -> {
                 if (expression.inferTypeReference != null) {
-                    when (val inferType = checkType(expression.inferTypeReference, scope)) {
+                    when (val inferType = findType(expression.inferTypeReference, scope)) {
                         null -> reports.reportUnknownTypeSymbol(expression.inferTypeReference)
                         !is ArrayType -> {
                             reports += Error(
@@ -1010,7 +1028,7 @@ class Checker(private val preference: AbstractPreference) {
                 expression.type
             }
             is ArrayDeclaration -> {
-                expression.type = checkType(expression.baseTypeReference, scope)
+                expression.type = findType(expression.baseTypeReference, scope)
 
                 expression.dimensionExpressions.forEach {
                     // Dimension expression's type must be able to cast into i32

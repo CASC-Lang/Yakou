@@ -43,7 +43,7 @@
 
 ### Compiler Unit
 
-- [ ] multiple file compilation
+- [x] multiple file compilation
 - [ ] more customizable compilation arguments(?)
 
 #### FOOTNOTES
