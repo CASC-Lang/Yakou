@@ -10,8 +10,6 @@ import org.casc.lang.utils.call
 import org.casc.lang.utils.pmap
 import org.casc.lang.utils.pmapNotNull
 import java.io.BufferedReader
-import kotlin.time.ExperimentalTime
-import kotlin.time.measureTimedValue
 import java.io.File as JFile
 
 class Compilation(
@@ -24,92 +22,88 @@ class Compilation(
         private fun List<Report>.hasError(): Boolean = this.filterIsInstance<Error>().isNotEmpty()
     }
 
-    @OptIn(ExperimentalTime::class)
     fun compile() {
         if (file.isDirectory) {
             preference.outputDir = JFile(file.parentFile.path, "/out")
             preference.outputDir.mkdir()
 
             // Compilations
-            val a = measureTimedValue {
-                file.walk().filter { it.isFile && it.extension == "casc" }.toList().pmapNotNull {
-                    val source = it.readLines()
-                    val relativeFilePath = it.toRelativeString(file)
+            file.walk().filter { it.isFile && it.extension == "casc" }.toList().pmapNotNull {
+                val source = it.readLines()
+                val relativeFilePath = it.toRelativeString(file)
 
-                    // Unit I: Lexer
-                    /**
-                     * Known as lexical analyzer, handles source text parsing into token form.
-                     */
-                    val (lexReports, lexResult) = Lexer(preference).lex(it.readLines())
+                // Unit I: Lexer
+                /**
+                 * Known as lexical analyzer, handles source text parsing into token form.
+                 */
+                val (lexReports, lexResult) = Lexer(preference).lex(it.readLines())
 
-                    lexReports.printReports(relativeFilePath, source)
+                lexReports.printReports(relativeFilePath, source)
 
-                    if (lexReports.hasError()) return@pmapNotNull null
+                if (lexReports.hasError()) return@pmapNotNull null
 
-                    // Unit II: Parser
-                    /**
-                     * Parse tokens into an Abstract Syntax Tree (aka AST) for further unit to use with,
-                     * parser also asserts that the certainty of source code validity.
-                     */
-                    val (parseReports, parseResult) =
-                        Parser(preference).parse(it.path, relativeFilePath, lexResult)
+                // Unit II: Parser
+                /**
+                 * Parse tokens into an Abstract Syntax Tree (aka AST) for further unit to use with,
+                 * parser also asserts that the certainty of source code validity.
+                 */
+                val (parseReports, parseResult) =
+                    Parser(preference).parse(it.path, relativeFilePath, lexResult)
 
-                    parseReports.printReports(relativeFilePath, source)
+                parseReports.printReports(relativeFilePath, source)
 
-                    if (parseReports.hasError()) return@pmapNotNull null
+                if (parseReports.hasError()) return@pmapNotNull null
 
-                    Triple(parseResult, relativeFilePath, source)
-                }.pmapNotNull {
-                    val (parseResult, relativeFilePath, source) = it
+                Triple(parseResult, relativeFilePath, source)
+            }.pmapNotNull {
+                val (parseResult, relativeFilePath, source) = it
 
-                    // Caches class for dummy type checking, used in declaration checking
-                    Table.cachedClasses += parseResult.clazz.getReference() to parseResult
+                // Caches class for dummy type checking, used in declaration checking
+                Table.cachedClasses += parseResult.clazz.getReference() to parseResult
 
-                    // Unit III: Checker
-                    /**
-                     * Checks complex syntax validity and variables' type.
-                     *
-                     * Phase I:
-                     * Check all AST declaration's validity
-                     */
-                    val checker = Checker(preference)
-                    val (declarationCheckingReports, checkedFile, classScope) = checker.checkDeclaration(parseResult)
+                // Unit III: Checker
+                /**
+                 * Checks complex syntax validity and variables' type.
+                 *
+                 * Phase I:
+                 * Check all AST declaration's validity
+                 */
+                val checker = Checker(preference)
+                val (declarationCheckingReports, checkedFile, classScope) = checker.checkDeclaration(parseResult)
 
-                    declarationCheckingReports.printReports(relativeFilePath, source)
+                declarationCheckingReports.printReports(relativeFilePath, source)
 
-                    if (declarationCheckingReports.hasError()) return@pmapNotNull null
+                if (declarationCheckingReports.hasError()) return@pmapNotNull null
 
-                    Quadruple(checkedFile, classScope, relativeFilePath, source)
-                }.call(Table.cachedClasses::clear).map {
-                    Table.cachedClasses += it.first.clazz.getReference() to it.first
+                Quadruple(checkedFile, classScope, relativeFilePath, source)
+            }.call(Table.cachedClasses::clear).map {
+                Table.cachedClasses += it.first.clazz.getReference() to it.first
 
-                    Quadruple(it.first, it.second, it.third, it.fourth)
-                }.pmap {
-                    val (file, scope, relativeFilePath, source) = it
+                Quadruple(it.first, it.second, it.third, it.fourth)
+            }.pmap {
+                val (file, scope, relativeFilePath, source) = it
 
-                    /**
-                     * Phase II:
-                     * Check all AST declaration's body's validity
-                     */
-                    val checker = Checker(preference)
-                    val (checkReports, checkResult) = checker.check(file, scope)
+                /**
+                 * Phase II:
+                 * Check all AST declaration's body's validity
+                 */
+                val checker = Checker(preference)
+                val (checkReports, checkResult) = checker.check(file, scope)
 
-                    checkReports.printReports(relativeFilePath, source)
+                checkReports.printReports(relativeFilePath, source)
 
-                    if (checkReports.hasError()) return@pmap
+                if (checkReports.hasError()) return@pmap
 
-                    // Unit IV: Emitter
-                    /**
-                     * Emits AST into backend languages, like JVM bytecode.
-                     * only JVM backend is available at this moment.
-                     */
-                    Emitter(preference).emit(
-                        JFile(preference.outputDir, JFile(file.relativeFilePath)?.parentFile?.path ?: ""),
-                        checkResult
-                    )
-                }
+                // Unit IV: Emitter
+                /**
+                 * Emits AST into backend languages, like JVM bytecode.
+                 * only JVM backend is available at this moment.
+                 */
+                Emitter(preference).emit(
+                    JFile(preference.outputDir, JFile(file.relativeFilePath)?.parentFile?.path ?: ""),
+                    checkResult
+                )
             }
-            println(a)
         } else if (file.isFile) {
             // Init preferenceerence
             preference.outputDir = file.parentFile
