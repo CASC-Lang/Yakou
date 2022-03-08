@@ -12,6 +12,7 @@ import org.casc.lang.parser.Parser
 import org.casc.lang.table.Table
 import org.casc.lang.utils.*
 import java.io.BufferedReader
+import kotlin.time.measureTimedValue
 import java.io.File as JFile
 
 class Compilation(
@@ -30,9 +31,6 @@ class Compilation(
             preference.outputDir.mkdir()
 
             // Compilations
-            /**
-             * Known as lexical analyzer, handles source text parsing into token form.
-             */// Unit I: Lexer
             file.walk().filter { it.isFile && it.extension == "casc" }.toList().map {
                 val source = it.readLines()
                 val filePath = it.toRelativeString(file)
@@ -91,7 +89,7 @@ class Compilation(
                 val (declarationCheckingReports, checkedFile, classScope) = checker.checkDeclaration(file)
 
                 Quintuple(checkedFile, classScope, declarationCheckingReports, filePath, source)
-            }.postCall(Table.cachedClasses::clear).mapNotNull {
+            }.call(Table.cachedClasses::clear).mapNotNull {
                 it.third.printReports(it.fourth, it.fifth)
 
                 if (it.third.hasError()) null
@@ -103,6 +101,10 @@ class Compilation(
             }.pmap {
                 val (file, scope, filePath, source) = it
 
+                /**
+                 * Phase II:
+                 * Check all AST declaration's body's validity
+                 */
                 val checker = Checker(preference)
                 val (checkReports, checkResult) = checker.check(file, scope)
 
