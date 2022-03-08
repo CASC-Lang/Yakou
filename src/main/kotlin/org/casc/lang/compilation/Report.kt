@@ -55,7 +55,6 @@ sealed class Report {
                     }
                 }
             }
-            finalMessage += "\n"
 
             finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
             finalMessage += "\n--> $filePath:$position\n"
@@ -122,7 +121,6 @@ sealed class Report {
                     }
                 }
             }
-            finalMessage += "\n"
 
             finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
             finalMessage += "\n--> $filePath\n"
