@@ -11,7 +11,7 @@ import org.casc.lang.ast.Class as Cls
 */
 object Table {
     // Full qualified class name to File object
-    var cachedClasses: Map<Reference, File> = mutableMapOf()
+    var cachedClasses: HashMap<Reference, File> = hashMapOf()
 
     /**
      * By given full qualified class path (including package path) will return a ClassType if exists or null

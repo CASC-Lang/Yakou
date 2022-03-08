@@ -1,5 +1,9 @@
 package org.casc.lang.checker
 
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
 import org.casc.lang.ast.*
 import org.casc.lang.ast.Field
 import org.casc.lang.ast.Function
@@ -24,54 +28,15 @@ class Checker(private val preference: AbstractPreference) {
     private lateinit var topScope: Scope
     private var reports: MutableSet<Report> = mutableSetOf()
 
-    fun check(file: File): Pair<List<Report>, File> {
-        reports.clear()
-        val checkedFiles = checkFile(file)
+    fun checkDeclaration(file: File): Triple<List<Report>, File, Scope> {
+        val (checkedClass, scope) = checkClassDeclaration(file.clazz, file.path)
 
-        return reports.toList() to checkedFiles
+        file.clazz = checkedClass
+
+        return Triple(reports.toList(), file, scope)
     }
 
-    private fun checkIdentifierIsKeyword(identifierToken: Token?, isVariable: Boolean = false) {
-        if (isVariable && (identifierToken?.literal == "self" || identifierToken?.literal == "super"))
-            return
-
-        if (Token.keywords.contains(identifierToken?.literal)) {
-            reports += Error(
-                identifierToken?.pos,
-                "Cannot use ${identifierToken?.literal} as identifier since it's a keyword"
-            )
-        }
-    }
-
-    private fun checkAccessible(currentScope: Scope, target: HasAccessor, targetOwnerClass: Type): Boolean =
-        when (target.accessor) {
-            Accessor.Pub -> true
-            Accessor.Prot -> targetOwnerClass.type()
-                ?.isAssignableFrom(currentScope.findType(currentScope.classReference)?.type() ?: Any::class.java)
-                .getOrElse()
-            Accessor.Intl -> targetOwnerClass.isSamePackage(currentScope.findType(currentScope.classReference))
-            Accessor.Priv -> false
-        }
-
-    private fun checkFile(file: File): File {
-        if (file.clazz.packageReference != null) {
-            val packagePath = file.clazz.packageReference!!.fullQualifiedPath.replace('.', '/')
-
-            if (!JFile(file.path).parentFile.toPath().endsWith(packagePath)) {
-                reports += Error(
-                    file.clazz.packageReference!!.pos,
-                    "Package path mismatch",
-                    "Try rename parent folders' name or rename package name"
-                )
-            }
-        }
-
-        file.clazz = checkClass(file.clazz)
-
-        return file
-    }
-
-    private fun checkClass(clazz: Class): Class {
+    private fun checkClassDeclaration(clazz: Class, filePath: String): Pair<Class, Scope> {
         topScope = Scope(preference, companion = false, mutable = false, Accessor.Pub, clazz.getReference())
 
         val classScope = Scope(
@@ -82,23 +47,20 @@ class Checker(private val preference: AbstractPreference) {
             clazz.packageReference
         )
 
+        if (clazz.packageReference != null) {
+            val packagePath = clazz.packageReference.fullQualifiedPath.replace('.', '/')
+
+            if (!JFile(filePath).parentFile.toPath().endsWith(packagePath)) {
+                reports += Error(
+                    clazz.packageReference.pos,
+                    "Package path mismatch",
+                    "Try rename parent folders' name or rename package name"
+                )
+            }
+        }
+
         checkIdentifierIsKeyword(clazz.name)
 
-        clazz.usages.mapNotNull {
-            it?.tokens?.forEach { token ->
-                checkIdentifierIsKeyword(token)
-            }
-
-            val type = TypeUtil.asType(it, preference)
-
-            if (type == null) {
-                reports.reportUnknownTypeSymbol(it!!)
-
-                null
-            } else it
-        }.forEach(classScope.usages::add)
-
-        // Check parent class reference
         if (clazz.parentClassReference != null) {
             val parentClassType = findType(clazz.parentClassReference, classScope)
 
@@ -137,6 +99,61 @@ class Checker(private val preference: AbstractPreference) {
         clazz.functions = clazz.functions.map {
             checkFunction(it, classScope)
         }
+
+        return clazz to classScope
+    }
+
+    fun check(file: File, classScope: Scope): Pair<List<Report>, File> {
+        val checkedFile = checkFile(file, classScope)
+
+        return reports.toList() to checkedFile
+    }
+
+    private fun checkIdentifierIsKeyword(identifierToken: Token?, isVariable: Boolean = false) {
+        if (isVariable && (identifierToken?.literal == "self" || identifierToken?.literal == "super"))
+            return
+
+        if (Token.keywords.contains(identifierToken?.literal)) {
+            reports += Error(
+                identifierToken?.pos,
+                "Cannot use ${identifierToken?.literal} as identifier since it's a keyword"
+            )
+        }
+    }
+
+    private fun checkAccessible(currentScope: Scope, target: HasAccessor, targetOwnerClass: Type): Boolean =
+        when (target.accessor) {
+            Accessor.Pub -> true
+            Accessor.Prot -> targetOwnerClass.type()
+                ?.isAssignableFrom(currentScope.findType(currentScope.classReference)?.type() ?: Any::class.java)
+                .getOrElse()
+            Accessor.Intl -> targetOwnerClass.isSamePackage(currentScope.findType(currentScope.classReference))
+            Accessor.Priv -> false
+        }
+
+    private fun checkFile(file: File, classScope: Scope): File {
+        file.clazz = checkClass(file.clazz, classScope)
+
+        return file
+    }
+
+    private fun checkClass(clazz: Class, classScope: Scope): Class {
+        topScope = Scope(preference, companion = false, mutable = false, Accessor.Pub, clazz.getReference())
+
+        clazz.usages.mapNotNull {
+            it?.tokens?.forEach { token ->
+                checkIdentifierIsKeyword(token)
+            }
+
+            val type = TypeUtil.asType(it, preference)
+
+            if (type == null) {
+                reports.reportUnknownTypeSymbol(it!!)
+
+                null
+            } else it
+        }.forEach(classScope.usages::add)
+
         clazz.constructors.forEach {
             checkConstructorBody(it, Scope(classScope))
         }

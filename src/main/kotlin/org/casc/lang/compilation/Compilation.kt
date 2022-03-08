@@ -72,6 +72,7 @@ class Compilation(
 
                 if (it.second == null) null
                 else {
+                    // Caches class for dummy type checking, used in declaration checking
                     Table.cachedClasses += it.second.clazz.getReference() to it.second
 
                     Triple(it.second, it.third, it.fourth)
@@ -82,10 +83,30 @@ class Compilation(
                 // Unit III: Checker
                 /**
                  * Checks complex syntax validity and variables' type.
+                 *
+                 * Phase I:
+                 * Check all AST declaration's validity
                  */
-                val (checkReports, checkResult) = Checker(preference).check(file)
+                val checker = Checker(preference)
+                val (declarationCheckingReports, checkedFile, classScope) = checker.checkDeclaration(file)
 
-                Quadruple(checkReports, if (checkReports.hasError()) checkResult else null, filePath, source)
+                Quintuple(checkedFile, classScope, declarationCheckingReports, filePath, source)
+            }.postCall(Table.cachedClasses::clear).mapNotNull {
+                it.third.printReports(it.fourth, it.fifth)
+
+                if (it.third.hasError()) null
+                else {
+                    Table.cachedClasses += it.first.clazz.getReference() to it.first
+
+                    Quadruple(it.first, it.second, it.fourth, it.fifth)
+                }
+            }.pmap {
+                val (file, scope, filePath, source) = it
+
+                val checker = Checker(preference)
+                val (checkReports, checkResult) = checker.check(file, scope)
+
+                Quadruple(checkReports, if (checkReports.hasError()) null else checkResult, filePath, source)
             }.mapNotNull {
                 it.first.printReports(it.third, it.fourth)
 
@@ -100,7 +121,7 @@ class Compilation(
                  * only JVM backend is available at this moment.
                  */
                 Emitter(preference).emit(
-                    JFile(preference.outputDir, JFile(file.relativeFilePath).parentFile.path),
+                    JFile(preference.outputDir, JFile(file.relativeFilePath)?.parentFile?.path ?: ""),
                     file
                 )
             }
@@ -139,7 +160,14 @@ class Compilation(
             /**
              * Checks complex syntax validity and variables' type.
              */
-            val (checkReports, checkResult) = Checker(preference).check(parseResult)
+            val checker = Checker(preference)
+            val (declarationReports, declarationCheckedFile, scope) = checker.checkDeclaration(parseResult)
+
+            declarationReports.printReports(outputFileName, source)
+
+            if (declarationReports.hasError()) return
+
+            val (checkReports, checkResult) = checker.check(declarationCheckedFile, scope)
 
             checkReports.printReports(outputFileName, source)
 

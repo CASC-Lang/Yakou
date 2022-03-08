@@ -42,7 +42,12 @@ data class Scope(
         parent.signatures.toMutableSet(),
         parent.variables.toMutableList(),
         isCompScope
-    )
+    ) {
+        if (variables.isEmpty() && !isCompScope) {
+            // Insert a dummy variable
+            registerVariable(true, "dummy", null)
+        }
+    }
 
     //=======================================//
     //                Fields                 //
@@ -105,7 +110,7 @@ data class Scope(
         }
 
     fun findSignature(ownerPath: Reference?, functionName: String, argumentTypes: List<Type?>): FunctionSignature? {
-        if (ownerPath == null || ownerPath == classReference) return findSignatureInSameClass(
+        if (ownerPath == null) return findSignatureInSameClass(
             functionName,
             argumentTypes
         )
@@ -125,14 +130,17 @@ data class Scope(
                                 .all(::eq)
                 }?.asSignature() ?: findSignature(ownerClass.parentClassReference, functionName, argumentTypes)
             } else {
-                ownerClass.functions.find {
+                val matchedFunction = ownerClass.functions.find {
                     it.name?.literal == functionName &&
                             it.parameters.size == argumentTypes.size &&
                             it.parameters
                                 .map(Parameter::type)
                                 .zip(argumentTypes)
                                 .all(::eq)
-                }?.asSignature() ?: findSignature(ownerClass.parentClassReference, functionName, argumentTypes)
+                }
+
+                if (matchedFunction == null) findSignature(ownerClass.parentClassReference, functionName, argumentTypes)
+                else matchedFunction.asSignature()
             }
         }
 
