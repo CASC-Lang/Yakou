@@ -52,6 +52,9 @@ enum class PrimitiveType(
     override fun type(): Class<*>? =
         clazzType
 
+    override fun asCASCStyle(): String =
+        typeName
+
     fun isNumericType(): Boolean =
         promotionTable.containsKey(this)
 

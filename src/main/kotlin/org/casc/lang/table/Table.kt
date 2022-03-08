@@ -1,6 +1,7 @@
 package org.casc.lang.table
 
 import org.casc.lang.ast.File
+import org.casc.lang.ast.Class as Cls
 
 /*
  Known as symbol table, used to store class compiled by CASC Compiler, the main idea of storing class objects here is:
@@ -10,7 +11,19 @@ import org.casc.lang.ast.File
 */
 object Table {
     // Full qualified class name to File object
-    var cachedClasses: Map<String, File> = mutableMapOf()
+    var cachedClasses: Map<Reference, File> = mutableMapOf()
 
+    /**
+     * By given full qualified class path (including package path) will return a ClassType if exists or null
+     */
+    fun findType(classReference: Reference): ClassType? =
+        cachedClasses[classReference]?.let {
+            ClassType(classReference.fullQualifiedPath, it.clazz.accessor, it.clazz.mutKeyword != null)
+        }
 
+    fun findClass(classReference: Reference): Cls? =
+        cachedClasses[classReference]?.clazz
+
+    fun hasClass(classReference: Reference): Boolean =
+        cachedClasses.containsKey(classReference)
 }

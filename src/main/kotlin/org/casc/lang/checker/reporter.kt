@@ -10,7 +10,7 @@ internal fun MutableSet<Report>.reportUnknownTypeSymbol(reference: Reference) =
     add(
         Error(
             reference.pos,
-            "Unknown type symbol ${reference.asCascStyle()}"
+            "Unknown type symbol ${reference.asCASCStyle()}"
         )
     )
 

@@ -22,6 +22,6 @@ data class Class(
     override val flag: Int =
         Opcodes.ACC_SUPER + accessor.access + mutKeyword.getOrElse(0, Opcodes.ACC_FINAL)
 
-    fun getFullPath(): String =
-        packageReference?.let { "${it.path}/${name!!.literal}" } ?: name!!.literal
+    fun getReference(): Reference =
+        Reference(packageReference?.let { "${it.fullQualifiedPath}/${name!!.literal}" } ?: name!!.literal, name!!.literal)
 }

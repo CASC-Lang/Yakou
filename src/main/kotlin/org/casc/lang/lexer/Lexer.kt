@@ -7,7 +7,6 @@ import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 
-// TODO: Multi-Threaded Lexing Process
 class Lexer(private val preference: AbstractPreference) {
     private var lineNumber: Int = 1
     private var pos: Int = 0
