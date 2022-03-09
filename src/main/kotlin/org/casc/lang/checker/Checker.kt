@@ -7,6 +7,8 @@ import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.table.*
 import org.casc.lang.utils.getOrElse
+import org.casc.lang.utils.pforEach
+import org.casc.lang.utils.pmap
 import java.lang.reflect.Modifier
 import java.io.File as JFile
 
@@ -85,13 +87,13 @@ class Checker(private val preference: AbstractPreference) {
             }
         }
 
-        clazz.fields.forEach {
+        clazz.fields.pforEach {
             checkField(it, classScope)
         }
-        clazz.constructors = clazz.constructors.map {
+        clazz.constructors = clazz.constructors.pmap {
             checkConstructor(it, classScope)
         }
-        clazz.functions = clazz.functions.map {
+        clazz.functions = clazz.functions.pmap {
             checkFunction(it, classScope)
         }
 
@@ -136,7 +138,7 @@ class Checker(private val preference: AbstractPreference) {
         topScope = Scope(preference, companion = false, mutable = false, Accessor.Pub, clazz.getReference())
 
         clazz.usages.mapNotNull {
-            it?.tokens?.forEach { token ->
+            it?.tokens?.pforEach { token ->
                 checkIdentifierIsKeyword(token)
             }
 
@@ -149,10 +151,10 @@ class Checker(private val preference: AbstractPreference) {
             } else it
         }.forEach(classScope.usages::add)
 
-        clazz.constructors.forEach {
+        clazz.constructors.pforEach {
             checkConstructorBody(it, Scope(classScope))
         }
-        clazz.functions.forEach {
+        clazz.functions.pforEach {
             checkFunctionBody(it, Scope(classScope, isCompScope = it.compKeyword != null))
 
             if (!checkControlFlow(it.statements, it.returnType)) {

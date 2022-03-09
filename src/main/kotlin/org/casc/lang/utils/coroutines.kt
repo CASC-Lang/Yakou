@@ -12,6 +12,6 @@ fun <T, R> List<T?>.pmapNotNull(functor: suspend (T) -> R?): List<R> = runBlocki
     map { it?.let { async(Dispatchers.Default) { functor(it) } } }.mapNotNull { it?.await() }
 }
 
-fun <T> List<T>.pforeach(functor: suspend (T) -> Unit) = runBlocking {
+fun <T> List<T>.pforEach(functor: suspend (T) -> Unit) = runBlocking {
     map { async(Dispatchers.Default) { functor(it) } }.map { it.await() }
 }

@@ -10,6 +10,8 @@ import org.casc.lang.utils.call
 import org.casc.lang.utils.pmap
 import org.casc.lang.utils.pmapNotNull
 import java.io.BufferedReader
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTimedValue
 import java.io.File as JFile
 
 class Compilation(
@@ -100,7 +102,7 @@ class Compilation(
                  * only JVM backend is available at this moment.
                  */
                 Emitter(preference).emit(
-                    JFile(preference.outputDir, JFile(file.relativeFilePath)?.parentFile?.path ?: ""),
+                    JFile(preference.outputDir, JFile(file.relativeFilePath).parentFile?.path ?: ""),
                     checkResult
                 )
             }
