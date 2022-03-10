@@ -50,7 +50,7 @@ jobs:
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./build/libs/CASC-0.0.1.jar
-        asset_name: CASC-Weekly-${{ steps.date.outputs.date }}.zip
+        asset_name: CASC-Weekly-${{ steps.date.outputs.date }}.jar
         asset_content_type: application/zip
     - name: Publish Jar file
       uses: actions/upload-artifact@v2.3.1
