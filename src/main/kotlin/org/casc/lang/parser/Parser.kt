@@ -704,8 +704,18 @@ class Parser(private val preference: AbstractPreference) {
     private fun parseStatements(inCompanionContext: Boolean = false): List<Statement> {
         val statements = mutableListOf<Statement>()
 
-        while (!peekIf(TokenType.CloseBrace))
+        while (!peekIf(TokenType.CloseBrace)) {
             statements += parseStatement(inCompanionContext)
+
+            if (peekIf(TokenType.SemiColon)) {
+                val semiColonToken = next()
+                reports += Error(
+                    semiColonToken?.pos,
+                    "Redundant semicolon after statement",
+                    "Remove this semicolon"
+                )
+            }
+        }
 
         return statements
     }
