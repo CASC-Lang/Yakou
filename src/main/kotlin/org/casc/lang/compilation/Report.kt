@@ -87,7 +87,7 @@ sealed class Report {
 
             if (hint != null) {
                 finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(
-                    "= hint: $hint", reportAttribute[when (this) {
+                    "= hint: $hint\n", reportAttribute[when (this) {
                         is Warning -> 0
                         is Error -> 1
                     }]
