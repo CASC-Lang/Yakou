@@ -9,6 +9,7 @@ import org.casc.lang.table.*
 import org.casc.lang.utils.getOrElse
 import org.casc.lang.utils.pforEach
 import org.casc.lang.utils.pmap
+import org.casc.lang.utils.pmapNotNull
 import java.lang.reflect.Modifier
 import java.io.File as JFile
 
@@ -137,10 +138,8 @@ class Checker(private val preference: AbstractPreference) {
     private fun checkClass(clazz: Class, classScope: Scope): Class {
         topScope = Scope(preference, companion = false, mutable = false, Accessor.Pub, clazz.getReference())
 
-        clazz.usages.mapNotNull {
-            it?.tokens?.pforEach { token ->
-                checkIdentifierIsKeyword(token)
-            }
+        clazz.usages.pmapNotNull {
+            it.tokens.forEach(::checkIdentifierIsKeyword)
 
             val type = TypeUtil.asType(it, preference)
 
@@ -220,7 +219,7 @@ class Checker(private val preference: AbstractPreference) {
         }
 
         if (constructor.parentReference == null)
-            constructor.parentReference = Reference.fromClass(Any::class.java)
+            constructor.parentReference = Reference(Any::class.java)
 
         constructor.ownerType = findType(constructor.ownerReference, localScope)
         constructor.parentType = findType(constructor.parentReference, localScope)
@@ -230,7 +229,7 @@ class Checker(private val preference: AbstractPreference) {
             else {
                 val type = checkExpression(it, localScope)
 
-                if (type == null) reports.reportUnknownTypeSymbol(Reference("<Unknown>", "<Unknown>", it.pos))
+                if (type == null) reports.reportUnknownTypeSymbol(Reference("<Unknown>", "<Unknown>", pos = it.pos))
 
                 type
             }
@@ -370,7 +369,7 @@ class Checker(private val preference: AbstractPreference) {
                     "Add `super` call after constructor declaration"
                 )
             } else constructor.parentConstructorSignature = FunctionSignature(
-                Reference.fromClass(Any::class.java),
+                Reference(Any::class.java),
                 companion = true,
                 mutable = false,
                 Accessor.Pub,
@@ -651,7 +650,7 @@ class Checker(private val preference: AbstractPreference) {
             is IdentifierCallExpression -> {
                 val ownerReference = expression.ownerReference
 
-                checkIdentifierIsKeyword(expression.name, true)
+                checkIdentifierIsKeyword(expression.name, isVariable = true)
 
                 fun checkCompanionAccessibility(field: ClassField) {
                     if (!field.companion && scope.isCompScope) {

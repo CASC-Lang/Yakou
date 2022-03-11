@@ -26,16 +26,9 @@ class Emitter(private val preference: AbstractPreference) {
         val classWriter = ClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS)
 
         classWriter.visit(
-            61,
+            Opcodes.V1_8,
             clazz.flag,
-            "${
-                if (clazz.packageReference != null) "${
-                    clazz.packageReference.fullQualifiedPath.replace(
-                        '.',
-                        '/'
-                    )
-                }/" else ""
-            }${clazz.name!!.literal}",
+            clazz.getReference().internalName(),
             null,
             clazz.parentClassReference?.fullQualifiedPath ?: "java/lang/Object",
             null

@@ -124,7 +124,7 @@ class Parser(private val preference: AbstractPreference) {
         // Parse optional package declaration
         val packageReference = if (peekIf(Token::isPackageKeyword)) {
             consume()
-            parseQualifiedName()
+            parseTypeSymbol()
         } else null
 
         // Parse usages
@@ -189,7 +189,7 @@ class Parser(private val preference: AbstractPreference) {
             if (className != null) Reference(
                 "${packageReference?.fullQualifiedPath?.let { "${it}/" } ?: ""}${className.literal}",
                 className.literal,
-                className.pos
+                pos = className.pos
             )
             else null
         var fields = listOf<Field>()
@@ -219,7 +219,7 @@ class Parser(private val preference: AbstractPreference) {
             if (peekIf(TokenType.Colon)) {
                 // Class inheritance
                 consume()
-                parentClassReference = parseQualifiedName()
+                parentClassReference = parseTypeSymbol()
             }
 
             if (peekIf(TokenType.OpenBrace)) {
@@ -250,80 +250,48 @@ class Parser(private val preference: AbstractPreference) {
     }
 
     /**
-     * Used to parse type names and usage reference
+     * Used to parse type symbol (excluding array type symbol), not designed to be parsed with `use` syntax.
      */
-    private fun parseQualifiedName(
-        canBeArray: Boolean = false,
-        isUsage: Boolean = false,
-        prependPath: Reference? = null,
-        startPos: Position? = null
-    ): Reference? {
-        var start = startPos
-        var specifiedUsageName: String? = null
-        val tokenBuilder = prependPath?.tokens?.toMutableList() ?: mutableListOf()
-        var nameBuilder = ""
+    private fun parseTypeSymbol(): Reference {
+        var currentIdentifier = assert(TokenType.Identifier)
+        val tokens = mutableListOf<Token?>()
+        var nameBuilder = currentIdentifier?.literal
 
-        while (peekIf(TokenType.Identifier)) {
-            val identifier = next()!!
+        tokens += currentIdentifier
 
-            tokenBuilder += identifier
+        while (peekIf(TokenType.DoubleColon)) {
+            consume()
+            currentIdentifier = assert(TokenType.Identifier)
 
-            if (start == null) start = identifier.pos
-
-            nameBuilder += identifier.literal
-
-            nameBuilder += if (isUsage) {
-                if (peekMultiple(2, TokenType.DoubleColon, TokenType.OpenBrace)) break
-                else if (peekMultiple(2, TokenType.DoubleColon, TokenType.Identifier)) {
-                    consume()
-                    "."
-                } else if (peekIf(Token::isAsKeyword)) {
-                    consume()
-
-                    val specifiedName = assert(TokenType.Identifier)
-                    tokenBuilder += specifiedName
-
-                    specifiedUsageName = specifiedName?.literal
-
-                    break
-                } else break
-            } else {
-                if (peekMultiple(2, TokenType.DoubleColon, TokenType.Identifier)) {
-                    consume()
-                    "."
-                } else break
-            }
+            nameBuilder += ".${currentIdentifier?.literal}"
+            tokens += currentIdentifier
         }
 
-        if (canBeArray) {
-            while (peekIf(TokenType.OpenBracket)) {
-                consume()
-                assert(TokenType.CloseBracket) ?: break
-
-                nameBuilder += "[]"
-            }
-        }
-
-        return if (nameBuilder.isEmpty()) {
-            null
-        } else {
-            val className = nameBuilder.split(".").last()
-
-            Reference(
-                "${if (prependPath != null) "${prependPath.fullQualifiedPath}." else ""}$nameBuilder",
-                if (isUsage && specifiedUsageName != null) specifiedUsageName else className,
-                start,
-                tokenBuilder
-            )
-        }
+        return Reference(nameBuilder ?: "", *tokens.toTypedArray())
     }
 
-    private fun parseUsage(prependReference: Reference? = null): List<Reference?> {
-        val references = mutableListOf<Reference?>()
-        val reference = parseQualifiedName(
-            isUsage = true,
-            prependPath = prependReference
-        )
+    /**
+     * Used to parse type symbol with potential array suffix ([]), not designed to be parsed with `use` syntax
+     */
+    private fun parseComplexTypeSymbol(): Reference {
+        val baseTypeSymbol = parseTypeSymbol()
+        var arrayDimensionCounter = 0
+
+        while (peekIf(TokenType.OpenBracket)) {
+            consume()
+            assert(TokenType.CloseBracket)
+
+            arrayDimensionCounter++
+        }
+
+        baseTypeSymbol.appendArrayDimension(arrayDimensionCounter)
+
+        return baseTypeSymbol
+    }
+
+    private fun parseUsage(prependReference: Reference? = null): List<Reference> {
+        val references = mutableListOf<Reference>()
+        val reference = parseTypeSymbol()
 
         if (peekMultiple(2, TokenType.DoubleColon, TokenType.OpenBrace)) {
             consume()
@@ -339,6 +307,20 @@ class Parser(private val preference: AbstractPreference) {
             }
 
             assert(TokenType.CloseBrace)
+        } else if (peekIf(TokenType.Identifier) && peekIf(Token::isAsKeyword)) {
+            consume()
+            val aliasReference = assert(TokenType.Identifier)
+
+            if (prependReference != null) {
+                prependReference.append(reference.fullQualifiedPath)
+                prependReference.className = aliasReference?.literal ?: ""
+
+                references += prependReference
+            } else {
+                reference.className = aliasReference?.literal ?: ""
+
+                references += reference
+            }
         } else references += reference
 
         return references
@@ -399,7 +381,7 @@ class Parser(private val preference: AbstractPreference) {
                 // Must be a field
                 val name = assert(TokenType.Identifier)
                 assert(TokenType.Colon)
-                val typeReference = parseQualifiedName(true)
+                val typeReference = parseComplexTypeSymbol()
 
                 val field = Field(
                     classReference,
@@ -644,7 +626,7 @@ class Parser(private val preference: AbstractPreference) {
 
                 val returnType = if (peekIf(TokenType.Colon)) {
                     consume()
-                    parseQualifiedName(true)
+                    parseComplexTypeSymbol()
                 } else null
 
                 assert(TokenType.OpenBrace)
@@ -702,7 +684,7 @@ class Parser(private val preference: AbstractPreference) {
             }
 
             val colon = assert(TokenType.Colon)
-            val type = parseQualifiedName(true)
+            val type = parseComplexTypeSymbol()
 
             parameters += Parameter(
                 mutableKeyword,
@@ -942,7 +924,7 @@ class Parser(private val preference: AbstractPreference) {
 
     private fun parseConstructorExpression(inCompanionContext: Boolean): Expression {
         assert(TokenType.Identifier) // `new` keyword
-        val ownerReference = parseQualifiedName()
+        val ownerReference = parseTypeSymbol()
         assert(TokenType.OpenParenthesis)
         val arguments = parseArguments(inCompanionContext)
         assert(TokenType.CloseParenthesis)
@@ -966,7 +948,10 @@ class Parser(private val preference: AbstractPreference) {
             // Companion member calling, e.g. path::Class.field, path::Class.func(...)
             // TODO: This also might be id::class.class
             consume()
-            val classPath = parseQualifiedName(prependPath = Reference(name), startPos = name?.pos)
+            val classPath = parseTypeSymbol()
+
+            // Prepend previous identifier to classPath as top package
+            classPath.prepend(name?.literal ?: "")
 
             if (peekIf(TokenType.Colon)) return parseArrayInitialization(inCompanionContext, classPath)
 
@@ -991,7 +976,7 @@ class Parser(private val preference: AbstractPreference) {
 
                 IdentifierCallExpression(classPath, memberName, pos = pos)
             }
-        } else if (peekIf(TokenType.Colon)) parseArrayInitialization(inCompanionContext, Reference(name))
+        } else if (peekIf(TokenType.Colon)) parseArrayInitialization(inCompanionContext, Reference(name?.literal ?: "", name))
         else {
             if (peekIf(TokenType.Dot)) {
                 // Companion member calling, e.g. Class.field, Class.func()

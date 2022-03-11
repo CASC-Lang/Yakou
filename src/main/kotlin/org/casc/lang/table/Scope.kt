@@ -79,7 +79,7 @@ data class Scope(
                 val field = ownerClass.getField(fieldName)
 
                 return ClassField(
-                    Reference.fromClass(ownerClass),
+                    Reference(ownerClass),
                     Modifier.isStatic(field.modifiers),
                     !Modifier.isFinal(field.modifiers),
                     Accessor.fromModifier(field.modifiers),
@@ -157,7 +157,7 @@ data class Scope(
                     val constructor = ownerClass.getConstructor(*argumentClasses)
 
                     return FunctionSignature(
-                        Reference.fromClass(ownerClass),
+                        Reference(ownerClass),
                         companion = true,
                         mutable = false,
                         Accessor.fromModifier(constructor.modifiers),
@@ -182,7 +182,7 @@ data class Scope(
                             val function = ownerClass.getMethod(functionName, *argumentClasses)
 
                             signature = FunctionSignature(
-                                Reference.fromClass(ownerClass),
+                                Reference(ownerClass),
                                 Modifier.isStatic(function.modifiers),
                                 Modifier.isFinal(function.modifiers),
                                 Accessor.fromModifier(function.modifiers),

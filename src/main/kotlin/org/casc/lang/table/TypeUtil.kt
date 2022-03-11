@@ -25,10 +25,10 @@ object TypeUtil {
 
     fun asType(clazz: Class<*>?, preference: AbstractPreference): Type? = when {
         clazz == null -> null
-        clazz.isArray -> asArrayType(Reference.fromClass(clazz), preference)
+        clazz.isArray -> asArrayType(Reference(clazz), preference)
         else -> PrimitiveType.values.find {
             it.type() == clazz
-        } ?: asType(Reference.fromClass(clazz), preference)
+        } ?: asType(Reference(clazz), preference)
     }
 
     private fun asArrayType(reference: Reference, preference: AbstractPreference): ArrayType? {
