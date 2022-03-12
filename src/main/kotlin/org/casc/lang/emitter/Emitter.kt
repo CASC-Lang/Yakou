@@ -116,10 +116,12 @@ class Emitter(private val preference: AbstractPreference) {
     }
 
     private fun emitStatement(methodVisitor: MethodVisitor, statement: Statement) {
-        val label = Label()
+        if (statement.pos != null) {
+            val label = Label()
 
-        methodVisitor.visitLabel(label)
-        methodVisitor.visitLineNumber(statement.pos?.lineNumber!!, label)
+            methodVisitor.visitLabel(label)
+            methodVisitor.visitLineNumber(statement.pos?.lineNumber!!, label)
+        }
 
         when (statement) {
             is VariableDeclaration -> {
@@ -148,7 +150,7 @@ class Emitter(private val preference: AbstractPreference) {
                 }
             }
             is JForStatement -> {
-                if (statement.initStatement != null && statement.initStatement is ExpressionStatement && statement.initStatement.expression != null)
+                if (statement.initStatement != null)
                     emitStatement(methodVisitor, statement.initStatement)
 
                 val startLabel = Label()
@@ -176,17 +178,17 @@ class Emitter(private val preference: AbstractPreference) {
                 }
             }
             is ExpressionStatement -> {
-                val expression = statement.expression!!
+                statement.expression?.let {
+                    emitExpression(methodVisitor, it)
 
-                emitExpression(methodVisitor, expression)
-
-                if (expression is FunctionCallExpression) {
-                    // Check if function's return value is unused, if yes, then add pop or pop2 opcode
-                    if (expression.type == PrimitiveType.I64 || expression.type == PrimitiveType.F64) methodVisitor.visitInsn(
-                        Opcodes.POP2
-                    )
-                    else if (expression.type != PrimitiveType.Unit) methodVisitor.visitInsn(Opcodes.POP)
-                } else if (expression is ConstructorCallExpression) methodVisitor.visitInsn(Opcodes.POP)
+                    if (it is FunctionCallExpression) {
+                        // Check if function's return value is unused, if yes, then add pop or pop2 opcode
+                        if (it.type == PrimitiveType.I64 || it.type == PrimitiveType.F64) methodVisitor.visitInsn(
+                            Opcodes.POP2
+                        )
+                        else if (it.type != PrimitiveType.Unit) methodVisitor.visitInsn(Opcodes.POP)
+                    } else if (it is ConstructorCallExpression) methodVisitor.visitInsn(Opcodes.POP)
+                }
             }
             is ReturnStatement -> {
                 emitExpression(methodVisitor, statement.expression!!)
