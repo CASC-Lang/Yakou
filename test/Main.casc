@@ -15,14 +15,14 @@ impl Main : Rock {
         }
     }
 
-    new(k: i32): super("lol") {
+    new(k: i32): super(k + "1 + 2") {
         self.a = k
-        super.a = "bruh"
     }
 
     new(): self(1) {}
 
     ovrd fn lol(): i32 {
+        mut a := "ab"
         if true {
             return 1
         } else return 1

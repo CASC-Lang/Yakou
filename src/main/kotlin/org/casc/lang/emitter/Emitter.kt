@@ -4,10 +4,11 @@ import org.casc.lang.ast.*
 import org.casc.lang.ast.Function
 import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.table.*
-import org.objectweb.asm.ClassWriter
-import org.objectweb.asm.Label
-import org.objectweb.asm.MethodVisitor
-import org.objectweb.asm.Opcodes
+import org.casc.lang.table.Type
+import org.objectweb.asm.*
+import java.lang.invoke.CallSite
+import java.lang.invoke.MethodHandles
+import java.lang.invoke.MethodType
 import java.io.File as JFile
 
 class Emitter(private val preference: AbstractPreference) {
@@ -397,19 +398,23 @@ class Emitter(private val preference: AbstractPreference) {
                         emitBitOperation(methodVisitor, expression)
                     }
                     else -> {
-                        emitBinaryExpressions(methodVisitor, expression.left!!, expression.right!!)
+                        if (expression.isConcatExpression) {
+                            emitStringConcat(methodVisitor, expression)
+                        } else {
+                            emitBinaryExpressions(methodVisitor, expression.left!!, expression.right!!)
 
-                        val type = (expression.type!! as PrimitiveType)
-                        val opcode = when (expression.operator?.type) {
-                            TokenType.Plus -> type.addOpcode
-                            TokenType.Minus -> type.subOpcode
-                            TokenType.Star -> type.mulOpcode
-                            TokenType.Slash -> type.divOpcode
-                            TokenType.Percentage -> type.remOpcode
-                            else -> null // Should not be null
+                            val type = (expression.type!! as PrimitiveType)
+                            val opcode = when (expression.operator?.type) {
+                                TokenType.Plus -> type.addOpcode
+                                TokenType.Minus -> type.subOpcode
+                                TokenType.Star -> type.mulOpcode
+                                TokenType.Slash -> type.divOpcode
+                                TokenType.Percentage -> type.remOpcode
+                                else -> null // Should not be null
+                            }
+
+                            methodVisitor.visitInsn(opcode!!)
                         }
-
-                        methodVisitor.visitInsn(opcode!!)
                     }
                 }
             }
@@ -517,6 +522,75 @@ class Emitter(private val preference: AbstractPreference) {
                 }
             }
             else -> {}
+        }
+    }
+
+    private fun emitStringConcat(
+        methodVisitor: MethodVisitor,
+        expression: BinaryExpression
+    ) {
+        fun flattenExpressionTree(expressions: BinaryExpression): List<Expression?> {
+            val flattenedExpressions = mutableListOf<Expression?>()
+
+            for (expr in expressions.getExpressions())
+                if (expr is BinaryExpression) flattenedExpressions += flattenExpressionTree(expr)
+                else flattenedExpressions += expr
+
+            return flattenedExpressions
+        }
+
+        val flattenedExpressions = flattenExpressionTree(expression)
+
+        if (flattenedExpressions.all { it is LiteralExpression }) {
+            val stringLiteral = flattenedExpressions.map { (it as LiteralExpression).getLiteral() }.joinToString("")
+
+            methodVisitor.visitLdcInsn(stringLiteral)
+        } else {
+            val methodDescriptor = StringBuilder(flattenedExpressions.size)
+            var builder = ""
+
+            for (expr in flattenedExpressions) {
+                expr?.let {
+                    builder += when (it) {
+                        is StrLiteral -> it.literal!!.literal
+                        is IntegerLiteral -> it.literal!!.literal
+                        is FloatLiteral -> it.literal!!.literal
+                        is CharLiteral -> it.literal!!.literal
+                        is BoolLiteral -> it.literal!!.literal
+                        is NullLiteral -> it.literal!!.literal
+                        else -> {
+                            methodDescriptor.append(it.type!!.descriptor)
+                            "\u0001"
+                        }
+                    }
+
+                    if (expr !is LiteralExpression)
+                        emitExpression(methodVisitor, expr)
+                }
+            }
+
+            val mt = MethodType.methodType(
+                CallSite::class.java,
+                MethodHandles.Lookup::class.java,
+                String::class.java,
+                MethodType::class.java,
+                String::class.java,
+                Array<Any>::class.java
+            )
+            val h = Handle(
+                Opcodes.H_INVOKESTATIC,
+                "java/lang/invoke/StringConcatFactory",
+                "makeConcatWithConstants",
+                mt.toMethodDescriptorString(),
+                false
+            )
+
+            methodVisitor.visitInvokeDynamicInsn(
+                "makeConcatWithConstants",
+                "($methodDescriptor)Ljava/lang/String;",
+                h,
+                builder
+            )
         }
     }
 

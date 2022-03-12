@@ -15,9 +15,13 @@ sealed class Expression {
     var castTo: Type? = null
 
     /* Exceptions: PreviousExpression does not count as sub Expression */
-    open fun getExpressions(): List<Expression?>? = null
+    open fun getExpressions(): List<Expression?> = listOf()
 
-    data class IntegerLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression() {
+    data class IntegerLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression(),
+        LiteralExpression {
+        override fun getLiteral(): String? =
+            literal?.literal
+
         fun removeTypeSuffix() {
             if (literal?.literal?.lastOrNull()?.isLetter() == true) {
                 literal.literal = literal.literal.dropLast(1)
@@ -37,7 +41,11 @@ sealed class Expression {
             literal?.literal?.endsWith('L') ?: false
     }
 
-    data class FloatLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression() {
+    data class FloatLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression(),
+        LiteralExpression {
+        override fun getLiteral(): String? =
+            literal?.literal
+
         fun removeTypeSuffix() {
             if (literal?.literal?.lastOrNull()?.isLetter() == true) {
                 literal.literal = literal.literal.dropLast(1)
@@ -51,13 +59,29 @@ sealed class Expression {
             literal?.literal?.endsWith('D') ?: false
     }
 
-    data class CharLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression()
+    data class CharLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression(),
+        LiteralExpression {
+        override fun getLiteral(): String? =
+            literal?.literal
+    }
 
-    data class StrLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression()
+    data class StrLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression(),
+        LiteralExpression {
+        override fun getLiteral(): String? =
+            literal?.literal
+    }
 
-    data class BoolLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression()
+    data class BoolLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression(),
+        LiteralExpression {
+        override fun getLiteral(): String? =
+            literal?.literal
+    }
 
-    data class NullLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression()
+    data class NullLiteral(val literal: Token?, override val pos: Position? = literal?.pos) : Expression(),
+        LiteralExpression {
+        override fun getLiteral(): String? =
+            literal?.literal
+    }
 
     data class IdentifierCallExpression(
         var ownerReference: Reference?, // Companion field calling
@@ -129,7 +153,7 @@ sealed class Expression {
 
     // TODO: Allows objects in BinaryExpression for further feature implementation such as Operator Overloading
     data class BinaryExpression(
-        var left: Expression?, val operator: Token?, var right: Expression?,
+        var left: Expression?, val operator: Token?, var right: Expression?, var isConcatExpression: Boolean = false,
         override val pos: Position? = left?.pos?.extend(right?.pos)
     ) : Expression() {
         override fun getExpressions(): List<Expression?> =

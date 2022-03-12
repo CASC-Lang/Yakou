@@ -11,6 +11,7 @@ import org.casc.lang.utils.pforEach
 import org.casc.lang.utils.pmap
 import org.casc.lang.utils.pmapNotNull
 import java.lang.reflect.Modifier
+import kotlin.math.exp
 import java.io.File as JFile
 
 class Checker(private val preference: AbstractPreference) {
@@ -919,7 +920,10 @@ class Checker(private val preference: AbstractPreference) {
                 } else {
                     when (operator) {
                         TokenType.Plus, TokenType.Minus, TokenType.Star, TokenType.Slash, TokenType.Percentage -> {
-                            if (leftType is PrimitiveType && rightType is PrimitiveType && leftType.isNumericType() && rightType.isNumericType()) {
+                            if (operator == TokenType.Plus && (leftType == PrimitiveType.Str || rightType == PrimitiveType.Str)) {
+                                expression.type = PrimitiveType.Str
+                                expression.isConcatExpression = true
+                            } else if (leftType is PrimitiveType && rightType is PrimitiveType && leftType.isNumericType() && rightType.isNumericType()) {
                                 expression.promote()
                             } else {
                                 reports += Error(
