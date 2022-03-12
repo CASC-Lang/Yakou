@@ -6,6 +6,18 @@ import org.casc.lang.table.Reference
 import org.casc.lang.table.Type
 
 sealed class Expression {
+    companion object {
+        fun flattenExpressionTree(expressions: Expression): List<Expression?> {
+            val flattenedExpressions = mutableListOf<Expression?>()
+
+            for (expr in expressions.getExpressions())
+                if (expr is BinaryExpression) flattenedExpressions += flattenExpressionTree(expr)
+                else flattenedExpressions += expr
+
+            return flattenedExpressions
+        }
+    }
+
     abstract val pos: Position?
 
     /* Provided by Checker Unit */

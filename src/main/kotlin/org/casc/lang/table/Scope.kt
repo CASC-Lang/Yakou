@@ -22,7 +22,9 @@ data class Scope(
     var fields: MutableSet<ClassField> = mutableSetOf(),
     var signatures: MutableSet<FunctionSignature> = mutableSetOf(),
     var variables: MutableList<Variable> = mutableListOf(),
-    var isCompScope: Boolean = false
+    var scopeDepth: Int = 0, // Scope always starts from global scope
+    var isCompScope: Boolean = false,
+    var isLoopScope: Boolean = false,
 ) {
     constructor(
         parent: Scope,
@@ -30,7 +32,8 @@ data class Scope(
         mutable: Boolean? = null,
         accessor: Accessor? = null,
         classPath: Reference? = null,
-        isCompScope: Boolean = false
+        isCompScope: Boolean = false,
+        isLoopScope: Boolean = false,
     ) : this(
         parent.preference,
         companion ?: parent.companion,
@@ -42,7 +45,9 @@ data class Scope(
         parent.fields.toMutableSet(),
         parent.signatures.toMutableSet(),
         parent.variables.toMutableList(),
-        isCompScope
+        parent.scopeDepth + 1,
+        isCompScope,
+        isLoopScope
     ) {
         if (variables.isEmpty() && !isCompScope) {
             // Insert a dummy variable
@@ -222,7 +227,8 @@ data class Scope(
             mutable,
             variableName,
             type,
-            index
+            index,
+            scopeDepth
         )
 
         if (variables.contains(variable)) return false
@@ -233,8 +239,8 @@ data class Scope(
     fun findVariable(variableName: String): Variable? =
         if (!isCompScope && (variableName == "self" || variableName == "super")) {
             when (variableName) {
-                "self" -> Variable(true, "self", findType(classReference), 0)
-                "super" -> Variable(true, "super", findType(parentClassPath), 0)
+                "self" -> Variable(true, "self", findType(classReference), 0, scopeDepth)
+                "super" -> Variable(true, "super", findType(parentClassPath), 0, scopeDepth)
                 else -> null // Should not happen
             }
         } else variables.find { it.name == variableName }

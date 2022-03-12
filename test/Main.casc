@@ -19,7 +19,12 @@ impl Main : Rock {
         self.a = k
     }
 
-    new(): self(1) {}
+    new(): self(1) {
+        mut a := ""
+        for ;; {
+            a = a + 1
+        }
+    }
 
     ovrd fn lol(): i32 {
         mut a := "ab"

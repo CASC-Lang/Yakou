@@ -148,7 +148,7 @@ class Emitter(private val preference: AbstractPreference) {
                 }
             }
             is JForStatement -> {
-                if (statement.initStatement != null)
+                if (statement.initStatement != null && statement.initStatement is ExpressionStatement && statement.initStatement.expression != null)
                     emitStatement(methodVisitor, statement.initStatement)
 
                 val startLabel = Label()
@@ -529,17 +529,7 @@ class Emitter(private val preference: AbstractPreference) {
         methodVisitor: MethodVisitor,
         expression: BinaryExpression
     ) {
-        fun flattenExpressionTree(expressions: BinaryExpression): List<Expression?> {
-            val flattenedExpressions = mutableListOf<Expression?>()
-
-            for (expr in expressions.getExpressions())
-                if (expr is BinaryExpression) flattenedExpressions += flattenExpressionTree(expr)
-                else flattenedExpressions += expr
-
-            return flattenedExpressions
-        }
-
-        val flattenedExpressions = flattenExpressionTree(expression)
+        val flattenedExpressions = Expression.flattenExpressionTree(expression)
 
         if (flattenedExpressions.all { it is LiteralExpression }) {
             val stringLiteral = flattenedExpressions.map { (it as LiteralExpression).getLiteral() }.joinToString("")

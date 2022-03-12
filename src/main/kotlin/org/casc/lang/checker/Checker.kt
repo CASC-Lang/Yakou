@@ -5,6 +5,7 @@ import org.casc.lang.ast.Function
 import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
+import org.casc.lang.compilation.Warning
 import org.casc.lang.table.*
 import org.casc.lang.utils.getOrElse
 import org.casc.lang.utils.pforEach
@@ -458,7 +459,7 @@ class Checker(private val preference: AbstractPreference) {
                 }
             }
             is JForStatement -> {
-                val innerScope = Scope(scope)
+                val innerScope = Scope(scope, isLoopScope = true)
 
                 checkStatement(statement.initStatement, innerScope, returnType, useSameScope = true)
 
@@ -620,6 +621,16 @@ class Checker(private val preference: AbstractPreference) {
 
                             if (rightType == PrimitiveType.Null) {
                                 variable.type = PrimitiveType.Null
+                            }
+
+                            if (scope.scopeDepth > variable.declaredScopeDepth &&
+                                    expression.rightExpression is BinaryExpression &&
+                                    expression.rightExpression.isConcatExpression) {
+                                reports += Warning(
+                                    expression.pos,
+                                    "Potential unnecessary performance cost while concatenating string through `+` and assign to variable in parent context in loop",
+                                    "Consider use `java::lang::StringBuilder`"
+                                )
                             }
 
                             expression.leftExpression.isAssignedBy = true
