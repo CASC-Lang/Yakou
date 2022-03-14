@@ -22,6 +22,7 @@
 - [x] constructors
 - [x] method overriding
 - [x] check all code paths returns value
+- [x] access checking
 
 ##### IMPLEMENTATION IN PROGRESS
 
@@ -31,7 +32,6 @@
 - - [ ] while loop
 - - [ ] do-while loop
 - [ ] label
-- [ ] access checking
 - [ ] if expression (ternary expression in Java)
 - [ ] generic
 - [ ] <type>.class
