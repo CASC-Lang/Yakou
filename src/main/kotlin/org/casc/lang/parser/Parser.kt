@@ -204,6 +204,7 @@ class Parser(private val preference: AbstractPreference) {
         var parentClassReference: Reference? = null
         var functions = listOf<Function>()
         var constructors = listOf<Constructor>()
+        var companionBlock = listOf<Statement?>()
 
         if (peekIf(Token::isImplKeyword)) {
             next()
@@ -224,9 +225,10 @@ class Parser(private val preference: AbstractPreference) {
 
             if (peekIf(TokenType.OpenBrace)) {
                 consume()
-                val (fns, ctors) = parseFunctions(classReference, parentClassReference)
+                val (fns, ctors, compBlocks) = parseFunctions(classReference, parentClassReference)
                 functions = fns
                 constructors = ctors
+                companionBlock = compBlocks
                 assert(TokenType.CloseBrace)
             }
         }
@@ -242,6 +244,7 @@ class Parser(private val preference: AbstractPreference) {
             classKeyword,
             className,
             fields,
+            companionBlock,
             constructors,
             functions
         )
@@ -408,7 +411,8 @@ class Parser(private val preference: AbstractPreference) {
     private fun parseFunctions(
         classReference: Reference?,
         parentReference: Reference?
-    ): Pair<List<Function>, List<Constructor>> {
+    ): Triple<List<Function>, List<Constructor>, List<Statement?>> {
+        val companionBlock = mutableListOf<Statement?>()
         val functions = object : MutableObjectSet<Function>() {
             override fun isDuplicate(a: Function, b: Function): Boolean =
                 a.name?.literal == b.name?.literal && a.parameters == b.parameters
@@ -418,14 +422,33 @@ class Parser(private val preference: AbstractPreference) {
                 a.parameters == b.parameters
         }
 
-        blockParsing@ while (!peekIf(TokenType.CloseBrace)) { // Break the loop after encountered class declaration's close bracket
+        while (!peekIf(TokenType.CloseBrace)) { // Break the loop after encountered class declaration's close bracket
+            if (peekIf(Token::isCompKeyword)) {
+                val compKeyword = next()
+
+                assert(TokenType.OpenBrace)
+                // Companion block
+                if (companionBlock.isNotEmpty()) {
+                    // Companion block already declared
+                    reports += Error(
+                        compKeyword?.pos,
+                        "Companion block already declared",
+                        "Try merge companion blocks together"
+                    )
+                }
+
+                companionBlock += parseStatements(true)
+
+                assert(TokenType.CloseBrace)
+            }
+
             val modifiers = object : MutableObjectSet<Token>() {
                 override fun isDuplicate(a: Token, b: Token): Boolean =
                     a.literal == b.literal
             }
 
             while (!peekIf(Token::isFnKeyword) && !peekIf(Token::isNewKeyword)) {
-                val nextToken = assert(TokenType.Identifier) ?: return functions.toList() to constructors.toList()
+                val nextToken = assert(TokenType.Identifier) ?: continue
 
                 if (!nextToken.isAccessorKeyword() && !nextToken.isMutKeyword() && !nextToken.isOvrdKeyword()) {
                     // Unexpected token
@@ -627,7 +650,7 @@ class Parser(private val preference: AbstractPreference) {
             }
         }
 
-        return functions.toList() to constructors.toList()
+        return Triple(functions.toList(), constructors.toList(), companionBlock)
     }
 
     /**

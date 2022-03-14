@@ -6,6 +6,10 @@ intl mut:
 }
 
 impl Main : Rock {
+    comp {
+        sys.out.println("Hello!")
+    }
+
     fn main(args: str[]) {
         a := new Main()
         a.lol()

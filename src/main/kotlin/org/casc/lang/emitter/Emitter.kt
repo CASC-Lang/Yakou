@@ -39,6 +39,20 @@ class Emitter(private val preference: AbstractPreference) {
             emitField(classWriter, it)
         }
 
+        if (clazz.companionBlock.isNotEmpty()) {
+            val methodVisitor = classWriter.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null)
+
+            methodVisitor.visitCode()
+
+            clazz.companionBlock.forEach {
+                emitStatement(methodVisitor, it!!)
+            }
+
+            methodVisitor.visitInsn(Opcodes.RETURN)
+            methodVisitor.visitMaxs(-1, -1)
+            methodVisitor.visitEnd()
+        }
+
         clazz.constructors.forEach {
             emitConstructor(classWriter, it)
         }

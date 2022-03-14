@@ -151,9 +151,14 @@ class Checker(private val preference: AbstractPreference) {
             } else it
         }.forEach(classScope.usages::add)
 
+        clazz.companionBlock.forEach {
+            checkStatement(it, Scope(classScope), PrimitiveType.Unit)
+        }
+
         clazz.constructors.pforEach {
             checkConstructorBody(it, Scope(classScope))
         }
+
         clazz.functions.pforEach {
             checkFunctionBody(it, Scope(classScope, isCompScope = it.selfKeyword == null))
 

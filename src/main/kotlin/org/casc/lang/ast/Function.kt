@@ -18,7 +18,7 @@ data class Function(
     var ownerType: Type? = null,
     var parameterTypes: List<Type?>? = listOf(),
     var returnType: Type? = null
-) : HasDescriptor, HasFlag, HasSignature {
+) : Method(), HasDescriptor, HasFlag, HasSignature {
     override val descriptor: String
         get() = "(${
             parameterTypes?.fold("") { s, type ->
@@ -26,7 +26,7 @@ data class Function(
             }
         })${returnType?.descriptor}"
     override val flag: Int =
-        mutKeyword.getOrElse(0, Opcodes.ACC_FINAL) + accessor.access + selfKeyword.getOrElse(Opcodes.ACC_STATIC)
+        mutKeyword.getOrElse(0, Opcodes.ACC_FINAL) + accessor.access + selfKeyword.getOrElse(0, Opcodes.ACC_STATIC)
 
     override fun asSignature() =
         FunctionSignature(

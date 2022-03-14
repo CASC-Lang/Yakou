@@ -18,7 +18,7 @@ data class Constructor(
     var parameterTypes: List<Type?> = listOf(),
     var parentConstructorArgumentsTypes: List<Type?> = listOf(),
     var parentConstructorSignature: FunctionSignature? = null
-) : HasDescriptor, HasFlag, HasSignature {
+) : Method(), HasDescriptor, HasFlag, HasSignature {
     override val descriptor: String
         get() = "(${
             parameterTypes.fold("") { s, type ->
