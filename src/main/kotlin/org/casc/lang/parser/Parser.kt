@@ -28,7 +28,7 @@ class Parser(private val preference: AbstractPreference) {
     // PRIVATE UTILITY FUNCTIONS
     // ================================
 
-    private fun assert(type: TokenType): Token? = when {
+    private tailrec fun assert(type: TokenType): Token? = when {
         tokens.isEmpty() -> {
             reports += Error(
                 "Unable to compile empty source"
@@ -37,7 +37,7 @@ class Parser(private val preference: AbstractPreference) {
         }
         pos >= tokens.size -> {
             reports += Warning(
-                "<Internal Compiler Error> Reached last token but parsing still goes on"
+                "Exceeding source range"
             )
             null
         }
@@ -47,11 +47,11 @@ class Parser(private val preference: AbstractPreference) {
                 tokens[pos].pos,
                 "Unexpected token ${tokens[pos++].type}, expected token $type"
             )
-            null
+            assert(type)
         }
     }
 
-    private fun assert(predicate: (Token) -> Boolean): Token? = when {
+    private tailrec fun assert(predicate: (Token) -> Boolean): Token? = when {
         tokens.isEmpty() -> {
             reports += Error(
                 "Unable to compile empty source"
@@ -70,7 +70,7 @@ class Parser(private val preference: AbstractPreference) {
                 tokens[pos].pos,
                 "Unexpected token ${tokens[pos++].type}, expected predicate $predicate"
             )
-            null
+            assert(predicate)
         }
     }
 
