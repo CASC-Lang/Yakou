@@ -120,15 +120,40 @@ class Checker(private val preference: AbstractPreference) {
         }
     }
 
-    private fun checkAccessible(currentScope: Scope, target: HasAccessor, targetOwnerClass: Type): Boolean =
+    private fun checkAccessible(currentScope: Scope, errorPos: Position?, target: HasAccessor, targetOwnerClass: Type) {
         when (target.accessor) {
-            Accessor.Pub -> true
-            Accessor.Prot -> targetOwnerClass.type()
-                ?.isAssignableFrom(currentScope.findType(currentScope.classReference)?.type() ?: Any::class.java)
-                .getOrElse()
-            Accessor.Intl -> targetOwnerClass.isSamePackage(currentScope.findType(currentScope.classReference))
-            Accessor.Priv -> false
+            Accessor.Pub -> {}
+            Accessor.Prot -> {
+                // TODO: Store parent class data in ClassType so we can remove `Type#type()`
+                val accessible = targetOwnerClass.type()
+                    ?.isAssignableFrom(currentScope.findType(currentScope.classReference)?.type() ?: Any::class.java)
+                    .getOrElse()
+
+                if (!accessible) {
+                    reports += Error(
+                        errorPos,
+                        "Unable to access `prot` class member from unrelated hierarchy tree class"
+                    )
+                }
+            }
+            Accessor.Intl -> {
+                val accessible = targetOwnerClass.isSamePackage(currentScope.findType(currentScope.classReference))
+
+                if (!accessible) {
+                    reports += Error(
+                        errorPos,
+                        "Unable to access `intl` class member from unrelated package"
+                    )
+                }
+            }
+            Accessor.Priv -> {
+                reports += Error(
+                    errorPos,
+                    "Unable to access `priv` class member from other class"
+                )
+            }
         }
+    }
 
     private fun checkFile(file: File, classScope: Scope): File {
         file.clazz = checkClass(file.clazz, classScope)
@@ -709,7 +734,8 @@ class Checker(private val preference: AbstractPreference) {
                         )
                     } else {
                         checkCompanionAccessibility(field)
-                        checkAccessible(scope, field, field.type)
+                        if (ownerReference != scope.classReference)
+                            checkAccessible(scope, expression.name.pos, field, field.type)
 
                         expression.type = field.type
                         expression.isCompField = field.companion
@@ -727,7 +753,8 @@ class Checker(private val preference: AbstractPreference) {
                         )
                     } else {
                         checkCompanionAccessibility(field)
-                        checkAccessible(scope, field, field.type)
+                        if (field.ownerReference != scope.classReference)
+                            checkAccessible(scope, expression.name.pos, field, field.type)
 
                         expression.type = field.type
                         expression.isCompField = field.companion
@@ -809,7 +836,13 @@ class Checker(private val preference: AbstractPreference) {
                         }) does not exist in current context"
                     )
                 } else {
-                    checkAccessible(scope, functionSignature, findType(functionSignature.ownerReference, scope)!!)
+                    if (ownerReference != scope.classReference)
+                        checkAccessible(
+                            scope,
+                            expression.name.pos,
+                            functionSignature,
+                            findType(functionSignature.ownerReference, scope)!!
+                        )
 
                     if (functionSignature.ownerReference == expression.ownerReference) {
                         // Function's owner class is same as current class
@@ -870,7 +903,8 @@ class Checker(private val preference: AbstractPreference) {
                         }) does not exist"
                     )
                 } else {
-                    checkAccessible(scope, signature, findType(signature.ownerReference, scope)!!)
+                    if (expression.constructorOwnerReference != scope.classReference)
+                        checkAccessible(scope, expression.pos, signature, findType(signature.ownerReference, scope)!!)
 
                     expression.type = signature.returnType
                     expression.referenceFunctionSignature = signature
