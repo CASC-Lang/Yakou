@@ -224,7 +224,7 @@ class Parser(private val preference: AbstractPreference) {
 
             if (peekIf(TokenType.OpenBrace)) {
                 consume()
-                val (fns, ctors) = parseFunctions(usages, classReference, parentClassReference)
+                val (fns, ctors) = parseFunctions(classReference, parentClassReference)
                 functions = fns
                 constructors = ctors
                 assert(TokenType.CloseBrace)
@@ -406,12 +406,9 @@ class Parser(private val preference: AbstractPreference) {
     }
 
     private fun parseFunctions(
-        usages: List<Reference?>,
         classReference: Reference?,
-        parentReference: Reference?,
-        compKeyword: Token? = null
+        parentReference: Reference?
     ): Pair<List<Function>, List<Constructor>> {
-        var compScopeDeclared = false
         val functions = object : MutableObjectSet<Function>() {
             override fun isDuplicate(a: Function, b: Function): Boolean =
                 a.name?.literal == b.name?.literal && a.parameters == b.parameters
@@ -427,50 +424,16 @@ class Parser(private val preference: AbstractPreference) {
                     a.literal == b.literal
             }
 
-            modifierParsing@ while (!peekIf(Token::isFnKeyword) && !peekIf(Token::isNewKeyword)) {
+            while (!peekIf(Token::isFnKeyword) && !peekIf(Token::isNewKeyword)) {
                 val nextToken = assert(TokenType.Identifier) ?: return functions.toList() to constructors.toList()
 
-                if (!nextToken.isCompKeyword() && !nextToken.isAccessorKeyword() && !nextToken.isMutKeyword() && !nextToken.isOvrdKeyword()) {
+                if (!nextToken.isAccessorKeyword() && !nextToken.isMutKeyword() && !nextToken.isOvrdKeyword()) {
                     // Unexpected token
                     reports += Error(
                         nextToken.pos,
                         "Unexpected `${nextToken.literal}`"
                     )
                     continue
-                }
-
-                if (nextToken.isCompKeyword()) {
-                    if (modifiers.isNotEmpty()) {
-                        // Modifier exists
-                        reports += Error(
-                            nextToken.pos,
-                            "Cannot declare `comp` block after several modifiers declared",
-                            "Remove this block"
-                        )
-                    }
-
-                    if (compScopeDeclared) {
-                        // Duplicate `comp` block
-                        reports += Error(
-                            nextToken.pos,
-                            "Duplicate `comp` block",
-                            "Remove this block"
-                        )
-                    } else compScopeDeclared = true
-
-                    if (compKeyword != null) {
-                        // Nested `comp` block
-                        reports += Error(
-                            nextToken.pos,
-                            "Cannot declare nested `comp` block",
-                            "Remove this block"
-                        )
-                    }
-
-                    assert(TokenType.OpenBrace)
-                    functions.addAll(parseFunctions(usages, classReference, parentReference, nextToken).first)
-                    assert(TokenType.CloseBrace)
-                    continue@blockParsing
                 }
 
                 if (modifiers.find(Token::isAccessorKeyword) != null && nextToken.isAccessorKeyword()) {
@@ -537,16 +500,6 @@ class Parser(private val preference: AbstractPreference) {
 
             if (peekIf(Token::isNewKeyword)) {
                 // Constructor declaration
-
-                if (compKeyword != null) {
-                    // Constructor declared in `comp` block
-                    reports += Error(
-                        peek()?.pos,
-                        "Cannot declare constructor in `comp` block",
-                        "Try move this constructor out of any `comp` block"
-                    )
-                }
-
                 if (modifiers.find(Token::isOvrdKeyword) != null) {
                     // Constructor with `ovrd` keyword
                     reports += Error(
@@ -568,7 +521,15 @@ class Parser(private val preference: AbstractPreference) {
                 val newKeyword = next() // `new` keyword
 
                 assert(TokenType.OpenParenthesis)
-                val parameters = parseParameters()
+                val (parameters, parameterSelfKeyword) = parseParameters()
+
+                if (parameterSelfKeyword != null) {
+                    reports += Error(
+                        parameterSelfKeyword.pos,
+                        "constructor has already added `self` variable under the hood",
+                        "Remove `self` keyword"
+                    )
+                }
                 assert(TokenType.CloseParenthesis)
 
                 var superKeyword: Token? = null
@@ -621,7 +582,7 @@ class Parser(private val preference: AbstractPreference) {
 
                 val name = assert(TokenType.Identifier)
                 assert(TokenType.OpenParenthesis)
-                val parameters = parseParameters()
+                val (parameters, parameterSelfKeyword) = parseParameters()
                 assert(TokenType.CloseParenthesis)
 
                 val returnType = if (peekIf(TokenType.Colon)) {
@@ -630,7 +591,7 @@ class Parser(private val preference: AbstractPreference) {
                 } else null
 
                 assert(TokenType.OpenBrace)
-                val statements = parseStatements(compKeyword != null)
+                val statements = parseStatements(parameterSelfKeyword != null)
                 assert(TokenType.CloseBrace)
 
                 val function = Function(
@@ -638,7 +599,7 @@ class Parser(private val preference: AbstractPreference) {
                     modifiers.find(Token::isAccessorKeyword),
                     modifiers.find(Token::isOvrdKeyword),
                     modifiers.find(Token::isMutKeyword),
-                    compKeyword,
+                    parameterSelfKeyword,
                     name,
                     parameters,
                     returnType,
@@ -669,25 +630,32 @@ class Parser(private val preference: AbstractPreference) {
         return functions.toList() to constructors.toList()
     }
 
-    private fun parseParameters(): List<Parameter> {
+    /**
+     * Returns list of parameters and an optional `self` keyword token to determine whether owner function is companion or not
+     */
+    private fun parseParameters(): Pair<List<Parameter>, Token?> {
+        var selfToken: Token? = null
         val parameters = mutableListOf<Parameter>()
 
         while (peekIf(TokenType.Identifier)) {
-            var mutableKeyword = next()
-            val parameterName: Token?
+            val parameterName = assert(TokenType.Identifier)
 
-            if (mutableKeyword?.isMutKeyword() == true) {
-                parameterName = assert(TokenType.Identifier)
-            } else {
-                parameterName = mutableKeyword
-                mutableKeyword = null
+            if (parameterName?.isSelfKeyword() == true) {
+                if (parameters.isNotEmpty()) {
+                    // `self` declared after other parameters
+                    reports += Error(
+                        parameterName.pos,
+                        "`self` can only be at the start of parameters",
+                        "move `self` to the start of parameters"
+                    )
+                } else selfToken = parameterName
             }
+
 
             val colon = assert(TokenType.Colon)
             val type = parseComplexTypeSymbol()
 
             parameters += Parameter(
-                mutableKeyword,
                 parameterName,
                 colon,
                 type
@@ -698,7 +666,7 @@ class Parser(private val preference: AbstractPreference) {
             } else break
         }
 
-        return parameters
+        return parameters to selfToken
     }
 
     private fun parseStatements(inCompanionContext: Boolean = false): List<Statement> {
@@ -986,7 +954,10 @@ class Parser(private val preference: AbstractPreference) {
 
                 IdentifierCallExpression(classPath, memberName, pos = pos)
             }
-        } else if (peekIf(TokenType.Colon)) parseArrayInitialization(inCompanionContext, Reference(name?.literal ?: "", name))
+        } else if (peekIf(TokenType.Colon)) parseArrayInitialization(
+            inCompanionContext,
+            Reference(name?.literal ?: "", name)
+        )
         else {
             if (peekIf(TokenType.Dot)) {
                 // Companion member calling, e.g. Class.field, Class.func()

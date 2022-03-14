@@ -12,7 +12,6 @@ import org.casc.lang.utils.pforEach
 import org.casc.lang.utils.pmap
 import org.casc.lang.utils.pmapNotNull
 import java.lang.reflect.Modifier
-import kotlin.math.exp
 import java.io.File as JFile
 
 class Checker(private val preference: AbstractPreference) {
@@ -156,7 +155,7 @@ class Checker(private val preference: AbstractPreference) {
             checkConstructorBody(it, Scope(classScope))
         }
         clazz.functions.pforEach {
-            checkFunctionBody(it, Scope(classScope, isCompScope = it.compKeyword != null))
+            checkFunctionBody(it, Scope(classScope, isCompScope = it.selfKeyword != null))
 
             if (!checkControlFlow(it.statements, it.returnType)) {
                 // Not all code path returns value
@@ -214,7 +213,7 @@ class Checker(private val preference: AbstractPreference) {
                 val type = findType(it.typeReference, localScope)
 
                 if (type == null) reports.reportUnknownTypeSymbol(it.typeReference!!)
-                else localScope.registerVariable(it.mutable != null, it.name!!.literal, type)
+                else localScope.registerVariable(false, it.name!!.literal, type)
 
                 type
             }

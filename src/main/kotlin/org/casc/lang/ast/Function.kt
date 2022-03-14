@@ -9,7 +9,7 @@ data class Function(
     val accessorToken: Token?,
     val ovrdKeyword: Token?,
     val mutKeyword: Token?,
-    val compKeyword: Token?,
+    val selfKeyword: Token?, // determine whether function is companion
     val name: Token?,
     val parameters: List<Parameter>,
     val returnTypeReference: Reference?,
@@ -26,12 +26,12 @@ data class Function(
             }
         })${returnType?.descriptor}"
     override val flag: Int =
-        mutKeyword.getOrElse(0, Opcodes.ACC_FINAL) + accessor.access + compKeyword.getOrElse(Opcodes.ACC_STATIC)
+        mutKeyword.getOrElse(0, Opcodes.ACC_FINAL) + accessor.access + selfKeyword.getOrElse(Opcodes.ACC_STATIC)
 
     override fun asSignature() =
         FunctionSignature(
             ownerReference!!,
-            compKeyword != null,
+            selfKeyword != null,
             mutKeyword != null,
             accessor,
             name?.literal ?: "",

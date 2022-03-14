@@ -4,7 +4,6 @@ import org.casc.lang.table.Reference
 import org.casc.lang.table.Type
 
 data class Parameter(
-    val mutable: Token?,
     val name: Token?,
     val colon: Token?,
     val typeReference: Reference?,
