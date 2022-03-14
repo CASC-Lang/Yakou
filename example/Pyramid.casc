@@ -1,21 +1,16 @@
-use java::lang::System
+use java::lang::System as sys
 
-class Pyramid {
-
-}
+class Pyramid
 
 impl Pyramid {
-    comp {
-        fn main(args: str[]) {
-            rows := 5
+    fn main(args: str[]) {
+        rows := 5
 
-            for mut i := 1; i <= rows; i++ {
-                for mut j := 1; j <= i; j++ {
-                    System.out.print(j)
-                    System.out.print(" ")
-                }
-                System.out.println()
+        for mut i := 1; i <= rows; i++ {
+            for mut j := 1; j <= i; j++ {
+                sys.out.print(j + " ")
             }
+            sys.out.println()
         }
     }
 }

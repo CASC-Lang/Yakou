@@ -1,26 +1,21 @@
-use java::{ lang::System, io::PrintStream }
+use java::lang::System as sys
 
-class FizzBuzz {
-
-}
+class FizzBuzz
 
 impl FizzBuzz {
-    comp {
-        mut fn main(s: str[]) {
-            for mut i := 1; i < 100; i = i + 1 {
-                System.out.print(i)
-                System.out.print(' ')
+    fn main(s: str[]) {
+        for mut i := 1; i < 100; i = i + 1 {
+            sys.out.print(i + " ")
 
-                if i % 3 == 0 {
-                    System.out.print("Fizz")
-                }
-
-                if i % 5 == 0 {
-                    System.out.print("Buzz")
-                }
-
-                System.out.println()
+            if i % 3 == 0 {
+                sys.out.print("Fizz")
             }
+
+            if i % 5 == 0 {
+                sys.out.print("Buzz")
+            }
+
+            sys.out.println()
         }
     }
 }
