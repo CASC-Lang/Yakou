@@ -155,7 +155,7 @@ class Checker(private val preference: AbstractPreference) {
             checkConstructorBody(it, Scope(classScope))
         }
         clazz.functions.pforEach {
-            checkFunctionBody(it, Scope(classScope, isCompScope = it.selfKeyword != null))
+            checkFunctionBody(it, Scope(classScope, isCompScope = it.selfKeyword == null))
 
             if (!checkControlFlow(it.statements, it.returnType)) {
                 // Not all code path returns value
@@ -296,11 +296,11 @@ class Checker(private val preference: AbstractPreference) {
         function.ownerType = findType(function.ownerReference, scope)
 
         // Check is overriding parent function
-        if (scope.parentClassPath != null) {
-            val parentFunction =
-                scope.findSignature(scope.parentClassPath, function.name!!.literal, function.parameterTypes ?: listOf())
+        val parentFunction =
+            scope.findSignature(scope.parentClassPath, function.name!!.literal, function.parameterTypes ?: listOf())
 
-            if (parentFunction != null && function.ovrdKeyword == null) {
+        if (parentFunction != null) {
+            if (function.ovrdKeyword == null) {
                 // Overriding function without `ovrd`
                 reports += Error(
                     function.name.pos,
@@ -309,6 +309,26 @@ class Checker(private val preference: AbstractPreference) {
                     }) exists in parent class ${scope.parentClassPath} but doesn't declared with `ovrd`",
                     "Add `ovrd` keyword"
                 )
+            } else {
+                if (parentFunction.companion) {
+                    // Overriding a companion function
+                    reports += Error(
+                        function.ovrdKeyword.pos,
+                        "Cannot overriding companion function ${parentFunction.ownerReference.asCASCStyle()}.${parentFunction.name}(${
+                            function.parameterTypes?.mapNotNull { it?.typeName }?.joinToString()
+                        })",
+                        "Remove `ovrd` keyword"
+                    )
+                }
+
+                if (function.selfKeyword == null) {
+                    // Overriding function but itself is companion function (no `self` declared)
+                    reports += Error(
+                        function.name.pos,
+                        "Cannot overriding function with companion function",
+                        "Add `self` keyword at the start of parameters"
+                    )
+                }
             }
         } else if (function.ovrdKeyword != null) {
             // Redundant `ovrd` keyword
@@ -623,8 +643,9 @@ class Checker(private val preference: AbstractPreference) {
                             }
 
                             if (scope.scopeDepth > variable.declaredScopeDepth &&
-                                    expression.rightExpression is BinaryExpression &&
-                                    expression.rightExpression.isConcatExpression) {
+                                expression.rightExpression is BinaryExpression &&
+                                expression.rightExpression.isConcatExpression
+                            ) {
                                 reports += Warning(
                                     expression.pos,
                                     "Potential unnecessary performance cost while concatenating string through `+` and assign to variable in parent context in loop",

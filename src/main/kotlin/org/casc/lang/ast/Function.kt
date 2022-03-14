@@ -31,7 +31,7 @@ data class Function(
     override fun asSignature() =
         FunctionSignature(
             ownerReference!!,
-            selfKeyword != null,
+            selfKeyword == null,
             mutKeyword != null,
             accessor,
             name?.literal ?: "",

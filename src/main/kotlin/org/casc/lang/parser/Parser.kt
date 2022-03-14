@@ -649,6 +649,7 @@ class Parser(private val preference: AbstractPreference) {
                         "move `self` to the start of parameters"
                     )
                 } else selfToken = parameterName
+                continue
             }
 
 
