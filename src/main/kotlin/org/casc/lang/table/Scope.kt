@@ -130,9 +130,8 @@ data class Scope(
         if (ownerClass != null) {
             return if (functionName == "<init>") {
                 ownerClass.constructors.find {
-                    it.parameters.size == argumentTypes.size &&
-                            it.parameters
-                                .map(Parameter::type)
+                    it.parameterTypes.size == argumentTypes.size &&
+                            it.parameterTypes
                                 .zip(argumentTypes.filterNotNull())
                                 .all { (l, r) ->
                                     canCast(l, r)
@@ -141,13 +140,12 @@ data class Scope(
             } else {
                 val matchedFunction = ownerClass.functions.find {
                     it.name?.literal == functionName &&
-                            it.parameters.size == argumentTypes.size &&
-                            it.parameters
-                                .map(Parameter::type)
-                                .zip(argumentTypes)
-                                .all { (l, r) ->
+                            it.parameterTypes?.size == argumentTypes.size &&
+                            it.parameterTypes
+                                ?.zip(argumentTypes)
+                                ?.all { (l, r) ->
                                     canCast(l, r)
-                                }
+                                } ?: false
                 }
 
                 if (matchedFunction == null) findSignature(ownerClass.parentClassReference, functionName, argumentTypes)
@@ -164,17 +162,21 @@ data class Scope(
                 // Constructor
                 try {
                     val (ownerClass, argumentClasses) = retrieveExecutableInfo(ownerType, argTypes)
-                    val constructor = ownerClass.getConstructor(*argumentClasses)
+                    val constructors = ownerClass.constructors.filter { it.parameters.size == argumentClasses.size }
 
-                    return FunctionSignature(
-                        Reference(ownerClass),
-                        companion = true,
-                        mutable = false,
-                        Accessor.fromModifier(constructor.modifiers),
-                        functionName,
-                        constructor.parameterTypes.map(::ClassType),
-                        ownerType
-                    )
+                    for (constructor in constructors) {
+                        if (constructor.parameterTypes.zip(argumentClasses).all { (l, r) -> l.isAssignableFrom(r) }) {
+                            return FunctionSignature(
+                                Reference(ownerClass),
+                                companion = true,
+                                mutable = false,
+                                Accessor.fromModifier(constructor.modifiers),
+                                functionName,
+                                constructor.parameterTypes.map(::ClassType),
+                                ownerType
+                            )
+                        }
+                    }
                 } catch (_: Exception) {
                 }
             } else {
