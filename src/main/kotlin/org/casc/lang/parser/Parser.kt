@@ -672,7 +672,11 @@ class Parser(private val preference: AbstractPreference) {
                         "move `self` to the start of parameters"
                     )
                 } else selfToken = parameterName
-                continue
+
+                if (peekIf(TokenType.Comma)) {
+                    consume()
+                    continue
+                } else break
             }
 
 
