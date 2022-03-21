@@ -15,6 +15,8 @@ impl Main : Rock {
         a.lol()
         a.print()
         b := null
+        sys.out.println(a)
+        a.local(new Rock("a"))
     }
 
     new(k: i32): super(k + "1 + 2") {
@@ -29,6 +31,10 @@ impl Main : Rock {
         if true {
             return 1
         } else return 1
+    }
+
+    fn local(self, atom: Atom) {
+        sys.out.println(atom)
     }
 }
 

@@ -491,7 +491,7 @@ class Checker(private val preference: AbstractPreference) {
             is IfStatement -> {
                 val conditionType = checkExpression(statement.condition, scope)
 
-                if (TypeUtil.canCast(conditionType, PrimitiveType.Bool)) {
+                if (scope.canCast(conditionType, PrimitiveType.Bool)) {
                     statement.condition?.castTo = PrimitiveType.Bool
                 } else {
                     reports.reportTypeMismatch(
@@ -515,7 +515,7 @@ class Checker(private val preference: AbstractPreference) {
                 if (statement.condition != null) {
                     val conditionType = checkExpression(statement.condition, innerScope)
 
-                    if (TypeUtil.canCast(conditionType, PrimitiveType.Bool)) {
+                    if (scope.canCast(conditionType, PrimitiveType.Bool)) {
                         statement.condition.castTo = PrimitiveType.Bool
                     } else {
                         reports.reportTypeMismatch(
@@ -553,7 +553,7 @@ class Checker(private val preference: AbstractPreference) {
             is ReturnStatement -> {
                 val expressionType = checkExpression(statement.expression, scope)
 
-                if (!TypeUtil.canCast(expressionType, returnType)) {
+                if (!scope.canCast(expressionType, returnType)) {
                     reports.reportTypeMismatch(statement.pos!!, returnType, expressionType)
                 } else statement.returnType = returnType
             }
@@ -696,7 +696,7 @@ class Checker(private val preference: AbstractPreference) {
                     )
                 }
 
-                if (!TypeUtil.canCast(rightType, expression.leftExpression?.type)) {
+                if (!scope.canCast(rightType, expression.leftExpression?.type)) {
                     reports.reportTypeMismatch(
                         expression.rightExpression?.pos,
                         expression.leftExpression?.type,
@@ -923,7 +923,7 @@ class Checker(private val preference: AbstractPreference) {
                     )
                 } else expression.type = previousExpressionType.baseType
 
-                if (!TypeUtil.canCast(indexExpressionType, PrimitiveType.I32)) {
+                if (!scope.canCast(indexExpressionType, PrimitiveType.I32)) {
                     reports.reportTypeMismatch(
                         expression.indexExpression?.pos,
                         PrimitiveType.I32,
@@ -1109,7 +1109,7 @@ class Checker(private val preference: AbstractPreference) {
                     // Dimension expression's type must be able to cast into i32
                     val type = checkExpression(it, scope)
 
-                    if (!TypeUtil.canCast(type, PrimitiveType.I32)) {
+                    if (!scope.canCast(type, PrimitiveType.I32)) {
                         reports.reportTypeMismatch(
                             it?.pos,
                             PrimitiveType.I32,
@@ -1175,7 +1175,7 @@ class Checker(private val preference: AbstractPreference) {
                             if (latestFoundationType !is PrimitiveType && currentFoundationType !is PrimitiveType) {
                                 // TODO: Support Object's Promotion here
                             } else {
-                                if (!TypeUtil.canCast(latestFoundationType, currentFoundationType)) {
+                                if (!scope.canCast(latestFoundationType, currentFoundationType)) {
                                     if (!forceFinalType && latestFoundationType is PrimitiveType && currentFoundationType is PrimitiveType) {
                                         if (!latestFoundationType.isNumericType() || !currentFoundationType.isNumericType()) {
                                             reports.reportTypeMismatch(
@@ -1221,7 +1221,7 @@ class Checker(private val preference: AbstractPreference) {
                                 expression.elements[i]?.pos,
                                 "Dimension mismatch, requires 1-dimension array but got ${type.getDimension()}-array"
                             )
-                        } else if (type is PrimitiveType && !TypeUtil.canCast(latestInferredType, type)) {
+                        } else if (type is PrimitiveType && !scope.canCast(latestInferredType, type)) {
                             if (!type.isNumericType() || !type.isNumericType()) {
                                 reports.reportTypeMismatch(
                                     expression.elements[i]?.pos,

@@ -20,6 +20,8 @@ object TypeUtil {
                     else ClassType(clazz)
                 } catch (_: java.lang.Exception) {
                     null
+                } catch (_: java.lang.Error) {
+                    null
                 }
         }
 
@@ -45,7 +47,7 @@ object TypeUtil {
         }
     }
 
-    fun canCast(from: Type?, to: Type?): Boolean =
+    fun canCast(from: Type?, to: Type?, preference: AbstractPreference): Boolean =
         if (from == null || to == null) false
         else if (from == to) true
         else if (to.descriptor == to.descriptor) true // Prevent unconverted type being mismatched
@@ -60,12 +62,15 @@ object TypeUtil {
                 else if (!from.isNumericType() || !to.isNumericType()) false
                 else PrimitiveType.promotionTable[from]!! <= PrimitiveType.promotionTable[to]!!
             } else if (from.type() == to.type()) true
-            else canCast(from, PrimitiveType.fromClass(to.type()))
+            else canCast(from, PrimitiveType.fromClass(to.type()), preference)
         } else if (from is ClassType && to is PrimitiveType) {
             if (to == PrimitiveType.Null) true
             else if (from.type() == to.type()) true
-            else canCast(PrimitiveType.fromClass(from.type()), to)
-        } else false // TODO: Support Inheritance Checking
+            else canCast(PrimitiveType.fromClass(from.type()), to, preference)
+        } else if (from is ClassType && to is ClassType) {
+            if (from.parentClassName == null) false
+            else canCast(asType(Reference(from.parentClassName), preference), to, preference)
+        } else false
 
     fun findPrimitiveCastOpcode(from: PrimitiveType, to: PrimitiveType): Int? =
         when (from) {

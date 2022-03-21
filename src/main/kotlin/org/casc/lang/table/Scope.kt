@@ -5,7 +5,6 @@ import org.casc.lang.ast.Field
 import org.casc.lang.ast.HasSignature
 import org.casc.lang.ast.Parameter
 import org.casc.lang.compilation.AbstractPreference
-import org.casc.lang.utils.eq
 import org.casc.lang.utils.getOrElse
 import java.lang.Class
 import java.lang.reflect.Modifier
@@ -112,7 +111,9 @@ data class Scope(
                     it.parameters.size == argumentTypes.size &&
                     it.parameters
                         .zip(argumentTypes)
-                        .all(::eq)
+                        .all { (l, r) ->
+                            canCast(l, r)
+                        }
         }
 
     fun findSignature(ownerPath: Reference?, functionName: String, argumentTypes: List<Type?>): FunctionSignature? {
@@ -131,9 +132,11 @@ data class Scope(
                 ownerClass.constructors.find {
                     it.parameters.size == argumentTypes.size &&
                             it.parameters
-                                .map(Parameter::typeReference)
-                                .zip(argumentTypes.filterNotNull().map(Type::getReference))
-                                .all(::eq)
+                                .map(Parameter::type)
+                                .zip(argumentTypes.filterNotNull())
+                                .all { (l, r) ->
+                                    canCast(l, r)
+                                }
                 }?.asSignature() ?: findSignature(ownerClass.parentClassReference, functionName, argumentTypes)
             } else {
                 val matchedFunction = ownerClass.functions.find {
@@ -142,7 +145,9 @@ data class Scope(
                             it.parameters
                                 .map(Parameter::type)
                                 .zip(argumentTypes)
-                                .all(::eq)
+                                .all { (l, r) ->
+                                    canCast(l, r)
+                                }
                 }
 
                 if (matchedFunction == null) findSignature(ownerClass.parentClassReference, functionName, argumentTypes)
@@ -167,7 +172,7 @@ data class Scope(
                         mutable = false,
                         Accessor.fromModifier(constructor.modifiers),
                         functionName,
-                        argTypes,
+                        constructor.parameterTypes.map(::ClassType),
                         ownerType
                     )
                 } catch (_: Exception) {
@@ -184,17 +189,21 @@ data class Scope(
 
                     while (ownerClass != Any::class.java) {
                         try {
-                            val function = ownerClass.getMethod(functionName, *argumentClasses)
+                            val functions = ownerClass.declaredMethods.filter { it.name == functionName && it.parameters.size == argumentClasses.size }
 
-                            signature = FunctionSignature(
-                                Reference(ownerClass),
-                                Modifier.isStatic(function.modifiers),
-                                Modifier.isFinal(function.modifiers),
-                                Accessor.fromModifier(function.modifiers),
-                                functionName,
-                                argTypes,
-                                TypeUtil.asType(function.returnType, preference)!!
-                            )
+                            for (function in functions) {
+                                if (function.parameterTypes.zip(argumentClasses).all { (l, r) -> l.isAssignableFrom(r) }) {
+                                    signature = FunctionSignature(
+                                        Reference(ownerClass),
+                                        Modifier.isStatic(function.modifiers),
+                                        Modifier.isFinal(function.modifiers),
+                                        Accessor.fromModifier(function.modifiers),
+                                        functionName,
+                                        function.parameterTypes.map(::ClassType),
+                                        TypeUtil.asType(function.returnType, preference)!!
+                                    )
+                                }
+                            }
 
                             break
                         } catch (e: Throwable) {
@@ -260,6 +269,9 @@ data class Scope(
         classReference -> ClassType(classReference.fullQualifiedPath, parentClassPath?.fullQualifiedPath, accessor, mutable)
         else -> TypeUtil.asType(findReference(reference), preference)
     }
+
+    fun canCast(from: Type?, to: Type?): Boolean =
+        TypeUtil.canCast(from, to, preference)
 
     /**
      * Find reference (either shortened, aliased, or full-qualified) from usage, return itself if not found
