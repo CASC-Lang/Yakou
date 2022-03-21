@@ -7,6 +7,7 @@ import java.lang.reflect.Modifier
 
 data class ClassType(
     override val typeName: String,
+    val parentClassName: String?,
     override val accessor: Accessor,
     val mutable: Boolean,
     override val internalName: String = typeName.replace('.', '/'),
@@ -14,6 +15,7 @@ data class ClassType(
 ) : Type, HasAccessor {
     constructor(clazz: Class<*>) : this(
         clazz.typeName,
+        clazz.superclass?.typeName,
         Accessor.fromModifier(clazz.modifiers),
         Modifier.isFinal(clazz.modifiers)
     )

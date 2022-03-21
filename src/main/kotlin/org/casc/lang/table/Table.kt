@@ -19,7 +19,7 @@ object Table {
      */
     fun findType(classReference: Reference): ClassType? =
         cachedClasses[classReference]?.let {
-            ClassType(classReference.fullQualifiedPath, it.clazz.accessor, it.clazz.mutKeyword != null)
+            ClassType(classReference.fullQualifiedPath, it.clazz.parentClassReference?.fullQualifiedPath, it.clazz.accessor, it.clazz.mutKeyword != null)
         }
 
     fun findClass(classReference: Reference): Cls? =

@@ -257,7 +257,7 @@ data class Scope(
 
     fun findType(reference: Reference?): Type? = when (reference) {
         null -> null
-        classReference -> ClassType(classReference.fullQualifiedPath, accessor, mutable)
+        classReference -> ClassType(classReference.fullQualifiedPath, parentClassPath?.fullQualifiedPath, accessor, mutable)
         else -> TypeUtil.asType(findReference(reference), preference)
     }
 
