@@ -1,6 +1,0 @@
-error: Duplicate `comp` block
---> ./MultipleCompanionBlock.casc:10:4
-9  |
-10 |     comp {
-         ^^^^= hint: Remove this block
-11 |
