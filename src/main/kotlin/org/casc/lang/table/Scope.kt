@@ -3,7 +3,6 @@ package org.casc.lang.table
 import org.casc.lang.ast.Accessor
 import org.casc.lang.ast.Field
 import org.casc.lang.ast.HasSignature
-import org.casc.lang.ast.Parameter
 import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.utils.getOrElse
 import java.lang.Class
@@ -77,13 +76,13 @@ data class Scope(
         val ownerType = TypeUtil.asType(ownerPath, preference)
 
         if (ownerType != null) {
-            val ownerClass = ownerType.type()!!
+            val ownerClazz = ownerType.type()!!
 
             try {
-                val field = ownerClass.getField(fieldName)
+                val field = ownerClazz.getField(fieldName)
 
                 return ClassField(
-                    Reference(ownerClass),
+                    Reference(ownerClazz),
                     Modifier.isStatic(field.modifiers),
                     !Modifier.isFinal(field.modifiers),
                     Accessor.fromModifier(field.modifiers),
@@ -138,7 +137,7 @@ data class Scope(
                                 }
                 }?.asSignature() ?: findSignature(ownerClass.parentClassReference, functionName, argumentTypes)
             } else {
-                val matchedFunction = ownerClass.functions.find {
+                ownerClass.functions.find {
                     it.name?.literal == functionName &&
                             it.parameterTypes?.size == argumentTypes.size &&
                             it.parameterTypes
@@ -146,10 +145,11 @@ data class Scope(
                                 ?.all { (l, r) ->
                                     canCast(l, r)
                                 } ?: false
-                }
-
-                if (matchedFunction == null) findSignature(ownerClass.parentClassReference, functionName, argumentTypes)
-                else matchedFunction.asSignature()
+                }?.let(HasSignature::asSignature) ?: findSignature(
+                    ownerClass.parentClassReference,
+                    functionName,
+                    argumentTypes
+                )
             }
         }
 
@@ -161,13 +161,13 @@ data class Scope(
             if (functionName == "<init>") {
                 // Constructor
                 try {
-                    val (ownerClass, argumentClasses) = retrieveExecutableInfo(ownerType, argTypes)
-                    val constructors = ownerClass.constructors.filter { it.parameters.size == argumentClasses.size }
+                    val (ownerClazz, argumentClasses) = retrieveExecutableInfo(ownerType, argTypes)
+                    val constructors = ownerClazz.constructors.filter { it.parameters.size == argumentClasses.size }
 
                     for (constructor in constructors) {
                         if (constructor.parameterTypes.zip(argumentClasses).all { (l, r) -> l.isAssignableFrom(r) }) {
                             return FunctionSignature(
-                                Reference(ownerClass),
+                                Reference(ownerClazz),
                                 companion = true,
                                 mutable = false,
                                 Accessor.fromModifier(constructor.modifiers),
@@ -182,21 +182,24 @@ data class Scope(
             } else {
                 // Function
                 try {
-                    var (ownerClass, argumentClasses) =
+                    var (ownerClazz, argumentClasses) =
                         if (ownerPath == classReference) retrieveExecutableInfo(
                             findType(parentClassPath) ?: ClassType(Any::class.java), argTypes
                         )
                         else retrieveExecutableInfo(ownerType, argTypes)
                     var signature: FunctionSignature? = null
 
-                    while (ownerClass != Any::class.java) {
+                    while (ownerClazz != Any::class.java) {
                         try {
-                            val functions = ownerClass.declaredMethods.filter { it.name == functionName && it.parameters.size == argumentClasses.size }
+                            val functions =
+                                ownerClazz.declaredMethods.filter { it.name == functionName && it.parameters.size == argumentClasses.size }
 
                             for (function in functions) {
-                                if (function.parameterTypes.zip(argumentClasses).all { (l, r) -> l.isAssignableFrom(r) }) {
+                                if (function.parameterTypes.zip(argumentClasses)
+                                        .all { (l, r) -> l.isAssignableFrom(r) }
+                                ) {
                                     signature = FunctionSignature(
-                                        Reference(ownerClass),
+                                        Reference(ownerClazz),
                                         Modifier.isStatic(function.modifiers),
                                         Modifier.isFinal(function.modifiers),
                                         Accessor.fromModifier(function.modifiers),
@@ -209,7 +212,7 @@ data class Scope(
 
                             break
                         } catch (e: Throwable) {
-                            ownerClass = ownerClass.superclass
+                            ownerClazz = ownerClazz.superclass
                         }
                     }
 
@@ -268,7 +271,12 @@ data class Scope(
 
     fun findType(reference: Reference?): Type? = when (reference) {
         null -> null
-        classReference -> ClassType(classReference.fullQualifiedPath, parentClassPath?.fullQualifiedPath, accessor, mutable)
+        classReference -> ClassType(
+            classReference.fullQualifiedPath,
+            parentClassPath?.fullQualifiedPath,
+            accessor,
+            mutable
+        )
         else -> TypeUtil.asType(findReference(reference), preference)
     }
 
