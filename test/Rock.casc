@@ -15,7 +15,6 @@ impl Rock: Atom {
             1
         } else {
             1
-            1
         }
     }
 

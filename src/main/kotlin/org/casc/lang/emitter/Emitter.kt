@@ -481,6 +481,23 @@ class Emitter(private val preference: AbstractPreference) {
                     methodVisitor.visitTypeInsn(Opcodes.ANEWARRAY, baseType.internalName)
                 }
             }
+            is IfExpression -> {
+                emitExpression(methodVisitor, expression.condition!!)
+
+                val elseLabel = Label()
+                val endLabel = Label()
+
+                methodVisitor.visitJumpInsn(Opcodes.IFEQ, elseLabel)
+
+                emitStatement(methodVisitor, expression.trueStatement!!)
+
+                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
+                methodVisitor.visitLabel(elseLabel)
+
+                emitStatement(methodVisitor, expression.elseStatement!!)
+
+                methodVisitor.visitLabel(endLabel)
+            }
         }
 
         emitAutoCast(methodVisitor, expression)

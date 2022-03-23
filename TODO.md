@@ -23,6 +23,7 @@
 - [x] method overriding
 - [x] check all code paths returns value
 - [x] access checking
+- [x] if expression (ternary expression in Java)
 
 ##### IMPLEMENTATION IN PROGRESS
 
@@ -32,7 +33,6 @@
 - - [ ] while loop
 - - [ ] do-while loop
 - [ ] label
-- [ ] if expression (ternary expression in Java)
 - [ ] generic
 - [ ] <type>.class
 - [ ] inheritance
