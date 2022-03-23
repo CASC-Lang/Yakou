@@ -534,12 +534,12 @@ class Checker(private val preference: AbstractPreference) {
                 checkStatement(statement.statement, innerScope, returnType, useSameScope = true)
             }
             is BlockStatement -> {
-                statement.statements.forEach {
+                statement.statements.forEachIndexed { i, it ->
                     checkStatement(
                         it!!,
                         if (useSameScope) scope else Scope(scope),
                         returnType,
-                        allowUnusedExpressionInLast
+                        if (i == statement.statements.size - 1) allowUnusedExpressionInLast else false
                     )
                 }
             }
