@@ -27,16 +27,10 @@ jobs:
         distribution: 'adopt'
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: Validate Gradle wrapper
-      uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
     - name: Build with Gradle
-      uses: gradle/gradle-build-action@937999e9cc2425eddc7fd62d1053baf041147db7
+      uses: gradle/gradle-build-action@v2
       with:
-        arguments: build
-    - name: Build with Gradle
-      run: ./gradlew build
-    - name: Test with Gradle
-      run: ./gradlew test -DrunExecutionTest=false # ignore execution test due to local file accessing might causing unexpected issues
+        arguments: test -DrunExecutionTest=false # ignore execution test due to local file accessing might causing unexpected issues
     - name: Publish Test Report
       uses: mikepenz/action-junit-report@v2
       if: always() # always run even if the previous step fails
