@@ -76,7 +76,7 @@ data class Scope(
         val ownerType = TypeUtil.asType(ownerPath, preference)
 
         if (ownerType != null) {
-            val ownerClazz = ownerType.type()!!
+            val ownerClazz = ownerType.type(preference)!!
 
             try {
                 val field = ownerClazz.getField(fieldName)
@@ -296,7 +296,7 @@ data class Scope(
     }
 
     fun isChildType(parentType: Type?, childType: Type?): Boolean =
-        parentType?.type()?.isAssignableFrom(childType?.type() ?: Any::class.java).getOrElse()
+        parentType?.type(preference)?.isAssignableFrom(childType?.type(preference) ?: Any::class.java).getOrElse()
 
     fun isChildType(parentReference: Reference?, childReference: Reference?): Boolean = when {
         childReference == null -> false
@@ -315,5 +315,5 @@ data class Scope(
         ownerType: Type,
         argumentTypes: List<Type>
     ): Pair<Class<*>, Array<Class<*>>> =
-        ownerType.type()!! to argumentTypes.mapNotNull(Type::type).toTypedArray()
+        ownerType.type(preference)!! to argumentTypes.mapNotNull { it.type(preference) }.toTypedArray()
 }

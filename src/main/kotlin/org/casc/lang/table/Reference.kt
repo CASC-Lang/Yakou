@@ -31,7 +31,7 @@ data class Reference(
     )
 
     constructor(fullQualifiedPath: String, vararg tokens: Token?) : this(
-        fullQualifiedPath.split('.').dropLast(1).joinToString(),
+        fullQualifiedPath.split('.').dropLast(1).joinToString("."),
         fullQualifiedPath.split('.').last(),
         tokens.toMutableList(),
         tokens.firstOrNull()?.pos?.extend(tokens.lastOrNull()?.pos),

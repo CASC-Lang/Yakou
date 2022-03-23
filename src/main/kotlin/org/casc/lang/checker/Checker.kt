@@ -77,7 +77,7 @@ class Checker(private val preference: AbstractPreference) {
                         "Cannot inherit from final class ${parentClassType.asCASCStyle()}",
                         "Add `mut` to class ${parentClassType.asCASCStyle()}"
                     )
-                } else if (parentClassType.type()?.let { Modifier.isFinal(it.modifiers) } == true) {
+                } else if (parentClassType.type(preference)?.let { Modifier.isFinal(it.modifiers) } == true) {
                     reports += Error(
                         clazz.parentClassReference.pos,
                         "Cannot inherit from final class ${parentClassType.asCASCStyle()}",
@@ -125,8 +125,8 @@ class Checker(private val preference: AbstractPreference) {
             Accessor.Pub -> {}
             Accessor.Prot -> {
                 // TODO: Store parent class data in ClassType so we can remove `Type#type()`
-                val accessible = targetOwnerClass.type()
-                    ?.isAssignableFrom(currentScope.findType(currentScope.classReference)?.type() ?: Any::class.java)
+                val accessible = targetOwnerClass.type(preference)
+                    ?.isAssignableFrom(currentScope.findType(currentScope.classReference)?.type(preference) ?: Any::class.java)
                     .getOrElse()
 
                 if (!accessible) {
@@ -170,7 +170,7 @@ class Checker(private val preference: AbstractPreference) {
             val type = TypeUtil.asType(it, preference)
 
             if (type == null) {
-                reports.reportUnknownTypeSymbol(it!!)
+                reports.reportUnknownTypeSymbol(it)
 
                 null
             } else it
@@ -1120,8 +1120,42 @@ class Checker(private val preference: AbstractPreference) {
 
                 expression.type
             }
+            is IfExpression -> {
+                val conditionType = checkExpression(expression.condition, scope)
+
+                if (scope.canCast(conditionType, PrimitiveType.Bool)) {
+                    expression.condition?.castTo = PrimitiveType.Bool
+                } else {
+                    reports.reportTypeMismatch(
+                        expression.condition?.pos,
+                        PrimitiveType.Bool,
+                        conditionType
+                    )
+                }
+
+                checkStatement(expression.trueStatement!!, scope, PrimitiveType.Unit)
+
+                if (expression.elseStatement != null) {
+                    checkStatement(expression.elseStatement, scope, PrimitiveType.Unit)
+                } else {
+                    reports += Error(
+                        expression.pos,
+                        "If expression must have else clause"
+                    )
+                }
+
+                // Find the most common type for all branches
+
+                expression.type
+            }
             null -> null
         }
+    }
+
+    private fun checkBranchCommonType(
+        lastStatement: Statement,
+    ) {
+
     }
 
     private fun checkArrayType(
@@ -1198,7 +1232,7 @@ class Checker(private val preference: AbstractPreference) {
                                         currentFoundationType is ClassType
                                     ) {
                                         // Covert boxed type into primitive type
-                                        val currentPrimitiveType = PrimitiveType.fromClass(currentFoundationType.type())
+                                        val currentPrimitiveType = PrimitiveType.fromClass(currentFoundationType.type(preference))
 
                                         if (currentPrimitiveType != null) {
                                             if (!forceFinalType) {

@@ -1,8 +1,10 @@
 package org.casc.lang.table
 
+import org.casc.lang.compilation.AbstractPreference
+
 sealed interface Type : HasDescriptor {
     val typeName: String
-    fun type(): Class<*>?
+    fun type(preference: AbstractPreference): Class<*>?
     val internalName: String
 
     val loadOpcode: Int

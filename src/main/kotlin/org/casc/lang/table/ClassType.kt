@@ -21,8 +21,8 @@ data class ClassType(
         Modifier.isFinal(clazz.modifiers)
     )
 
-    override fun type(): Class<*>? = try {
-        GlobalPreference.classLoader?.loadClass(typeName)
+    override fun type(preference: AbstractPreference): Class<*>? = try {
+        preference.classLoader?.loadClass(typeName)
     } catch (e: Exception) {
         null
     }

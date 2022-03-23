@@ -5,9 +5,7 @@ class HelloWorld {
 }
 
 impl HelloWorld {
-    comp {
-        fn main(arg: str[]) {
-            System.out.println("Hello World!")
-        }
+    fn main(arg: str[]) {
+        System.out.println("Hello World!")
     }
 }

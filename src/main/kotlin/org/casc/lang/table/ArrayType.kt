@@ -1,5 +1,6 @@
 package org.casc.lang.table
 
+import org.casc.lang.compilation.AbstractPreference
 import org.objectweb.asm.Opcodes
 import java.lang.reflect.Array
 
@@ -20,8 +21,8 @@ data class ArrayType(
         }
     }
 
-    override fun type(): Class<*> =
-        Array.newInstance(baseType.type(), 0).javaClass
+    override fun type(preference: AbstractPreference): Class<*> =
+        Array.newInstance(baseType.type(preference), 0).javaClass
 
     override val loadOpcode: Int = Opcodes.ALOAD
     override val storeOpcode: Int = Opcodes.ASTORE

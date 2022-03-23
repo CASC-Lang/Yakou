@@ -29,7 +29,7 @@ object TypeUtil {
         clazz == null -> null
         clazz.isArray -> asArrayType(Reference(clazz), preference)
         else -> PrimitiveType.values.find {
-            it.type() == clazz
+            it.type(preference) == clazz
         } ?: asType(Reference(clazz), preference)
     }
 
@@ -61,12 +61,12 @@ object TypeUtil {
                 if (from == PrimitiveType.I32 && to == PrimitiveType.Char) true // Special case
                 else if (!from.isNumericType() || !to.isNumericType()) false
                 else PrimitiveType.promotionTable[from]!! <= PrimitiveType.promotionTable[to]!!
-            } else if (from.type() == to.type()) true
-            else canCast(from, PrimitiveType.fromClass(to.type()), preference)
+            } else if (from.type(preference) == to.type(preference)) true
+            else canCast(from, PrimitiveType.fromClass(to.type(preference)), preference)
         } else if (from is ClassType && to is PrimitiveType) {
             if (to == PrimitiveType.Null) true
-            else if (from.type() == to.type()) true
-            else canCast(PrimitiveType.fromClass(from.type()), to, preference)
+            else if (from.type(preference) == to.type(preference)) true
+            else canCast(PrimitiveType.fromClass(from.type(preference)), to, preference)
         } else if (from is ClassType && to is ClassType) {
             if (from.parentClassName == null) false
             else canCast(asType(Reference(from.parentClassName), preference), to, preference)

@@ -211,4 +211,11 @@ sealed class Expression {
         override fun getExpressions(): List<Expression?> =
             dimensionExpressions
     }
+
+    data class IfExpression(
+        val condition: Expression?,
+        val trueStatement: Statement?,
+        val elseStatement: Statement?,
+        override val pos: Position?
+    ) : Expression()
 }

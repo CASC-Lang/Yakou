@@ -447,7 +447,7 @@ class Parser(private val preference: AbstractPreference) {
                     a.literal == b.literal
             }
 
-            while (!peekIf(Token::isFnKeyword) && !peekIf(Token::isNewKeyword)) {
+            while (!peekIf(Token::isFnKeyword) && !peekIf(Token::isNewKeyword) && !peekIf(TokenType.CloseBrace)) {
                 val nextToken = assert(TokenType.Identifier) ?: continue
 
                 if (!nextToken.isAccessorKeyword() && !nextToken.isMutKeyword() && !nextToken.isOvrdKeyword()) {
@@ -639,7 +639,8 @@ class Parser(private val preference: AbstractPreference) {
                         "Try rename this function or modify parameters' type"
                     )
                 }
-            } else {
+            } else if (peekIf(TokenType.CloseBrace)) break
+            else {
                 // Unknown declaration
                 val currentToken = peek()
 
@@ -858,6 +859,7 @@ class Parser(private val preference: AbstractPreference) {
                 "true", "false" -> BoolLiteral(next())
                 "null" -> NullLiteral(next())
                 "new" -> parseConstructorExpression(inCompanionContext)
+                "if" -> parseIfExpression(inCompanionContext)
                 else -> parseSecondaryExpression(inCompanionContext)
             }
             TokenType.Colon -> parseArrayInitialization(inCompanionContext)
@@ -936,6 +938,25 @@ class Parser(private val preference: AbstractPreference) {
         assert(TokenType.CloseParenthesis)
 
         return ConstructorCallExpression(ownerReference, arguments)
+    }
+
+    private fun parseIfExpression(inCompanionContext: Boolean): Expression {
+        val ifKeyword = next()
+        val condition = parseExpression(inCompanionContext, true)
+
+        val trueStatement = parseStatement(inCompanionContext)
+
+        val elseStatement = if (peekIf(Token::isElseKeyword)) {
+            consume()
+            parseStatement(inCompanionContext)
+        } else null
+
+        return IfExpression(
+            condition,
+            trueStatement,
+            elseStatement,
+            ifKeyword?.pos?.extend(trueStatement.pos)
+        )
     }
 
     private fun parseSecondaryExpression(inCompanionContext: Boolean): Expression {

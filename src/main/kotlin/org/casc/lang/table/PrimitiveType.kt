@@ -1,5 +1,6 @@
 package org.casc.lang.table
 
+import org.casc.lang.compilation.AbstractPreference
 import org.objectweb.asm.Opcodes
 
 enum class PrimitiveType(
@@ -49,7 +50,7 @@ enum class PrimitiveType(
         }
     }
 
-    override fun type(): Class<*>? =
+    override fun type(preference: AbstractPreference): Class<*>? =
         clazzType
 
     override fun asCASCStyle(): String =
