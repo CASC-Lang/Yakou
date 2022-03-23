@@ -126,7 +126,9 @@ class Checker(private val preference: AbstractPreference) {
             Accessor.Prot -> {
                 // TODO: Store parent class data in ClassType so we can remove `Type#type()`
                 val accessible = targetOwnerClass.type(preference)
-                    ?.isAssignableFrom(currentScope.findType(currentScope.classReference)?.type(preference) ?: Any::class.java)
+                    ?.isAssignableFrom(
+                        currentScope.findType(currentScope.classReference)?.type(preference) ?: Any::class.java
+                    )
                     .getOrElse()
 
                 if (!accessible) {
@@ -364,7 +366,7 @@ class Checker(private val preference: AbstractPreference) {
             // Redundant `ovrd` keyword
             reports += Error(
                 function.ovrdKeyword.pos,
-                "Redundant `ovrd`, ${function.name?.literal}(${
+                "Redundant `ovrd`, ${function.name.literal}(${
                     function.parameterTypes?.mapNotNull { it?.typeName }?.joinToString()
                 }) overrides nothing",
                 "Remove this keyword"
@@ -456,6 +458,7 @@ class Checker(private val preference: AbstractPreference) {
         statement: Statement?,
         scope: Scope,
         returnType: Type,
+        allowUnusedExpressionInLast: Boolean = false,
         useSameScope: Boolean = false
     ) {
         when (statement) {
@@ -501,10 +504,10 @@ class Checker(private val preference: AbstractPreference) {
                     )
                 }
 
-                checkStatement(statement.trueStatement!!, scope, returnType)
+                checkStatement(statement.trueStatement!!, scope, returnType, allowUnusedExpressionInLast)
 
                 if (statement.elseStatement != null) {
-                    checkStatement(statement.elseStatement, scope, returnType)
+                    checkStatement(statement.elseStatement, scope, returnType, allowUnusedExpressionInLast)
                 }
             }
             is JForStatement -> {
@@ -532,11 +535,19 @@ class Checker(private val preference: AbstractPreference) {
             }
             is BlockStatement -> {
                 statement.statements.forEach {
-                    checkStatement(it!!, if (useSameScope) scope else Scope(scope), returnType)
+                    checkStatement(
+                        it!!,
+                        if (useSameScope) scope else Scope(scope),
+                        returnType,
+                        allowUnusedExpressionInLast
+                    )
                 }
             }
             is ExpressionStatement -> {
-                if (statement.expression != null && !ignoreUnusedExpressions.contains(statement.expression::class.java)) {
+                if (statement.expression != null && !allowUnusedExpressionInLast && !ignoreUnusedExpressions.contains(
+                        statement.expression::class.java
+                    )
+                ) {
                     if (statement.expression is UnaryExpression &&
                         (statement.expression.operator?.type == TokenType.DoublePlus || statement.expression.operator?.type == TokenType.DoubleMinus)
                     ) {
@@ -1133,18 +1144,26 @@ class Checker(private val preference: AbstractPreference) {
                     )
                 }
 
-                checkStatement(expression.trueStatement!!, scope, PrimitiveType.Unit)
+                checkStatement(expression.trueStatement!!, scope, PrimitiveType.Unit, true)
 
                 if (expression.elseStatement != null) {
-                    checkStatement(expression.elseStatement, scope, PrimitiveType.Unit)
+                    checkStatement(expression.elseStatement, scope, PrimitiveType.Unit, true)
+
+                    // Find the most common type for all branches
+                    val type = checkBranchCommonType(expression, scope)
+
+                    if (type == null) {
+                        reports += Error(
+                            expression.pos,
+                            "Unable to infer the most common type of all branches' return value"
+                        )
+                    } else expression.type = type
                 } else {
                     reports += Error(
                         expression.pos,
                         "If expression must have else clause"
                     )
                 }
-
-                // Find the most common type for all branches
 
                 expression.type
             }
@@ -1153,9 +1172,27 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkBranchCommonType(
-        lastStatement: Statement,
-    ) {
+        expression: IfExpression,
+        scope: Scope
+    ): Type? {
+        fun getReturnValueType(statement: Statement?): Type? =
+            when (statement) {
+                null -> null
+                is IfStatement -> {
+                    val trueType = getReturnValueType(statement.trueStatement)
+                    val elseType = getReturnValueType(statement.elseStatement)
 
+                    TypeUtil.getCommonType(trueType, elseType, preference)
+                }
+                is BlockStatement -> getReturnValueType(statement.statements.lastOrNull())
+                is ExpressionStatement -> statement.expression?.type
+                else -> null
+            }
+
+        val type = getReturnValueType(expression.trueStatement)
+        val elseType = getReturnValueType(expression.elseStatement)
+
+        return TypeUtil.getCommonType(type, elseType, preference)
     }
 
     private fun checkArrayType(
@@ -1232,7 +1269,8 @@ class Checker(private val preference: AbstractPreference) {
                                         currentFoundationType is ClassType
                                     ) {
                                         // Covert boxed type into primitive type
-                                        val currentPrimitiveType = PrimitiveType.fromClass(currentFoundationType.type(preference))
+                                        val currentPrimitiveType =
+                                            PrimitiveType.fromClass(currentFoundationType.type(preference))
 
                                         if (currentPrimitiveType != null) {
                                             if (!forceFinalType) {

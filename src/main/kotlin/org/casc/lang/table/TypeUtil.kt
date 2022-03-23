@@ -72,6 +72,33 @@ object TypeUtil {
             else canCast(asType(Reference(from.parentClassName), preference), to, preference)
         } else false
 
+    fun getCommonType(type1: Type?, type2: Type?, preference: AbstractPreference): Type? {
+        return if (type1 == null || type2 == null) null
+        else if (type1 == type2) type1
+        else if (type1.descriptor == type2.descriptor) type1
+        else if (type1 == PrimitiveType.Str || type2 == PrimitiveType.Str) {
+            if (type1 == PrimitiveType.Str && type2 is ClassType) ClassType(Any::class.java)
+            else if (type2 == PrimitiveType.Str && type1 is ClassType) ClassType(Any::class.java)
+            else null
+        } else if (type1 is PrimitiveType && type2 is PrimitiveType) {
+            if (type1 == PrimitiveType.Str || type2 == PrimitiveType.Str) null
+            else if (PrimitiveType.promotionTable[type1]!! > PrimitiveType.promotionTable[type2]!!) type1
+            else type2
+        } else if (type1 is ClassType && type2 is PrimitiveType) {
+            if (type1.type(preference) == type2.type(preference)) type2
+            else getCommonType(PrimitiveType.fromClass(type1.type(preference)), type2, preference)
+        } else if (type1 is ClassType && type2 is ClassType) {
+            if (type1.parentClassName == null || type2.parentClassName == null) ClassType(Any::class.java)
+            else {
+                var commonClazz = type1.type(preference)
+                val clazz2 = type2.type(preference)
+                while (commonClazz?.isAssignableFrom(clazz2) != true)
+                    commonClazz = commonClazz?.superclass
+                return commonClazz?.let(::ClassType)
+            }
+        } else null
+    }
+
     fun findPrimitiveCastOpcode(from: PrimitiveType, to: PrimitiveType): Int? =
         when (from) {
             PrimitiveType.F64 -> when (to) {
