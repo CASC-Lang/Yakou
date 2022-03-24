@@ -1,15 +1,14 @@
 package org.casc.lang.compilation
 
+import org.casc.lang.ast.File
 import org.casc.lang.checker.Checker
 import org.casc.lang.emitter.Emitter
 import org.casc.lang.lexer.Lexer
 import org.casc.lang.parser.Parser
 import org.casc.lang.table.Table
-import org.casc.lang.utils.Quadruple
-import org.casc.lang.utils.call
-import org.casc.lang.utils.pmap
-import org.casc.lang.utils.pmapNotNull
+import org.casc.lang.utils.*
 import java.io.BufferedReader
+import kotlin.collections.LinkedHashSet
 import java.io.File as JFile
 
 class Compilation(
@@ -24,11 +23,12 @@ class Compilation(
 
     fun compile() {
         if (file.isDirectory) {
+            // Init setup
             preference.outputDir = JFile(file.parentFile.path, "/out")
             preference.outputDir.mkdir()
 
             // Compilations
-            file.walk().filter { it.isFile && it.extension == "casc" }.toList().pmapNotNull {
+            val checkedDeclaration = file.walk().filter { it.isFile && it.extension == "casc" }.toList().pmapNotNull {
                 val source = it.readLines()
                 val relativeFilePath = it.toRelativeString(file)
 
@@ -76,7 +76,38 @@ class Compilation(
                 if (declarationCheckingReports.hasError()) return@pmapNotNull null
 
                 Quadruple(checkedFile, classScope, relativeFilePath, source)
-            }.call(Table.cachedClasses::clear).map {
+            }.call(Table.cachedClasses::clear)
+
+            val creationQueue = LinkedHashSet<String>()
+
+            fun addToQueue(file: File) {
+                if (file.clazz.parentClassReference == null) {
+                    creationQueue.add(file.clazz.getReference().fullQualifiedPath)
+                } else {
+                    val parentClazzFile =
+                        checkedDeclaration.find { it.first.clazz.getReference().fullQualifiedPath == file.clazz.parentClassReference!!.fullQualifiedPath }
+                    if (parentClazzFile != null)
+                        addToQueue(parentClazzFile.first)
+                    creationQueue.add(file.clazz.getReference().fullQualifiedPath)
+                }
+            }
+
+            for (q in checkedDeclaration) {
+                addToQueue(q.first)
+            }
+
+            for (name in creationQueue) {
+                val cachedFile = checkedDeclaration.find { it.first.clazz.getReference().fullQualifiedPath == name }!!.first
+
+                val bytecode = Emitter(preference, true).emit(
+                    JFile(preference.outputDir, JFile(cachedFile.relativeFilePath).parentFile?.path ?: ""),
+                    cachedFile
+                )
+
+                preference.classLoader?.defineClass(name, bytecode)
+            }
+
+            checkedDeclaration.map {
                 Table.cachedClasses += it.first.clazz.getReference() to it.first
 
                 Quadruple(it.first, it.second, it.third, it.fourth)
@@ -99,7 +130,7 @@ class Compilation(
                  * Emits AST into backend languages, like JVM bytecode.
                  * only JVM backend is available at this moment.
                  */
-                Emitter(preference).emit(
+                Emitter(preference, false).emit(
                     JFile(preference.outputDir, JFile(file.relativeFilePath).parentFile?.path ?: ""),
                     checkResult
                 )
@@ -157,7 +188,7 @@ class Compilation(
              * Emits AST into backend languages, like JVM bytecode.
              * only JVM backend is available at this moment.
              */
-            Emitter(preference).emit(file.parentFile, checkResult)
+            Emitter(preference, false).emit(file.parentFile, checkResult)
 
             if (preference.compileAndRun) {
                 val isWindows = System.getProperty("os.name").lowercase().startsWith("windows")

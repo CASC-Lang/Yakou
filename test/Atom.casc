@@ -3,4 +3,8 @@ mut class Atom
 impl Atom {
     new() {
     }
+
+    mut fn hello(self) {
+        java::lang::System.out.println("Atomic Powah!")
+    }
 }

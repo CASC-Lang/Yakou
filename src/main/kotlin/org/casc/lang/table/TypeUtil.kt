@@ -88,13 +88,13 @@ object TypeUtil {
             if (type1.type(preference) == type2.type(preference)) type2
             else getCommonType(PrimitiveType.fromClass(type1.type(preference)), type2, preference)
         } else if (type1 is ClassType && type2 is ClassType) {
-            if (type1.parentClassName == null || type2.parentClassName == null) ClassType(Any::class.java)
+            if (type1.type(preference) == Any::class.java || type2.type(preference) == Any::class.java) ClassType(Any::class.java)
             else {
                 var commonClazz = type1.type(preference)
                 val clazz2 = type2.type(preference)
                 while (commonClazz?.isAssignableFrom(clazz2) != true)
                     commonClazz = commonClazz?.superclass
-                return commonClazz?.let(::ClassType)
+                return commonClazz.let(::ClassType)
             }
         } else null
     }

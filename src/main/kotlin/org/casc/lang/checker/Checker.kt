@@ -458,7 +458,7 @@ class Checker(private val preference: AbstractPreference) {
         statement: Statement?,
         scope: Scope,
         returnType: Type,
-        allowUnusedExpressionInLast: Boolean = false,
+        retainLastExpression: Boolean = false,
         useSameScope: Boolean = false
     ) {
         when (statement) {
@@ -504,10 +504,10 @@ class Checker(private val preference: AbstractPreference) {
                     )
                 }
 
-                checkStatement(statement.trueStatement!!, scope, returnType, allowUnusedExpressionInLast)
+                checkStatement(statement.trueStatement!!, scope, returnType, retainLastExpression)
 
                 if (statement.elseStatement != null) {
-                    checkStatement(statement.elseStatement, scope, returnType, allowUnusedExpressionInLast)
+                    checkStatement(statement.elseStatement, scope, returnType, retainLastExpression)
                 }
             }
             is JForStatement -> {
@@ -539,12 +539,12 @@ class Checker(private val preference: AbstractPreference) {
                         it!!,
                         if (useSameScope) scope else Scope(scope),
                         returnType,
-                        if (i == statement.statements.size - 1) allowUnusedExpressionInLast else false
+                        if (i == statement.statements.size - 1) retainLastExpression else false
                     )
                 }
             }
             is ExpressionStatement -> {
-                if (statement.expression != null && !allowUnusedExpressionInLast && !ignoreUnusedExpressions.contains(
+                if (statement.expression != null && !retainLastExpression && !ignoreUnusedExpressions.contains(
                         statement.expression::class.java
                     )
                 ) {
@@ -559,6 +559,10 @@ class Checker(private val preference: AbstractPreference) {
                     )
                 } else {
                     checkExpression(statement.expression, scope)
+
+                    if (retainLastExpression && statement.expression is InvokeCall) {
+                        statement.expression.retainValue = true
+                    }
                 }
             }
             is ReturnStatement -> {

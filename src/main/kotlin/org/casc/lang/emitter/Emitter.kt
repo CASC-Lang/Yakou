@@ -1,5 +1,6 @@
 package org.casc.lang.emitter
 
+import org.casc.lang.asm.CommonClassWriter
 import org.casc.lang.ast.*
 import org.casc.lang.ast.Function
 import org.casc.lang.compilation.AbstractPreference
@@ -11,20 +12,27 @@ import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType
 import java.io.File as JFile
 
-class Emitter(private val preference: AbstractPreference) {
+class Emitter(private val preference: AbstractPreference, private val declarationOnly: Boolean) {
     fun emit(outDir: JFile, file: File) =
         emitFile(outDir, file)
 
-    private fun emitFile(outDir: JFile, file: File) {
+    private fun emitFile(outDir: JFile, file: File): ByteArray {
         val bytecode = emitClass(file.clazz)
         val outFile = JFile(outDir, "/${file.clazz.name!!.literal}.class")
 
         outDir.mkdirs()
+
+        if (outFile.exists()) {
+            outFile.delete()
+        }
+
         outFile.writeBytes(bytecode)
+
+        return bytecode
     }
 
     private fun emitClass(clazz: Class): ByteArray {
-        val classWriter = ClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS)
+        val classWriter = CommonClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS, preference.classLoader!!)
 
         classWriter.visit(
             Opcodes.V1_8,
@@ -35,30 +43,32 @@ class Emitter(private val preference: AbstractPreference) {
             null
         )
 
-        clazz.fields.forEach {
-            emitField(classWriter, it)
-        }
-
-        if (clazz.companionBlock.isNotEmpty()) {
-            val methodVisitor = classWriter.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null)
-
-            methodVisitor.visitCode()
-
-            clazz.companionBlock.forEach {
-                emitStatement(methodVisitor, it!!)
+        if (!declarationOnly) {
+            clazz.fields.forEach {
+                emitField(classWriter, it)
             }
 
-            methodVisitor.visitInsn(Opcodes.RETURN)
-            methodVisitor.visitMaxs(-1, -1)
-            methodVisitor.visitEnd()
-        }
+            if (clazz.companionBlock.isNotEmpty()) {
+                val methodVisitor = classWriter.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null)
 
-        clazz.constructors.forEach {
-            emitConstructor(classWriter, it)
-        }
+                methodVisitor.visitCode()
 
-        clazz.functions.forEach {
-            emitFunction(classWriter, it)
+                clazz.companionBlock.forEach {
+                    emitStatement(methodVisitor, it!!)
+                }
+
+                methodVisitor.visitInsn(Opcodes.RETURN)
+                methodVisitor.visitMaxs(-1, -1)
+                methodVisitor.visitEnd()
+            }
+
+            clazz.constructors.forEach {
+                emitConstructor(classWriter, it)
+            }
+
+            clazz.functions.forEach {
+                emitFunction(classWriter, it)
+            }
         }
 
         classWriter.visitEnd()
@@ -195,13 +205,15 @@ class Emitter(private val preference: AbstractPreference) {
                 statement.expression?.let {
                     emitExpression(methodVisitor, it)
 
-                    if (it is FunctionCallExpression) {
-                        // Check if function's return value is unused, if yes, then add pop or pop2 opcode
-                        if (it.type == PrimitiveType.I64 || it.type == PrimitiveType.F64) methodVisitor.visitInsn(
-                            Opcodes.POP2
-                        )
-                        else if (it.type != PrimitiveType.Unit) methodVisitor.visitInsn(Opcodes.POP)
-                    } else if (it is ConstructorCallExpression) methodVisitor.visitInsn(Opcodes.POP)
+                    if (it is InvokeCall && !it.retainValue) {
+                        if (it is FunctionCallExpression) {
+                            // Check if function's return value is unused, if yes, then add pop or pop2 opcode
+                            if (it.type == PrimitiveType.I64 || it.type == PrimitiveType.F64) methodVisitor.visitInsn(
+                                Opcodes.POP2
+                            )
+                            else if (it.type != PrimitiveType.Unit) methodVisitor.visitInsn(Opcodes.POP)
+                        } else if (it is ConstructorCallExpression) methodVisitor.visitInsn(Opcodes.POP)
+                    }
                 }
             }
             is ReturnStatement -> {

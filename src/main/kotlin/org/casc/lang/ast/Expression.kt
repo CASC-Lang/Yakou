@@ -114,8 +114,9 @@ sealed class Expression {
         var superCall: Boolean = false,
         var referenceFunctionSignature: FunctionSignature? = null, // Needs to be provided by checker
         var previousExpression: Expression? = null, // Used in chain calling, e.g. Identifier `a` in a.lol()
+        override var retainValue: Boolean = false,
         override val pos: Position? = name?.pos?.extend(arguments.lastOrNull()?.pos)?.extend()
-    ) : Expression() {
+    ) : Expression(), InvokeCall {
         override fun getExpressions(): List<Expression?> =
             arguments
     }
@@ -124,8 +125,9 @@ sealed class Expression {
         val constructorOwnerReference: Reference?,
         val arguments: List<Expression?>,
         var referenceFunctionSignature: FunctionSignature? = null, // Needs to be provided by checker
+        override var retainValue: Boolean = false,
         override val pos: Position? = constructorOwnerReference?.pos
-    ) : Expression() {
+    ) : Expression(), InvokeCall {
         override fun getExpressions(): List<Expression?> =
             arguments
     }

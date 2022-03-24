@@ -12,13 +12,22 @@ impl Rock: Atom {
 
     fn print(self) {
         a := if true {
-            1
+            if true {
+                new Rock("")
+            } else {
+                new Atom()
+            }
         } else {
-            1
+            new Rock("")
         }
+        a.hello()
     }
 
     mut fn lol(self): i32 {
         return 1
+    }
+
+    ovrd fn hello(self) {
+        java::lang::System.out.println("Rocky!")
     }
 }
