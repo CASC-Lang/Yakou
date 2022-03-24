@@ -10,6 +10,9 @@ impl Rock: Atom {
         self.a = a
     }
 
+    new(b: i32): self(true) {}
+    new(b: bool): self(1) {}
+
     fn print(self) {
         a := if true {
             if true {

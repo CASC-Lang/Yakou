@@ -28,7 +28,8 @@ class Compilation(
             preference.outputDir.mkdir()
 
             // Compilations
-            val checkedDeclaration = file.walk().filter { it.isFile && it.extension == "casc" }.toList().pmapNotNull {
+            val cascFiles = file.walk().filter { it.isFile && it.extension == "casc" }.toList()
+            val checkedDeclaration = cascFiles.pmapNotNull {
                 val source = it.readLines()
                 val relativeFilePath = it.toRelativeString(file)
 
@@ -77,6 +78,8 @@ class Compilation(
 
                 Quadruple(checkedFile, classScope, relativeFilePath, source)
             }.call(Table.cachedClasses::clear)
+
+            if (checkedDeclaration.size != cascFiles.size) return
 
             val creationQueue = LinkedHashSet<String>()
 

@@ -131,7 +131,7 @@ data class Scope(
                 ownerClass.constructors.find {
                     it.parameterTypes.size == argumentTypes.size &&
                             it.parameterTypes
-                                .zip(argumentTypes.filterNotNull())
+                                .zip(argumentTypes)
                                 .all { (l, r) ->
                                     canCast(l, r)
                                 }
