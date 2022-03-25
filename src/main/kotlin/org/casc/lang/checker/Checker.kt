@@ -99,44 +99,6 @@ class Checker(private val preference: AbstractPreference) {
             checkFunction(it, classScope)
         }
 
-        // Check constructor calling hierarchy
-        clazz.constructors.forEach {
-            if (it.selfKeyword != null && it.superKeyword == null) {
-                var currentConstructor = clazz.constructors.find { c ->
-                    c.parameters.size == it.parentConstructorArguments.size &&
-                            c.parentConstructorArgumentsTypes
-                                .zip(it.parameterTypes)
-                                .all { (l, r) ->
-                                    classScope.canCast(l, r)
-                                }
-                }!!
-
-                while (currentConstructor.selfKeyword != null && currentConstructor.superKeyword == null) {
-                    if (currentConstructor.parameters.size == it.parameters.size &&
-                            currentConstructor.parameterTypes
-                                .zip(it.parameterTypes)
-                                .all { (l, r) ->
-                                    classScope.canCast(l, r)
-                                }) {
-                        reports += Error(
-                            it.newKeyword?.pos,
-                            "Constructor circular calling will result in StackOverflowException"
-                        )
-                        break
-                    } else {
-                        currentConstructor = clazz.constructors.find { c ->
-                            c.parameters.size == currentConstructor.parameters.size &&
-                                    c.parameterTypes
-                                        .zip(currentConstructor.parameterTypes)
-                                        .all { (l, r) ->
-                                            classScope.canCast(l, r)
-                                        }
-                        } ?: break
-                    }
-                }
-            }
-        }
-
         return clazz to classScope
     }
 
