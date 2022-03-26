@@ -15,4 +15,5 @@ abstract class AbstractPreference {
             field = value
         }
     abstract var compileAndRun: Boolean
+    abstract var noEmit: Boolean
 }

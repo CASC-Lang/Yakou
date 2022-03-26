@@ -2,6 +2,7 @@ import org.casc.lang.compilation.Compilation
 import org.casc.lang.compilation.LocalPreference
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.DynamicTest
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -57,5 +58,27 @@ class ParserTest {
         }
 
         return tests
+    }
+
+    @Test
+    fun testTestFolderCompilation() {
+        val outputStream = ByteArrayOutputStream()
+        val printStream = PrintStream(outputStream)
+
+        System.setOut(printStream)
+        val localPreference = LocalPreference(
+            enableColor = false,
+            sourceFile = File(Compilation::class.java.classLoader.getResource("parser/project").file),
+            noEmit = true
+        )
+
+        val compilation = Compilation(localPreference)
+        compilation.compile()
+
+        System.out.flush()
+
+        val output = outputStream.toString().trimBeforeEveryLineBreaks()
+
+        Assertions.assertTrue(output.isBlank())
     }
 }

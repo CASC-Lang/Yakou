@@ -20,19 +20,22 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         val bytecode = emitClass(file.clazz)
         val outFile = JFile(outDir, "/${file.clazz.name!!.literal}.class")
 
-        outDir.mkdirs()
+        if (!preference.noEmit) {
+            outDir.mkdirs()
 
-        if (outFile.exists()) {
-            outFile.delete()
+            if (outFile.exists()) {
+                outFile.delete()
+            }
+
+            outFile.writeBytes(bytecode)
         }
-
-        outFile.writeBytes(bytecode)
 
         return bytecode
     }
 
     private fun emitClass(clazz: Class): ByteArray {
-        val classWriter = CommonClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS, preference.classLoader!!)
+        val classWriter =
+            CommonClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS, preference.classLoader!!)
 
         classWriter.visit(
             Opcodes.V1_8,
