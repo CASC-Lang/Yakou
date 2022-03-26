@@ -72,7 +72,7 @@ enum class CommandType(val helpMessage: String) {
 
                         if (sourceFile.exists()) {
                             if (sourceFile.isDirectory && type == RUN) {
-                                Error("Cannot compile and run a project source directory", true).printReport()
+                                Error("Cannot compile and run a project source directory").printReport()
                                 false
                             } else {
                                 preference.sourceFile = sourceFile
@@ -84,21 +84,21 @@ enum class CommandType(val helpMessage: String) {
                                             preference.outputDir = outputFolder
                                             true
                                         } else {
-                                            Error("Output path `$outputFolderPath` is not a directory", true).printReport()
+                                            Error("Output path `$outputFolderPath` is not a directory").printReport()
                                             false
                                         }
                                     } else {
-                                        Error("Command `run` does not have flag -o", true).printReport()
+                                        Error("Command `run` does not have flag -o").printReport()
                                         false
                                     }
                                 } else true
                             }
                         } else {
-                            Error("Source file `$sourceFilePath` does not exist", true).printReport()
+                            Error("Source file `$sourceFilePath` does not exist").printReport()
                             false
                         }
                     } else {
-                        println(type?.helpMessage ?: HELP.helpMessage)
+                        println(type.helpMessage)
                         false
                     }
                 }

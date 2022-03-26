@@ -11,28 +11,25 @@ sealed class Report {
 
     abstract val position: Position?
     abstract val message: String
-    abstract val pureMessage: Boolean
     abstract val hint: String?
 
     data class Warning(
         override val position: Position?,
         override val message: String,
         override val hint: String? = null,
-        override val pureMessage: Boolean = false,
     ) : Report() {
-        constructor(message: String, pureMessage: Boolean = false) : this(null, message, pureMessage = pureMessage)
+        constructor(message: String) : this(null, message)
     }
 
     data class Error(
         override val position: Position?,
         override val message: String,
         override val hint: String? = null,
-        override val pureMessage: Boolean = false,
     ) : Report() {
-        constructor(message: String, pureMessage: Boolean = false) : this(null, message, pureMessage = pureMessage)
+        constructor(message: String) : this(null, message)
     }
 
-    fun printReport(filePath: String? = null, source: List<String>? = null) {
+    fun printReport() {
         var finalMessage = when {
             GlobalPreference.enableColor -> {
                 when (this) {
@@ -48,13 +45,27 @@ sealed class Report {
             }
         }
 
-        if (pureMessage) {
-            finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
-            println(finalMessage)
-            return
+        finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
+        println(finalMessage)
+    }
+
+    fun printReport(filePath: String, source: List<String>) {
+        var finalMessage = when {
+            GlobalPreference.enableColor -> {
+                when (this) {
+                    is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
+                    is Error -> Ansi.colorize("error: ", reportAttribute[1])
+                }
+            }
+            else -> {
+                when (this) {
+                    is Warning -> "warning: "
+                    is Error -> "error: "
+                }
+            }
         }
 
-        if (position != null && filePath != null && source != null) {
+        if (position != null) {
             val (lineNumber, start, end) = position!!
             val preExtend =
                 if (lineNumber > 1 && lineNumber.toString().length != (lineNumber - 1).toString().length) " "
