@@ -27,24 +27,24 @@ class Compilation(private val preference: AbstractPreference) {
         const val outputFormat = "%-35s%s"
     }
 
-    var timings = mutableMapOf<String, Double>()
+    private var timings = mutableMapOf<String, Double>()
 
     fun compile() {
-        val jfile = preference.sourceFile!!
+        val sourceFile = preference.sourceFile!!
 
         measureTime("Compilation") {
-            if (jfile.isDirectory) {
+            if (sourceFile.isDirectory) {
                 // Init setup
                 preference.outputDir.mkdir()
 
                 // Compilations
-                val cascFiles = jfile.walk().filter { it.isFile && it.extension == "casc" }.toList()
+                val cascFiles = sourceFile.walk().filter { it.isFile && it.extension == "casc" }.toList()
                 val compilationUnits = mutableListOf<CompilationFileUnit>()
 
                 measureTime("Lex") {
                     for (cascFile in cascFiles) {
                         val source = cascFile.readLines()
-                        val relativeFilePath = cascFile.toRelativeString(jfile)
+                        val relativeFilePath = cascFile.toRelativeString(sourceFile)
                         val compilationUnit = CompilationFileUnit(cascFile.name, source, relativeFilePath, cascFile.path)
 
                         // Unit I: Lexer
@@ -178,13 +178,13 @@ class Compilation(private val preference: AbstractPreference) {
                         )
                     }
                 }
-            } else if (jfile.isFile) {
+            } else if (sourceFile.isFile) {
                 // Init preference
-                preference.outputDir = jfile.parentFile
+                preference.outputDir = sourceFile.parentFile
 
-                val outputFileName = "./${jfile.name}"
+                val outputFileName = "./${sourceFile.name}"
                 // Compilation
-                val source = jfile.readLines()
+                val source = sourceFile.readLines()
 
                 var reports: List<Report> = listOf()
                 var tokens: List<Token> = listOf()
@@ -213,7 +213,7 @@ class Compilation(private val preference: AbstractPreference) {
                      * parser also asserts that the certainty of source code validity.
                      */
                     val (parseReports, parseResult) = Parser(preference).parse(
-                        jfile.absolutePath, jfile.toRelativeString(preference.outputDir), tokens
+                        sourceFile.absolutePath, sourceFile.toRelativeString(preference.outputDir), tokens
                     )
 
                     reports = parseReports
@@ -264,7 +264,7 @@ class Compilation(private val preference: AbstractPreference) {
                      * Emits AST into backend languages, like JVM bytecode.
                      * only JVM backend is available at this moment.
                      */
-                    Emitter(preference, false).emit(jfile.parentFile, file!!)
+                    Emitter(preference, false).emit(sourceFile.parentFile, file!!)
                 }
             }
         }
@@ -273,8 +273,8 @@ class Compilation(private val preference: AbstractPreference) {
             measureTime("Run") {
                 val isWindows = System.getProperty("os.name").lowercase().startsWith("windows")
                 val process = Runtime.getRuntime().exec(
-                    if (isWindows) "cmd.exe /c cd ${jfile.parentFile.absolutePath} && java ${jfile.nameWithoutExtension}"
-                    else "sh -c cd ${jfile.parentFile.absolutePath} && java ${jfile.nameWithoutExtension}"
+                    if (isWindows) "cmd.exe /c cd ${sourceFile.parentFile.absolutePath} && java ${sourceFile.nameWithoutExtension}"
+                    else "sh -c cd ${sourceFile.parentFile.absolutePath} && java ${sourceFile.nameWithoutExtension}"
                 )
 
                 BufferedReader(process.inputReader()).lines().forEach(::println)
