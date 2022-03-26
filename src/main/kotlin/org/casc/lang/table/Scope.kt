@@ -170,7 +170,7 @@ data class Scope(
                                 mutable = false,
                                 Accessor.fromModifier(constructor.modifiers),
                                 functionName,
-                                constructor.parameterTypes.map(::ClassType),
+                                constructor.parameterTypes.map { TypeUtil.asType(it, preference)!! },
                                 ownerType
                             )
                         }
@@ -202,7 +202,7 @@ data class Scope(
                                         Modifier.isFinal(function.modifiers),
                                         Accessor.fromModifier(function.modifiers),
                                         functionName,
-                                        function.parameterTypes.map(::ClassType),
+                                        function.parameterTypes.map { TypeUtil.asType(it, preference)!! },
                                         TypeUtil.asType(function.returnType, preference)!!
                                     )
                                 }

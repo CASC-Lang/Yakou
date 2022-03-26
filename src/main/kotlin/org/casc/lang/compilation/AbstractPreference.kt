@@ -8,6 +8,7 @@ abstract class AbstractPreference {
     abstract var enableColor: Boolean
     open var classLoader: BytecodeClassLoader = BytecodeClassLoader(arrayOf(File(System.getProperty("user.dir"), "out").toURI().toURL()), ClassLoader.getSystemClassLoader())
     abstract var sourceFile: File?
+    abstract var enableTiming: Boolean
     var outputDir: File = File(System.getProperty("user.dir"), "out")
         set(value) {
             classLoader = BytecodeClassLoader(arrayOf(value.toURI().toURL()), ClassLoader.getSystemClassLoader())

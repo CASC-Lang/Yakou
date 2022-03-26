@@ -60,6 +60,8 @@ enum class CommandType(val helpMessage: String) {
         fun configure(type: CommandType, args: Array<String>, preference: AbstractPreference): Boolean =
             when (type) {
                 COMPILE, RUN -> {
+                    preference.enableTiming = args.contains("-t")
+
                     val sourceFilePath = args.getOrNull(if (type == RUN) 1 else 0)
                     val outputFlagIndex = args.indexOf("-o")
                     val outputFolderPath =
