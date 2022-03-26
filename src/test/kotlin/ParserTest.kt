@@ -9,7 +9,7 @@ import java.io.File
 import java.io.PrintStream
 
 class ParserTest {
-    fun String.trimBeforeEveryLineBreaks(): String {
+    private fun String.trimBeforeEveryLineBreaks(): String {
         if (this.isBlank()) return ""
 
         val new = StringBuilder()
