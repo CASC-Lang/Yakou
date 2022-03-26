@@ -13,15 +13,15 @@ import java.lang.invoke.MethodType
 import java.io.File as JFile
 
 class Emitter(private val preference: AbstractPreference, private val declarationOnly: Boolean) {
-    fun emit(outDir: JFile, file: File) =
-        emitFile(outDir, file)
+    fun emit(file: File) =
+        emitFile(file)
 
-    private fun emitFile(outDir: JFile, file: File): ByteArray {
+    private fun emitFile(file: File): ByteArray {
         val bytecode = emitClass(file.clazz)
-        val outFile = JFile(outDir, "/${file.clazz.name!!.literal}.class")
+        val outFile = JFile(preference.outputDir, "/${file.clazz.name!!.literal}.class")
 
         if (!preference.noEmit) {
-            outDir.mkdirs()
+            preference.outputDir.mkdirs()
 
             if (outFile.exists()) {
                 outFile.delete()
@@ -35,7 +35,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
 
     private fun emitClass(clazz: Class): ByteArray {
         val classWriter =
-            CommonClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS, preference.classLoader!!)
+            CommonClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS, preference.classLoader)
 
         classWriter.visit(
             Opcodes.V1_8,

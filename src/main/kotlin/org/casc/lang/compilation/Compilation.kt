@@ -13,7 +13,6 @@ import org.casc.lang.table.Table
 import java.io.BufferedReader
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
-import java.io.File as JFile
 
 class Compilation(private val preference: AbstractPreference) {
     companion object {
@@ -45,7 +44,8 @@ class Compilation(private val preference: AbstractPreference) {
                     for (cascFile in cascFiles) {
                         val source = cascFile.readLines()
                         val relativeFilePath = cascFile.toRelativeString(sourceFile)
-                        val compilationUnit = CompilationFileUnit(cascFile.name, source, relativeFilePath, cascFile.path)
+                        val compilationUnit =
+                            CompilationFileUnit(cascFile.name, source, relativeFilePath, cascFile.path)
 
                         // Unit I: Lexer
                         /**
@@ -133,10 +133,7 @@ class Compilation(private val preference: AbstractPreference) {
                         val cachedFile =
                             declarations.find { it.clazz.getReference().fullQualifiedPath == name }!!
 
-                        val bytecode = Emitter(preference, true).emit(
-                            JFile(preference.outputDir, JFile(cachedFile.relativeFilePath).parentFile?.path ?: ""),
-                            cachedFile
-                        )
+                        val bytecode = Emitter(preference, true).emit(cachedFile)
 
                         preference.classLoader.defineClass(name, bytecode)
                     }
@@ -169,13 +166,7 @@ class Compilation(private val preference: AbstractPreference) {
                          * Emits AST into backend languages, like JVM bytecode.
                          * only JVM backend is available at this moment.
                          */
-                        Emitter(preference, false).emit(
-                            JFile(
-                                preference.outputDir,
-                                JFile(compilationUnit.file.relativeFilePath).parentFile?.path ?: ""
-                            ),
-                            compilationUnit.file
-                        )
+                        Emitter(preference, false).emit(compilationUnit.file)
                     }
                 }
             } else if (sourceFile.isFile) {
@@ -264,7 +255,7 @@ class Compilation(private val preference: AbstractPreference) {
                      * Emits AST into backend languages, like JVM bytecode.
                      * only JVM backend is available at this moment.
                      */
-                    Emitter(preference, false).emit(sourceFile.parentFile, file!!)
+                    Emitter(preference, false).emit(file!!)
                 }
             }
         }
