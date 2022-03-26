@@ -15,6 +15,16 @@ impl Main : Rock {
         d := 1L
         e := 1.0F
         f := 1.0D
+        g := true
+        h := false
+        i := '\n'
+        j := 'a'
+        k := "\n"
+        l := "a"
+        m := null
+        n := :{ 1, 2, 3 }
+        o := i32:[]{ 1, 2, 3 }
+        p := i32:[10]{}
     }
 
     fn main(args: str[]) {
