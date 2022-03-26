@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.6.10"
+    jacoco
     application
 }
 
@@ -24,8 +25,24 @@ application {
     mainClass.set("org.casc.lang.ProcessKt")
 }
 
+tasks.jacocoTestReport {
+    reports {
+        xml.required.set(true)
+        xml.outputLocation.set(file("build/coverage/coverage.xml"))
+        csv.required.set(true)
+        html.required.set(true)
+    }
+}
+
 tasks.test {
     useJUnitPlatform()
+
+    testLogging {
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        events("passed", "failed", "skipped")
+    }
+
+    finalizedBy(tasks.jacocoTestReport)
 }
 
 tasks.withType<KotlinCompile> {

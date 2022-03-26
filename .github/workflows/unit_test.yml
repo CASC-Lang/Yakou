@@ -36,3 +36,7 @@ jobs:
       if: always() # always run even if the previous step fails
       with:
         report_paths: '**/build/test-results/test/TEST-*.xml'
+    - name: Upload test report
+      uses: codecov/codecov-action@v2
+      with:
+        files: "build/coverage/coverage.xml"
