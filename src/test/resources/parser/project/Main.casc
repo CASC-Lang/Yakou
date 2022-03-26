@@ -8,6 +8,13 @@ intl mut:
 impl Main : Rock {
     comp {
         sys.out.println("Hello!")
+
+        a := 1B
+        b := 1S
+        c := 1I
+        d := 1L
+        e := 1.0F
+        f := 1.0D
     }
 
     fn main(args: str[]) {
@@ -28,6 +35,7 @@ impl Main : Rock {
 
     ovrd fn lol(self): i32 {
         mut a := "ab"
+        super.lol()
         if true {
             return 1
         } else return 1
