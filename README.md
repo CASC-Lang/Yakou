@@ -1,5 +1,5 @@
 # CASC
-> [![Unit Test](https://github.com/CASC-Lang/CASC/actions/workflows/unit_test.yml/badge.svg)](https://github.com/CASC-Lang/CASC/actions/workflows/unit_test.yml) \
+> [![Unit Test](https://github.com/CASC-Lang/CASC/actions/workflows/unit_test.yml/badge.svg)](https://github.com/CASC-Lang/CASC/actions/workflows/unit_test.yml) [![codecov](https://codecov.io/gh/CASC-Lang/CASC/branch/revamp/graph/badge.svg?token=8MN7MHK94N)](https://codecov.io/gh/CASC-Lang/CASC) \
 > A Go Lang / V Lang / Rust syntax approach in JVM language.
 
 Currently, its core parts are in revamping progress.

@@ -17,9 +17,15 @@ impl Main : Rock {
         f := 1.0D
         g := true
         h := false
-        i := '\n'
+        i0 := '\t'
+        i1 := '\b'
+        i2 := '\n'
+        i3 := '\r'
+        i4 := '\f'
+        i5 := '\u0001'
+        i6 := '\''
         j := 'a'
-        k := "\n"
+        k := "\t\b\n\r\f\u001\""
         l := "a"
         m := null
         n := :{ 1, 2, 3 }
