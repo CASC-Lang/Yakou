@@ -266,20 +266,20 @@ class Compilation(private val preference: AbstractPreference) {
                      */
                     Emitter(preference, false).emit(jfile.parentFile, file!!)
                 }
+            }
+        }
 
-                if (preference.compileAndRun) {
-                    measureTime("Run") {
-                        val isWindows = System.getProperty("os.name").lowercase().startsWith("windows")
-                        val process = Runtime.getRuntime().exec(
-                            if (isWindows) "cmd.exe /c cd ${jfile.parentFile.absolutePath} && java ${jfile.nameWithoutExtension}"
-                            else "sh -c cd ${jfile.parentFile.absolutePath} && java ${jfile.nameWithoutExtension}"
-                        )
+        if (preference.compileAndRun) {
+            measureTime("Run") {
+                val isWindows = System.getProperty("os.name").lowercase().startsWith("windows")
+                val process = Runtime.getRuntime().exec(
+                    if (isWindows) "cmd.exe /c cd ${jfile.parentFile.absolutePath} && java ${jfile.nameWithoutExtension}"
+                    else "sh -c cd ${jfile.parentFile.absolutePath} && java ${jfile.nameWithoutExtension}"
+                )
 
-                        BufferedReader(process.inputReader()).lines().forEach(::println)
+                BufferedReader(process.inputReader()).lines().forEach(::println)
 
-                        BufferedReader(process.errorReader()).lines().forEach(::println)
-                    }
-                }
+                BufferedReader(process.errorReader()).lines().forEach(::println)
             }
         }
 
