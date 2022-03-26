@@ -5,9 +5,7 @@ import org.casc.lang.ast.Field
 import org.casc.lang.ast.HasSignature
 import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.utils.getOrElse
-import java.lang.Class
 import java.lang.reflect.Modifier
-import org.casc.lang.ast.Class as Cls
 
 data class Scope(
     val preference: AbstractPreference,
@@ -289,13 +287,7 @@ data class Scope(
     fun findReference(reference: Reference): Reference =
         usages.find { it.className == reference.className } ?: reference
 
-    fun findClass(reference: Reference?): Cls? = when {
-        reference == null -> null
-        Table.hasClass(reference) -> Table.findClass(reference)
-        else -> null
-    }
-
-    fun isChildType(parentType: Type?, childType: Type?): Boolean =
+    private fun isChildType(parentType: Type?, childType: Type?): Boolean =
         parentType?.type(preference)?.isAssignableFrom(childType?.type(preference) ?: Any::class.java).getOrElse()
 
     fun isChildType(parentReference: Reference?, childReference: Reference?): Boolean = when {

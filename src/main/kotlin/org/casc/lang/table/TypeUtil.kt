@@ -14,7 +14,7 @@ object TypeUtil {
                 ?: PrimitiveType.values.find { it.typeName == reference.fullQualifiedPath }
                 ?: Table.findType(reference)
                 ?: try {
-                    val clazz = preference.classLoader?.loadClass(reference.fullQualifiedPath)
+                    val clazz = preference.classLoader.loadClass(reference.fullQualifiedPath)
 
                     if (clazz == null) null
                     else ClassType(clazz)

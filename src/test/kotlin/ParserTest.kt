@@ -1,5 +1,5 @@
 import org.casc.lang.compilation.Compilation
-import org.casc.lang.compilation.GlobalPreference
+import org.casc.lang.compilation.LocalPreference
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
@@ -21,7 +21,7 @@ class ParserTest {
     }
 
     @TestFactory
-    fun `testCompilationOutput`(): List<DynamicTest> {
+    fun testCompilationOutput(): List<DynamicTest> {
         val tests = mutableListOf<DynamicTest>()
         val outputStream = ByteArrayOutputStream()
         val printStream = PrintStream(outputStream)
@@ -30,10 +30,11 @@ class ParserTest {
             ?.groupBy { it.extension }
 
         System.setOut(printStream)
-        GlobalPreference.enableColor = false
+        val localPreference = LocalPreference(enableColor = false)
 
         fileMap?.get("casc")?.forEach {
-            val compilation = Compilation(GlobalPreference)
+            localPreference.sourceFile = it
+            val compilation = Compilation(localPreference)
             compilation.compile()
 
             System.out.flush()
