@@ -50,7 +50,6 @@ object TypeUtil {
     fun canCast(from: Type?, to: Type?, preference: AbstractPreference): Boolean =
         if (from == null || to == null) false
         else if (from == to) true
-        else if (to.descriptor == to.descriptor) true // Prevent unconverted type being mismatched
         else if (from is PrimitiveType) {
             if (from == PrimitiveType.Null) {
                 when (to) {
