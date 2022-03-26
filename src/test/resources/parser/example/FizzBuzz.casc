@@ -1,0 +1,21 @@
+use java::lang::System as sys
+
+class FizzBuzz
+
+impl FizzBuzz {
+    fn main(s: str[]) {
+        for mut i := 1; i < 100; i = i + 1 {
+            sys.out.print(i + " ")
+
+            if i % 3 == 0 {
+                sys.out.print("Fizz")
+            }
+
+            if i % 5 == 0 {
+                sys.out.print("Buzz")
+            }
+
+            sys.out.println()
+        }
+    }
+}

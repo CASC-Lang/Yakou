@@ -81,4 +81,26 @@ class ParserTest {
 
         Assertions.assertTrue(output.isBlank())
     }
+
+    @Test
+    fun testExampleFolderCompilation() {
+        val outputStream = ByteArrayOutputStream()
+        val printStream = PrintStream(outputStream)
+
+        System.setOut(printStream)
+        val localPreference = LocalPreference(
+            enableColor = false,
+            sourceFile = File(Compilation::class.java.classLoader.getResource("parser/example").file),
+            noEmit = true
+        )
+
+        val compilation = Compilation(localPreference)
+        compilation.compile()
+
+        System.out.flush()
+
+        val output = outputStream.toString().trimBeforeEveryLineBreaks()
+
+        Assertions.assertTrue(output.isBlank())
+    }
 }

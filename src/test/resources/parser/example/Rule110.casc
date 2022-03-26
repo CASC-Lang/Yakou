@@ -1,0 +1,28 @@
+use java::lang::System as sys
+
+class Rule110
+
+impl Rule110 {
+    fn main(args: str[]) {
+        cap := 30
+        mut board := i32:[cap]{}
+        board[cap - 2] = 1
+
+        for mut i := 0; i < cap - 2; i = i + 1 {
+            for mut j := 0; j < cap; j = j + 1 {
+                if board[j] == 0 {
+                    sys.out.print(' ')
+                } else {
+                    sys.out.print('*')
+                }
+            }
+            sys.out.print("\n")
+
+            mut pattern := (board[0] << 1) | board[1]
+            for mut k := 1; k < cap - 1; k = k + 1 {
+                pattern = ((pattern << 1) & 7) | board[k + 1]
+                board[k] = (110 >> pattern) & 1
+            }
+        }
+    }
+}
