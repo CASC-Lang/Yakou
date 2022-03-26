@@ -6,8 +6,9 @@ import java.net.URLClassLoader
 
 abstract class AbstractPreference {
     abstract var enableColor: Boolean
-    abstract var classLoader: BytecodeClassLoader?
-    var outputDir: File = File(System.getProperty("user.dir"))
+    open var classLoader: BytecodeClassLoader = BytecodeClassLoader(arrayOf(File(System.getProperty("user.dir"), "out").toURI().toURL()), ClassLoader.getSystemClassLoader())
+    abstract var sourceFile: File?
+    var outputDir: File = File(System.getProperty("user.dir"), "out")
         set(value) {
             classLoader = BytecodeClassLoader(arrayOf(value.toURI().toURL()), ClassLoader.getSystemClassLoader())
             field = value

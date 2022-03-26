@@ -87,8 +87,6 @@ class Lexer(private val preference: AbstractPreference) {
 
                 // Whitespace & Tabs
                 if (source[pos].isWhitespace()) {
-                    val start = pos
-
                     while (pos < source.length && source[pos].isWhitespace())
                         pos++
 

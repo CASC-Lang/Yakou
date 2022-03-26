@@ -11,9 +11,7 @@ import java.io.BufferedReader
 import kotlin.collections.LinkedHashSet
 import java.io.File as JFile
 
-class Compilation(
-    val file: JFile, private val preference: AbstractPreference = GlobalPreference
-) {
+class Compilation(private val preference: AbstractPreference) {
     companion object {
         private fun List<Report>.printReports(fileName: String, source: List<String>) =
             this.forEach { it.printReport(fileName, source) }
@@ -22,9 +20,10 @@ class Compilation(
     }
 
     fun compile() {
+        val file = preference.sourceFile!!
+
         if (file.isDirectory) {
             // Init setup
-            preference.outputDir = JFile(file.parentFile.path, "/out")
             preference.outputDir.mkdir()
 
             // Compilations
@@ -115,14 +114,14 @@ class Compilation(
 
                 Quadruple(it.first, it.second, it.third, it.fourth)
             }.pmap {
-                val (file, scope, relativeFilePath, source) = it
+                val (checkedFile, scope, relativeFilePath, source) = it
 
                 /**
                  * Phase II:
                  * Check all AST declaration's body's validity
                  */
                 val checker = Checker(preference)
-                val (checkReports, checkResult) = checker.check(file, scope)
+                val (checkReports, checkResult) = checker.check(checkedFile, scope)
 
                 checkReports.printReports(relativeFilePath, source)
 
@@ -134,7 +133,7 @@ class Compilation(
                  * only JVM backend is available at this moment.
                  */
                 Emitter(preference, false).emit(
-                    JFile(preference.outputDir, JFile(file.relativeFilePath).parentFile?.path ?: ""),
+                    JFile(preference.outputDir, JFile(checkedFile.relativeFilePath).parentFile?.path ?: ""),
                     checkResult
                 )
             }

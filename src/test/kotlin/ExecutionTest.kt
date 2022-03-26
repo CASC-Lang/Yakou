@@ -25,7 +25,9 @@ class ExecutionTest {
         val localPref = LocalPreference(compileAndRun = true)
 
         fileMap?.get("casc")?.forEach {
-            val compilation = Compilation(it, localPref)
+            localPref.sourceFile = it
+
+            val compilation = Compilation(localPref)
             compilation.compile()
 
             System.out.flush()

@@ -33,7 +33,7 @@ class ParserTest {
         GlobalPreference.enableColor = false
 
         fileMap?.get("casc")?.forEach {
-            val compilation = Compilation(it)
+            val compilation = Compilation(GlobalPreference)
             compilation.compile()
 
             System.out.flush()

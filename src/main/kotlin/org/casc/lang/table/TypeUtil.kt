@@ -57,12 +57,12 @@ object TypeUtil {
                     PrimitiveType.Str, PrimitiveType.Null -> true
                     else -> to !is PrimitiveType
                 }
-            } else if (to is PrimitiveType) {
-                if (from == PrimitiveType.Str && to != PrimitiveType.Str) false
-                else if (from != PrimitiveType.Str && to == PrimitiveType.Str) false
-                else if (from == PrimitiveType.I32 && to == PrimitiveType.Char) true // Special case
-                else if (!from.isNumericType() || !to.isNumericType()) false
-                else PrimitiveType.promotionTable[from]!! <= PrimitiveType.promotionTable[to]!!
+            } else if (from == PrimitiveType.Str) to is ClassType
+            else if (to == PrimitiveType.Str) false
+            else if (to is PrimitiveType) {
+                if (from == PrimitiveType.I32 && to == PrimitiveType.Char) true // Special case
+                else if (from.isNumericType() && to.isNumericType()) PrimitiveType.promotionTable[from]!! <= PrimitiveType.promotionTable[to]!!
+                else false
             } else if (from.type(preference) == to.type(preference)) true
             else canCast(from, PrimitiveType.fromClass(to.type(preference)), preference)
         } else if (from is ClassType && to is PrimitiveType) {

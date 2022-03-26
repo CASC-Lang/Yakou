@@ -108,8 +108,8 @@ data class Scope(
         signatures.find {
             it.name == functionName &&
                     it.parameters.size == argumentTypes.size &&
-                    it.parameters
-                        .zip(argumentTypes)
+                    argumentTypes
+                        .zip(it.parameters)
                         .all { (l, r) ->
                             canCast(l, r)
                         }
@@ -130,8 +130,8 @@ data class Scope(
             return if (functionName == "<init>") {
                 ownerClass.constructors.find {
                     it.parameterTypes.size == argumentTypes.size &&
-                            it.parameterTypes
-                                .zip(argumentTypes)
+                            argumentTypes
+                                .zip(it.parameterTypes)
                                 .all { (l, r) ->
                                     canCast(l, r)
                                 }
@@ -140,11 +140,11 @@ data class Scope(
                 ownerClass.functions.find {
                     it.name?.literal == functionName &&
                             it.parameterTypes?.size == argumentTypes.size &&
-                            it.parameterTypes
-                                ?.zip(argumentTypes)
-                                ?.all { (l, r) ->
+                            argumentTypes
+                                .zip(it.parameterTypes!!)
+                                .all { (l, r) ->
                                     canCast(l, r)
-                                } ?: false
+                                }
                 }?.let(HasSignature::asSignature) ?: findSignature(
                     ownerClass.parentClassReference,
                     functionName,

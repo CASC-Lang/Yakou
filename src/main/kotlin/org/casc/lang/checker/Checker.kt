@@ -1154,7 +1154,7 @@ class Checker(private val preference: AbstractPreference) {
                     checkStatement(expression.elseStatement, scope, PrimitiveType.Unit, true)
 
                     // Find the most common type for all branches
-                    val type = checkBranchCommonType(expression, scope)
+                    val type = checkBranchCommonType(expression)
 
                     if (type == null) {
                         reports += Error(
@@ -1175,10 +1175,7 @@ class Checker(private val preference: AbstractPreference) {
         }
     }
 
-    private fun checkBranchCommonType(
-        expression: IfExpression,
-        scope: Scope
-    ): Type? {
+    private fun checkBranchCommonType(expression: IfExpression): Type? {
         fun getReturnValueType(statement: Statement?): Type? =
             when (statement) {
                 null -> null

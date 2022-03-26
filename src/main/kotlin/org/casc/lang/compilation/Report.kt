@@ -11,25 +11,28 @@ sealed class Report {
 
     abstract val position: Position?
     abstract val message: String
+    abstract val pureMessage: Boolean
     abstract val hint: String?
 
     data class Warning(
         override val position: Position?,
         override val message: String,
-        override val hint: String? = null
+        override val hint: String? = null,
+        override val pureMessage: Boolean = false,
     ) : Report() {
-        constructor(message: String) : this(null, message)
+        constructor(message: String, pureMessage: Boolean = false) : this(null, message, pureMessage = pureMessage)
     }
 
     data class Error(
         override val position: Position?,
         override val message: String,
-        override val hint: String? = null
+        override val hint: String? = null,
+        override val pureMessage: Boolean = false,
     ) : Report() {
-        constructor(message: String) : this(null, message)
+        constructor(message: String, pureMessage: Boolean = false) : this(null, message, pureMessage = pureMessage)
     }
 
-    fun printReport(filePath: String, source: List<String>) {
+    fun printReport(filePath: String? = null, source: List<String>? = null) {
         var finalMessage = when {
             GlobalPreference.enableColor -> {
                 when (this) {
@@ -45,7 +48,13 @@ sealed class Report {
             }
         }
 
-        if (position != null) {
+        if (pureMessage) {
+            finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
+            println(finalMessage)
+            return
+        }
+
+        if (position != null && filePath != null && source != null) {
             val (lineNumber, start, end) = position!!
             val preExtend =
                 if (lineNumber > 1 && lineNumber.toString().length != (lineNumber - 1).toString().length) " "
