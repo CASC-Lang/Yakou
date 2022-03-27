@@ -121,7 +121,6 @@ class Checker(private val preference: AbstractPreference) {
         when (target.accessor) {
             Accessor.Pub -> {}
             Accessor.Prot -> {
-                // TODO: Store parent class data in ClassType so we can remove `Type#type()`
                 val accessible = targetOwnerClass.type(preference)
                     ?.isAssignableFrom(
                         currentScope.findType(currentScope.classReference)?.type(preference) ?: Any::class.java
@@ -271,7 +270,6 @@ class Checker(private val preference: AbstractPreference) {
         return constructor
     }
 
-    // TODO: Track if-else and match branches so compiler can know whether all paths have return value or not
     private fun checkFunction(function: Function, scope: Scope): Function {
         checkIdentifierIsKeyword(function.name)
 
@@ -819,7 +817,6 @@ class Checker(private val preference: AbstractPreference) {
                 expression.type
             }
             is FunctionCallExpression -> {
-                // TODO: Support auto promotion parameter checking
                 val previousExpression = expression.previousExpression
                 val argumentTypes = expression.arguments.map {
                     checkExpression(it, scope)
@@ -1198,7 +1195,6 @@ class Checker(private val preference: AbstractPreference) {
         scope: Scope,
         forcedFinalType: Type? = null
     ) {
-        // TODO: Support Object's promotion?
         val forceFinalType = forcedFinalType != null
         val expressionTypes = mutableListOf<Type?>()
 
@@ -1236,13 +1232,12 @@ class Checker(private val preference: AbstractPreference) {
                             )
                         } else {
                             // Then tries to infer their final type
-                            // TODO: Support Object's promotion here
                             val latestFoundationType =
                                 (latestInferredType as ArrayType).getFoundationType()
                             val currentFoundationType = type.getFoundationType()
 
                             if (latestFoundationType !is PrimitiveType && currentFoundationType !is PrimitiveType) {
-                                // TODO: Support Object's Promotion here
+                                latestInferredType = TypeUtil.getCommonType(latestFoundationType, currentFoundationType, preference)
                             } else {
                                 if (!scope.canCast(latestFoundationType, currentFoundationType)) {
                                     if (!forceFinalType && latestFoundationType is PrimitiveType && currentFoundationType is PrimitiveType) {
@@ -1295,7 +1290,7 @@ class Checker(private val preference: AbstractPreference) {
                             if (!type.isNumericType() || !type.isNumericType()) {
                                 reports.reportTypeMismatch(
                                     expression.elements[i]?.pos,
-                                    expressionTypes[i],
+                                    type,
                                     latestInferredType
                                 )
                             }
@@ -1303,8 +1298,25 @@ class Checker(private val preference: AbstractPreference) {
                         } else latestInferredType = type
                     }
                 }
-                else -> {
-                    // TODO: Support Object's Promotion
+                is ClassType -> {
+                    expressionTypes.forEachIndexed { i, type ->
+                        if (type is ArrayType) {
+                            reports += Error(
+                                expression.elements[i]?.pos,
+                                "Dimension mismatch, requires 1-dimension array but got ${type.getDimension()}-array"
+                            )
+                        } else {
+                            val commonType = TypeUtil.getCommonType(latestInferredType, type, preference)
+
+                            if (commonType == null) {
+                                reports.reportTypeMismatch(
+                                    expression.elements[i]?.pos,
+                                    type,
+                                    latestInferredType
+                                )
+                            } else latestInferredType = commonType
+                        }
+                    }
                 }
             }
         }
