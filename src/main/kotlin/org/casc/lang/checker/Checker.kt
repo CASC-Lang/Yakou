@@ -571,7 +571,7 @@ class Checker(private val preference: AbstractPreference) {
         }
     }
 
-    private fun checkExpression(expression: Expression?, scope: Scope): Type? {
+    private fun checkExpression(expression: Expression?, scope: Scope, isTopArrayExpression: Boolean = true): Type? {
         return when (expression) {
             is IntegerLiteral -> {
                 expression.type = when {
@@ -1114,17 +1114,17 @@ class Checker(private val preference: AbstractPreference) {
             is ArrayDeclaration -> {
                 expression.type = findType(expression.baseTypeReference, scope)
 
-                expression.dimensionExpressions.forEach {
-                    // Dimension expression's type must be able to cast into i32
+                expression.dimensionExpressions.filterNotNull().forEach {
+                    // Dimension expression's type must be able to cast into i32 or null
                     val type = checkExpression(it, scope)
 
                     if (!scope.canCast(type, PrimitiveType.I32)) {
                         reports.reportTypeMismatch(
-                            it?.pos,
+                            it.pos,
                             PrimitiveType.I32,
                             type
                         )
-                    } else it?.castTo = PrimitiveType.I32
+                    } else it.castTo = PrimitiveType.I32
                 }
 
                 expression.type

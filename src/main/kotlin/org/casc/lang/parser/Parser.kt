@@ -6,6 +6,7 @@ import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.compilation.Warning
+import org.casc.lang.table.ArrayType
 import org.casc.lang.table.Reference
 import org.casc.lang.utils.MutableObjectSet
 import org.objectweb.asm.Opcodes
@@ -868,7 +869,7 @@ class Parser(private val preference: AbstractPreference) {
                 "if" -> parseIfExpression(inCompanionContext)
                 else -> parseSecondaryExpression(inCompanionContext)
             }
-            TokenType.Colon -> parseArrayInitialization(inCompanionContext)
+            TokenType.OpenBracket -> parseArrayExpression(inCompanionContext)
             TokenType.OpenParenthesis -> {
                 consume()
 
@@ -986,8 +987,6 @@ class Parser(private val preference: AbstractPreference) {
             // Prepend previous identifier to classPath as top package
             classPath.prepend(name?.literal ?: "")
 
-            if (peekIf(TokenType.Colon)) return parseArrayInitialization(inCompanionContext, classPath)
-
             assert(TokenType.Dot)
 
             val memberName = assert(TokenType.Identifier)
@@ -1009,11 +1008,7 @@ class Parser(private val preference: AbstractPreference) {
 
                 IdentifierCallExpression(classPath, memberName, pos = pos)
             }
-        } else if (peekIf(TokenType.Colon)) parseArrayInitialization(
-            inCompanionContext,
-            Reference(name?.literal ?: "", name)
-        )
-        else {
+        } else {
             if (peekIf(TokenType.Dot)) {
                 // Companion member calling, e.g. Class.field, Class.func()
                 IdentifierCallExpression(null, name)
@@ -1024,8 +1019,18 @@ class Parser(private val preference: AbstractPreference) {
         }
     }
 
-    // parseArrayInitialization parses array initialization & declaration
-    private fun parseArrayInitialization(inCompanionContext: Boolean, typeReference: Reference? = null): Expression {
+    private fun parseArrayExpression(inCompanionContext: Boolean): Expression? {
+        // A valid array expression can be in the following forms:
+        // Note: size and initial elements cannot exist at the same time
+        // 1. array declaration
+        // e.g. [[i32;10];]{}
+        //      [i32;10]{}
+        // or
+        //      [[i32;10];]{}
+        // 3. array initialization
+        // e.g. [[;];]{ [;]{ 1 } }
+        //      [;]{ 1 }
+
         fun collectArrayElements(): Pair<List<Expression?>, Token?> {
             val elements = mutableListOf<Expression?>()
 
@@ -1041,61 +1046,59 @@ class Parser(private val preference: AbstractPreference) {
             return elements to closeBrace
         }
 
-        return if (peekIf(TokenType.Colon) && typeReference != null) {
-            // Array declaration (`int:[10]{}`) or Array Initialization (`int:[]{...}`)
+        val firstBracketPos = peek()?.pos
+        var arrayDimensionCounter = 0
+
+        while (peekIf(TokenType.OpenBracket)) {
             consume()
+            arrayDimensionCounter++
+        }
 
-            val dimensionElements = mutableListOf<Expression?>()
+        val arrayDimensionExpressions = MutableList<Expression?>(arrayDimensionCounter) { null }
+        val arrayDimension = arrayDimensionCounter
+        val baseType =
+            if (peekIf(TokenType.SemiColon)) null
+            else parseTypeSymbol()
 
-            while (!peekIf(TokenType.OpenBrace)) {
-                consume()
+        while (arrayDimensionCounter != 0) {
+            assert(TokenType.SemiColon)
 
-                if (!peekIf(TokenType.CloseBracket)) {
-                    // Array declaration
-                    dimensionElements += parseExpression(inCompanionContext, true)
-                }
-
-                val closeBracket = assert(TokenType.CloseBracket)
-
-                typeReference.fullQualifiedPath += "[]"
-
-                if (dimensionElements.isEmpty()) {
-                    typeReference.pos?.extend(closeBracket?.pos)
-                }
+            if (!peekIf(TokenType.CloseBracket)) {
+                arrayDimensionExpressions[arrayDimensionCounter - 1] = parseExpression(inCompanionContext, true)
             }
 
-            assert(TokenType.OpenBrace)
+            assert(TokenType.CloseBracket)
+            arrayDimensionCounter--
+        }
 
-            if (dimensionElements.isEmpty()) {
-                // Array initialization
-                val (elements, closeBrace) = collectArrayElements()
+        assert(TokenType.OpenBrace)
 
-                ArrayInitialization(
-                    typeReference,
-                    elements,
-                    typeReference.pos?.copy()?.extend(closeBrace?.pos)
-                )
-            } else {
-                // Array Declaration
-                val closeBrace = assert(TokenType.CloseBrace)
+        val (elementExpressions, closeBracket) = collectArrayElements()
+        val arrayExpressionPos = firstBracketPos?.extend(closeBracket?.pos)
 
-                ArrayDeclaration(
-                    typeReference,
-                    dimensionElements,
-                    typeReference.pos?.copy()?.extend(closeBrace?.pos)
-                )
-            }
-        } else {
-            val colon = assert(TokenType.Colon)
-            assert(TokenType.OpenBrace)
-
-            val (elements, closeBrace) = collectArrayElements()
-
-            ArrayInitialization(
-                null,
-                elements,
-                colon?.pos?.extend(closeBrace?.pos)
+        if (arrayDimensionExpressions.any { it != null } && elementExpressions.isNotEmpty()) {
+            reports += Error(
+                arrayExpressionPos,
+                "Cannot initialize array with both dimension expression and element expressions",
+                "Remove either all dimension expressions or all element expressions"
             )
+        }
+
+        return if (elementExpressions.isNotEmpty()) {
+            // Array initialization
+            ArrayInitialization(null, elementExpressions, arrayExpressionPos)
+        } else if (baseType != null && arrayDimensionExpressions.isNotEmpty()) {
+            // Array declaration
+            baseType.appendArrayDimension(arrayDimension)
+
+            ArrayDeclaration(baseType, arrayDimensionExpressions, arrayExpressionPos)
+        } else {
+            reports += Error(
+                arrayExpressionPos,
+                "Cannot declare array without type info or top-level dimension expression"
+            )
+
+            null
         }
     }
 

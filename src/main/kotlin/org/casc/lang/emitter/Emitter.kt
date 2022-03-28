@@ -479,11 +479,12 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
                 }
             }
             is ArrayDeclaration -> {
-                expression.dimensionExpressions.forEach {
-                    emitExpression(methodVisitor, it!!)
+                expression.dimensionExpressions.filterNotNull().forEach {
+                    emitExpression(methodVisitor, it)
                 }
 
-                val baseType = (expression.type as ArrayType).baseType
+                val arrayType = expression.type as ArrayType
+                val baseType = arrayType.baseType
 
                 if (expression.dimensionExpressions.size > 1) {
                     methodVisitor.visitMultiANewArrayInsn(
