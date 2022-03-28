@@ -7,8 +7,6 @@ intl mut:
 
 impl Main : Rock {
     comp {
-        sys.out.println("Hello!")
-
         a := 1B
         b := 1S
         c := 1I
@@ -35,7 +33,7 @@ impl Main : Rock {
         p := i32:[10]{}
     }
 
-    fn main(args: str[]) {
+    fn main(args: [str]) {
         a := new Main()
         a.lol()
         a.print()

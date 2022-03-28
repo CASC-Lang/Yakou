@@ -277,17 +277,23 @@ class Parser(private val preference: AbstractPreference) {
      * Used to parse type symbol with potential array suffix ([]), not designed to be parsed with `use` syntax
      */
     private fun parseComplexTypeSymbol(): Reference {
-        val baseTypeSymbol = parseTypeSymbol()
         var arrayDimensionCounter = 0
 
         while (peekIf(TokenType.OpenBracket)) {
             consume()
-            assert(TokenType.CloseBracket)
-
             arrayDimensionCounter++
         }
 
-        baseTypeSymbol.appendArrayDimension(arrayDimensionCounter)
+        val arrayDimension = arrayDimensionCounter
+        val baseTypeSymbol = parseTypeSymbol()
+
+        while (arrayDimensionCounter != 0) {
+            assert(TokenType.CloseBracket)
+
+            arrayDimensionCounter--
+        }
+
+        baseTypeSymbol.appendArrayDimension(arrayDimension)
 
         return baseTypeSymbol
     }
