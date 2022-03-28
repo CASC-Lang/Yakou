@@ -3,7 +3,7 @@ use java::lang::System as sys
 class FizzBuzz
 
 impl FizzBuzz {
-    fn main(s: str[]) {
+    fn main(s: [str]) {
         for mut i := 1; i < 100; i = i + 1 {
             sys.out.print(i + " ")
 

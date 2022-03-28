@@ -3,9 +3,9 @@ use java::lang::System as sys
 class Rule110
 
 impl Rule110 {
-    fn main(args: str[]) {
+    fn main(args: [str]) {
         cap := 30
-        mut board := i32:[cap]{}
+        mut board := [i32;cap]{}
         board[cap - 2] = 1
 
         for mut i := 0; i < cap - 2; i = i + 1 {
