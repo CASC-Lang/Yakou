@@ -1219,11 +1219,11 @@ class Checker(private val preference: AbstractPreference) {
             when (firstInferredType) {
                 is ArrayType -> {
                     // Checks all types' dimension is same as first element's dimension
-                    val firstTypeDimension = firstInferredType.getDimension()
+                    val firstTypeDimension = firstInferredType.dimension
 
                     expressionTypes.forEachIndexed { i, type ->
                         // Check their dimensions first
-                        val dimension = (type as ArrayType).getDimension() // Already checked
+                        val dimension = (type as ArrayType).dimension // Already checked
 
                         if (firstTypeDimension != dimension) {
                             reports += Error(
@@ -1284,7 +1284,7 @@ class Checker(private val preference: AbstractPreference) {
                         if (type is ArrayType) {
                             reports += Error(
                                 expression.elements[i]?.pos,
-                                "Dimension mismatch, requires 1-dimension array but got ${type.getDimension()}-array"
+                                "Dimension mismatch, requires 1-dimension array but got ${type.dimension}-array"
                             )
                         } else if (type is PrimitiveType && !scope.canCast(latestInferredType, type)) {
                             if (!type.isNumericType() || !type.isNumericType()) {
@@ -1303,7 +1303,7 @@ class Checker(private val preference: AbstractPreference) {
                         if (type is ArrayType) {
                             reports += Error(
                                 expression.elements[i]?.pos,
-                                "Dimension mismatch, requires 1-dimension array but got ${type.getDimension()}-array"
+                                "Dimension mismatch, requires 1-dimension array but got ${type.dimension}-array"
                             )
                         } else {
                             val commonType = TypeUtil.getCommonType(latestInferredType, type, preference)
@@ -1337,7 +1337,7 @@ class Checker(private val preference: AbstractPreference) {
 
                     currentNodeType.baseType = ArrayType.fromDimension(
                         latestFoundationType,
-                        currentNodeType.getDimension() - 1
+                        currentNodeType.dimension - 1
                     )
                     currentNodeType.setFoundationType(latestFoundationType)
                 })

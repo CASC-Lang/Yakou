@@ -21,6 +21,10 @@ data class ArrayType(
         }
     }
 
+    val dimension by lazy {
+        getDimensionSize()
+    }
+
     override fun type(preference: AbstractPreference): Class<*> =
         Array.newInstance(baseType.type(preference), 0).javaClass
 
@@ -29,9 +33,9 @@ data class ArrayType(
     override val returnOpcode: Int = Opcodes.ARETURN
 
     override fun asCASCStyle(): String =
-        "${getFoundationType().asCASCStyle()}${"[]".repeat(getDimension())}"
+        "${"[".repeat(dimension)}${getFoundationType().asCASCStyle()}${"]".repeat(dimension)}"
 
-    fun getDimension(): Int {
+    private fun getDimensionSize(): Int {
         var dim = 1
         var lastType = baseType
 
