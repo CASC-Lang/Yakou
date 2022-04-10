@@ -1123,7 +1123,7 @@ class Checker(private val preference: AbstractPreference) {
 
                 expression.dimensionExpressions.filterNotNull().forEach {
                     // Dimension expression's type must be able to cast into i32 or null
-                    val type = checkExpression(it, scope)
+                    val type = checkExpression(it, scope, false)
 
                     if (!scope.canCast(type, PrimitiveType.I32)) {
                         reports.reportTypeMismatch(
@@ -1132,6 +1132,13 @@ class Checker(private val preference: AbstractPreference) {
                             type
                         )
                     } else it.castTo = PrimitiveType.I32
+                }
+
+                if (expression.dimensionExpressions[0] == null) {
+                    reports += Error(
+                        expression.pos,
+                        "Missing top array size"
+                    )
                 }
 
                 expression.type
@@ -1206,7 +1213,7 @@ class Checker(private val preference: AbstractPreference) {
         val expressionTypes = mutableListOf<Type?>()
 
         expression.elements.forEach {
-            expressionTypes += checkExpression(it, scope)
+            expressionTypes += checkExpression(it, scope, false)
         }
 
         val firstInferredType = if (forceFinalType) forcedFinalType else expressionTypes.first()
@@ -1325,6 +1332,7 @@ class Checker(private val preference: AbstractPreference) {
                         }
                     }
                 }
+                else -> {}
             }
         }
 
