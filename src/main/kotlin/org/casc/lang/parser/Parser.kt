@@ -800,10 +800,10 @@ class Parser(private val preference: AbstractPreference) {
         } else ExpressionStatement(parseExpression(inCompanionContext))
     }
 
-    private fun parseExpression(inCompanionContext: Boolean, retainValue: Boolean = false): Expression? =
+    private fun parseExpression(inCompanionContext: Boolean, retainValue: Boolean = false): Expression =
         parseAssignment(inCompanionContext, retainValue)
 
-    private fun parseAssignment(inCompanionContext: Boolean, retainValue: Boolean): Expression? {
+    private fun parseAssignment(inCompanionContext: Boolean, retainValue: Boolean): Expression {
         var expression: Expression? = null
 
         while (expression == null) {
