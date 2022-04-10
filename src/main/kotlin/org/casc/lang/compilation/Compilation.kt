@@ -29,6 +29,7 @@ class Compilation(private val preference: AbstractPreference) {
     private var timings = mutableMapOf<String, Double>()
 
     fun compile() {
+        var panic = false
         val sourceFile = preference.sourceFile!!
 
         measureTime("Compilation") {
@@ -62,7 +63,10 @@ class Compilation(private val preference: AbstractPreference) {
 
                 compilationUnits.printReports()
 
-                if (compilationUnits.anyError()) return@measureTime
+                if (compilationUnits.anyError()) {
+                    panic = true
+                    return@measureTime
+                }
 
                 measureTime("Parse") {
                     for (cascFile in compilationUnits) {
@@ -81,7 +85,10 @@ class Compilation(private val preference: AbstractPreference) {
 
                 compilationUnits.printReports()
 
-                if (compilationUnits.anyError()) return@measureTime
+                if (compilationUnits.anyError()) {
+                    panic = true
+                    return@measureTime
+                }
 
                 measureTime("Check (Prelude)") {
                     // Caches class for dummy type checking, used in declaration checking
@@ -107,7 +114,10 @@ class Compilation(private val preference: AbstractPreference) {
 
                     compilationUnits.printReports()
 
-                    if (compilationUnits.anyError()) return@measureTime
+                    if (compilationUnits.anyError()) {
+                        panic = true
+                        return@measureTime
+                    }
 
                     Table.cachedClasses.clear()
 
@@ -157,7 +167,10 @@ class Compilation(private val preference: AbstractPreference) {
 
                 compilationUnits.printReports()
 
-                if (compilationUnits.anyError()) return@measureTime
+                if (compilationUnits.anyError()) {
+                    panic = true
+                    return@measureTime
+                }
 
                 measureTime("Emit") {
                     for (compilationUnit in compilationUnits) {
@@ -193,7 +206,10 @@ class Compilation(private val preference: AbstractPreference) {
 
                 reports.forEach { it.printReport(outputFileName, source) }
 
-                if (reports.hasError()) return@measureTime
+                if (reports.hasError()) {
+                    panic = true
+                    return@measureTime
+                }
 
                 var file: File? = null
 
@@ -213,7 +229,10 @@ class Compilation(private val preference: AbstractPreference) {
 
                 reports.forEach { it.printReport(outputFileName, source) }
 
-                if (reports.hasError()) return@measureTime
+                if (reports.hasError()) {
+                    panic = true
+                    return@measureTime
+                }
 
                 val checker = Checker(preference)
                 var scope: Scope? = null
@@ -232,7 +251,10 @@ class Compilation(private val preference: AbstractPreference) {
 
                 reports.forEach { it.printReport(outputFileName, source) }
 
-                if (reports.hasError()) return@measureTime
+                if (reports.hasError()) {
+                    panic = true
+                    return@measureTime
+                }
 
                 measureTime("Check (Main)") {
                     val (bodyReports, finalFile) = checker.check(file!!, scope!!)
@@ -243,11 +265,17 @@ class Compilation(private val preference: AbstractPreference) {
 
                 reports.forEach { it.printReport(outputFileName, source) }
 
-                if (reports.hasError()) return@measureTime
+                if (reports.hasError()) {
+                    panic = true
+                    return@measureTime
+                }
 
                 reports.forEach { it.printReport(outputFileName, source) }
 
-                if (reports.hasError()) return@measureTime
+                if (reports.hasError()) {
+                    panic = true
+                    return@measureTime
+                }
 
                 measureTime("Emit") {
                     // Unit IV: Emitter
@@ -260,7 +288,7 @@ class Compilation(private val preference: AbstractPreference) {
             }
         }
 
-        if (preference.compileAndRun) {
+        if (preference.compileAndRun && !panic) {
             measureTime("Run") {
                 val isWindows = System.getProperty("os.name").lowercase().startsWith("windows")
                 val process = Runtime.getRuntime().exec(
