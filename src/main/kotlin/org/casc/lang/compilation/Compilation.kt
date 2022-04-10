@@ -20,7 +20,9 @@ class Compilation(private val preference: AbstractPreference) {
 
         private fun List<Report>.hasError(): Boolean = this.filterIsInstance<Error>().isNotEmpty()
 
-        private fun List<CompilationFileUnit>.printReports() = this.forEach(CompilationFileUnit::printReports)
+        private fun List<CompilationFileUnit>.printReports() = this.forEach {
+            it.printReports()
+        }
 
         val entryFormat = AnsiFormat(Attribute.CYAN_TEXT())
         const val outputFormat = "%-35s%s"
