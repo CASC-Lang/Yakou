@@ -771,13 +771,20 @@ class Checker(private val preference: AbstractPreference) {
                         expression.ownerReference = field.ownerReference
                     }
                 } else if (expression.name?.literal == "self" || expression.name?.literal == "super") {
-                    expression.type = when (expression.name.literal) {
-                        "self" -> scope.findType(scope.classReference)
-                        "super" -> scope.findType(scope.parentClassPath)
-                        else -> null
-                    }
+                    if (scope.isCompScope) {
+                        reports += Error(
+                            expression.pos,
+                            "Cannot call `self` or `super` keywords in companion function"
+                        )
+                    } else {
+                        expression.type = when (expression.name.literal) {
+                            "self" -> scope.findType(scope.classReference)
+                            "super" -> scope.findType(scope.parentClassPath)
+                            else -> null
+                        }
 
-                    expression.index = 0
+                        expression.index = 0
+                    }
                 } else {
                     // Check identifier is class name or not
                     val classType = scope.findType(Reference(expression.name!!.literal))
