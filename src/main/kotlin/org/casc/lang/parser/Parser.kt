@@ -10,6 +10,7 @@ import org.casc.lang.table.ArrayType
 import org.casc.lang.table.Reference
 import org.casc.lang.utils.MutableObjectSet
 import org.objectweb.asm.Opcodes
+import kotlin.math.exp
 
 class Parser(private val preference: AbstractPreference) {
     private var pos: Int = 0
@@ -803,21 +804,40 @@ class Parser(private val preference: AbstractPreference) {
         parseAssignment(inCompanionContext, retainValue)
 
     private fun parseAssignment(inCompanionContext: Boolean, retainValue: Boolean): Expression? {
-        var expression = parseBinaryExpression(0, inCompanionContext, retainValue)
+        var expression: Expression? = null
 
-        if (expression is IdentifierCallExpression && (peekIf(TokenType.DoublePlus) || peekIf(TokenType.DoubleMinus))) {
-            val operator = next()
-            expression =
-                UnaryExpression(operator, expression, true, retainValue, expression.copy().pos?.extend(operator?.pos))
-        }
+        while (expression == null) {
+            expression = parseBinaryExpression(0, inCompanionContext, retainValue)
 
-        while (peekIf(TokenType.Equal)) {
-            // Assignment
-            val operator = next()
+            if (expression is IdentifierCallExpression && (peekIf(TokenType.DoublePlus) || peekIf(TokenType.DoubleMinus))) {
+                val operator = next()
+                expression =
+                    UnaryExpression(
+                        operator,
+                        expression,
+                        true,
+                        retainValue,
+                        expression.copy().pos?.extend(operator?.pos)
+                    )
+            }
 
-            val rightExpression = parseExpression(inCompanionContext, true)
+            while (peekIf(TokenType.Equal)) {
+                // Assignment
+                val operator = next()
 
-            expression = AssignmentExpression(expression, operator, rightExpression, retainValue)
+                val rightExpression = parseExpression(inCompanionContext, true)
+
+                expression = AssignmentExpression(expression, operator, rightExpression, retainValue)
+            }
+
+            if (expression == null) {
+                val currentToken = next()
+
+                reports += Error(
+                    currentToken?.pos,
+                    "Unexpected token ${currentToken?.type}"
+                )
+            }
         }
 
         return expression
