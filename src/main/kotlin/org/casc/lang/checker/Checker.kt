@@ -571,7 +571,7 @@ class Checker(private val preference: AbstractPreference) {
         }
     }
 
-    private fun checkExpression(expression: Expression?, scope: Scope, isTopArrayExpression: Boolean = true): Type? {
+    private fun checkExpression(expression: Expression?, scope: Scope): Type? {
         return when (expression) {
             is IntegerLiteral -> {
                 expression.type = when {
@@ -1123,7 +1123,7 @@ class Checker(private val preference: AbstractPreference) {
 
                 expression.dimensionExpressions.filterNotNull().forEach {
                     // Dimension expression's type must be able to cast into i32 or null
-                    val type = checkExpression(it, scope, false)
+                    val type = checkExpression(it, scope)
 
                     if (!scope.canCast(type, PrimitiveType.I32)) {
                         reports.reportTypeMismatch(
@@ -1134,7 +1134,7 @@ class Checker(private val preference: AbstractPreference) {
                     } else it.castTo = PrimitiveType.I32
                 }
 
-                if (expression.dimensionExpressions[0] == null) {
+                if (expression.dimensionExpressions.lastOrNull() == null) {
                     reports += Error(
                         expression.pos,
                         "Missing top array size"
@@ -1213,7 +1213,7 @@ class Checker(private val preference: AbstractPreference) {
         val expressionTypes = mutableListOf<Type?>()
 
         expression.elements.forEach {
-            expressionTypes += checkExpression(it, scope, false)
+            expressionTypes += checkExpression(it, scope)
         }
 
         val firstInferredType = if (forceFinalType) forcedFinalType else expressionTypes.first()
