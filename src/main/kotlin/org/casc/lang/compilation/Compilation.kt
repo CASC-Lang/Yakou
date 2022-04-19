@@ -32,7 +32,7 @@ class Compilation(private val preference: AbstractPreference) {
 
     fun compile() {
         var panic = false
-        val sourceFile = preference.sourceFile!!
+        val sourceFile = preference.sourceFile!!.absoluteFile!!
 
         measureTime("Compilation") {
             if (sourceFile.isDirectory) {
