@@ -1,5 +1,7 @@
 ## TODO List
 ``There is no precedence for this list, all tasks are currently invloving.``
+
+To see release-based TODOs, checkout GitHub repository's project
 ### Category
 #### Language Spec
 
