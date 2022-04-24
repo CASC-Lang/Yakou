@@ -30,7 +30,7 @@ class Parser(private val preference: AbstractPreference) {
     // PRIVATE UTILITY FUNCTIONS
     // ================================
 
-    private tailrec fun assert(type: TokenType): Token? = when {
+    private fun assert(type: TokenType): Token? = when {
         tokens.isEmpty() -> {
             reports += Error(
                 "Unable to compile empty source"
@@ -49,11 +49,11 @@ class Parser(private val preference: AbstractPreference) {
                 tokens[pos].pos,
                 "Unexpected token ${tokens[pos++].type}, expected token $type"
             )
-            assert(type)
+            null
         }
     }
 
-    private tailrec fun assert(predicate: (Token) -> Boolean): Token? = when {
+    private fun assert(predicate: (Token) -> Boolean): Token? = when {
         tokens.isEmpty() -> {
             reports += Error(
                 "Unable to compile empty source"
@@ -72,7 +72,7 @@ class Parser(private val preference: AbstractPreference) {
                 tokens[pos].pos,
                 "Unexpected token ${tokens[pos++].type}, expected predicate $predicate"
             )
-            assert(predicate)
+            null
         }
     }
 
