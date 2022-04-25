@@ -12,11 +12,10 @@ import org.objectweb.asm.Opcodes
 
 class Parser(private val preference: AbstractPreference) {
     private var pos: Int = 0
-    private var reports: MutableList<Report> = mutableListOf()
+    private var reports = mutableListOf<Report>()
     private lateinit var tokens: List<Token>
 
     fun parse(path: String, relativeFilePath: String, tokens: List<Token>): Pair<List<Report>, File> {
-        reports.clear()
         pos = 0
         this.tokens = tokens
         val file = parseFile(path, relativeFilePath)
@@ -29,7 +28,7 @@ class Parser(private val preference: AbstractPreference) {
     // ================================
 
     private fun hasNext(): Boolean =
-        tokens.lastIndex == pos
+        tokens.lastIndex != pos
 
     private fun assertUntil(type: TokenType): Token? {
         while (hasNext()) {
@@ -306,6 +305,7 @@ class Parser(private val preference: AbstractPreference) {
         val reference = parseTypeSymbol()
 
         if (peekMultiple(2, TokenType.DoubleColon, TokenType.OpenBrace)) {
+            // use Module::{ SubModuleA, SubModuleB }
             consume()
             consume()
 
@@ -318,7 +318,7 @@ class Parser(private val preference: AbstractPreference) {
                 } else break
             }
 
-            assert(TokenType.CloseBrace)
+            assertUntil(TokenType.CloseBrace)
         } else if (peekIf(TokenType.Identifier) && peekIf(Token::isAsKeyword)) {
             consume()
             val aliasReference = assertUntil(TokenType.Identifier)
@@ -344,12 +344,17 @@ class Parser(private val preference: AbstractPreference) {
      *
      * #1: Will generate a warning by default.
      */
-    private fun parseModifiers(accessModifier: Boolean = true, mutableKeyword: Boolean = true, ovrdKeyword: Boolean = true, terminator: (Token) -> Boolean): Triple<Token?, Token?, Token?> {
+    private fun parseModifiers(
+        accessModifier: Boolean = true,
+        mutableKeyword: Boolean = true,
+        ovrdKeyword: Boolean = true,
+        terminator: (Token) -> Boolean
+    ): Triple<Token?, Token?, Token?> {
         var accessor: Token? = null
         var ovrd: Token? = null
         var mutable: Token? = null
 
-        while (hasNext()) {
+        while (hasNext() && !terminator(peek()!!)) {
             val token = next()!!
 
             if (token.isAccessorKeyword() && accessModifier) {
@@ -405,7 +410,7 @@ class Parser(private val preference: AbstractPreference) {
                 }
 
                 ovrd = token
-            }else if (token.isMutKeyword() && mutableKeyword) {
+            } else if (token.isMutKeyword() && mutableKeyword) {
                 if (mutable != null) {
                     reports += Error(
                         mutable.pos,
@@ -420,8 +425,6 @@ class Parser(private val preference: AbstractPreference) {
                 }
 
                 mutable = token
-            } else if (terminator(token)) {
-                break
             } else {
                 var builder = if (accessModifier) "access modifiers (`pub`, `prot`, `intl`, `priv`)" else ""
                 builder += if (builder.isNotEmpty() && ovrdKeyword) "or `ovrd` keyword" else if (ovrdKeyword) "`ovrd` keyword" else ""
@@ -536,7 +539,7 @@ class Parser(private val preference: AbstractPreference) {
             if (peekIf(Token::isCompKeyword)) {
                 val compKeyword = next()
 
-                assert(TokenType.OpenBrace)
+                assertUntil(TokenType.OpenBrace)
                 // Companion block
                 if (companionBlock.isNotEmpty()) {
                     // Companion block already declared
@@ -549,7 +552,7 @@ class Parser(private val preference: AbstractPreference) {
 
                 companionBlock += parseStatements(true)
 
-                assert(TokenType.CloseBrace)
+                assertUntil(TokenType.CloseBrace)
             }
 
             val (accessor, mutable, ovrd) = parseModifiers { it.isNewKeyword() || it.isFnKeyword() || it.type == TokenType.CloseBrace }
