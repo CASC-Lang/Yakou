@@ -839,44 +839,31 @@ class Parser(private val preference: AbstractPreference) {
         }
     }
 
-    private fun parseExpression(inCompanionContext: Boolean, retainValue: Boolean = false): Expression =
+    private fun parseExpression(inCompanionContext: Boolean, retainValue: Boolean = false): Expression? =
         parseAssignment(inCompanionContext, retainValue)
 
-    private fun parseAssignment(inCompanionContext: Boolean, retainValue: Boolean): Expression {
-        var expression: Expression? = null
+    private fun parseAssignment(inCompanionContext: Boolean, retainValue: Boolean): Expression? {
+        var expression = parseBinaryExpression(0, inCompanionContext, retainValue)
 
-        while (expression == null) {
-            expression = parseBinaryExpression(0, inCompanionContext, retainValue)
-
-            if (expression is IdentifierCallExpression && (peekIf(TokenType.DoublePlus) || peekIf(TokenType.DoubleMinus))) {
-                val operator = next()
-                expression =
-                    UnaryExpression(
-                        operator,
-                        expression,
-                        true,
-                        retainValue,
-                        expression.copy().pos?.extend(operator?.pos)
-                    )
-            }
-
-            while (peekIf(TokenType.Equal)) {
-                // Assignment
-                val operator = next()
-
-                val rightExpression = parseExpression(inCompanionContext, true)
-
-                expression = AssignmentExpression(expression, operator, rightExpression, retainValue)
-            }
-
-            if (expression == null) {
-                val currentToken = next()
-
-                reports += Error(
-                    currentToken?.pos,
-                    "Unexpected token ${currentToken?.type}"
+        if (expression is IdentifierCallExpression && (peekIf(TokenType.DoublePlus) || peekIf(TokenType.DoubleMinus))) {
+            val operator = next()
+            expression =
+                UnaryExpression(
+                    operator,
+                    expression,
+                    true,
+                    retainValue,
+                    expression.copy().pos?.extend(operator?.pos)
                 )
-            }
+        }
+
+        while (peekIf(TokenType.Equal)) {
+            // Assignment
+            val operator = next()
+
+            val rightExpression = parseExpression(inCompanionContext, true)
+
+            expression = AssignmentExpression(expression, operator, rightExpression, retainValue)
         }
 
         return expression
@@ -934,11 +921,14 @@ class Parser(private val preference: AbstractPreference) {
 
                 val expression = parseExpression(inCompanionContext)
 
-                assert(TokenType.CloseParenthesis)
+                assertUntil(TokenType.CloseParenthesis)
 
                 ParenthesizedExpression(expression)
             }
-            else -> null
+            else -> {
+                reports.reportUnexpectedToken(tokens[pos++])
+                null
+            }
         }
 
         if (expression is IdentifierCallExpression || expression is FunctionCallExpression
@@ -950,17 +940,21 @@ class Parser(private val preference: AbstractPreference) {
                     // Chain calling
                     consume()
 
-                    val name = assert(TokenType.Identifier)
+                    val name = assertUntil(TokenType.Identifier)
 
                     if (peekIf(TokenType.OpenParenthesis)) {
                         // Member function
+                        // owner.memberFunction()
                         consume()
 
                         val arguments = parseArguments(inCompanionContext)
 
-                        assert(TokenType.CloseParenthesis)
+                        assertUntil(TokenType.CloseParenthesis)
 
-                        val pos = name?.pos?.extend(arguments.lastOrNull()?.pos)?.extend()
+                        val pos = Position.MutablePosition.fromMultipleAndExtend(
+                            name?.pos,
+                            arguments.lastOrNull()?.pos
+                        ).position?.extend() // extend additional 1 character for `)`
 
                         expression = FunctionCallExpression(
                             null,
@@ -972,9 +966,13 @@ class Parser(private val preference: AbstractPreference) {
                         )
                     } else {
                         // Member field
-                        val pos = name?.pos?.extend(name.pos)
-
-                        expression = IdentifierCallExpression(null, name, previousExpression = expression, pos = pos)
+                        // owner.memberField
+                        expression = IdentifierCallExpression(
+                            null,
+                            name,
+                            previousExpression = expression,
+                            pos = name?.pos?.extend(name.pos)
+                        )
                     }
                 } else if (peekIf(TokenType.OpenBracket)) {
                     // Index expression
@@ -982,12 +980,15 @@ class Parser(private val preference: AbstractPreference) {
 
                     val indexExpression = parseExpression(inCompanionContext, true)
 
-                    val closeBracket = assert(TokenType.CloseBracket)
+                    val closeBracket = assertUntil(TokenType.CloseBracket)
 
                     expression = IndexExpression(
                         expression,
                         indexExpression,
-                        pos = expression?.pos?.extend(closeBracket?.pos)
+                        pos = Position.MutablePosition.fromMultipleAndExtend(
+                            expression?.pos,
+                            closeBracket?.pos
+                        ).position
                     )
                 } else break
             }
@@ -997,11 +998,11 @@ class Parser(private val preference: AbstractPreference) {
     }
 
     private fun parseConstructorExpression(inCompanionContext: Boolean): Expression {
-        assert(TokenType.Identifier) // `new` keyword
+        assertUntil(TokenType.Identifier) // `new` keyword
         val ownerReference = parseTypeSymbol()
-        assert(TokenType.OpenParenthesis)
+        assertUntil(TokenType.OpenParenthesis)
         val arguments = parseArguments(inCompanionContext)
-        assert(TokenType.CloseParenthesis)
+        assertUntil(TokenType.CloseParenthesis)
 
         return ConstructorCallExpression(ownerReference, arguments)
     }
@@ -1021,7 +1022,10 @@ class Parser(private val preference: AbstractPreference) {
             condition,
             trueStatement,
             elseStatement,
-            ifKeyword?.pos?.extend(trueStatement?.pos)
+            Position.MutablePosition.fromMultipleAndExtend(
+                ifKeyword?.pos,
+                trueStatement?.pos
+            ).position
         )
     }
 
@@ -1034,7 +1038,7 @@ class Parser(private val preference: AbstractPreference) {
 
             val arguments = parseArguments(inCompanionContext)
 
-            assert(TokenType.CloseParenthesis)
+            assertUntil(TokenType.CloseParenthesis)
 
             FunctionCallExpression(null, name, arguments, inCompanionContext)
         } else if (peekIf(TokenType.DoubleColon)) {
@@ -1046,9 +1050,9 @@ class Parser(private val preference: AbstractPreference) {
             // Prepend previous identifier to classPath as top package
             classPath.prepend(name?.literal ?: "")
 
-            assert(TokenType.Dot)
+            assertUntil(TokenType.Dot)
 
-            val memberName = assert(TokenType.Identifier)
+            val memberName = assertUntil(TokenType.Identifier)
 
             if (peekIf(TokenType.OpenParenthesis)) {
                 // Companion function calling
@@ -1056,7 +1060,7 @@ class Parser(private val preference: AbstractPreference) {
 
                 val arguments = parseArguments(inCompanionContext)
 
-                assert(TokenType.CloseParenthesis)
+                assertUntil(TokenType.CloseParenthesis)
 
                 val pos = name?.pos?.extend(arguments.lastOrNull()?.pos)?.extend()
 
@@ -1100,7 +1104,7 @@ class Parser(private val preference: AbstractPreference) {
                 else break
             }
 
-            val closeBrace = assert(TokenType.CloseBrace)
+            val closeBrace = assertUntil(TokenType.CloseBrace)
 
             return elements to closeBrace
         }
@@ -1120,17 +1124,17 @@ class Parser(private val preference: AbstractPreference) {
             else parseTypeSymbol()
 
         while (arrayDimensionCounter != 0) {
-            assert(TokenType.SemiColon)
+            assertUntil(TokenType.SemiColon)
 
             if (!peekIf(TokenType.CloseBracket)) {
                 arrayDimensionExpressions[arrayDimensionCounter - 1] = parseExpression(inCompanionContext, true)
             }
 
-            assert(TokenType.CloseBracket)
+            assertUntil(TokenType.CloseBracket)
             arrayDimensionCounter--
         }
 
-        assert(TokenType.OpenBrace)
+        assertUntil(TokenType.OpenBrace)
 
         val (elementExpressions, closeBracket) = collectArrayElements()
         val arrayExpressionPos = firstBracketPos?.extend(closeBracket?.pos)

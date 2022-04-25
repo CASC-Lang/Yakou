@@ -38,7 +38,7 @@ data class Position(val lineNumber: Int, var start: Int, var end: Int) {
                 return if (firstNonNullIndex != -1) {
                     val firstNonNull = positions[firstNonNullIndex]!!
 
-                    for (i in 0..positions.size) {
+                    for (i in positions.indices) {
                         if (i == firstNonNullIndex) continue
 
                         firstNonNull.extend(positions[i])
