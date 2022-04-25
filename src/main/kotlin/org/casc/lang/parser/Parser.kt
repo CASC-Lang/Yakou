@@ -125,6 +125,7 @@ class Parser(private val preference: AbstractPreference) {
     private fun parseFile(path: String, relativeFilePath: String): File {
         // Parse optional package declaration
         val packageReference = if (peekIf(Token::isPackageKeyword)) {
+            // package Module
             consume()
             parseTypeSymbol()
         } else null
@@ -133,60 +134,16 @@ class Parser(private val preference: AbstractPreference) {
         val usages = mutableListOf<Reference?>()
 
         while (peekIf(Token::isUseKeyword)) {
+            // use ModuleA::...
             consume()
             usages += parseUsage()
         }
 
         // Parse class declaration
-        val modifiers = object : MutableObjectSet<Token>() {
-            override fun isDuplicate(a: Token, b: Token): Boolean =
-                a.literal == b.literal
-        }
+        val (accessor, _, mutable) = parseModifiers(ovrdKeyword = false, terminator = Token::isClassKeyword)
 
-        while (!peekIf(Token::isClassKeyword)) {
-            val nextToken = next()
-
-            if (nextToken != null) {
-                if (modifiers.find(Token::isAccessorKeyword) != null && nextToken.isAccessorKeyword()) {
-                    // More than two access modifiers
-                    reports += Error(
-                        nextToken.pos,
-                        "Cannot have more than two access modifiers or different access modifiers at same time",
-                        "Remove this"
-                    )
-                }
-
-                if (nextToken.literal == "pub") {
-                    // Declared with `pub`
-                    reports += Warning(
-                        nextToken.pos,
-                        "Redundant `pub` keyword, all members' default access modifier is `pub`",
-                        "You can safely remove `pub`"
-                    )
-                }
-
-                if (modifiers.find(Token::isMutKeyword) != null && nextToken.isAccessorKeyword()) {
-                    // Wrong modifier sequence
-                    reports += Error(
-                        nextToken.pos,
-                        "Cannot declare access modifier after `mut` declared",
-                        "Try move this modifier before `mut`"
-                    )
-                }
-
-                if (!modifiers.add(nextToken)) {
-                    // Duplicate modifiers
-                    reports += Error(
-                        nextToken.pos,
-                        "Duplicate modifiers",
-                        "Remove this modifier"
-                    )
-                }
-            }
-        }
-
-        val classKeyword = assert(Token::isClassKeyword)
-        val className = assert(TokenType.Identifier)
+        val classKeyword = assertUntil(Token::isClassKeyword)
+        val className = assertUntil(TokenType.Identifier)
         val classReference =
             if (className != null) Reference(
                 "${packageReference?.fullQualifiedPath?.let { "${it}/" } ?: ""}${className.literal}",
@@ -197,9 +154,9 @@ class Parser(private val preference: AbstractPreference) {
         var fields = listOf<Field>()
 
         if (peekIf(TokenType.OpenBrace)) { // Member declaration is optional
-            assert(TokenType.OpenBrace)
+            assertUntil(TokenType.OpenBrace)
             fields = parseFields(usages, classReference)
-            assert(TokenType.CloseBrace)
+            assertUntil(TokenType.CloseBrace)
         }
 
         // Parse major implementation
@@ -209,18 +166,24 @@ class Parser(private val preference: AbstractPreference) {
         var companionBlock = listOf<Statement?>()
 
         if (peekIf(Token::isImplKeyword)) {
+            // Implementation
+            // a. class implementation (inheritance is optional)
+            // impl ClassName (: ParentClassName)? { ... }
+            // TODO: b. interface implementation on class
+            // impl InterfaceName for ClassName { ... }
             next()
-            val implName = assert(TokenType.Identifier)
+            val implName = assertUntil(TokenType.Identifier)
 
             if (implName?.literal != className?.literal) {
                 reports += Error(
                     last()!!.pos,
-                    "Unexpected implementation for class ${implName?.literal}"
+                    "Unexpected implementation for class ${className?.literal ?: "<Unknown>"}"
                 )
             }
 
             if (peekIf(TokenType.Colon)) {
                 // Class inheritance
+                // impl ClassA : ClassB { ... }
                 consume()
                 parentClassReference = parseTypeSymbol()
             }
@@ -231,7 +194,7 @@ class Parser(private val preference: AbstractPreference) {
                 functions = fns
                 constructors = ctors
                 companionBlock = compBlocks
-                assert(TokenType.CloseBrace)
+                assertUntil(TokenType.CloseBrace)
             }
         }
 
@@ -241,8 +204,8 @@ class Parser(private val preference: AbstractPreference) {
             usages,
             parentClassReference,
             listOf(),
-            modifiers.find(Token::isAccessorKeyword),
-            modifiers.find(Token::isMutKeyword),
+            accessor,
+            mutable,
             classKeyword,
             className,
             fields,
@@ -266,7 +229,7 @@ class Parser(private val preference: AbstractPreference) {
 
         while (peekIf(TokenType.DoubleColon)) {
             consume()
-            currentIdentifier = assert(TokenType.Identifier)
+            currentIdentifier = assertUntil(TokenType.Identifier)
 
             nameBuilder += ".${currentIdentifier?.literal}"
             tokens += currentIdentifier
@@ -290,7 +253,7 @@ class Parser(private val preference: AbstractPreference) {
         val baseTypeSymbol = parseTypeSymbol()
 
         while (arrayDimensionCounter != 0) {
-            assertUntil(TokenType.CloseBracket) ?: break
+            assertUntil(TokenType.CloseBracket) ?: break // out of token will immediately break out of loop
 
             arrayDimensionCounter--
         }
@@ -305,7 +268,7 @@ class Parser(private val preference: AbstractPreference) {
         val reference = parseTypeSymbol()
 
         if (peekMultiple(2, TokenType.DoubleColon, TokenType.OpenBrace)) {
-            // use Module::{ SubModuleA, SubModuleB }
+            // use Module::{ SubModuleA::ClassA, SubModuleB::ClassB }
             consume()
             consume()
 
@@ -320,6 +283,7 @@ class Parser(private val preference: AbstractPreference) {
 
             assertUntil(TokenType.CloseBrace)
         } else if (peekIf(TokenType.Identifier) && peekIf(Token::isAsKeyword)) {
+            // use Module::Class as Cls
             consume()
             val aliasReference = assertUntil(TokenType.Identifier)
 
@@ -357,74 +321,98 @@ class Parser(private val preference: AbstractPreference) {
         while (hasNext() && !terminator(peek()!!)) {
             val token = next()!!
 
-            if (token.isAccessorKeyword() && accessModifier) {
-                if (accessor != null) {
-                    reports += Error(
-                        accessor.pos,
-                        "Duplicate access modifier `${accessor.literal}`",
-                        "Encountered first one here"
-                    )
+            if (token.isAccessorKeyword()) {
+                if (accessModifier) {
+                    if (accessor != null) {
+                        reports += Error(
+                            accessor.pos,
+                            "Duplicate access modifier `${accessor.literal}`",
+                            "Encountered first one here"
+                        )
+                        reports += Error(
+                            token.pos,
+                            "Duplicate access modifier `${token.literal}`",
+                            "Duplicate here"
+                        )
+                    }
+
+                    if (ovrdKeyword && ovrd != null) {
+                        reports += Error(
+                            ovrd.pos,
+                            "Cannot declare access modifier after `ovrd` keyword",
+                            "`ovrd` keyword here"
+                        )
+                    }
+                    if (mutableKeyword && mutable != null) {
+                        reports += Error(
+                            mutable.pos,
+                            "Cannot declare access modifier after `mut` keyword",
+                            "`mut` keyword here"
+                        )
+                    }
+
+                    accessor = token
+                } else {
                     reports += Error(
                         token.pos,
-                        "Duplicate access modifier `${token.literal}`",
-                        "Duplicate here"
+                        "Cannot declare access modifier in current context",
+                        "Remove this access modifier `${token.literal}`"
                     )
                 }
+            } else if (token.isOvrdKeyword()) {
+                if (ovrdKeyword) {
+                    if (ovrd != null) {
+                        reports += Error(
+                            ovrd.pos,
+                            "Duplicate `ovrd` keyword",
+                            "Encountered first one here"
+                        )
+                        reports += Error(
+                            token.pos,
+                            "Duplicate `ovrd` keyword",
+                            "Duplicate here"
+                        )
+                    }
 
-                if (ovrdKeyword && ovrd != null) {
-                    reports += Error(
-                        ovrd.pos,
-                        "Cannot declare access modifier after `ovrd` keyword",
-                        "`ovrd` keyword here"
-                    )
-                }
-                if (mutableKeyword && mutable != null) {
-                    reports += Error(
-                        mutable.pos,
-                        "Cannot declare access modifier after `mut` keyword",
-                        "`mut` keyword here"
-                    )
-                }
+                    if (mutableKeyword && mutable != null) {
+                        reports += Error(
+                            mutable.pos,
+                            "Cannot declare `ovrd` keyword after `mut` keyword",
+                            "`mut` keyword here"
+                        )
+                    }
 
-                accessor = token
-            } else if (token.isOvrdKeyword() && ovrdKeyword) {
-                if (ovrd != null) {
-                    reports += Error(
-                        ovrd.pos,
-                        "Duplicate `ovrd` keyword",
-                        "Encountered first one here"
-                    )
+                    ovrd = token
+                } else {
                     reports += Error(
                         token.pos,
-                        "Duplicate `ovrd` keyword",
-                        "Duplicate here"
+                        "Cannot declare `ovrd` keyword in current context",
+                        "Remove this `ovrd` keyword"
                     )
                 }
+            } else if (token.isMutKeyword()) {
+                if (mutableKeyword) {
+                    if (mutable != null) {
+                        reports += Error(
+                            mutable.pos,
+                            "Duplicate `mut` keyword",
+                            "Encountered first one here"
+                        )
+                        reports += Error(
+                            token.pos,
+                            "Duplicate `mut` keyword",
+                            "Duplicate here"
+                        )
+                    }
 
-                if (mutableKeyword && mutable != null) {
-                    reports += Error(
-                        mutable.pos,
-                        "Cannot declare `ovrd` keyword after `mut` keyword",
-                        "`mut` keyword here"
-                    )
-                }
-
-                ovrd = token
-            } else if (token.isMutKeyword() && mutableKeyword) {
-                if (mutable != null) {
-                    reports += Error(
-                        mutable.pos,
-                        "Duplicate `mut` keyword",
-                        "Encountered first one here"
-                    )
+                    mutable = token
+                } else {
                     reports += Error(
                         token.pos,
-                        "Duplicate `mut` keyword",
-                        "Duplicate here"
+                        "Cannot declare `mut` keyword in current context",
+                        "Remove this `mut` keyword"
                     )
                 }
-
-                mutable = token
             } else {
                 var builder = if (accessModifier) "access modifiers (`pub`, `prot`, `intl`, `priv`)" else ""
                 builder += if (builder.isNotEmpty() && ovrdKeyword) "or `ovrd` keyword" else if (ovrdKeyword) "`ovrd` keyword" else ""
@@ -585,7 +573,7 @@ class Parser(private val preference: AbstractPreference) {
                 if (parameterSelfKeyword != null) {
                     reports += Error(
                         parameterSelfKeyword.pos,
-                        "constructor has already added `self` variable under the hood",
+                        "Constructor has already added `self` variable under the hood",
                         "Remove `self` keyword"
                     )
                 }
@@ -602,11 +590,14 @@ class Parser(private val preference: AbstractPreference) {
                         nextOrLast()?.pos,
                         "Unexpected token, expected `super` or `self` keyword"
                     )
-                    assertUntil(TokenType.OpenParenthesis)
-                    val arguments = parseArguments(true)
-                    assertUntil(TokenType.CloseParenthesis)
 
-                    arguments
+                    if (superKeyword != null || selfKeyword != null) {
+                        assertUntil(TokenType.OpenParenthesis)
+                        val arguments = parseArguments(true)
+                        assertUntil(TokenType.CloseParenthesis)
+
+                        arguments
+                    } else listOf()
                 } else listOf()
 
                 assertUntil(TokenType.OpenBrace)
@@ -629,7 +620,7 @@ class Parser(private val preference: AbstractPreference) {
                     // Duplicate constructors
                     reports += Error(
                         newKeyword?.pos,
-                        "Constructor new(${DisplayFactory.getParametersTypePretty(parameters)}) has already declared in same context",
+                        "Constructor `new`(${DisplayFactory.getParametersTypePretty(parameters)}) has already declared in same context",
                         "Try modify parameters' type"
                     )
                 }
