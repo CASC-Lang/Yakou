@@ -756,20 +756,25 @@ class Parser(private val preference: AbstractPreference) {
             if (peekIf(Token::isMutKeyword)) next()
             else null
 
-        return if (peekMultiple(2, TokenType.Identifier, TokenType.ColonEqual)) {
+        if (peekMultiple(2, TokenType.Identifier, TokenType.ColonEqual)) {
             // Variable declaration
             val name = next()
             val operator = next()
             val expression = parseExpression(inCompanionContext)
 
-            VariableDeclaration(
+            return VariableDeclaration(
                 mutKeyword,
                 name,
                 operator,
                 expression
             )
-        } else if (peekIf(Token::isReturnKeyword)) {
+        }
+
+        if (mutKeyword != null) reports.reportUnexpectedToken(mutKeyword)
+
+        return if (peekIf(Token::isReturnKeyword)) {
             // Return statement
+
             val returnKeyword = next()
             val expression = parseExpression(inCompanionContext, true)
 
@@ -796,7 +801,7 @@ class Parser(private val preference: AbstractPreference) {
             // Block statement
             val openBrace = next()
             val statements = parseStatements(inCompanionContext)
-            val closeBrace = assert(TokenType.CloseBrace)
+            val closeBrace = assertUntil(TokenType.CloseBrace)
 
             BlockStatement(
                 statements,

@@ -12,3 +12,11 @@ internal fun MutableList<Report>.reportUnexpectedToken(expected: TokenType, got:
             "Unexpected token ${got.type}, expected token $expected"
         )
     )
+
+internal fun MutableList<Report>.reportUnexpectedToken(got: Token) =
+    this.add(
+        Error(
+            got.pos,
+            "Unexpected token ${got.type}"
+        )
+    )
