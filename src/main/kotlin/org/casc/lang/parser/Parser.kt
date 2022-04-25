@@ -6,15 +6,13 @@ import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.compilation.Warning
-import org.casc.lang.table.ArrayType
 import org.casc.lang.table.Reference
 import org.casc.lang.utils.MutableObjectSet
 import org.objectweb.asm.Opcodes
-import kotlin.math.exp
 
 class Parser(private val preference: AbstractPreference) {
     private var pos: Int = 0
-    private var reports: MutableSet<Report> = mutableSetOf()
+    private var reports: MutableList<Report> = mutableListOf()
     private lateinit var tokens: List<Token>
 
     fun parse(path: String, relativeFilePath: String, tokens: List<Token>): Pair<List<Report>, File> {
@@ -23,7 +21,7 @@ class Parser(private val preference: AbstractPreference) {
         this.tokens = tokens
         val file = parseFile(path, relativeFilePath)
 
-        return reports.toList() to file
+        return reports to file
     }
 
     // ================================
@@ -45,18 +43,9 @@ class Parser(private val preference: AbstractPreference) {
 
     private fun assert(type: TokenType): Token? = when {
         !hasNext() -> null
-        tokens.isEmpty() -> {
-            reports += Error(
-                "Unable to compile empty source"
-            )
-            null
-        }
         tokens[pos].type == type -> tokens[pos++]
         else -> {
-            reports += Error(
-                tokens[pos].pos,
-                "Unexpected token ${tokens[pos++].type}, expected token $type"
-            )
+            reports.reportUnexpectedToken(type, tokens[pos++])
             null
         }
     }
@@ -116,13 +105,12 @@ class Parser(private val preference: AbstractPreference) {
         peek(-1)
 
     private fun next(): Token? = when {
-        tokens.isEmpty() -> null
-        pos >= tokens.size -> null
+        !hasNext() -> null
         else -> tokens[pos++]
     }
 
     private fun consume() {
-        if (tokens.isNotEmpty() && pos < tokens.size) pos++
+        if (hasNext()) pos++
     }
 
     // ================================
@@ -344,6 +332,105 @@ class Parser(private val preference: AbstractPreference) {
         return references
     }
 
+    /**
+     * parseModifiers follows the following modifier sequence:
+     * (`pub`#1 / `prot` / `intl` / `priv`)? (`ovrd`)? (`mut`)?
+     *
+     * #1: Will generate a warning by default.
+     */
+    private fun parseModifiers(accessModifier: Boolean = true, mutableKeyword: Boolean = true, ovrdKeyword: Boolean = true, terminator: (Token) -> Boolean): Triple<Token?, Token?, Token?> {
+        var accessor: Token? = null
+        var ovrd: Token? = null
+        var mutable: Token? = null
+
+        while (hasNext()) {
+            val token = next()!!
+
+            if (token.isAccessorKeyword() && accessModifier) {
+                if (accessor != null) {
+                    reports += Error(
+                        accessor.pos,
+                        "Duplicate access modifier `${accessor.literal}`",
+                        "Encountered first one here"
+                    )
+                    reports += Error(
+                        token.pos,
+                        "Duplicate access modifier `${token.literal}`",
+                        "Duplicate here"
+                    )
+                }
+
+                if (ovrdKeyword && ovrd != null) {
+                    reports += Error(
+                        ovrd.pos,
+                        "Cannot declare access modifier after `ovrd` keyword",
+                        "`ovrd` keyword here"
+                    )
+                }
+                if (mutableKeyword && mutable != null) {
+                    reports += Error(
+                        mutable.pos,
+                        "Cannot declare access modifier after `mut` keyword",
+                        "`mut` keyword here"
+                    )
+                }
+
+                accessor = token
+            } else if (token.isOvrdKeyword() && ovrdKeyword) {
+                if (ovrd != null) {
+                    reports += Error(
+                        ovrd.pos,
+                        "Duplicate `ovrd` keyword",
+                        "Encountered first one here"
+                    )
+                    reports += Error(
+                        token.pos,
+                        "Duplicate `ovrd` keyword",
+                        "Duplicate here"
+                    )
+                }
+
+                if (mutableKeyword && mutable != null) {
+                    reports += Error(
+                        mutable.pos,
+                        "Cannot declare `ovrd` keyword after `mut` keyword",
+                        "`mut` keyword here"
+                    )
+                }
+
+                ovrd = token
+            }else if (token.isMutKeyword() && mutableKeyword) {
+                if (mutable != null) {
+                    reports += Error(
+                        mutable.pos,
+                        "Duplicate `mut` keyword",
+                        "Encountered first one here"
+                    )
+                    reports += Error(
+                        token.pos,
+                        "Duplicate `mut` keyword",
+                        "Duplicate here"
+                    )
+                }
+
+                mutable = token
+            } else if (terminator(token)) {
+                break
+            } else {
+                var builder = if (accessModifier) "access modifiers (`pub`, `prot`, `intl`, `priv`)" else ""
+                builder += if (builder.isNotEmpty() && ovrdKeyword) "or `ovrd` keyword" else if (ovrdKeyword) "`ovrd` keyword" else ""
+                builder += if (builder.isNotEmpty() && mutableKeyword) "or `mut` keyword" else if (mutableKeyword) "`mut` keyword" else ""
+
+                reports += Error(
+                    token.pos,
+                    "Unexpected token ${token.type}, expected $builder"
+                )
+            }
+        }
+
+        return Triple(accessor, ovrd, mutable)
+    }
+
     private fun parseFields(
         usages: List<Reference?>,
         classReference: Reference?,
@@ -437,7 +524,9 @@ class Parser(private val preference: AbstractPreference) {
                 a.parameters == b.parameters
         }
 
-        while (!peekIf(TokenType.CloseBrace)) { // Break the loop after encountered class declaration's close bracket
+        while (hasNext()) {
+            if (peekIf(TokenType.CloseBrace)) break
+
             if (peekIf(Token::isCompKeyword)) {
                 val compKeyword = next()
 
@@ -463,7 +552,7 @@ class Parser(private val preference: AbstractPreference) {
             }
 
             while (!peekIf(Token::isFnKeyword) && !peekIf(Token::isNewKeyword) && !peekIf(TokenType.CloseBrace)) {
-                val nextToken = assert(TokenType.Identifier) ?: continue
+                val nextToken = assert(TokenType.Identifier) ?: break
 
                 if (!nextToken.isAccessorKeyword() && !nextToken.isMutKeyword() && !nextToken.isOvrdKeyword()) {
                     // Unexpected token
@@ -558,7 +647,7 @@ class Parser(private val preference: AbstractPreference) {
 
                 val newKeyword = next() // `new` keyword
 
-                assert(TokenType.OpenParenthesis)
+                assertUntil(TokenType.OpenParenthesis)
                 val (parameters, parameterSelfKeyword) = parseParameters()
 
                 if (parameterSelfKeyword != null) {
@@ -568,7 +657,7 @@ class Parser(private val preference: AbstractPreference) {
                         "Remove `self` keyword"
                     )
                 }
-                assert(TokenType.CloseParenthesis)
+                assertUntil(TokenType.CloseParenthesis)
 
                 var superKeyword: Token? = null
                 var selfKeyword: Token? = null
