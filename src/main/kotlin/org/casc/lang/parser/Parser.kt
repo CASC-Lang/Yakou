@@ -558,7 +558,7 @@ class Parser(private val preference: AbstractPreference) {
                 assertUntil(TokenType.CloseBrace)
             }
 
-            val (accessor, mutable, ovrd) = parseModifiers { it.isNewKeyword() || it.isFnKeyword() || it.type == TokenType.CloseBrace }
+            val (accessor, ovrd, mutable) = parseModifiers { it.isNewKeyword() || it.isFnKeyword() || it.type == TokenType.CloseBrace }
 
             if (peekIf(Token::isNewKeyword)) {
                 // Constructor declaration
@@ -582,8 +582,7 @@ class Parser(private val preference: AbstractPreference) {
 
                 val newKeyword = next() // `new` keyword
 
-                assertUntil(TokenType.OpenParenthesis)
-                val (parameters, parameterSelfKeyword) = parseParameters()
+                val (parameterSelfKeyword, parameters) = parseParameters()
 
                 if (parameterSelfKeyword != null) {
                     reports += Error(
@@ -592,7 +591,6 @@ class Parser(private val preference: AbstractPreference) {
                         "Remove `self` keyword"
                     )
                 }
-                assertUntil(TokenType.CloseParenthesis)
 
                 var superKeyword: Token? = null
                 var selfKeyword: Token? = null
@@ -644,9 +642,7 @@ class Parser(private val preference: AbstractPreference) {
                 consume() // `fn` keyword
 
                 val name = assertUntil(TokenType.Identifier)
-                assertUntil(TokenType.OpenParenthesis)
-                val (parameters, parameterSelfKeyword) = parseParameters()
-                assertUntil(TokenType.CloseParenthesis)
+                val (parameterSelfKeyword, parameters) = parseParameters()
 
                 val returnType = if (peekIf(TokenType.Colon)) {
                     consume()
@@ -695,11 +691,14 @@ class Parser(private val preference: AbstractPreference) {
     /**
      * Returns list of parameters and an optional `self` keyword token to determine whether owner function is companion or not
      */
-    private fun parseParameters(): Pair<List<Parameter>, Token?> {
+    private fun parseParameters(): Pair<Token?, List<Parameter>> {
         var selfToken: Token? = null
         val parameters = mutableListOf<Parameter>()
 
+        assertUntil(TokenType.OpenParenthesis)
         while (hasNext()) {
+            if (peekIf(TokenType.CloseParenthesis)) break
+
             // self parameter, refers to owner class object
             val parameterName = assertUntil(TokenType.Identifier) ?: break // break if pos reached end of file
 
@@ -728,8 +727,9 @@ class Parser(private val preference: AbstractPreference) {
                 consume()
             } else break
         }
+        assertUntil(TokenType.CloseParenthesis)
 
-        return parameters to selfToken
+        return selfToken to parameters
     }
 
     private fun parseStatements(inCompanionContext: Boolean = false): List<Statement> {
