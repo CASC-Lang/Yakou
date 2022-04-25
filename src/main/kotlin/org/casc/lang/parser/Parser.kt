@@ -29,7 +29,7 @@ class Parser(private val preference: AbstractPreference) {
     // ================================
 
     private fun hasNext(): Boolean =
-        tokens.lastIndex != pos
+        tokens.size > pos
 
     private fun assertUntil(type: TokenType): Token? {
         while (hasNext()) {
@@ -773,9 +773,14 @@ class Parser(private val preference: AbstractPreference) {
             )
         }
 
-        if (mutKeyword != null) reports.reportUnexpectedToken(mutKeyword)
-
-        return if (peekIf(Token::isReturnKeyword)) {
+        return if (mutKeyword != null) {
+            reports += Error(
+                mutKeyword.pos,
+                "Unexpected `mut` keyword",
+                "Do you mean to declare variable?"
+            )
+            return null
+        } else if (peekIf(Token::isReturnKeyword)) {
             // Return statement
 
             val returnKeyword = next()
@@ -926,7 +931,11 @@ class Parser(private val preference: AbstractPreference) {
                 ParenthesizedExpression(expression)
             }
             else -> {
-                reports.reportUnexpectedToken(tokens[pos++])
+                val token = nextOrLast()
+
+                if (token != null) reports.reportUnexpectedToken(token)
+                else reports += Error("Unexpected token <Unknown>")
+
                 null
             }
         }
