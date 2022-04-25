@@ -6,6 +6,7 @@ import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 import org.casc.lang.compilation.Warning
+import org.casc.lang.table.HasFlag
 import org.casc.lang.table.Reference
 import org.casc.lang.utils.MutableObjectSet
 import org.objectweb.asm.Opcodes
@@ -442,8 +443,12 @@ class Parser(private val preference: AbstractPreference) {
                 a.name?.literal == b.name?.literal
         }
 
-        while (!peekIf(TokenType.CloseBrace)) {
+        while (hasNext()) {
+            if (peekIf(TokenType.CloseBrace)) break
+
             if (peekIf(Token::isCompKeyword)) {
+                // Companion scope
+                // comp { ... }
                 val comp = next()!!
 
                 if (compScopeDeclared) {
@@ -455,34 +460,44 @@ class Parser(private val preference: AbstractPreference) {
 
                 if (compKeyword != null) {
                     reports += Error(
+                        compKeyword.pos,
+                        "Cannot declare nested companion declaration",
+                        "Encountered first one here"
+                    )
+                    reports += Error(
                         comp.pos,
-                        "Cannot declare nested companion declaration"
+                        "Cannot declare nested companion declaration",
+                        "Nested `comp` keyword declaration occurs here"
                     )
                 }
 
-                assert(TokenType.OpenBrace)
+                assertUntil(TokenType.OpenBrace)
                 fields += parseFields(usages, classReference, comp)
-                assert(TokenType.CloseBrace)
+                assertUntil(TokenType.CloseBrace)
             } else if (peekIf(Token::isAccessorKeyword) || peekIf(Token::isMutKeyword)) {
+                // Scoped-modified fields
+                // (`pub`#1 / `prot` / `intl` / `priv`)? (`mut`)? :
                 // Assume it's accessor keyword or mut keyword
-                if (peekIf(Token::isAccessorKeyword)) accessorToken = next()
-                if (peekIf(Token::isMutKeyword)) mutKeyword = next()
-                assert(TokenType.Colon)
+                val (accessor, _, mutable) = parseModifiers(ovrdKeyword = false) { it.type == TokenType.Colon }
 
-                val currentFlag =
-                    Accessor.fromString(accessorToken?.literal).access + (mutKeyword?.let { 0 } ?: Opcodes.ACC_FINAL)
+                accessorToken = accessor
+                mutKeyword = mutable
+
+                assertUntil(TokenType.Colon)
+
+                val currentFlag = HasFlag.getFlag(Accessor.fromString(accessorToken?.literal), mutKeyword != null)
 
                 if (!usedFlags.add(currentFlag)) {
                     reports += Error(
-                        accessorToken?.pos ?: mutKeyword?.pos,
+                        Position.MutablePosition.fromMultipleAndExtend(accessorToken?.pos, mutKeyword?.pos).position,
                         "Duplicate access flags",
                         "Try merge current fields back to same exist access block"
                     )
                 }
             } else {
                 // Must be a field
-                val name = assert(TokenType.Identifier)
-                assert(TokenType.Colon)
+                val name = assertUntil(TokenType.Identifier)
+                assertUntil(TokenType.Colon)
                 val typeReference = parseComplexTypeSymbol()
 
                 val field = Field(
@@ -497,7 +512,7 @@ class Parser(private val preference: AbstractPreference) {
                 if (!fields.add(field)) {
                     reports += Error(
                         name?.pos,
-                        "Field ${name?.literal} has already declared in same context",
+                        "Field ${name?.literal ?: "<Unknown>"} has already declared in same context",
                         "Try rename this field"
                     )
                 }

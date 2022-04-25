@@ -28,4 +28,25 @@ data class Position(val lineNumber: Int, var start: Int, var end: Int) {
 
     override fun toString(): String =
         "$lineNumber:$start"
+
+    @JvmInline
+    value class MutablePosition private constructor(val position: Position?) {
+        companion object {
+            fun fromMultipleAndExtend(vararg positions: Position?): MutablePosition {
+                val firstNonNullIndex = positions.indexOfFirst { it != null }
+
+                return if (firstNonNullIndex != -1) {
+                    val firstNonNull = positions[firstNonNullIndex]!!
+
+                    for (i in 0..positions.size) {
+                        if (i == firstNonNullIndex) continue
+
+                        firstNonNull.extend(positions[i])
+                    }
+
+                    MutablePosition(firstNonNull)
+                } else MutablePosition(null)
+            }
+        }
+    }
 }
