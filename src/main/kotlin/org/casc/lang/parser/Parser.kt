@@ -109,6 +109,12 @@ class Parser(private val preference: AbstractPreference) {
         else -> tokens[pos++]
     }
 
+    /**
+     * Get next token if there are more than 1 tokens remaining, otherwise return last token if it exists
+     */
+    private fun nextOrLast(): Token? =
+        if (hasNext()) next() else tokens.lastOrNull()
+
     private fun consume() {
         if (hasNext()) pos++
     }
@@ -546,102 +552,25 @@ class Parser(private val preference: AbstractPreference) {
                 assert(TokenType.CloseBrace)
             }
 
-            val modifiers = object : MutableObjectSet<Token>() {
-                override fun isDuplicate(a: Token, b: Token): Boolean =
-                    a.literal == b.literal
-            }
-
-            while (!peekIf(Token::isFnKeyword) && !peekIf(Token::isNewKeyword) && !peekIf(TokenType.CloseBrace)) {
-                val nextToken = assert(TokenType.Identifier) ?: break
-
-                if (!nextToken.isAccessorKeyword() && !nextToken.isMutKeyword() && !nextToken.isOvrdKeyword()) {
-                    // Unexpected token
-                    reports += Error(
-                        nextToken.pos,
-                        "Unexpected `${nextToken.literal}`"
-                    )
-                    continue
-                }
-
-                if (modifiers.find(Token::isAccessorKeyword) != null && nextToken.isAccessorKeyword()) {
-                    // More than two access modifiers
-                    reports += Error(
-                        nextToken.pos,
-                        "Cannot have more than two access modifiers or different access modifiers at same time",
-                        "Remove this"
-                    )
-                }
-
-                if (nextToken.literal == "pub") {
-                    // Declared with `pub`
-                    reports += Warning(
-                        nextToken.pos,
-                        "Redundant `pub` keyword, all members' default access modifier is `pub`",
-                        "You can safely remove `pub`"
-                    )
-                }
-
-                /**
-                 * Function modifier declaration sequence:
-                 * (pub#1 / prot / intl / priv) (ovrd) (mut) fn
-                 *
-                 * #1: Will generate a warning by default.
-                 */
-
-                if (modifiers.find(Token::isMutKeyword) != null && nextToken.isAccessorKeyword()) {
-                    // Wrong modifier sequence
-                    reports += Error(
-                        nextToken.pos,
-                        "Cannot declare access modifier after `mut` declared",
-                        "Try move this modifier before `mut`"
-                    )
-                }
-
-                if (modifiers.find(Token::isMutKeyword) != null && nextToken.isOvrdKeyword()) {
-                    // Wrong modifier sequence
-                    reports += Error(
-                        nextToken.pos,
-                        "Cannot declare `ovrd` after `mut` declared",
-                        "Try move this modifier before `mut`"
-                    )
-                }
-
-                if (modifiers.find(Token::isOvrdKeyword) != null && nextToken.isAccessorKeyword()) {
-                    // Wrong modifier sequence
-                    reports += Error(
-                        nextToken.pos,
-                        "Cannot declare access modifier after `ovrd` declared",
-                        "Try move this modifier before `ovrd`"
-                    )
-                }
-
-                if (!modifiers.add(nextToken)) {
-                    // Duplicate modifiers
-                    reports += Error(
-                        nextToken.pos,
-                        "Duplicate modifiers",
-                        "Remove this modifier"
-                    )
-                }
-            }
+            val (accessor, mutable, ovrd) = parseModifiers { it.isNewKeyword() || it.isFnKeyword() || it.type == TokenType.CloseBrace }
 
             if (peekIf(Token::isNewKeyword)) {
                 // Constructor declaration
-                if (modifiers.find(Token::isOvrdKeyword) != null) {
+                if (ovrd != null) {
                     // Constructor with `ovrd` keyword
                     reports += Error(
-                        modifiers.find(Token::isMutKeyword)!!.pos,
+                        ovrd.pos,
                         "Cannot declare constructor with `ovrd` keyword",
-                        "Remove this"
+                        "Remove this `ovrd` keyword"
                     )
                 }
 
-                if (modifiers.find(Token::isMutKeyword) != null) {
+                if (mutable != null) {
                     // Constructor with `mut` keyword
                     reports += Error(
-                        modifiers.find(Token::isMutKeyword)!!.pos,
+                        mutable.pos,
                         "Cannot declare constructor with `mut` keyword",
-                        "Remove this"
+                        "Remove this `mut` keyword"
                     )
                 }
 
@@ -667,24 +596,24 @@ class Parser(private val preference: AbstractPreference) {
                     if (peekIf(Token::isSuperKeyword)) superKeyword = next()
                     else if (peekIf(Token::isSelfKeyword)) selfKeyword = next()
                     else reports += Error(
-                        next()?.pos,
+                        nextOrLast()?.pos,
                         "Unexpected token, expected `super` or `self` keyword"
                     )
-                    assert(TokenType.OpenParenthesis)
+                    assertUntil(TokenType.OpenParenthesis)
                     val arguments = parseArguments(true)
-                    assert(TokenType.CloseParenthesis)
+                    assertUntil(TokenType.CloseParenthesis)
 
                     arguments
                 } else listOf()
 
-                assert(TokenType.OpenBrace)
+                assertUntil(TokenType.OpenBrace)
                 val statements = parseStatements()
-                assert(TokenType.CloseBrace)
+                assertUntil(TokenType.CloseBrace)
 
                 val constructor = Constructor(
                     classReference,
                     parentReference,
-                    modifiers.find(Token::isAccessorKeyword),
+                    accessor,
                     newKeyword,
                     parameters,
                     statements,
@@ -697,9 +626,7 @@ class Parser(private val preference: AbstractPreference) {
                     // Duplicate constructors
                     reports += Error(
                         newKeyword?.pos,
-                        "Constructor new(${
-                            parameters.mapNotNull { it.typeReference?.fullQualifiedPath }.joinToString()
-                        }) has already declared in same context",
+                        "Constructor new(${DisplayFactory.getParametersTypePretty(parameters)}) has already declared in same context",
                         "Try modify parameters' type"
                     )
                 }
@@ -723,9 +650,9 @@ class Parser(private val preference: AbstractPreference) {
 
                 val function = Function(
                     classReference,
-                    modifiers.find(Token::isAccessorKeyword),
-                    modifiers.find(Token::isOvrdKeyword),
-                    modifiers.find(Token::isMutKeyword),
+                    accessor,
+                    ovrd,
+                    mutable,
                     parameterSelfKeyword,
                     name,
                     parameters,
