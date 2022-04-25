@@ -30,16 +30,24 @@ class Parser(private val preference: AbstractPreference) {
     // PRIVATE UTILITY FUNCTIONS
     // ================================
 
+    private fun hasNext(): Boolean =
+        tokens.lastIndex == pos
+
+    private fun assertUntil(type: TokenType): Token? {
+        while (hasNext()) {
+            val token = assert(type)
+
+            if (token != null) return token
+        }
+
+        return null
+    }
+
     private fun assert(type: TokenType): Token? = when {
+        !hasNext() -> null
         tokens.isEmpty() -> {
             reports += Error(
                 "Unable to compile empty source"
-            )
-            null
-        }
-        pos >= tokens.size -> {
-            reports += Warning(
-                "Exceeding source range"
             )
             null
         }
@@ -53,19 +61,18 @@ class Parser(private val preference: AbstractPreference) {
         }
     }
 
+    private fun assertUntil(predicate: (Token) -> Boolean): Token? {
+        while (hasNext()) {
+            val token = assert(predicate)
+
+            if (token != null) return token
+        }
+
+        return null
+    }
+
     private fun assert(predicate: (Token) -> Boolean): Token? = when {
-        tokens.isEmpty() -> {
-            reports += Error(
-                "Unable to compile empty source"
-            )
-            null
-        }
-        pos >= tokens.size -> {
-            reports += Warning(
-                "<Internal Compiler Error> Reached last token but parsing still goes on"
-            )
-            null
-        }
+        !hasNext() -> null
         predicate(tokens[pos]) -> tokens[pos++]
         else -> {
             reports += Error(
@@ -290,7 +297,7 @@ class Parser(private val preference: AbstractPreference) {
         val baseTypeSymbol = parseTypeSymbol()
 
         while (arrayDimensionCounter != 0) {
-            assert(TokenType.CloseBracket)
+            assertUntil(TokenType.CloseBracket) ?: break
 
             arrayDimensionCounter--
         }
@@ -320,7 +327,7 @@ class Parser(private val preference: AbstractPreference) {
             assert(TokenType.CloseBrace)
         } else if (peekIf(TokenType.Identifier) && peekIf(Token::isAsKeyword)) {
             consume()
-            val aliasReference = assert(TokenType.Identifier)
+            val aliasReference = assertUntil(TokenType.Identifier)
 
             if (prependReference != null) {
                 prependReference.append(reference.fullQualifiedPath)
@@ -669,10 +676,11 @@ class Parser(private val preference: AbstractPreference) {
         var selfToken: Token? = null
         val parameters = mutableListOf<Parameter>()
 
-        while (peekIf(TokenType.Identifier)) {
-            val parameterName = assert(TokenType.Identifier)
+        while (hasNext()) {
+            // self parameter, refers to owner class object
+            val parameterName = assertUntil(TokenType.Identifier) ?: break // break if pos reached end of file
 
-            if (parameterName?.isSelfKeyword() == true) {
+            if (parameterName.isSelfKeyword()) {
                 if (parameters.isNotEmpty()) {
                     // `self` declared after other parameters
                     reports += Error(
@@ -681,22 +689,17 @@ class Parser(private val preference: AbstractPreference) {
                         "move `self` to the start of parameters"
                     )
                 } else selfToken = parameterName
+            } else {
+                //
+                val colon = assertUntil(TokenType.Colon)
+                val type = parseComplexTypeSymbol()
 
-                if (peekIf(TokenType.Comma)) {
-                    consume()
-                    continue
-                } else break
+                parameters += Parameter(
+                    parameterName,
+                    colon,
+                    type
+                )
             }
-
-
-            val colon = assert(TokenType.Colon)
-            val type = parseComplexTypeSymbol()
-
-            parameters += Parameter(
-                parameterName,
-                colon,
-                type
-            )
 
             if (peekIf(TokenType.Comma)) {
                 consume()
