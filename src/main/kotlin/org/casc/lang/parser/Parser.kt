@@ -634,19 +634,19 @@ class Parser(private val preference: AbstractPreference) {
                 // Function declaration
                 consume() // `fn` keyword
 
-                val name = assert(TokenType.Identifier)
-                assert(TokenType.OpenParenthesis)
+                val name = assertUntil(TokenType.Identifier)
+                assertUntil(TokenType.OpenParenthesis)
                 val (parameters, parameterSelfKeyword) = parseParameters()
-                assert(TokenType.CloseParenthesis)
+                assertUntil(TokenType.CloseParenthesis)
 
                 val returnType = if (peekIf(TokenType.Colon)) {
                     consume()
                     parseComplexTypeSymbol()
                 } else null
 
-                assert(TokenType.OpenBrace)
+                assertUntil(TokenType.OpenBrace)
                 val statements = parseStatements(parameterSelfKeyword != null)
-                assert(TokenType.CloseBrace)
+                assertUntil(TokenType.CloseBrace)
 
                 val function = Function(
                     classReference,
@@ -664,16 +664,14 @@ class Parser(private val preference: AbstractPreference) {
                     // Duplicate functions
                     reports += Error(
                         name?.pos,
-                        "Function ${name?.literal}(${
-                            parameters.mapNotNull { it.typeReference?.fullQualifiedPath }.joinToString()
-                        }) has already declared in same context",
+                        "Function ${name?.literal}(${DisplayFactory.getParametersTypePretty(parameters)}) has already declared in same context",
                         "Try rename this function or modify parameters' type"
                     )
                 }
             } else if (peekIf(TokenType.CloseBrace)) break
             else {
                 // Unknown declaration
-                val currentToken = peek()
+                val currentToken = next()
 
                 reports += Error(
                     currentToken?.pos,
