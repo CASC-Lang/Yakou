@@ -735,13 +735,16 @@ class Parser(private val preference: AbstractPreference) {
     private fun parseStatements(inCompanionContext: Boolean = false): List<Statement> {
         val statements = mutableListOf<Statement>()
 
-        while (!peekIf(TokenType.CloseBrace)) {
-            statements += parseStatement(inCompanionContext)
+        while (hasNext()) {
+            if (peekIf(TokenType.CloseBrace)) break
+
+            statements += parseStatement(inCompanionContext) ?: continue
 
             if (peekIf(TokenType.SemiColon)) {
-                val semiColonToken = next()
+                val semiColonToken = next()!!
+
                 reports += Error(
-                    semiColonToken?.pos,
+                    semiColonToken.pos,
                     "Redundant semicolon after statement",
                     "Remove this semicolon"
                 )
@@ -751,7 +754,7 @@ class Parser(private val preference: AbstractPreference) {
         return statements
     }
 
-    private fun parseStatement(inCompanionContext: Boolean = false): Statement {
+    private fun parseStatement(inCompanionContext: Boolean = false): Statement? {
         val mutKeyword =
             if (peekIf(Token::isMutKeyword)) next()
             else null
@@ -795,7 +798,7 @@ class Parser(private val preference: AbstractPreference) {
                 condition,
                 trueStatement,
                 elseStatement,
-                ifKeyword?.pos?.extend(trueStatement.pos)
+                ifKeyword?.pos?.extend(trueStatement?.pos)
             )
         } else if (peekIf(TokenType.OpenBrace)) {
             // Block statement
@@ -826,9 +829,14 @@ class Parser(private val preference: AbstractPreference) {
                 condition,
                 postExpression,
                 statement,
-                forKeyword?.pos?.extend(statement.pos)
+                forKeyword?.pos?.extend(statement?.pos)
             )
-        } else ExpressionStatement(parseExpression(inCompanionContext))
+        } else {
+            val expression = parseExpression(inCompanionContext)
+
+            if (expression != null) ExpressionStatement(expression)
+            else null
+        }
     }
 
     private fun parseExpression(inCompanionContext: Boolean, retainValue: Boolean = false): Expression =
@@ -1013,7 +1021,7 @@ class Parser(private val preference: AbstractPreference) {
             condition,
             trueStatement,
             elseStatement,
-            ifKeyword?.pos?.extend(trueStatement.pos)
+            ifKeyword?.pos?.extend(trueStatement?.pos)
         )
     }
 
