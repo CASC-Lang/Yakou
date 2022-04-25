@@ -17,6 +17,7 @@ impl Main : Rock {
         h := false
         j := 'a'
         k := "\\\t\b\n\r\f\u0001\"\'"
+        l := "a"
         m := null
         n := [;]{ 1, 2, 3 }
         o := [i32;]{ 1, 2, 3 }

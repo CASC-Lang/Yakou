@@ -11,6 +11,9 @@ class Lexer(private val preference: AbstractPreference) {
     private var lineNumber: Int = 1
     private var pos: Int = 0
 
+    private fun currentPos(): Position =
+        Position(lineNumber, pos)
+
     private fun skip(offset: Int = 1): Int {
         val currentPos = pos
         pos += offset
@@ -60,7 +63,7 @@ class Lexer(private val preference: AbstractPreference) {
                                 'B', 'S', 'I', 'L' -> {
                                     if (isFloatingPointNumber) {
                                         reports += Error(
-                                            Position(lineNumber, pos),
+                                            currentPos(),
                                             "Cannot declare a floating point number literal as non-floating type",
                                             "Consider removing type suffix"
                                         )
@@ -135,7 +138,7 @@ class Lexer(private val preference: AbstractPreference) {
                                     for (i in 0 until 4) {
                                         if (pos >= source.length) {
                                             reports += Error(
-                                                Position(lineNumber, pos),
+                                                currentPos(),
                                                 "Unexpected linebreak while parsing unicode literal"
                                             )
                                             invalidUnicodeLiteral = true
@@ -146,14 +149,14 @@ class Lexer(private val preference: AbstractPreference) {
                                             unicodeHexBuilder += source[pos++]
                                         } else if (source[pos] == '\'') {
                                             reports += Error(
-                                                Position(lineNumber, pos),
+                                                currentPos(),
                                                 "Incomplete unicode literal ${source[pos++]}"
                                             )
                                             invalidUnicodeLiteral = true
                                             break
                                         } else {
                                             reports += Error(
-                                                Position(lineNumber, pos),
+                                                currentPos(),
                                                 "Invalid hexadecimal digit ${source[pos++]} for unicode literal"
                                             )
                                             invalidUnicodeLiteral = true
