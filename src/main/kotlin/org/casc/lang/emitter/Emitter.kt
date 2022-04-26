@@ -154,7 +154,11 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
             is VariableDeclaration -> {
                 emitExpression(methodVisitor, statement.expression!!)
 
-                methodVisitor.visitVarInsn(statement.expression.type!!.storeOpcode, statement.index!!)
+                for ((i, index) in statement.indexes.withIndex()) {
+                    if (i != statement.indexes.lastIndex) methodVisitor.visitInsn(getDupOpcode(statement.expression.type)!!)
+
+                    methodVisitor.visitVarInsn(statement.expression.type!!.storeOpcode, index)
+                }
             }
             is IfStatement -> {
                 emitExpression(methodVisitor, statement.condition!!)

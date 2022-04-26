@@ -784,15 +784,37 @@ class Parser(private val preference: AbstractPreference) {
             if (peekIf(Token::isMutKeyword)) next()
             else null
 
-        if (peekMultiple(TokenType.Identifier, TokenType.ColonEqual)) {
+        // Situations:
+        // after optional `mut` keyword:
+        // a := will be identified as variable declaration
+        // a, (mut | ID) will be also identified as variable declaration
+        if (peekMultiple(TokenType.Identifier, TokenType.ColonEqual) ||
+            peekMultiple(TokenType.Identifier, TokenType.Comma)) {
             // Variable declaration
-            val name = next()
+            // mut a := 1
+            // mut a, b := 1
+            // a, b := 1
+            // mut a, mut b := 1
+            val variables = mutableListOf(mutKeyword to next())
+
+            while (hasNext()) {
+                if (peekIf(TokenType.Comma)) {
+                    consume()
+
+                    val mutableKeyword =
+                        if (peekIf(Token::isMutKeyword)) next()
+                        else null
+                    val name = assertUntil(TokenType.Identifier)
+
+                    variables.add(mutableKeyword to name)
+                } else break
+            }
+
             val operator = next()
             val expression = parseExpression(inCompanionContext)
 
             return VariableDeclaration(
-                mutKeyword,
-                name,
+                variables,
                 operator,
                 expression
             )

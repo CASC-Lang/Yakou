@@ -501,32 +501,35 @@ class Checker(private val preference: AbstractPreference) {
     ) {
         when (statement) {
             is VariableDeclaration -> {
-                val name = statement.name!!.literal
-
-                if (name == "self" || name == "super") {
-                    reports += Error(
-                        statement.name.pos,
-                        "Cannot declare `$name` as local variable",
-                        "Rename this variable"
-                    )
-                } else checkIdentifierIsKeyword(statement.name)
-
                 val expressionType = checkExpression(statement.expression, scope)
 
-                if (!scope.registerVariable(statement.mutKeyword != null, name, expressionType)) {
-                    reports += Error(
-                        statement.pos!!,
-                        "Variable $name is already declared in same context"
-                    )
-                } else {
-                    if (expressionType == PrimitiveType.Unit) {
-                        reports += Error(
-                            statement.expression!!.pos,
-                            "Could not store void type into variable"
-                        )
-                    }
+                for ((mutKeyword, nameToken) in statement.variables) {
+                    val name = nameToken!!.literal
 
-                    statement.index = scope.findVariableIndex(name)
+                    if (name == "self" || name == "super") {
+                        reports += Error(
+                            nameToken.pos,
+                            "Cannot declare `$name` as local variable",
+                            "Rename this variable"
+                        )
+                    } else checkIdentifierIsKeyword(nameToken)
+
+                    if (!scope.registerVariable(mutKeyword != null, name, expressionType)) {
+                        reports += Error(
+                            nameToken.pos,
+                            "Variable $name is already declared in same context",
+                            "Duplicate occurs here"
+                        )
+                    } else {
+                        if (expressionType == PrimitiveType.Unit) {
+                            reports += Error(
+                                statement.expression!!.pos,
+                                "Could not store void type into variable"
+                            )
+                        }
+
+                        statement.indexes += scope.findVariableIndex(name) ?: -1
+                    }
                 }
             }
             is IfStatement -> {

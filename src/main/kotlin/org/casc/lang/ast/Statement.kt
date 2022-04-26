@@ -6,12 +6,13 @@ sealed class Statement {
     abstract val pos: Position?
 
     data class VariableDeclaration(
-        val mutKeyword: Token?,
-        val name: Token?,
+        val variables: List<Pair<Token?, Token?>>,
         val operator: Token?,
         val expression: Expression?,
-        var index: Int? = null,
-        override val pos: Position? = (mutKeyword?.pos ?: name?.pos)?.extend(expression?.pos)
+        var indexes: MutableList<Int> = mutableListOf(),
+        override val pos: Position? = Position.fromMultipleAndExtend(
+            *variables.firstOrNull()?.toList()?.map { it?.pos }?.toTypedArray() ?: arrayOf())
+            ?.extend(expression?.pos)
     ) : Statement()
 
     data class IfStatement(
