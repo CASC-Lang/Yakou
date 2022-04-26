@@ -9,9 +9,9 @@ name: Unit Test
 
 on:
   push:
-    branches: [ revamp ]
+    branches: [ master-dev ]
   pull_request:
-    branches: [ revamp ]
+    branches: [ master-dev ]
 
 jobs:
   build:
