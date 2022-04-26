@@ -8,11 +8,18 @@ import org.casc.lang.compilation.Error
 import org.casc.lang.compilation.Report
 
 class Lexer(private val preference: AbstractPreference) {
+    private lateinit var currentLine: String
+    private val reports = mutableListOf<Report>()
+    private val tokens = mutableListOf<Token>()
+
     private var lineNumber: Int = 1
     private var pos: Int = 0
 
     private fun currentPos(): Position =
         Position(lineNumber, pos)
+
+    private fun hasNext(): Boolean =
+        pos < currentLine.length
 
     private fun skip(offset: Int = 1): Int {
         val currentPos = pos
@@ -20,77 +27,33 @@ class Lexer(private val preference: AbstractPreference) {
         return currentPos
     }
 
-    private fun peek(source: String, offset: Int = 1): Char? = when {
-        pos + offset >= source.length -> null
-        else -> source[pos + offset]
+    private fun peek(offset: Int = 0): Char = when {
+        pos + offset >= currentLine.length -> '\u0000'
+        else -> currentLine[pos + offset]
+    }
+
+    private fun peekInc(): Char {
+        pos++
+        return peek(-1)
     }
 
     fun lex(chunkedSource: List<String>): Pair<List<Report>, List<Token>> {
         if (chunkedSource.isEmpty())
             return listOf(Error("Unable to lex an empty source file")) to listOf()
 
-        lineNumber = 1
-        pos = 0
+        for (i in chunkedSource.indices) {
+            currentLine = chunkedSource[i]
 
-        val reports = mutableListOf<Report>()
-        val tokens = mutableListOf<Token>()
-
-        for (source in chunkedSource) {
-            while (pos < source.length) {
+            while (hasNext()) {
                 // Number Literals
-                if (source[pos].isDigit()) {
-                    var endsWithDot = false
-                    var isFloatingPointNumber = false
-                    val start = pos
-
-                    while (pos < source.length && source[pos].isDigit())
-                        pos++
-
-                    if (pos != source.length) {
-                        if (source[pos] == '.') {
-
-                            isFloatingPointNumber = true
-                            pos++
-
-                            while (pos < source.length && source[pos].isDigit()) {
-                                if (!endsWithDot) endsWithDot = true
-                                pos++
-                            }
-                        }
-
-                        if (pos != source.length) {
-                            when (source[pos]) {
-                                'B', 'S', 'I', 'L' -> {
-                                    if (isFloatingPointNumber) {
-                                        reports += Error(
-                                            currentPos(),
-                                            "Cannot declare a floating point number literal as non-floating type",
-                                            "Consider removing type suffix"
-                                        )
-                                    }
-
-                                    pos++
-                                }
-                                'F', 'D' -> {
-                                    isFloatingPointNumber = true
-                                    pos++
-                                }
-                            }
-                        }
-                    }
-
-                    tokens += Token(
-                        source.substring(start until pos - if (endsWithDot) 1 else 0),
-                        if (isFloatingPointNumber) TokenType.FloatLiteral
-                        else TokenType.IntegerLiteral,
-                        Position(lineNumber, start, pos)
-                    )
+                if (peek().isDigit()) {
+                    lexNumberLiteral(reports, tokens)
                     continue
                 }
 
                 // Whitespace & Tabs
-                if (source[pos].isWhitespace()) {
-                    while (pos < source.length && source[pos].isWhitespace())
+                if (peek().isWhitespace()) {
+                    while (hasNext() && peek().isWhitespace())
                         pos++
 
                     // Discard Whitespace tokens
@@ -98,14 +61,14 @@ class Lexer(private val preference: AbstractPreference) {
                 }
 
                 // Identifiers (Including Keywords)
-                if (!isSymbol(source[pos])) {
+                if (!isSymbol(peek(), false)) {
                     val start = pos
 
-                    while (pos < source.length && !isSymbol(source[pos]))
+                    while (hasNext() && !isSymbol(peek()))
                         pos++
 
                     tokens += Token(
-                        source.substring(start until pos),
+                        currentLine.substring(start until pos),
                         TokenType.Identifier,
                         Position(lineNumber, start, pos)
                     )
@@ -113,293 +76,22 @@ class Lexer(private val preference: AbstractPreference) {
                 }
 
                 // Char Literal
-                if (source[pos] == '\'') {
-                    val start = pos++
-
-                    val char = when (source[pos]) {
-                        '\\' -> {
-                            // Escaped characters
-                            pos++
-
-                            when (source[pos++]) {
-                                '\\' -> '\\'
-                                't' -> '\t'
-                                'b' -> '\b'
-                                'n' -> '\n'
-                                'r' -> '\r'
-                                'f' -> '\u000c'
-                                '\'' -> '\''
-                                '\"' -> '"'
-                                'u' -> {
-                                    // Escaped unicode literal
-                                    var invalidUnicodeLiteral = false
-                                    var unicodeHexBuilder = ""
-
-                                    for (i in 0 until 4) {
-                                        if (pos >= source.length) {
-                                            reports += Error(
-                                                currentPos(),
-                                                "Unexpected linebreak while parsing unicode literal"
-                                            )
-                                            invalidUnicodeLiteral = true
-                                            break
-                                        }
-
-                                        if (source[pos].digitToIntOrNull() != null || source[pos] in 'A'..'F') {
-                                            unicodeHexBuilder += source[pos++]
-                                        } else if (source[pos] == '\'') {
-                                            reports += Error(
-                                                currentPos(),
-                                                "Incomplete unicode literal ${source[pos++]}"
-                                            )
-                                            invalidUnicodeLiteral = true
-                                            break
-                                        } else {
-                                            reports += Error(
-                                                currentPos(),
-                                                "Invalid hexadecimal digit ${source[pos++]} for unicode literal"
-                                            )
-                                            invalidUnicodeLiteral = true
-                                            break
-                                        }
-                                    }
-
-                                    if (invalidUnicodeLiteral) {
-                                        ' '
-                                    } else {
-                                        val hex = unicodeHexBuilder.chunked(2).map { Integer.parseInt(it, 16) }
-
-                                        Char((hex[0] shl 8) or hex[1])
-                                    }
-                                }
-                                else -> {
-                                    reports += Error(
-                                        Position(lineNumber, pos - 2, pos - 1),
-                                        "Unknown escaped character"
-                                    )
-
-                                    ' '
-                                }
-                            }
-                        }
-                        else -> source[pos++]
-                    }
-
-                    if (pos < source.length && source[pos] != '\'') {
-                        while (pos < source.length && source[pos] != '\'')
-                            pos++
-
-                        reports += Error(
-                            Position(lineNumber, start + 2, pos - 2),
-                            "Too many characters for char literal",
-                            "Char literal only allows one character"
-                        )
-                    }
-
-                    val end = pos++
-
-                    tokens += Token(
-                        char,
-                        TokenType.CharLiteral,
-                        Position(lineNumber, start, end)
-                    )
+                if (peek() == '\'') {
+                    lexCharLiteral(reports, tokens)
                     continue
                 }
 
                 // String Literal
-                if (source[pos] == '"') {
-                    val start = pos++
-                    var builder = ""
-
-                    while (pos < source.length && source[pos] != '"') {
-                        when (source[pos]) {
-                            '"' -> break
-                            '\\' -> {
-                                // Escaped characters
-                                pos++
-
-                                when (source[pos++]) {
-                                    '\\' -> builder += "\\"
-                                    't' -> builder += "\t"
-                                    'b' -> builder += "\b"
-                                    'n' -> builder += "\n"
-                                    'r' -> builder += "\r"
-                                    'f' -> builder += "\u000c"
-                                    '\'' -> builder += "'"
-                                    '\"' -> builder += "\""
-                                    'u' -> {
-                                        // Escaped unicode literal
-                                        var unicodeHexBuilder = ""
-
-                                        for (i in 0 until 4) {
-                                            if (source[pos].digitToIntOrNull() != null || source[pos] in 'A'..'F') {
-                                                unicodeHexBuilder += source[pos++]
-                                            } else {
-                                                reports += Error(
-                                                    Position(lineNumber, pos),
-                                                    "Invalid hexadecimal digit ${source[pos++]} for unicode literal"
-                                                )
-                                            }
-                                        }
-
-                                        val hex = unicodeHexBuilder.chunked(2).map { Integer.parseInt(it, 16) }
-
-                                        builder += Char((hex[0] shl 8) or hex[1])
-
-                                    }
-                                    else -> {
-                                        reports += Error(
-                                            Position(lineNumber, pos - 2, pos - 1),
-                                            "Unknown escaped character"
-                                        )
-                                    }
-                                }
-                            }
-                            else -> builder += source[pos++]
-                        }
-                    }
-
-                    val end = pos++
-
-                    tokens += Token(
-                        builder,
-                        TokenType.StringLiteral,
-                        Position(lineNumber, start, end)
-                    )
+                if (peek() == '"') {
+                    lexStringLiteral(reports, tokens)
                     continue
                 }
 
                 // Operators etc.
-                when (source[pos]) {
-                    '{' -> tokens.charToken(source, TokenType.OpenBrace)
-                    '}' -> tokens.charToken(source, TokenType.CloseBrace)
-                    '[' -> tokens.charToken(source, TokenType.OpenBracket)
-                    ']' -> tokens.charToken(source, TokenType.CloseBracket)
-                    '(' -> tokens.charToken(source, TokenType.OpenParenthesis)
-                    ')' -> tokens.charToken(source, TokenType.CloseParenthesis)
-                    ':' -> when (peek(source)) {
-                        ':' ->
-                            tokens += Token(
-                                source.substring(pos..pos + 1),
-                                TokenType.DoubleColon,
-                                Position(lineNumber, pos, skip(2) + 1)
-                            )
-                        '=' ->
-                            tokens += Token(
-                                source.substring(pos..pos + 1),
-                                TokenType.ColonEqual,
-                                Position(lineNumber, pos, skip(2) + 1)
-                            )
-                        else -> tokens.charToken(source, TokenType.Colon)
-                    }
-                    ';' -> tokens.charToken(source, TokenType.SemiColon)
-                    ',' -> tokens.charToken(source, TokenType.Comma)
-                    '.' -> tokens.charToken(source, TokenType.Dot)
-                    '!' -> when (peek(source)) {
-                        '=' ->
-                            tokens += Token(
-                                source.substring(pos..pos + 1),
-                                TokenType.BangEqual,
-                                Position(lineNumber, pos, skip(2) + 1)
-                            )
-                        else -> tokens.charToken(source, TokenType.Bang)
-                    }
-                    '=' -> when (peek(source)) {
-                        '=' ->
-                            tokens += Token(
-                                source.substring(pos..pos + 1),
-                                TokenType.EqualEqual,
-                                Position(lineNumber, pos, skip(2) + 1)
-                            )
-                        else -> tokens.charToken(source, TokenType.Equal)
-                    }
-                    '|' -> when (peek(source)) {
-                        '|' ->
-                            tokens += Token(
-                                source.substring(pos..pos + 1),
-                                TokenType.DoublePipe,
-                                Position(lineNumber, pos, skip(2) + 1)
-                            )
-                        else -> tokens.charToken(source, TokenType.Pipe)
-                    }
-                    '&' -> when (peek(source)) {
-                        '&' ->
-                            tokens += Token(
-                                source.substring(pos..pos + 1),
-                                TokenType.DoubleAmpersand,
-                                Position(lineNumber, pos, skip(2) + 1)
-                            )
-                        else -> tokens.charToken(source, TokenType.Ampersand)
-                    }
-                    '>' -> when (peek(source)) {
-                        '=' ->
-                            tokens += Token(
-                                source.substring(pos..pos + 1),
-                                TokenType.GreaterEqual,
-                                Position(lineNumber, pos, skip(2) + 1)
-                            )
-                        '>' ->
-                            tokens += if (peek(source, 2) == '>') {
-                                Token(
-                                    source.substring(pos..pos + 2),
-                                    TokenType.TripleGreater,
-                                    Position(lineNumber, pos, skip(3) + 1)
-                                )
-                            } else {
-                                Token(
-                                    source.substring(pos..pos + 1),
-                                    TokenType.DoubleGreater,
-                                    Position(lineNumber, pos, skip(2) + 2)
-                                )
-                            }
-                        else -> tokens.charToken(source, TokenType.Greater)
-                    }
-                    '<' -> when (peek(source)) {
-                        '=' ->
-                            tokens += Token(
-                                source.substring(pos..pos + 1),
-                                TokenType.LesserEqual,
-                                Position(lineNumber, pos, skip(2) + 1)
-                            )
-                        '<' ->
-                            tokens += Token(
-                                source.substring(pos..pos + 1),
-                                TokenType.DoubleLesser,
-                                Position(lineNumber, pos, skip(2) + 1)
-                            )
-                        else -> tokens.charToken(source, TokenType.Lesser)
-                    }
-                    '~' -> tokens.charToken(source, TokenType.Tilde)
-                    '^' -> tokens.charToken(source, TokenType.Hat)
-                    '+' -> when (peek(source)) {
-                        '+' ->
-                            tokens += Token(
-                                source.substring(pos..pos + 1),
-                                TokenType.DoublePlus,
-                                Position(lineNumber, pos, skip(2) + 1)
-                            )
-                        else -> tokens.charToken(source, TokenType.Plus)
-                    }
-                    '-' -> when (peek(source)) {
-                        '-' ->
-                            tokens += Token(
-                                source.substring(pos..pos + 1),
-                                TokenType.DoubleMinus,
-                                Position(lineNumber, pos, skip(2) + 1)
-                            )
-                        else -> tokens.charToken(source, TokenType.Minus)
-                    }
-                    '*' -> tokens.charToken(source, TokenType.Star)
-                    '/' -> tokens.charToken(source, TokenType.Slash)
-                    '%' -> tokens.charToken(source, TokenType.Percentage)
-                    else ->
-                        reports += Report.Error(
-                            Position(lineNumber, pos),
-                            "Unexpected character ${source[pos++]}"
-                        )
-                }
+                lexSymbols(tokens, reports)
             }
 
+            // move to next line
             pos = 0
             lineNumber++
         }
@@ -407,15 +99,388 @@ class Lexer(private val preference: AbstractPreference) {
         return reports to tokens
     }
 
-    private fun MutableList<Token>.charToken(source: String, type: TokenType) =
-        this.add(Token(source[pos], type, Position(lineNumber, pos++)))
+    private fun lexNumberLiteral(
+        reports: MutableList<Report>,
+        tokens: MutableList<Token>
+    ) {
+        var endsWithDot = false
+        var isFloatingPointNumber = false
+        val start = pos
 
-    private fun isSymbol(char: Char): Boolean {
+        while (hasNext() && peek().isDigit())
+            pos++
+
+        if (hasNext()) {
+            if (peek() == '.') {
+                isFloatingPointNumber = true
+                pos++
+
+                while (hasNext() && peek().isDigit()) {
+                    if (!endsWithDot) endsWithDot = true
+                    pos++
+                }
+            }
+
+            if (hasNext()) {
+                when (peek()) {
+                    'B', 'S', 'I', 'L' -> {
+                        if (isFloatingPointNumber) {
+                            reports += Error(
+                                currentPos(),
+                                "Cannot declare a floating point number literal as non-floating type",
+                                "Consider removing type suffix"
+                            )
+                        }
+
+                        pos++
+                    }
+                    'F', 'D' -> {
+                        isFloatingPointNumber = true
+                        pos++
+                    }
+                }
+            }
+        }
+
+        tokens += Token(
+            currentLine.substring(start until pos - if (endsWithDot) 1 else 0),
+            if (isFloatingPointNumber) TokenType.FloatLiteral
+            else TokenType.IntegerLiteral,
+            Position(lineNumber, start, pos)
+        )
+    }
+
+    private fun lexSymbols(
+        tokens: MutableList<Token>,
+        reports: MutableList<Report>
+    ) {
+        when (peek()) {
+            '{' -> tokens.charToken(TokenType.OpenBrace)
+            '}' -> tokens.charToken(TokenType.CloseBrace)
+            '[' -> tokens.charToken(TokenType.OpenBracket)
+            ']' -> tokens.charToken(TokenType.CloseBracket)
+            '(' -> tokens.charToken(TokenType.OpenParenthesis)
+            ')' -> tokens.charToken(TokenType.CloseParenthesis)
+            ':' -> when (peek(1)) {
+                ':' ->
+                    tokens += Token(
+                        currentLine.substring(pos..pos + 1),
+                        TokenType.DoubleColon,
+                        Position(lineNumber, pos, skip(2) + 1)
+                    )
+                '=' ->
+                    tokens += Token(
+                        currentLine.substring(pos..pos + 1),
+                        TokenType.ColonEqual,
+                        Position(lineNumber, pos, skip(2) + 1)
+                    )
+                else -> tokens.charToken(TokenType.Colon)
+            }
+            ';' -> tokens.charToken(TokenType.SemiColon)
+            ',' -> tokens.charToken(TokenType.Comma)
+            '.' -> tokens.charToken(TokenType.Dot)
+            '!' -> when (peek(1)) {
+                '=' ->
+                    tokens += Token(
+                        currentLine.substring(pos..pos + 1),
+                        TokenType.BangEqual,
+                        Position(lineNumber, pos, skip(2) + 1)
+                    )
+                else -> tokens.charToken(TokenType.Bang)
+            }
+            '=' -> when (peek(1)) {
+                '=' ->
+                    tokens += Token(
+                        currentLine.substring(pos..pos + 1),
+                        TokenType.EqualEqual,
+                        Position(lineNumber, pos, skip(2) + 1)
+                    )
+                else -> tokens.charToken(TokenType.Equal)
+            }
+            '|' -> when (peek(1)) {
+                '|' ->
+                    tokens += Token(
+                        currentLine.substring(pos..pos + 1),
+                        TokenType.DoublePipe,
+                        Position(lineNumber, pos, skip(2) + 1)
+                    )
+                else -> tokens.charToken(TokenType.Pipe)
+            }
+            '&' -> when (peek(1)) {
+                '&' ->
+                    tokens += Token(
+                        currentLine.substring(pos..pos + 1),
+                        TokenType.DoubleAmpersand,
+                        Position(lineNumber, pos, skip(2) + 1)
+                    )
+                else -> tokens.charToken(TokenType.Ampersand)
+            }
+            '>' -> when (peek(1)) {
+                '=' ->
+                    tokens += Token(
+                        currentLine.substring(pos..pos + 1),
+                        TokenType.GreaterEqual,
+                        Position(lineNumber, pos, skip(2) + 1)
+                    )
+                '>' ->
+                    tokens += if (peek(2) == '>') {
+                        Token(
+                            currentLine.substring(pos..pos + 2),
+                            TokenType.TripleGreater,
+                            Position(lineNumber, pos, skip(3) + 1)
+                        )
+                    } else {
+                        Token(
+                            currentLine.substring(pos..pos + 1),
+                            TokenType.DoubleGreater,
+                            Position(lineNumber, pos, skip(2) + 2)
+                        )
+                    }
+                else -> tokens.charToken(TokenType.Greater)
+            }
+            '<' -> when (peek(1)) {
+                '=' ->
+                    tokens += Token(
+                        currentLine.substring(pos..pos + 1),
+                        TokenType.LesserEqual,
+                        Position(lineNumber, pos, skip(2) + 1)
+                    )
+                '<' ->
+                    tokens += Token(
+                        currentLine.substring(pos..pos + 1),
+                        TokenType.DoubleLesser,
+                        Position(lineNumber, pos, skip(2) + 1)
+                    )
+                else -> tokens.charToken(TokenType.Lesser)
+            }
+            '~' -> tokens.charToken(TokenType.Tilde)
+            '^' -> tokens.charToken(TokenType.Hat)
+            '+' -> when (peek(1)) {
+                '+' ->
+                    tokens += Token(
+                        currentLine.substring(pos..pos + 1),
+                        TokenType.DoublePlus,
+                        Position(lineNumber, pos, skip(2) + 1)
+                    )
+                else -> tokens.charToken(TokenType.Plus)
+            }
+            '-' -> when (peek(1)) {
+                '-' ->
+                    tokens += Token(
+                        currentLine.substring(pos..pos + 1),
+                        TokenType.DoubleMinus,
+                        Position(lineNumber, pos, skip(2) + 1)
+                    )
+                else -> tokens.charToken(TokenType.Minus)
+            }
+            '*' -> tokens.charToken(TokenType.Star)
+            '/' -> tokens.charToken(TokenType.Slash)
+            '%' -> tokens.charToken(TokenType.Percentage)
+            else ->
+                reports += Report.Error(
+                    currentPos(),
+                    "Unexpected character ${currentLine[pos++]}"
+                )
+        }
+    }
+
+    private fun lexStringLiteral(
+        reports: MutableList<Report>,
+        tokens: MutableList<Token>
+    ) {
+        var enclosed = false
+        val start = pos++
+        var builder = ""
+
+        while (hasNext()) {
+            when (peek()) {
+                '"' -> {
+                    enclosed = true
+                    break
+                }
+                '\\' -> {
+                    // Escaped characters
+                    pos++
+
+                    when (peekInc()) {
+                        '\\' -> builder += "\\"
+                        't' -> builder += "\t"
+                        'b' -> builder += "\b"
+                        'n' -> builder += "\n"
+                        'r' -> builder += "\r"
+                        'f' -> builder += "\u000c"
+                        '\'' -> builder += "'"
+                        '\"' -> builder += "\""
+                        'u' -> {
+                            // Escaped unicode literal
+                            var unicodeHexBuilder = ""
+
+                            for (i in 0 until 4) {
+                                if (peek().digitToIntOrNull() != null || peek() in 'A'..'F') {
+                                    unicodeHexBuilder += peekInc()
+                                } else {
+                                    reports += Error(
+                                        currentPos(),
+                                        "Invalid hexadecimal digit ${peekInc()} for unicode literal",
+                                        "Valid candidates are [a-fA-F0-9]"
+                                    )
+                                }
+                            }
+
+                            val hex = unicodeHexBuilder.chunked(2).map { Integer.parseInt(it, 16) }
+
+                            builder += Char((hex[0] shl 8) or hex[1])
+                        }
+                        else -> {
+                            reports += Error(
+                                Position(lineNumber, pos - 2, pos - 1),
+                                "Unknown escaped character"
+                            )
+                        }
+                    }
+                }
+                else -> builder += peekInc()
+            }
+        }
+
+        if (!enclosed) {
+            reports += Error(
+                currentPos(),
+                "Unclosed string literal",
+                "Add `\"` here"
+            )
+        }
+
+        val end = pos++
+
+        tokens += Token(
+            builder,
+            TokenType.StringLiteral,
+            Position(lineNumber, start, end)
+        )
+    }
+
+    private fun lexCharLiteral(
+        reports: MutableList<Report>,
+        tokens: MutableList<Token>
+    ) {
+        var enclosed = false
+        val start = pos++
+
+        var char: Char? = null
+
+        while (hasNext() && !enclosed) {
+            val currentChar = when (peek()) {
+                '\'' -> {
+                    pos++
+
+                    if (char == null) {
+                        // No character presented
+                        reports += Error(
+                            currentPos(),
+                            "Empty character literal"
+                        )
+                    }
+
+                    enclosed = true
+
+                    null
+                }
+                '\\' -> {
+                    // Escaped characters
+                    pos++
+
+                    when (peekInc()) {
+                        '\\' -> '\\'
+                        't' -> '\t'
+                        'b' -> '\b'
+                        'n' -> '\n'
+                        'r' -> '\r'
+                        'f' -> '\u000c'
+                        '\'' -> '\''
+                        '\"' -> '"'
+                        'u' -> {
+                            // Escaped unicode literal
+                            var invalidUnicodeLiteral = false
+                            var unicodeHexBuilder = ""
+
+                            for (i in 0 until 4) {
+                                if (!hasNext()) {
+                                    reports += Error(
+                                        currentPos(),
+                                        "Unexpected linebreak while parsing unicode literal"
+                                    )
+                                    invalidUnicodeLiteral = true
+                                    break
+                                }
+
+                                if (peek().digitToIntOrNull() != null || peek() in 'A'..'F') {
+                                    unicodeHexBuilder += peekInc()
+                                } else if (peek() == '\'') {
+                                    reports += Error(
+                                        currentPos(),
+                                        "Incomplete unicode literal ${peekInc()}"
+                                    )
+                                    invalidUnicodeLiteral = true
+                                    break
+                                } else {
+                                    reports += Error(
+                                        currentPos(),
+                                        "Invalid hexadecimal digit ${peekInc()} for unicode character literal",
+                                        "Valid candidates are [a-fA-F0-9]"
+                                    )
+                                    invalidUnicodeLiteral = true
+                                    break
+                                }
+                            }
+
+                            if (invalidUnicodeLiteral) {
+                                ' '
+                            } else {
+                                val hex = unicodeHexBuilder.chunked(2).map { Integer.parseInt(it, 16) }
+
+                                Char((hex[0] shl 8) or hex[1])
+                            }
+                        }
+                        else -> {
+                            reports += Error(
+                                Position(lineNumber, pos - 2, pos - 1),
+                                "Unknown escaped character"
+                            )
+
+                            ' '
+                        }
+                    }
+                }
+                else -> peekInc()
+            }
+
+            if (char == null) char = currentChar
+            else if (!enclosed) {
+                reports += Error(
+                    currentPos(),
+                    "Too many characters for character literal"
+                )
+            }
+        }
+
+        tokens += Token(
+            char ?: '\u0000',
+            TokenType.CharLiteral,
+            Position(lineNumber, start, pos - 1)
+        )
+    }
+
+    private fun MutableList<Token>.charToken(type: TokenType) =
+        this.add(Token(currentLine[pos], type, Position(lineNumber, pos++)))
+
+    private fun isSymbol(char: Char, allowDigit: Boolean = true): Boolean {
         val charCode = char.code
 
         return when {
             char.isLetter() -> false
             char.isWhitespace() -> true
+            char.isDigit() -> !allowDigit
             charCode > 127 -> false     // Not Ascii Character
             charCode in 33..47 -> true
             charCode in 58..64 -> true
