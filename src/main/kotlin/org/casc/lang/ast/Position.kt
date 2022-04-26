@@ -39,11 +39,10 @@ data class Position(val lineNumber: Int, var start: Int, var end: Int) {
         if (other == null) this
         else if (lineNumber != other.lineNumber) this
         else {
-            val clone = copy()
-            if (start > other.start) clone.start = other.start
-            if (end < other.end) clone.end = other.end
+            if (start > other.start) start = other.start
+            if (end < other.end) end = other.end
 
-            clone
+            this
         }
 
     fun extend(other: Position?): Position =
