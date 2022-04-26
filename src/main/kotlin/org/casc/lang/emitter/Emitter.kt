@@ -152,12 +152,23 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
 
         when (statement) {
             is VariableDeclaration -> {
-                emitExpression(methodVisitor, statement.expression!!)
+                if (statement.expressions.size == 1) {
+                    // one-to-many
+                    val expression = statement.expressions[0]!!
+                    emitExpression(methodVisitor, expression)
 
-                for ((i, index) in statement.indexes.withIndex()) {
-                    if (i != statement.indexes.lastIndex) methodVisitor.visitInsn(getDupOpcode(statement.expression.type)!!)
+                    for ((i, index) in statement.indexes.withIndex()) {
+                        if (i != statement.indexes.lastIndex) methodVisitor.visitInsn(getDupOpcode(expression.type)!!)
 
-                    methodVisitor.visitVarInsn(statement.expression.type!!.storeOpcode, index)
+                        methodVisitor.visitVarInsn(expression.type!!.storeOpcode, index)
+                    }
+                } else {
+                    // many-to-many
+                    for ((expression, index) in statement.expressions.zip(statement.indexes)) {
+                        emitExpression(methodVisitor, expression!!)
+
+                        methodVisitor.visitVarInsn(expression.type!!.storeOpcode, index)
+                    }
                 }
             }
             is IfStatement -> {

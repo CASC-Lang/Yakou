@@ -811,12 +811,21 @@ class Parser(private val preference: AbstractPreference) {
             }
 
             val operator = next()
-            val expression = parseExpression(inCompanionContext)
+
+            val expressions = mutableListOf(parseExpression(inCompanionContext))
+
+            while (hasNext()) {
+                if (peekIf(TokenType.Comma)) {
+                    consume()
+
+                    expressions += parseExpression(inCompanionContext)
+                } else break
+            }
 
             return VariableDeclaration(
                 variables,
                 operator,
-                expression
+                expressions
             )
         }
 

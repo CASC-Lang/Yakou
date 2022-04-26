@@ -8,11 +8,11 @@ sealed class Statement {
     data class VariableDeclaration(
         val variables: List<Pair<Token?, Token?>>,
         val operator: Token?,
-        val expression: Expression?,
+        val expressions: List<Expression?>,
         var indexes: MutableList<Int> = mutableListOf(),
         override val pos: Position? = Position.fromMultipleAndExtend(
             *variables.firstOrNull()?.toList()?.map { it?.pos }?.toTypedArray() ?: arrayOf())
-            ?.extend(expression?.pos)
+            ?.extend(expressions.lastOrNull()?.pos)
     ) : Statement()
 
     data class IfStatement(

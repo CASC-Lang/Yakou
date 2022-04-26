@@ -26,7 +26,7 @@ impl Main : Rock {
     }
 
     fn main(args: [str]) {
-        mut a1, a2, mut a3 := 2
+        mut a1, a2, mut a3 := 2, 1, "a"
         a := new Main()
         a.lol()
         a.print()

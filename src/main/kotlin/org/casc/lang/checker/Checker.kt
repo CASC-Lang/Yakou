@@ -14,12 +14,9 @@ import java.io.File as JFile
 
 class Checker(private val preference: AbstractPreference) {
     companion object {
-        private val ignoreUnusedExpressions =
-            listOf(
-                AssignmentExpression::class.java,
-                FunctionCallExpression::class.java,
-                ConstructorCallExpression::class.java
-            )
+        private val ignoreUnusedExpressions = listOf(
+            AssignmentExpression::class.java, FunctionCallExpression::class.java, ConstructorCallExpression::class.java
+        )
     }
 
     private lateinit var topScope: Scope
@@ -37,11 +34,8 @@ class Checker(private val preference: AbstractPreference) {
         topScope = Scope(preference, companion = false, mutable = false, Accessor.Pub, clazz.getReference())
 
         val classScope = Scope(
-            topScope,
-            false, // TODO: Allow (nested) class has `comp`
-            clazz.mutKeyword != null,
-            clazz.accessor,
-            clazz.packageReference
+            topScope, false, // TODO: Allow (nested) class has `comp`
+            clazz.mutKeyword != null, clazz.accessor, clazz.packageReference
         )
 
         if (clazz.packageReference != null) {
@@ -107,13 +101,11 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkIdentifierIsKeyword(identifierToken: Token?, isVariable: Boolean = false) {
-        if (isVariable && (identifierToken?.literal == "self" || identifierToken?.literal == "super"))
-            return
+        if (isVariable && (identifierToken?.literal == "self" || identifierToken?.literal == "super")) return
 
         if (Token.keywords.contains(identifierToken?.literal)) {
             reports += Error(
-                identifierToken?.pos,
-                "Cannot use ${identifierToken?.literal} as identifier since it's a keyword"
+                identifierToken?.pos, "Cannot use ${identifierToken?.literal} as identifier since it's a keyword"
             )
         }
     }
@@ -122,16 +114,13 @@ class Checker(private val preference: AbstractPreference) {
         when (target.accessor) {
             Accessor.Pub -> {}
             Accessor.Prot -> {
-                val accessible = targetOwnerClass.type(preference)
-                    ?.isAssignableFrom(
+                val accessible = targetOwnerClass.type(preference)?.isAssignableFrom(
                         currentScope.findType(currentScope.classReference)?.type(preference) ?: Any::class.java
-                    )
-                    .getOrElse()
+                    ).getOrElse()
 
                 if (!accessible) {
                     reports += Error(
-                        errorPos,
-                        "Unable to access `prot` class member from unrelated hierarchy tree class"
+                        errorPos, "Unable to access `prot` class member from unrelated hierarchy tree class"
                     )
                 }
             }
@@ -140,15 +129,13 @@ class Checker(private val preference: AbstractPreference) {
 
                 if (!accessible) {
                     reports += Error(
-                        errorPos,
-                        "Unable to access `intl` class member from unrelated package"
+                        errorPos, "Unable to access `intl` class member from unrelated package"
                     )
                 }
             }
             Accessor.Priv -> {
                 reports += Error(
-                    errorPos,
-                    "Unable to access `priv` class member from other class"
+                    errorPos, "Unable to access `priv` class member from other class"
                 )
             }
         }
@@ -169,9 +156,7 @@ class Checker(private val preference: AbstractPreference) {
             if (topScope.usages.find { usage -> usage.fullQualifiedPath == it.fullQualifiedPath } != null) {
                 // Using an already used package or class
                 reports += Warning(
-                    it.pos,
-                    "${it.asCASCStyle()} is already used in this context",
-                    "Consider removing this usage"
+                    it.pos, "${it.asCASCStyle()} is already used in this context", "Consider removing this usage"
                 )
             }
 
@@ -192,14 +177,11 @@ class Checker(private val preference: AbstractPreference) {
                             "Consider remove this usage"
                         )
                     } else {
-                        val classes = ClassGraph()
-                            .acceptPackagesNonRecursive(it.fullQualifiedPath)
-                            .overrideClassLoaders(ClassLoader.getSystemClassLoader())
-                            .scan()
+                        val classes = ClassGraph().acceptPackagesNonRecursive(it.fullQualifiedPath)
+                            .overrideClassLoaders(ClassLoader.getSystemClassLoader()).scan()
 
 
-                        for (classInfo in classes.allStandardClasses)
-                            results += Reference(classInfo.loadClass().name)
+                        for (classInfo in classes.allStandardClasses) results += Reference(classInfo.loadClass().name)
                     }
 
                     results
@@ -231,8 +213,7 @@ class Checker(private val preference: AbstractPreference) {
             if (!checkControlFlow(it.statements, it.returnType)) {
                 // Not all code path returns value
                 reports += Error(
-                    it.name?.pos,
-                    "Not all code path returns value"
+                    it.name?.pos, "Not all code path returns value"
                 )
             }
         }
@@ -258,21 +239,17 @@ class Checker(private val preference: AbstractPreference) {
         // Validate types first then register it to scope
         // Check if parameter has duplicate names
         val localScope = Scope(scope)
-        val duplicateParameters = constructor.parameters
-            .groupingBy {
+        val duplicateParameters = constructor.parameters.groupingBy {
                 checkIdentifierIsKeyword(it.name)
 
                 it.name
-            }
-            .eachCount()
-            .filter { it.value > 1 }
+            }.eachCount().filter { it.value > 1 }
         var validationPass = true
 
         if (duplicateParameters.isNotEmpty()) {
             duplicateParameters.forEach { (parameter, _) ->
                 reports += Error(
-                    parameter!!.pos,
-                    "Parameter ${parameter.literal} is already declared in constructor new(${
+                    parameter!!.pos, "Parameter ${parameter.literal} is already declared in constructor new(${
                         constructor.parameters.mapNotNull { it.typeReference?.fullQualifiedPath }.joinToString()
                     })"
                 )
@@ -290,8 +267,7 @@ class Checker(private val preference: AbstractPreference) {
             }
         }
 
-        if (constructor.parentReference == null)
-            constructor.parentReference = Reference(Any::class.java)
+        if (constructor.parentReference == null) constructor.parentReference = Reference(Any::class.java)
 
         constructor.ownerType = findType(constructor.ownerReference, localScope)
         constructor.parentType = findType(constructor.parentReference, localScope)
@@ -307,8 +283,7 @@ class Checker(private val preference: AbstractPreference) {
             }
         }
 
-        if (validationPass)
-            scope.registerSignature(constructor)
+        if (validationPass) scope.registerSignature(constructor)
 
         return constructor
     }
@@ -318,14 +293,11 @@ class Checker(private val preference: AbstractPreference) {
 
         // Validate types first then register it to scope
         // Check if parameter has duplicate names
-        val duplicateParameters = function.parameters
-            .groupingBy {
+        val duplicateParameters = function.parameters.groupingBy {
                 checkIdentifierIsKeyword(it.name)
 
                 it.name
-            }
-            .eachCount()
-            .filter { it.value > 1 }
+            }.eachCount().filter { it.value > 1 }
         var validationPass = true
 
         if (duplicateParameters.isNotEmpty()) {
@@ -351,18 +323,17 @@ class Checker(private val preference: AbstractPreference) {
             }
         }
 
-        function.returnType =
-            if (function.returnTypeReference == null) PrimitiveType.Unit
-            else {
-                val type = findType(function.returnTypeReference, scope)
+        function.returnType = if (function.returnTypeReference == null) PrimitiveType.Unit
+        else {
+            val type = findType(function.returnTypeReference, scope)
 
-                if (type == null) {
-                    reports.reportUnknownTypeSymbol(function.returnTypeReference)
-                    validationPass = false
+            if (type == null) {
+                reports.reportUnknownTypeSymbol(function.returnTypeReference)
+                validationPass = false
 
-                    null
-                } else type
-            }
+                null
+            } else type
+        }
         function.ownerType = findType(function.ownerReference, scope)
 
         // Check is overriding parent function
@@ -403,11 +374,9 @@ class Checker(private val preference: AbstractPreference) {
         } else if (function.ovrdKeyword != null) {
             // Redundant `ovrd` keyword
             reports += Error(
-                function.ovrdKeyword.pos,
-                "Redundant `ovrd`, ${function.name.literal}(${
+                function.ovrdKeyword.pos, "Redundant `ovrd`, ${function.name.literal}(${
                     function.parameterTypes?.mapNotNull { it?.typeName }?.joinToString()
-                }) overrides nothing",
-                "Remove this keyword"
+                }) overrides nothing", "Remove this keyword"
             )
         }
 
@@ -420,16 +389,13 @@ class Checker(private val preference: AbstractPreference) {
         if (constructor.superKeyword != null) {
             // `super` call
             val superCallSignature = scope.findSignature(
-                constructor.parentReference,
-                "<init>",
-                constructor.parentConstructorArgumentsTypes
+                constructor.parentReference, "<init>", constructor.parentConstructorArgumentsTypes
             )
 
             if (superCallSignature == null) {
                 // No super call match
                 reports += Error(
-                    constructor.newKeyword?.pos,
-                    "Cannot find matched super call `super`(${
+                    constructor.newKeyword?.pos, "Cannot find matched super call `super`(${
                         constructor.parentConstructorArgumentsTypes.mapNotNull { it?.typeName }.joinToString()
                     })"
                 )
@@ -437,16 +403,13 @@ class Checker(private val preference: AbstractPreference) {
         } else if (constructor.selfKeyword != null) {
             // `this` call
             val thisCallSignature = scope.findSignature(
-                constructor.ownerReference,
-                "<init>",
-                constructor.parentConstructorArgumentsTypes
+                constructor.ownerReference, "<init>", constructor.parentConstructorArgumentsTypes
             )
 
             if (thisCallSignature == null) {
                 // No super call match
                 reports += Error(
-                    constructor.newKeyword?.pos,
-                    "Cannot find matched super call `this`(${
+                    constructor.newKeyword?.pos, "Cannot find matched super call `this`(${
                         constructor.parentConstructorArgumentsTypes.mapNotNull { it?.typeName }.joinToString()
                     })"
                 )
@@ -489,8 +452,7 @@ class Checker(private val preference: AbstractPreference) {
         }
     }
 
-    private fun findType(reference: Reference?, scope: Scope): Type? =
-        scope.findType(reference)
+    private fun findType(reference: Reference?, scope: Scope): Type? = scope.findType(reference)
 
     private fun checkStatement(
         statement: Statement?,
@@ -501,34 +463,54 @@ class Checker(private val preference: AbstractPreference) {
     ) {
         when (statement) {
             is VariableDeclaration -> {
-                val expressionType = checkExpression(statement.expression, scope)
+                // Check one-to-many, many-to-many, or one-to-many rule
+                val variablesSize = statement.variables.size
+                val expressionsSize = statement.expressions.size
 
-                for ((mutKeyword, nameToken) in statement.variables) {
-                    val name = nameToken!!.literal
+                if (expressionsSize > 1 && variablesSize == 1) {
+                    // Many-expressions-to-one-variable is not allowed
+                    reports += Error(
+                        Position.fromMultipleAndExtend(
+                            *statement.expressions.filterNotNull().map(Expression::pos).toTypedArray()
+                        ), "Cannot declare single variable with multiple expressions given"
+                    )
+                } else if (variablesSize != expressionsSize) {
+                    // unequal expressions size to variables size is not allowed
+                    reports += Error(
+                        Position.fromMultipleAndExtend(
+                            *statement.expressions.filterNotNull().map(Expression::pos).toTypedArray()
+                        ), "Unequal expressions size to variables size"
+                    )
+                } else {
+                    val expressionTypes = statement.expressions.mapNotNull { checkExpression(it, scope) }
 
-                    if (name == "self" || name == "super") {
-                        reports += Error(
-                            nameToken.pos,
-                            "Cannot declare `$name` as local variable",
-                            "Rename this variable"
-                        )
-                    } else checkIdentifierIsKeyword(nameToken)
+                    for ((i, variable) in statement.variables.withIndex()) {
+                        val (mutKeyword, nameToken) = variable
+                        val type = if (expressionTypes.size == 1) expressionTypes[0] else expressionTypes[i]
+                        val name = nameToken!!.literal
 
-                    if (!scope.registerVariable(mutKeyword != null, name, expressionType)) {
-                        reports += Error(
-                            nameToken.pos,
-                            "Variable $name is already declared in same context",
-                            "Duplicate occurs here"
-                        )
-                    } else {
-                        if (expressionType == PrimitiveType.Unit) {
+                        if (name == "self" || name == "super") {
                             reports += Error(
-                                statement.expression!!.pos,
-                                "Could not store void type into variable"
+                                nameToken.pos, "Cannot declare `$name` as local variable", "Rename this variable"
                             )
-                        }
+                        } else checkIdentifierIsKeyword(nameToken)
 
-                        statement.indexes += scope.findVariableIndex(name) ?: -1
+                        if (!scope.registerVariable(mutKeyword != null, name, type)) {
+                            reports += Error(
+                                nameToken.pos,
+                                "Variable $name is already declared in same context",
+                                "Duplicate occurs here"
+                            )
+                        } else {
+                            if (type == PrimitiveType.Unit) {
+                                reports += Error(
+                                    (if (statement.expressions.size == 1) statement.expressions[0] else statement.expressions[i])?.pos,
+                                    "Could not store void type into variable"
+                                )
+                            }
+
+                            statement.indexes += scope.findVariableIndex(name) ?: -1
+                        }
                     }
                 }
             }
@@ -539,9 +521,7 @@ class Checker(private val preference: AbstractPreference) {
                     statement.condition?.castTo = PrimitiveType.Bool
                 } else {
                     reports.reportTypeMismatch(
-                        statement.condition?.pos,
-                        PrimitiveType.Bool,
-                        conditionType
+                        statement.condition?.pos, PrimitiveType.Bool, conditionType
                     )
                 }
 
@@ -563,9 +543,7 @@ class Checker(private val preference: AbstractPreference) {
                         statement.condition.castTo = PrimitiveType.Bool
                     } else {
                         reports.reportTypeMismatch(
-                            statement.condition.pos,
-                            PrimitiveType.Bool,
-                            conditionType
+                            statement.condition.pos, PrimitiveType.Bool, conditionType
                         )
                     }
                 }
@@ -589,14 +567,10 @@ class Checker(private val preference: AbstractPreference) {
                         statement.expression::class.java
                     )
                 ) {
-                    if (statement.expression is UnaryExpression &&
-                        (statement.expression.operator?.type == TokenType.DoublePlus || statement.expression.operator?.type == TokenType.DoubleMinus)
-                    ) {
+                    if (statement.expression is UnaryExpression && (statement.expression.operator?.type == TokenType.DoublePlus || statement.expression.operator?.type == TokenType.DoubleMinus)) {
                         checkExpression(statement.expression, scope)
                     } else reports += Error(
-                        statement.pos,
-                        "Unused expression",
-                        "Consider remove this line"
+                        statement.pos, "Unused expression", "Consider remove this line"
                     )
                 } else {
                     checkExpression(statement.expression, scope)
@@ -669,8 +643,7 @@ class Checker(private val preference: AbstractPreference) {
                     fun checkFieldAssignment(field: ClassField?) {
                         if (field == null) {
                             reports += Error(
-                                expression.leftExpression.pos,
-                                "Unknown identifier $name"
+                                expression.leftExpression.pos, "Unknown identifier $name"
                             )
                         } else {
                             if (!field.mutable) {
@@ -726,8 +699,7 @@ class Checker(private val preference: AbstractPreference) {
 
                             if (rightType == PrimitiveType.Unit) {
                                 reports += Error(
-                                    expression.rightExpression?.pos,
-                                    "Could not store void type into variable"
+                                    expression.rightExpression?.pos, "Could not store void type into variable"
                                 )
                             }
 
@@ -735,10 +707,7 @@ class Checker(private val preference: AbstractPreference) {
                                 variable.type = PrimitiveType.Null
                             }
 
-                            if (scope.scopeDepth > variable.declaredScopeDepth &&
-                                expression.rightExpression is BinaryExpression &&
-                                expression.rightExpression.isConcatExpression
-                            ) {
+                            if (scope.scopeDepth > variable.declaredScopeDepth && expression.rightExpression is BinaryExpression && expression.rightExpression.isConcatExpression) {
                                 reports += Warning(
                                     expression.pos,
                                     "Potential unnecessary performance cost while concatenating string through `+` and assign to variable in parent context in loop",
@@ -761,9 +730,7 @@ class Checker(private val preference: AbstractPreference) {
 
                 if (!scope.canCast(rightType, expression.leftExpression?.type)) {
                     reports.reportTypeMismatch(
-                        expression.rightExpression?.pos,
-                        expression.leftExpression?.type,
-                        rightType
+                        expression.rightExpression?.pos, expression.leftExpression?.type, rightType
                     )
                 } else {
                     expression.rightExpression?.castTo = leftType
@@ -797,8 +764,12 @@ class Checker(private val preference: AbstractPreference) {
                         )
                     } else {
                         checkCompanionAccessibility(field)
-                        if (ownerReference != scope.classReference)
-                            checkAccessible(scope, expression.name.pos, field, field.type)
+                        if (ownerReference != scope.classReference) checkAccessible(
+                            scope,
+                            expression.name.pos,
+                            field,
+                            field.type
+                        )
 
                         expression.type = field.type
                         expression.isCompField = field.companion
@@ -818,8 +789,12 @@ class Checker(private val preference: AbstractPreference) {
                         )
                     } else {
                         checkCompanionAccessibility(field)
-                        if (field.ownerReference != scope.classReference)
-                            checkAccessible(scope, expression.name.pos, field, field.type)
+                        if (field.ownerReference != scope.classReference) checkAccessible(
+                            scope,
+                            expression.name.pos,
+                            field,
+                            field.type
+                        )
 
                         expression.type = field.type
                         expression.isCompField = field.companion
@@ -828,8 +803,7 @@ class Checker(private val preference: AbstractPreference) {
                 } else if (expression.name?.literal == "self" || expression.name?.literal == "super") {
                     if (scope.isCompScope) {
                         reports += Error(
-                            expression.pos,
-                            "Cannot call `self` or `super` keywords in companion function"
+                            expression.pos, "Cannot call `self` or `super` keywords in companion function"
                         )
                     } else {
                         expression.type = when (expression.name.literal) {
@@ -865,8 +839,7 @@ class Checker(private val preference: AbstractPreference) {
                                 expression.ownerReference = field.ownerReference
                             } else {
                                 reports += Error(
-                                    expression.name.pos,
-                                    "Unknown identifier ${expression.name.literal}"
+                                    expression.name.pos, "Unknown identifier ${expression.name.literal}"
                                 )
                             }
                         } else {
@@ -886,34 +859,29 @@ class Checker(private val preference: AbstractPreference) {
 
                 val previousType = checkExpression(previousExpression, scope)
 
-                if (previousExpression is IdentifierCallExpression && previousExpression.name?.literal == "super")
-                    expression.superCall = true
+                if (previousExpression is IdentifierCallExpression && previousExpression.name?.literal == "super") expression.superCall =
+                    true
 
                 // Check function call expression's context, e.g companion context
                 val ownerReference = expression.ownerReference ?: previousType?.getReference() ?: scope.classReference
-                val functionSignature =
-                    scope.findSignature(
-                        ownerReference,
-                        expression.name!!.literal,
-                        argumentTypes
-                    )
+                val functionSignature = scope.findSignature(
+                    ownerReference, expression.name!!.literal, argumentTypes
+                )
 
                 if (functionSignature == null) {
                     // No function matched
                     reports += Error(
-                        expression.pos!!,
-                        "Function $ownerReference#${expression.name.literal}(${
+                        expression.pos!!, "Function $ownerReference#${expression.name.literal}(${
                             argumentTypes.mapNotNull { it?.typeName }.joinToString()
                         }) does not exist in current context"
                     )
                 } else {
-                    if (ownerReference != scope.classReference)
-                        checkAccessible(
-                            scope,
-                            expression.name.pos,
-                            functionSignature,
-                            findType(functionSignature.ownerReference, scope)!!
-                        )
+                    if (ownerReference != scope.classReference) checkAccessible(
+                        scope,
+                        expression.name.pos,
+                        functionSignature,
+                        findType(functionSignature.ownerReference, scope)!!
+                    )
 
                     if (functionSignature.ownerReference == expression.ownerReference) {
                         // Function's owner class is same as current class
@@ -941,8 +909,7 @@ class Checker(private val preference: AbstractPreference) {
                                 )
                             }
                         } else if (scope.isChildType(
-                                functionSignature.ownerReference,
-                                previousType?.getReference() ?: scope.classReference
+                                functionSignature.ownerReference, previousType?.getReference() ?: scope.classReference
                             )
                         ) expression.superCall = true
                     }
@@ -960,22 +927,23 @@ class Checker(private val preference: AbstractPreference) {
 
                 // Check owner type has matched signature
                 val signature = scope.findSignature(
-                    expression.constructorOwnerReference,
-                    "<init>",
-                    argumentTypes
+                    expression.constructorOwnerReference, "<init>", argumentTypes
                 )
 
                 if (signature == null) {
                     // No match
                     reports += Error(
-                        expression.pos,
-                        "Constructor ${expression.constructorOwnerReference?.asCASCStyle()}#new(${
+                        expression.pos, "Constructor ${expression.constructorOwnerReference?.asCASCStyle()}#new(${
                             argumentTypes.mapNotNull { it?.typeName }.joinToString()
                         }) does not exist"
                     )
                 } else {
-                    if (expression.constructorOwnerReference != scope.classReference)
-                        checkAccessible(scope, expression.pos, signature, findType(signature.ownerReference, scope)!!)
+                    if (expression.constructorOwnerReference != scope.classReference) checkAccessible(
+                        scope,
+                        expression.pos,
+                        signature,
+                        findType(signature.ownerReference, scope)!!
+                    )
 
                     expression.type = signature.returnType
                     expression.referenceFunctionSignature = signature
@@ -989,16 +957,13 @@ class Checker(private val preference: AbstractPreference) {
 
                 if (previousExpressionType !is ArrayType) {
                     reports += Error(
-                        expression.previousExpression?.pos,
-                        "Could not index non-array type"
+                        expression.previousExpression?.pos, "Could not index non-array type"
                     )
                 } else expression.type = previousExpressionType.baseType
 
                 if (!scope.canCast(indexExpressionType, PrimitiveType.I32)) {
                     reports.reportTypeMismatch(
-                        expression.indexExpression?.pos,
-                        PrimitiveType.I32,
-                        indexExpressionType
+                        expression.indexExpression?.pos, PrimitiveType.I32, indexExpressionType
                     )
                 } else expression.indexExpression?.castTo = PrimitiveType.I32
 
@@ -1097,10 +1062,9 @@ class Checker(private val preference: AbstractPreference) {
                                 )
                             }
                         }
-                        TokenType.Pipe, TokenType.Hat, TokenType.Ampersand,
-                        TokenType.DoubleGreater, TokenType.TripleGreater, TokenType.DoubleLesser -> {
-                            if ((PrimitiveType.promotionTable[leftType] ?: 2) <= 2 &&
-                                (PrimitiveType.promotionTable[rightType] ?: 2) <= 2
+                        TokenType.Pipe, TokenType.Hat, TokenType.Ampersand, TokenType.DoubleGreater, TokenType.TripleGreater, TokenType.DoubleLesser -> {
+                            if ((PrimitiveType.promotionTable[leftType]
+                                    ?: 2) <= 2 && (PrimitiveType.promotionTable[rightType] ?: 2) <= 2
                             ) {
                                 expression.promote()
                             } else {
@@ -1154,9 +1118,7 @@ class Checker(private val preference: AbstractPreference) {
                             )
                         }
                         else -> checkArrayType(
-                            expression,
-                            scope,
-                            inferType.baseType
+                            expression, scope, inferType.baseType
                         )
                     }
                 } else {
@@ -1182,17 +1144,14 @@ class Checker(private val preference: AbstractPreference) {
 
                     if (!scope.canCast(type, PrimitiveType.I32)) {
                         reports.reportTypeMismatch(
-                            it.pos,
-                            PrimitiveType.I32,
-                            type
+                            it.pos, PrimitiveType.I32, type
                         )
                     } else it.castTo = PrimitiveType.I32
                 }
 
                 if (expression.dimensionExpressions.lastOrNull() == null) {
                     reports += Error(
-                        expression.pos,
-                        "Missing top array size"
+                        expression.pos, "Missing top array size"
                     )
                 }
 
@@ -1205,9 +1164,7 @@ class Checker(private val preference: AbstractPreference) {
                     expression.condition?.castTo = PrimitiveType.Bool
                 } else {
                     reports.reportTypeMismatch(
-                        expression.condition?.pos,
-                        PrimitiveType.Bool,
-                        conditionType
+                        expression.condition?.pos, PrimitiveType.Bool, conditionType
                     )
                 }
 
@@ -1221,14 +1178,12 @@ class Checker(private val preference: AbstractPreference) {
 
                     if (type == null) {
                         reports += Error(
-                            expression.pos,
-                            "Unable to infer the most common type of all branches' return value"
+                            expression.pos, "Unable to infer the most common type of all branches' return value"
                         )
                     } else expression.type = type
                 } else {
                     reports += Error(
-                        expression.pos,
-                        "If expression must have else clause"
+                        expression.pos, "If expression must have else clause"
                     )
                 }
 
@@ -1239,19 +1194,18 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkBranchCommonType(expression: IfExpression): Type? {
-        fun getReturnValueType(statement: Statement?): Type? =
-            when (statement) {
-                null -> null
-                is IfStatement -> {
-                    val trueType = getReturnValueType(statement.trueStatement)
-                    val elseType = getReturnValueType(statement.elseStatement)
+        fun getReturnValueType(statement: Statement?): Type? = when (statement) {
+            null -> null
+            is IfStatement -> {
+                val trueType = getReturnValueType(statement.trueStatement)
+                val elseType = getReturnValueType(statement.elseStatement)
 
-                    TypeUtil.getCommonType(trueType, elseType, preference)
-                }
-                is BlockStatement -> getReturnValueType(statement.statements.lastOrNull())
-                is ExpressionStatement -> statement.expression?.type
-                else -> null
+                TypeUtil.getCommonType(trueType, elseType, preference)
             }
+            is BlockStatement -> getReturnValueType(statement.statements.lastOrNull())
+            is ExpressionStatement -> statement.expression?.type
+            else -> null
+        }
 
         val type = getReturnValueType(expression.trueStatement)
         val elseType = getReturnValueType(expression.elseStatement)
@@ -1260,9 +1214,7 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkArrayType(
-        expression: ArrayInitialization,
-        scope: Scope,
-        forcedFinalType: Type? = null
+        expression: ArrayInitialization, scope: Scope, forcedFinalType: Type? = null
     ) {
         val forceFinalType = forcedFinalType != null
         val expressionTypes = mutableListOf<Type?>()
@@ -1279,9 +1231,7 @@ class Checker(private val preference: AbstractPreference) {
             // cannot automatically cast into array.
             expressionTypes.forEachIndexed { i, type ->
                 reports.reportTypeMismatch(
-                    expression.elements[i]?.pos,
-                    firstInferredType,
-                    type
+                    expression.elements[i]?.pos, firstInferredType, type
                 )
             }
         } else {
@@ -1301,8 +1251,7 @@ class Checker(private val preference: AbstractPreference) {
                             )
                         } else {
                             // Then tries to infer their final type
-                            val latestFoundationType =
-                                (latestInferredType as ArrayType).getFoundationType()
+                            val latestFoundationType = (latestInferredType as ArrayType).getFoundationType()
                             val currentFoundationType = type.getFoundationType()
 
                             if (latestFoundationType !is PrimitiveType && currentFoundationType !is PrimitiveType) {
@@ -1313,24 +1262,18 @@ class Checker(private val preference: AbstractPreference) {
                                     if (!forceFinalType && latestFoundationType is PrimitiveType && currentFoundationType is PrimitiveType) {
                                         if (!latestFoundationType.isNumericType() || !currentFoundationType.isNumericType()) {
                                             reports.reportTypeMismatch(
-                                                expression.elements[i]?.pos,
-                                                latestFoundationType,
-                                                expressionTypes[i]
+                                                expression.elements[i]?.pos, latestFoundationType, expressionTypes[i]
                                             )
                                         }
                                         // If both are numeric types, it would be fine since current type is able to promote into latest inferred type
                                     } else {
                                         reports.reportTypeMismatch(
-                                            expression.elements[i]?.pos,
-                                            latestFoundationType,
-                                            expressionTypes[i]
+                                            expression.elements[i]?.pos, latestFoundationType, expressionTypes[i]
                                         )
                                     }
                                     // Boxed type cannot be promoted, and it's checked in canCast
                                 } else {
-                                    if (i == expressionTypes.lastIndex &&
-                                        currentFoundationType is ClassType
-                                    ) {
+                                    if (i == expressionTypes.lastIndex && currentFoundationType is ClassType) {
                                         // Covert boxed type into primitive type
                                         val currentPrimitiveType =
                                             PrimitiveType.fromClass(currentFoundationType.type(preference))
@@ -1359,9 +1302,7 @@ class Checker(private val preference: AbstractPreference) {
                         } else if (type is PrimitiveType && !scope.canCast(latestInferredType, type)) {
                             if (!type.isNumericType() || !type.isNumericType()) {
                                 reports.reportTypeMismatch(
-                                    expression.elements[i]?.pos,
-                                    type,
-                                    latestInferredType
+                                    expression.elements[i]?.pos, type, latestInferredType
                                 )
                             }
                             // If both are numeric types, it would be fine since current type is able to promote into latest inferred type
@@ -1380,9 +1321,7 @@ class Checker(private val preference: AbstractPreference) {
 
                             if (commonType == null) {
                                 reports.reportTypeMismatch(
-                                    expression.elements[i]?.pos,
-                                    type,
-                                    latestInferredType
+                                    expression.elements[i]?.pos, type, latestInferredType
                                 )
                             } else latestInferredType = commonType
                         }
@@ -1392,8 +1331,7 @@ class Checker(private val preference: AbstractPreference) {
             }
         }
 
-        if (latestInferredType != null)
-            expression.type = ArrayType(latestInferredType!!)
+        if (latestInferredType != null) expression.type = ArrayType(latestInferredType!!)
 
         val latestFoundationType =
             if (latestInferredType is ArrayType) (latestInferredType as ArrayType).getFoundationType()
@@ -1407,8 +1345,7 @@ class Checker(private val preference: AbstractPreference) {
                     val currentNodeType = (expr.type as ArrayType)
 
                     currentNodeType.baseType = ArrayType.fromDimension(
-                        latestFoundationType,
-                        currentNodeType.dimension - 1
+                        latestFoundationType, currentNodeType.dimension - 1
                     )
                     currentNodeType.setFoundationType(latestFoundationType)
                 })
@@ -1418,9 +1355,7 @@ class Checker(private val preference: AbstractPreference) {
 
     // Used to traverse through array structure and do specific job, e.g. assigning final cast type
     private fun traverseArrayTree(
-        expression: Expression?,
-        lastNodeAction: (Expression) -> Unit,
-        nodeAction: (Expression) -> Unit
+        expression: Expression?, lastNodeAction: (Expression) -> Unit, nodeAction: (Expression) -> Unit
     ) {
         if (expression != null) {
             if (expression.type is ArrayType) {
@@ -1448,8 +1383,11 @@ class Checker(private val preference: AbstractPreference) {
             is ReturnStatement -> true
             is IfStatement -> {
                 if (lastStatement.elseStatement == null) false
-                else checkControlFlow(listOf(lastStatement.trueStatement), returnType) &&
-                        checkControlFlow(listOf(lastStatement.elseStatement), returnType)
+                else checkControlFlow(listOf(lastStatement.trueStatement), returnType) && checkControlFlow(
+                    listOf(
+                        lastStatement.elseStatement
+                    ), returnType
+                )
             }
             is BlockStatement -> checkControlFlow(lastStatement.statements, returnType)
             else -> false
