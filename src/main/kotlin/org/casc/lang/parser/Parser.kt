@@ -489,7 +489,7 @@ class Parser(private val preference: AbstractPreference) {
 
                 if (!usedFlags.add(currentFlag)) {
                     reports += Error(
-                        Position.MutablePosition.fromMultipleAndExtend(accessorToken?.pos, mutKeyword?.pos).position,
+                        Position.fromMultipleAndExtend(accessorToken?.pos, mutKeyword?.pos),
                         "Duplicate access flags",
                         "Try merge current fields back to same exist access block"
                     )
@@ -960,10 +960,10 @@ class Parser(private val preference: AbstractPreference) {
 
                         assertUntil(TokenType.CloseParenthesis)
 
-                        val pos = Position.MutablePosition.fromMultipleAndExtend(
+                        val pos = Position.fromMultipleAndExtend(
                             name?.pos,
                             arguments.lastOrNull()?.pos
-                        ).position?.extend() // extend additional 1 character for `)`
+                        )?.extend() // extend additional 1 character for `)`
 
                         expression = FunctionCallExpression(
                             null,
@@ -994,10 +994,10 @@ class Parser(private val preference: AbstractPreference) {
                     expression = IndexExpression(
                         expression,
                         indexExpression,
-                        pos = Position.MutablePosition.fromMultipleAndExtend(
+                        pos = Position.fromMultipleAndExtend(
                             expression?.pos,
                             closeBracket?.pos
-                        ).position
+                        )
                     )
                 } else break
             }
@@ -1031,10 +1031,10 @@ class Parser(private val preference: AbstractPreference) {
             condition,
             trueStatement,
             elseStatement,
-            Position.MutablePosition.fromMultipleAndExtend(
+            Position.fromMultipleAndExtend(
                 ifKeyword?.pos,
                 trueStatement?.pos
-            ).position
+            )
         )
     }
 
