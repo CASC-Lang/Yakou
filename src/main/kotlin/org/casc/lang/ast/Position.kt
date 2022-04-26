@@ -6,12 +6,12 @@ data class Position(val lineNumber: Int, var start: Int, var end: Int) {
             val firstNonNullIndex = positions.indexOfFirst { it != null }
 
             return if (firstNonNullIndex != -1) {
-                val firstNonNull = positions[firstNonNullIndex]!!
+                val firstNonNull = positions[firstNonNullIndex]!!.copy()
 
                 for (i in positions.indices) {
                     if (i == firstNonNullIndex) continue
 
-                    firstNonNull.extend(positions[i])
+                    firstNonNull.extendSelf(positions[i])
                 }
 
                 firstNonNull
@@ -21,7 +21,7 @@ data class Position(val lineNumber: Int, var start: Int, var end: Int) {
 
     constructor(lineNumber: Int, start: Int) : this(lineNumber, start, start + 1)
 
-    fun extend(start: Int = 0, end: Int = 1): Position {
+    fun extendSelf(start: Int = 0, end: Int = 1): Position {
         if (start == 0) {
             this.end += end
         } else {
@@ -32,8 +32,10 @@ data class Position(val lineNumber: Int, var start: Int, var end: Int) {
         return this
     }
 
-    // extend function only extends its start and end position but lineNumber
-    fun extend(other: Position?): Position =
+    fun extend(start: Int = 0, end: Int = 1): Position =
+        copy().extendSelf(start, end)
+
+    fun extendSelf(other: Position?): Position =
         if (other == null) this
         else if (lineNumber != other.lineNumber) this
         else {
@@ -43,6 +45,9 @@ data class Position(val lineNumber: Int, var start: Int, var end: Int) {
 
             clone
         }
+
+    fun extend(other: Position?): Position =
+        copy().extendSelf(other)
 
     override fun toString(): String =
         "$lineNumber:$start"
