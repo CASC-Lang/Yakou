@@ -166,6 +166,15 @@ class Checker(private val preference: AbstractPreference) {
         clazz.usages.mapNotNull {
             it!!.tokens.forEach(::checkIdentifierIsKeyword)
 
+            if (topScope.usages.find { usage -> usage.fullQualifiedPath == it.fullQualifiedPath } != null) {
+                // Using an already used package or class
+                reports += Warning(
+                    it.pos,
+                    "${it.asCASCStyle()} is already used in this context",
+                    "Consider removing this usage"
+                )
+            }
+
             if (it.className == "*") {
                 if (TypeUtil.asType(it, preference) != null) {
                     // The full-qualified path represents a class name but a package name
