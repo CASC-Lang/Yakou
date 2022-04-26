@@ -313,9 +313,13 @@ class Parser(private val preference: AbstractPreference) {
                 prependReference.append(reference.fullQualifiedPath)
                 prependReference.className = aliasReference?.literal ?: ""
 
+                prependReference.pos?.extendSelf(aliasReference?.pos)
+
                 references += prependReference
             } else {
                 reference.className = aliasReference?.literal ?: ""
+
+                reference.pos?.extendSelf(aliasReference?.pos)
 
                 references += reference
             }
