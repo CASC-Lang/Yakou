@@ -1,4 +1,4 @@
-use java::lang::System as sys
+use java::lang::*
 
 class Main {
 intl mut:
@@ -31,7 +31,7 @@ impl Main : Rock {
         a.lol()
         a.print()
         b := null
-        sys.out.println(a)
+        System.out.println(a)
         a.local(new Rock("a"))
     }
 
@@ -51,7 +51,7 @@ impl Main : Rock {
     }
 
     fn local(self, atom: Atom) {
-        sys.out.println(atom)
+        System.out.println(atom)
     }
 }
 

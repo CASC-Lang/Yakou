@@ -1,5 +1,6 @@
 package org.casc.lang.checker
 
+import io.github.classgraph.ClassGraph
 import org.casc.lang.ast.*
 import org.casc.lang.ast.Function
 import org.casc.lang.compilation.AbstractPreference
@@ -165,14 +166,34 @@ class Checker(private val preference: AbstractPreference) {
         clazz.usages.mapNotNull {
             it!!.tokens.forEach(::checkIdentifierIsKeyword)
 
-            val type = TypeUtil.asType(it, preference)
+            if (it.className == "*") {
+                if (TypeUtil.asType(it, preference) != null) {
+                    // The full-qualified path represents a class name but a package name
+                    // TODO: This should refers to nested class usage
 
-            if (type == null) {
-                reports.reportUnknownTypeSymbol(it)
+                    listOf()
+                } else {
+                    val classes = ClassGraph()
+                        .acceptPackagesNonRecursive(it.fullQualifiedPath)
+                        .overrideClassLoaders(ClassLoader.getSystemClassLoader())
+                        .scan()
+                    val results = mutableListOf<Reference>()
 
-                null
-            } else it
-        }.forEach(classScope.usages::add)
+                    for (classInfo in classes.allStandardClasses)
+                        results += Reference(classInfo.loadClass().name)
+
+                    results
+                }
+            } else {
+                val type = TypeUtil.asType(it, preference)
+
+                if (type == null) {
+                    reports.reportUnknownTypeSymbol(it)
+
+                    listOf()
+                } else listOf(it)
+            }
+        }.flatten().forEach(classScope.usages::add)
 
         clazz.companionBlock.forEach {
             checkStatement(it, Scope(classScope), PrimitiveType.Unit)
@@ -1251,7 +1272,8 @@ class Checker(private val preference: AbstractPreference) {
                             val currentFoundationType = type.getFoundationType()
 
                             if (latestFoundationType !is PrimitiveType && currentFoundationType !is PrimitiveType) {
-                                latestInferredType = TypeUtil.getCommonType(latestFoundationType, currentFoundationType, preference)
+                                latestInferredType =
+                                    TypeUtil.getCommonType(latestFoundationType, currentFoundationType, preference)
                             } else {
                                 if (!scope.canCast(latestFoundationType, currentFoundationType)) {
                                     if (!forceFinalType && latestFoundationType is PrimitiveType && currentFoundationType is PrimitiveType) {

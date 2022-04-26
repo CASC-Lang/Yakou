@@ -91,12 +91,9 @@ class Parser(private val preference: AbstractPreference) {
     /**
      * peekMultiple is used to determine whether a set of tokens matches specific syntax pattern.
      */
-    private fun peekMultiple(offset: Int, vararg types: TokenType): Boolean {
-        if (offset <= 0 || types.size != offset) return false
-
-        for (i in 0 until offset) {
+    private fun peekMultiple(vararg types: TokenType): Boolean {
+        for (i in types.indices)
             if (peek(i)?.type != types[i]) return false
-        }
 
         return true
     }
@@ -228,7 +225,9 @@ class Parser(private val preference: AbstractPreference) {
 
         tokens += currentIdentifier
 
-        while (peekIf(TokenType.DoubleColon)) {
+        while (hasNext()) {
+            if (!peekMultiple(TokenType.DoubleColon, TokenType.Identifier)) break
+
             consume()
             currentIdentifier = assertUntil(TokenType.Identifier)
 
@@ -268,12 +267,14 @@ class Parser(private val preference: AbstractPreference) {
         val references = mutableListOf<Reference>()
         val reference = parseTypeSymbol()
 
-        if (peekMultiple(2, TokenType.DoubleColon, TokenType.OpenBrace)) {
+        if (peekMultiple(TokenType.DoubleColon, TokenType.OpenBrace)) {
             // use Module::{ SubModuleA::ClassA, SubModuleB::ClassB }
             consume()
             consume()
 
-            while (!peekIf(TokenType.CloseBrace)) {
+            while (hasNext()) {
+                if (peekIf(TokenType.CloseBrace)) break
+
                 references += parseUsage(reference)
 
                 if (peekIf(TokenType.Comma)) {
@@ -283,6 +284,22 @@ class Parser(private val preference: AbstractPreference) {
             }
 
             assertUntil(TokenType.CloseBrace)
+        } else if (peekMultiple(TokenType.DoubleColon, TokenType.Star)) {
+            // Wildcard usage
+            // use Module::*
+            consume()
+            consume()
+
+            if (prependReference != null) {
+                prependReference.append(reference.fullQualifiedPath)
+                prependReference.className = "*"
+
+                references += prependReference
+            } else {
+                reference.className = "*"
+
+                references += reference
+            }
         } else if (peekIf(TokenType.Identifier) && peekIf(Token::isAsKeyword)) {
             // use Module::Class as Cls
             consume()
@@ -759,7 +776,7 @@ class Parser(private val preference: AbstractPreference) {
             if (peekIf(Token::isMutKeyword)) next()
             else null
 
-        if (peekMultiple(2, TokenType.Identifier, TokenType.ColonEqual)) {
+        if (peekMultiple(TokenType.Identifier, TokenType.ColonEqual)) {
             // Variable declaration
             val name = next()
             val operator = next()

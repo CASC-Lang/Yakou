@@ -1,5 +1,6 @@
 package org.casc.lang
 
+import io.github.classgraph.ClassGraph
 import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.compilation.Compilation
 import org.casc.lang.compilation.Error
@@ -10,8 +11,8 @@ import kotlin.system.exitProcess
 fun main(args: Array<String>) {
     val commandType = try {
         args.getOrNull(0)?.let {
-            enumValueOf(it. uppercase ())
-        } ?: if (args.size > 1)  CommandType.COMPILE else CommandType.HELP
+            enumValueOf(it.uppercase())
+        } ?: if (args.size > 1) CommandType.COMPILE else CommandType.HELP
     } catch (_: IllegalArgumentException) {
         CommandType.COMPILE
     }
