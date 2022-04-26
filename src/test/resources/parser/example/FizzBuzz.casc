@@ -1,0 +1,19 @@
+class FizzBuzz
+
+impl FizzBuzz {
+    fn main(s: [str]) {
+        for mut i := 1; i < 100; i = i + 1 {
+            System.out.print(i + " ")
+
+            if i % 3 == 0 {
+                System.out.print("Fizz")
+            }
+
+            if i % 5 == 0 {
+                System.out.print("Buzz")
+            }
+
+            System.out.println()
+        }
+    }
+}
