@@ -1,5 +1,3 @@
-use java::lang::System as sys
-
 class Rule110
 
 impl Rule110 {
@@ -11,12 +9,12 @@ impl Rule110 {
         for mut i := 0; i < cap - 2; i = i + 1 {
             for mut j := 0; j < cap; j = j + 1 {
                 if board[j] == 0 {
-                    sys.out.print(' ')
+                    System.out.print(' ')
                 } else {
-                    sys.out.print('*')
+                    System.out.print('*')
                 }
             }
-            sys.out.print("\n")
+            System.out.print("\n")
 
             mut pattern := (board[0] << 1) | board[1]
             for mut k := 1; k < cap - 1; k = k + 1 {

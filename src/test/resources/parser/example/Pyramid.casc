@@ -1,5 +1,3 @@
-use java::lang::System as sys
-
 class Pyramid
 
 impl Pyramid {
@@ -8,9 +6,9 @@ impl Pyramid {
 
         for mut i := 1; i <= rows; i++ {
             for mut j := 1; j <= i; j++ {
-                sys.out.print(j + " ")
+                System.out.print(j + " ")
             }
-            sys.out.println()
+            System.out.println()
         }
     }
 }

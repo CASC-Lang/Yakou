@@ -1,5 +1,3 @@
-use java::lang::System as sys
-
 mut class Rock {
     mut:
         a: str
