@@ -283,15 +283,20 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
                         expression.type!!.descriptor
                     )
                 } else if (expression.previousExpression != null) {
-                    // Chain Calling
                     emitExpression(methodVisitor, expression.previousExpression!!)
 
-                    methodVisitor.visitFieldInsn(
-                        if (expression.isCompField) Opcodes.GETSTATIC else Opcodes.GETFIELD,
-                        expression.previousExpression?.type?.internalName,
-                        expression.name!!.literal,
-                        expression.type!!.descriptor
-                    )
+                    if (expression.previousExpression!!.type is ArrayType && expression.name!!.literal == "len") {
+                        // Array len calling
+                        methodVisitor.visitInsn(Opcodes.ARRAYLENGTH)
+                    } else {
+                        // Chain Calling
+                        methodVisitor.visitFieldInsn(
+                            if (expression.isCompField) Opcodes.GETSTATIC else Opcodes.GETFIELD,
+                            expression.previousExpression?.type?.internalName,
+                            expression.name!!.literal,
+                            expression.type!!.descriptor
+                        )
+                    }
                 } else if (!expression.isClassName) {
                     if (!expression.isAssignedBy) {
                         // Local variable

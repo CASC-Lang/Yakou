@@ -215,8 +215,10 @@ class Checker(private val preference: AbstractPreference) {
             }
         }.flatten().forEach(classScope.usages::add)
 
+        val companionBlockScope = Scope(classScope)
+
         clazz.companionBlock.forEach {
-            checkStatement(it, Scope(classScope), PrimitiveType.Unit)
+            checkStatement(it, companionBlockScope, PrimitiveType.Unit)
         }
 
         clazz.constructors.forEach {
@@ -658,6 +660,7 @@ class Checker(private val preference: AbstractPreference) {
                 val rightType = checkExpression(expression.rightExpression, scope)
 
                 if (expression.leftExpression is IdentifierCallExpression) {
+                    val leftPreviousType = expression.leftExpression.previousExpression?.type
                     val name = expression.leftExpression.name!!.literal
 
                     fun checkFieldAssignment(field: ClassField?) {
@@ -686,7 +689,13 @@ class Checker(private val preference: AbstractPreference) {
                         }
                     }
 
-                    if (name == "self" || name == "super") {
+                    if (leftPreviousType is ArrayType && name == "len") {
+                        // Unable to assign to a final value
+                        reports += Error(
+                            expression.leftExpression.name.pos,
+                            "Unable to assign value to array type ${leftPreviousType.asCASCStyle()}'s `len` attribute"
+                        )
+                    } else if (name == "self" || name == "super") {
                         // Attempt to override whole owner / parent class
                         reports += Error(
                             expression.leftExpression.pos,
@@ -797,7 +806,9 @@ class Checker(private val preference: AbstractPreference) {
                     val previousType = checkExpression(expression.previousExpression, scope)
                     val field = scope.findField(previousType?.getReference(), expression.name!!.literal)
 
-                    if (field == null) {
+                    if (previousType is ArrayType && expression.name.literal == "len") {
+                        expression.type = PrimitiveType.I32
+                    } else if (field == null) {
                         reports += Error(
                             expression.pos,
                             "Field ${expression.name.literal} does not exist in class ${previousType?.typeName}"
