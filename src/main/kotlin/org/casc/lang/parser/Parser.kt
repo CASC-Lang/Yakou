@@ -288,15 +288,19 @@ class Parser(private val preference: AbstractPreference) {
             // Wildcard usage
             // use Module::*
             consume()
-            consume()
+            val star = next()
 
             if (prependReference != null) {
                 prependReference.append(reference.fullQualifiedPath)
                 prependReference.className = "*"
 
+                prependReference.pos?.extendSelf(star?.pos)
+
                 references += prependReference
             } else {
                 reference.className = "*"
+
+                reference.pos?.extendSelf(star?.pos)
 
                 references += reference
             }
@@ -820,7 +824,7 @@ class Parser(private val preference: AbstractPreference) {
                 condition,
                 trueStatement,
                 elseStatement,
-                ifKeyword?.pos?.extend(trueStatement?.pos)
+                ifKeyword?.pos?.extendSelf(trueStatement?.pos)
             )
         } else if (peekIf(TokenType.OpenBrace)) {
             // Block statement
@@ -830,7 +834,7 @@ class Parser(private val preference: AbstractPreference) {
 
             BlockStatement(
                 statements,
-                openBrace?.pos?.extend(closeBrace?.pos)
+                openBrace?.pos?.extendSelf(closeBrace?.pos)
             )
         } else if (peekIf(Token::isForKeyword)) {
             // Java-style For loop
@@ -980,7 +984,7 @@ class Parser(private val preference: AbstractPreference) {
                         val pos = Position.fromMultipleAndExtend(
                             name?.pos,
                             arguments.lastOrNull()?.pos
-                        )?.extend() // extend additional 1 character for `)`
+                        )?.extendSelf() // extend additional 1 character for `)`
 
                         expression = FunctionCallExpression(
                             null,
@@ -1088,7 +1092,7 @@ class Parser(private val preference: AbstractPreference) {
 
                 assertUntil(TokenType.CloseParenthesis)
 
-                val pos = name?.pos?.extend(arguments.lastOrNull()?.pos)?.extend()
+                val pos = name?.pos?.extend(arguments.lastOrNull()?.pos)?.extendSelf()
 
                 FunctionCallExpression(classPath, memberName, arguments, inCompanionContext, pos = pos)
             } else {

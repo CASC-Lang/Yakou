@@ -1,5 +1,3 @@
-use java::lang::*
-
 class Main {
 intl mut:
     a: i32

@@ -1,5 +1,6 @@
 package org.casc.lang.table
 
+import io.github.classgraph.ClassGraph
 import org.casc.lang.ast.Accessor
 import org.casc.lang.ast.Field
 import org.casc.lang.ast.HasSignature
@@ -48,6 +49,20 @@ data class Scope(
         if (variables.isEmpty() && !isCompScope) {
             // Insert a dummy variable
             registerVariable(true, "dummy", null)
+        }
+    }
+
+    init {
+        if (usages.isEmpty()) {
+            // It was just initialized, add classes under package java.lang
+            val classes = ClassGraph()
+                .acceptPackagesNonRecursive("java.lang")
+                .overrideClassLoaders(ClassLoader.getSystemClassLoader())
+                .scan()
+
+
+            for (classInfo in classes.allStandardClasses)
+                usages += Reference(classInfo.loadClass().name)
         }
     }
 

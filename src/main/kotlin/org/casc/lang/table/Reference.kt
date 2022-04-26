@@ -14,7 +14,7 @@ data class Reference(
     var packagePath: String,
     var className: String,
     val tokens: MutableList<Token?> = mutableListOf(),
-    val pos: Position? = null,
+    var pos: Position? = null,
     var fullQualifiedPath: String = packagePath.let {
         val pkgPath = it.split('.').dropLast(1).joinToString(".")
 
@@ -27,14 +27,14 @@ data class Reference(
         packagePath,
         className,
         tokens.toMutableList(),
-        tokens.firstOrNull()?.pos?.extend(tokens.lastOrNull()?.pos)
+        tokens.firstOrNull()?.pos?.extendSelf(tokens.lastOrNull()?.pos)
     )
 
     constructor(fullQualifiedPath: String, vararg tokens: Token?) : this(
         fullQualifiedPath.split('.').dropLast(1).joinToString("."),
         fullQualifiedPath.split('.').last(),
         tokens.toMutableList(),
-        tokens.firstOrNull()?.pos?.extend(tokens.lastOrNull()?.pos),
+        tokens.firstOrNull()?.pos?.extendSelf(tokens.lastOrNull()?.pos),
         fullQualifiedPath = fullQualifiedPath
     )
 

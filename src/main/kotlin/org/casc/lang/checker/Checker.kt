@@ -173,14 +173,25 @@ class Checker(private val preference: AbstractPreference) {
 
                     listOf()
                 } else {
-                    val classes = ClassGraph()
-                        .acceptPackagesNonRecursive(it.fullQualifiedPath)
-                        .overrideClassLoaders(ClassLoader.getSystemClassLoader())
-                        .scan()
                     val results = mutableListOf<Reference>()
 
-                    for (classInfo in classes.allStandardClasses)
-                        results += Reference(classInfo.loadClass().name)
+                    if (it.fullQualifiedPath == "java.lang") {
+                        // Already added by CASC internally
+                        reports += Warning(
+                            it.pos,
+                            "package `java.lang` has been added by compiler under the hood",
+                            "Consider remove this usage"
+                        )
+                    } else {
+                        val classes = ClassGraph()
+                            .acceptPackagesNonRecursive(it.fullQualifiedPath)
+                            .overrideClassLoaders(ClassLoader.getSystemClassLoader())
+                            .scan()
+
+
+                        for (classInfo in classes.allStandardClasses)
+                            results += Reference(classInfo.loadClass().name)
+                    }
 
                     results
                 }

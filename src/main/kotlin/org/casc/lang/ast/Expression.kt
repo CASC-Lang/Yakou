@@ -115,7 +115,7 @@ sealed class Expression {
         var referenceFunctionSignature: FunctionSignature? = null, // Needs to be provided by checker
         var previousExpression: Expression? = null, // Used in chain calling, e.g. Identifier `a` in a.lol()
         override var retainValue: Boolean = false,
-        override val pos: Position? = name?.pos?.extend(arguments.lastOrNull()?.pos)?.extend()
+        override val pos: Position? = name?.pos?.extend(arguments.lastOrNull()?.pos)?.extendSelf()
     ) : Expression(), InvokeCall {
         override fun getExpressions(): List<Expression?> =
             arguments
