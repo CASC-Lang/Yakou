@@ -7,7 +7,7 @@ impl Rule110 {
 
         for mut i := 0; i < board.len - 2; i = i + 1 {
             for mut j := 0; j < board.len; j = j + 1 {
-                System.out.print(if board[j] == 0 { ' ' } else {  })
+                System.out.print(if board[j] == 0 { ' ' } else { '*' })
             }
             System.out.print("\n")
 
