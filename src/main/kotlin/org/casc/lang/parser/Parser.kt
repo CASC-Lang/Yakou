@@ -1089,7 +1089,8 @@ class Parser(private val preference: AbstractPreference) {
             elseStatement,
             Position.fromMultipleAndExtend(
                 ifKeyword?.pos,
-                trueStatement?.pos
+                trueStatement?.pos,
+                elseStatement?.pos
             )
         )
     }
