@@ -249,6 +249,8 @@ class Compilation(private val preference: AbstractPreference) {
                     file = declarationCheckedFile
                     reports = declarationReports
                     scope = classScope
+
+                    Table.cachedClasses += declarationCheckedFile.clazz.getReference() to declarationCheckedFile
                 }
 
                 reports.forEach { it.printReport(outputFileName, source) }
