@@ -10,6 +10,7 @@ import org.casc.lang.compilation.Warning
 import org.casc.lang.table.*
 import org.casc.lang.utils.getOrElse
 import java.lang.reflect.Modifier
+import kotlin.math.sign
 import java.io.File as JFile
 
 class Checker(private val preference: AbstractPreference) {
@@ -474,7 +475,7 @@ class Checker(private val preference: AbstractPreference) {
                             *statement.expressions.filterNotNull().map(Expression::pos).toTypedArray()
                         ), "Cannot declare single variable with multiple expressions given"
                     )
-                } else if (variablesSize != expressionsSize) {
+                } else if (expressionsSize > 1 && variablesSize != expressionsSize) {
                     // unequal expressions size to variables size is not allowed
                     reports += Error(
                         Position.fromMultipleAndExtend(
