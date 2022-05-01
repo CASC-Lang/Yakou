@@ -23,6 +23,10 @@ impl Main : Rock {
         q := [[i32;];]{ [;]{ 1 } }
         r := [[i32; 3];3]{}
         System.out.println(q.len)
+
+        if f > 1 {
+            System.out.println("Yes")
+        }
     }
 
     fn main(args: [str]) {

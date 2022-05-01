@@ -893,6 +893,8 @@ class Parser(private val preference: AbstractPreference) {
                 statements += parseStatement(inCompanionContext)
             }
 
+            assertUntil(TokenType.CloseBrace)
+
             JForStatement(
                 initStatement,
                 condition,
