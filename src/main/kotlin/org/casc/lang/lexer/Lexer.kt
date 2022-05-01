@@ -316,7 +316,9 @@ class Lexer(private val preference: AbstractPreference) {
                             var unicodeHexBuilder = ""
 
                             for (i in 0 until 4) {
-                                if (peek().digitToIntOrNull() != null || peek() in 'A'..'F') {
+                                val current = peek()
+
+                                if (current.digitToIntOrNull() != null || current in 'a' .. 'f' || current in 'A'..'F') {
                                     unicodeHexBuilder += peekInc()
                                 } else {
                                     reports += Error(
@@ -414,7 +416,9 @@ class Lexer(private val preference: AbstractPreference) {
                                     break
                                 }
 
-                                if (peek().digitToIntOrNull() != null || peek() in 'A'..'F') {
+                                val current = peek()
+
+                                if (current.digitToIntOrNull() != null || current in 'a' .. 'f' || current in 'A'..'F') {
                                     unicodeHexBuilder += peekInc()
                                 } else if (peek() == '\'') {
                                     reports += Error(
