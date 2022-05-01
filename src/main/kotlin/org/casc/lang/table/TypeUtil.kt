@@ -11,7 +11,7 @@ object TypeUtil {
     fun asType(reference: Reference?, preference: AbstractPreference): Type? =
         reference?.let {
             asArrayType(reference, preference)
-                ?: PrimitiveType.values.find { it.typeName == reference.fullQualifiedPath }
+                ?: PrimitiveType.values.find { it.typeName == reference.fullQualifiedPath || it.internalName == reference.fullQualifiedPath }
                 ?: Table.findType(reference)
                 ?: try {
                     val clazz = preference.classLoader.loadClass(reference.fullQualifiedPath)
