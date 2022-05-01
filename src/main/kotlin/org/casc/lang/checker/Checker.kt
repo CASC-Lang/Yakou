@@ -459,8 +459,7 @@ class Checker(private val preference: AbstractPreference) {
         statement: Statement?,
         scope: Scope,
         returnType: Type,
-        retainLastExpression: Boolean = false,
-        useSameScope: Boolean = false
+        retainLastExpression: Boolean = false
     ) {
         when (statement) {
             is VariableDeclaration -> {
@@ -483,11 +482,16 @@ class Checker(private val preference: AbstractPreference) {
                         ), "Unequal expressions size to variables size"
                     )
                 } else {
-                    val expressionTypes = statement.expressions.mapNotNull { checkExpression(it, scope) }
+                    val expressions = statement.expressions
+                    val expressionTypes = mutableListOf<Type?>()
 
                     for ((i, variable) in statement.variables.withIndex()) {
                         val (mutKeyword, nameToken) = variable
-                        val type = if (expressionTypes.size == 1) expressionTypes[0] else expressionTypes[i]
+                        val type = if (expressions.size == 1) {
+                            if (i == 0)
+                                expressionTypes += checkExpression(expressions[0], scope)
+                            expressionTypes[0]
+                        } else checkExpression(expressions[i], scope)
                         val name = nameToken!!.literal
 
                         if (name == "self" || name == "super") {
@@ -535,7 +539,7 @@ class Checker(private val preference: AbstractPreference) {
             is JForStatement -> {
                 val innerScope = Scope(scope, isLoopScope = true)
 
-                checkStatement(statement.initStatement, innerScope, returnType, useSameScope = true)
+                checkStatement(statement.initStatement, innerScope, returnType)
 
                 if (statement.condition != null) {
                     val conditionType = checkExpression(statement.condition, innerScope)
@@ -551,13 +555,15 @@ class Checker(private val preference: AbstractPreference) {
 
                 checkExpression(statement.postExpression, innerScope)
 
-                checkStatement(statement.statement, innerScope, returnType, useSameScope = true)
+                for (innerStatement in statement.statements) {
+                    checkStatement(innerStatement, innerScope, returnType)
+                }
             }
             is BlockStatement -> {
                 statement.statements.forEachIndexed { i, it ->
                     checkStatement(
                         it!!,
-                        if (useSameScope) scope else Scope(scope),
+                        Scope(scope),
                         returnType,
                         if (i == statement.statements.size - 1) retainLastExpression else false
                     )

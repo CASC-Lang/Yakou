@@ -26,7 +26,7 @@ sealed class Statement {
         val initStatement: Statement?,
         val condition: Expression?,
         val postExpression: Expression?,
-        val statement: Statement?,
+        val statements: List<Statement?>,
         override val pos: Position?
     ) : Statement()
 

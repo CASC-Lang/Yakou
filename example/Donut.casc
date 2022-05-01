@@ -1,0 +1,33 @@
+use java::util::Arrays as Arr
+
+class Donut
+
+impl Donut {
+    fn main(args: [str]) {
+        k := 0
+        A, B := 0D
+        z := [f64; 1760]{}
+        b := [char; 1760]{}
+        System.out.println("\u001b[2J")
+        for ;; {
+            Arr.fill(b, ' ')
+            Arr.fill(z, 0D)
+            for mut j := 0D; 6.28 > j; j = j + 0.07 {
+                for mut i := 0D; 6.28 > i; i = i + 0.02 {
+                    c, d, e, f, g, h, D, l, m, n, t :=
+                        Math.sin(i),
+                        Math.cos(j),
+                        Math.sin(A),
+                        Math.sin(j),
+                        Math.cos(A),
+                        d + 2,
+                        1 / (c * h * e + f * g + 5),
+                        Math.cos(i),
+                        Math.cos(B),
+                        Math.sin(B),
+                        c * h * g - f * e
+                }
+            }
+        }
+    }
+}

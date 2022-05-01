@@ -877,21 +877,28 @@ class Parser(private val preference: AbstractPreference) {
             val forKeyword = next()
             val initStatement = if (!peekIf(TokenType.SemiColon)) parseStatement(inCompanionContext) else null
 
-            assert(TokenType.SemiColon)
+            assertUntil(TokenType.SemiColon)
 
             val condition = if (!peekIf(TokenType.SemiColon)) parseExpression(inCompanionContext, true) else null
 
-            assert(TokenType.SemiColon)
+            assertUntil(TokenType.SemiColon)
 
             val postExpression = if (!peekIf(TokenType.OpenBrace)) parseExpression(inCompanionContext) else null
-            val statement = parseStatement(inCompanionContext)
+
+            assertUntil(TokenType.OpenBrace)
+
+            val statements = mutableListOf<Statement?>()
+
+            while (!peekIf(TokenType.CloseBrace)) {
+                statements += parseStatement(inCompanionContext)
+            }
 
             JForStatement(
                 initStatement,
                 condition,
                 postExpression,
-                statement,
-                forKeyword?.pos?.extend(statement?.pos)
+                statements,
+                forKeyword?.pos
             )
         } else {
             val expression = parseExpression(inCompanionContext)

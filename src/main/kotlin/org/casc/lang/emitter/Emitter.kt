@@ -206,7 +206,9 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
 
                 methodVisitor.visitJumpInsn(Opcodes.IFEQ, endLabel)
 
-                emitStatement(methodVisitor, statement.statement!!)
+                for (innerStatement in statement.statements) {
+                    emitStatement(methodVisitor, innerStatement!!)
+                }
 
                 if (statement.postExpression != null)
                     emitExpression(methodVisitor, statement.postExpression)
@@ -667,21 +669,45 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         val endLabel = Label()
 
         if (expression is BinaryExpression) {
-            val opcode = when (expression.operator!!.type) {
-                TokenType.EqualEqual ->
-                    if (expression.getExpressions().any { it?.type == PrimitiveType.Null })
-                        Opcodes.IFNONNULL else Opcodes.IF_ICMPEQ
-                TokenType.BangEqual ->
-                    if (expression.getExpressions().any { it?.type == PrimitiveType.Null })
-                        Opcodes.IFNULL else Opcodes.IF_ICMPNE
-                TokenType.Greater -> Opcodes.IF_ICMPGT
-                TokenType.GreaterEqual -> Opcodes.IF_ICMPGE
-                TokenType.Lesser -> Opcodes.IF_ICMPLT
-                TokenType.LesserEqual -> Opcodes.IF_ICMPLE
-                else -> -1 // Should not be -1
-            }
+            val leftExpression = expression.left!!
+            val leftType = leftExpression.castTo ?: leftExpression.type
 
-            methodVisitor.visitJumpInsn(opcode, trueLabel)
+            if (leftType == PrimitiveType.I64 || leftType == PrimitiveType.F32 || leftType == PrimitiveType.F64) {
+                when (leftType) {
+                    PrimitiveType.I64 -> methodVisitor.visitInsn(Opcodes.LCMP)
+                    PrimitiveType.F32 -> methodVisitor.visitInsn(Opcodes.FCMPG)
+                    PrimitiveType.F64 -> methodVisitor.visitInsn(Opcodes.DCMPG)
+                    else -> {}
+                }
+
+                val opcode = when (expression.operator!!.type) {
+                    TokenType.EqualEqual -> Opcodes.IFEQ
+                    TokenType.BangEqual -> Opcodes.IFNE
+                    TokenType.Greater -> Opcodes.IFGT
+                    TokenType.GreaterEqual -> Opcodes.IFGE
+                    TokenType.Lesser -> Opcodes.IFLT
+                    TokenType.LesserEqual -> Opcodes.IFLE
+                    else -> -1 // Should not be -1
+                }
+
+                methodVisitor.visitJumpInsn(opcode, trueLabel)
+            } else {
+                val opcode = when (expression.operator!!.type) {
+                    TokenType.EqualEqual ->
+                        if (expression.getExpressions().any { it?.type == PrimitiveType.Null })
+                            Opcodes.IFNONNULL else Opcodes.IF_ICMPEQ
+                    TokenType.BangEqual ->
+                        if (expression.getExpressions().any { it?.type == PrimitiveType.Null })
+                            Opcodes.IFNULL else Opcodes.IF_ICMPNE
+                    TokenType.Greater -> Opcodes.IF_ICMPGT
+                    TokenType.GreaterEqual -> Opcodes.IF_ICMPGE
+                    TokenType.Lesser -> Opcodes.IF_ICMPLT
+                    TokenType.LesserEqual -> Opcodes.IF_ICMPLE
+                    else -> -1 // Should not be -1
+                }
+
+                methodVisitor.visitJumpInsn(opcode, trueLabel)
+            }
         } else if (expression is UnaryExpression) {
             methodVisitor.visitJumpInsn(Opcodes.IFEQ, trueLabel)
         }
