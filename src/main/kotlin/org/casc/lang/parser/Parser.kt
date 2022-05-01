@@ -789,7 +789,8 @@ class Parser(private val preference: AbstractPreference) {
         // a := will be identified as variable declaration
         // a, (mut | ID) will be also identified as variable declaration
         if (peekMultiple(TokenType.Identifier, TokenType.ColonEqual) ||
-            peekMultiple(TokenType.Identifier, TokenType.Comma)) {
+            peekMultiple(TokenType.Identifier, TokenType.Comma)
+        ) {
             // Variable declaration
             // mut a := 1
             // mut a, b := 1
@@ -874,15 +875,15 @@ class Parser(private val preference: AbstractPreference) {
         } else if (peekIf(Token::isForKeyword)) {
             // Java-style For loop
             val forKeyword = next()
-            val initStatement = parseStatement(inCompanionContext)
+            val initStatement = if (!peekIf(TokenType.SemiColon)) parseStatement(inCompanionContext) else null
 
             assert(TokenType.SemiColon)
 
-            val condition = parseExpression(inCompanionContext, true)
+            val condition = if (!peekIf(TokenType.SemiColon)) parseExpression(inCompanionContext, true) else null
 
             assert(TokenType.SemiColon)
 
-            val postExpression = parseExpression(inCompanionContext)
+            val postExpression = if (!peekIf(TokenType.OpenBrace)) parseExpression(inCompanionContext) else null
             val statement = parseStatement(inCompanionContext)
 
             JForStatement(
