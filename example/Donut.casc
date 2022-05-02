@@ -3,10 +3,6 @@ use java::util::Arrays as Arr
 class Donut
 
 impl Donut {
-    fn cond(y: i32, x: i32, D: f64, z: [f64], o: i32): bool {
-        return 22 > y && y > 0 && x > 0 && 80 > x && D > z[o]
-    }
-
     fn main(args: [str]) {
         mut A, mut B := 0D
         z := [f64; 1760]{}
