@@ -143,7 +143,7 @@ class Lexer(private val preference: AbstractPreference) {
         }
 
         tokens += Token(
-            currentLine.substring(start until pos - if (endsWithDot) 1 else 0),
+            currentLine.substring(start until pos),
             if (isFloatingPointNumber) TokenType.FloatLiteral
             else TokenType.IntegerLiteral,
             Position(lineNumber, start, pos)
