@@ -1006,66 +1006,71 @@ class Parser(private val preference: AbstractPreference) {
             }
         }
 
-        if (expression is IdentifierCallExpression || expression is FunctionCallExpression
-            || expression is ConstructorCallExpression || expression is IndexExpression
-            || expression is ParenthesizedExpression
-        ) {
-            while (true) {
-                if (peekIf(TokenType.Dot)) {
-                    // Chain calling
+        while (peekIf(TokenType.Dot) || peekIf(TokenType.OpenBracket) || peekIf(Token::isAsKeyword)) {
+            if (peekIf(TokenType.Dot)) {
+                // Chain calling
+                consume()
+
+                val name = assertUntil(TokenType.Identifier)
+
+                if (peekIf(TokenType.OpenParenthesis)) {
+                    // Member function
+                    // owner.memberFunction()
                     consume()
 
-                    val name = assertUntil(TokenType.Identifier)
+                    val arguments = parseArguments(inCompanionContext)
 
-                    if (peekIf(TokenType.OpenParenthesis)) {
-                        // Member function
-                        // owner.memberFunction()
-                        consume()
+                    assertUntil(TokenType.CloseParenthesis)
 
-                        val arguments = parseArguments(inCompanionContext)
+                    val pos = Position.fromMultipleAndExtend(
+                        name?.pos,
+                        arguments.lastOrNull()?.pos
+                    )?.extendSelf() // extend additional 1 character for `)`
 
-                        assertUntil(TokenType.CloseParenthesis)
-
-                        val pos = Position.fromMultipleAndExtend(
-                            name?.pos,
-                            arguments.lastOrNull()?.pos
-                        )?.extendSelf() // extend additional 1 character for `)`
-
-                        expression = FunctionCallExpression(
-                            null,
-                            name,
-                            arguments,
-                            inCompanionContext,
-                            previousExpression = expression,
-                            pos = pos
-                        )
-                    } else {
-                        // Member field
-                        // owner.memberField
-                        expression = IdentifierCallExpression(
-                            null,
-                            name,
-                            previousExpression = expression,
-                            pos = name?.pos?.extend(name.pos)
-                        )
-                    }
-                } else if (peekIf(TokenType.OpenBracket)) {
-                    // Index expression
-                    consume()
-
-                    val indexExpression = parseExpression(inCompanionContext, true)
-
-                    val closeBracket = assertUntil(TokenType.CloseBracket)
-
-                    expression = IndexExpression(
-                        expression,
-                        indexExpression,
-                        pos = Position.fromMultipleAndExtend(
-                            expression?.pos,
-                            closeBracket?.pos
-                        )
+                    expression = FunctionCallExpression(
+                        null,
+                        name,
+                        arguments,
+                        inCompanionContext,
+                        previousExpression = expression,
+                        pos = pos
                     )
-                } else break
+                } else {
+                    // Member field
+                    // owner.memberField
+                    expression = IdentifierCallExpression(
+                        null,
+                        name,
+                        previousExpression = expression,
+                        pos = name?.pos?.extend(name.pos)
+                    )
+                }
+            } else if (peekIf(TokenType.OpenBracket)) {
+                // Index expression
+                consume()
+
+                val indexExpression = parseExpression(inCompanionContext, true)
+
+                val closeBracket = assertUntil(TokenType.CloseBracket)
+
+                expression = IndexExpression(
+                    expression,
+                    indexExpression,
+                    pos = Position.fromMultipleAndExtend(
+                        expression?.pos,
+                        closeBracket?.pos
+                    )
+                )
+            } else if (peekIf(Token::isAsKeyword)) {
+                // As expression
+                consume()
+
+                val targetTypeReference = parseTypeSymbol()
+
+                expression = AsExpression(
+                    expression,
+                    targetTypeReference
+                )
             }
         }
 
