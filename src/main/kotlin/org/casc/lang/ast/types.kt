@@ -26,3 +26,4 @@ typealias ParenthesizedExpression = Expression.ParenthesizedExpression
 typealias ArrayInitialization = Expression.ArrayInitialization
 typealias ArrayDeclaration = Expression.ArrayDeclaration
 typealias IfExpression = Expression.IfExpression
+typealias AsExpression = Expression.AsExpression

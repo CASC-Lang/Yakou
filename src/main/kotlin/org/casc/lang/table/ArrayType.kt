@@ -76,7 +76,8 @@ data class ArrayType(
                     PrimitiveType.I8 -> Opcodes.BALOAD
                     else -> null
                 }
-            } else if (baseType == PrimitiveType.Char) Opcodes.IALOAD
+            } else if (baseType == PrimitiveType.Char) Opcodes.CALOAD
+            else if (baseType == PrimitiveType.Bool) Opcodes.BALOAD
             else if (baseType == PrimitiveType.Str) Opcodes.AALOAD
             else null
     }
@@ -94,7 +95,8 @@ data class ArrayType(
                     PrimitiveType.I8 -> Opcodes.BASTORE
                     else -> null
                 }
-            } else if (baseType == PrimitiveType.Char) Opcodes.IASTORE
+            } else if (baseType == PrimitiveType.Char) Opcodes.CASTORE
+            else if (baseType == PrimitiveType.Bool) Opcodes.BASTORE
             else if (baseType == PrimitiveType.Str) Opcodes.AASTORE
             else null
     }

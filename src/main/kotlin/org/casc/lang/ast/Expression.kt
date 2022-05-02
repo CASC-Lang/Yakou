@@ -4,6 +4,8 @@ import org.casc.lang.table.FunctionSignature
 import org.casc.lang.table.PrimitiveType
 import org.casc.lang.table.Reference
 import org.casc.lang.table.Type
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.TypeReference
 
 sealed class Expression {
     companion object {
@@ -219,5 +221,12 @@ sealed class Expression {
         val trueStatement: Statement?,
         val elseStatement: Statement?,
         override val pos: Position?
+    ) : Expression()
+
+    data class AsExpression(
+        val expression: Expression?,
+        val targetTypeReference: Reference?,
+        var castOpcode: Int = Opcodes.CHECKCAST,
+        override val pos: Position? = Position.fromMultipleAndExtend(expression?.pos, targetTypeReference?.pos)
     ) : Expression()
 }

@@ -3,9 +3,12 @@ use java::util::Arrays as Arr
 class Donut
 
 impl Donut {
+    fn cond(y: i32, x: i32, D: f64, z: [f64], o: i32): bool {
+        return 22 > y && y > 0 && x > 0 && 80 > x && D > z[o]
+    }
+
     fn main(args: [str]) {
-        k := 0
-        A, B := 0D
+        mut A, mut B := 0D
         z := [f64; 1760]{}
         b := [char; 1760]{}
         System.out.println("\u001b[2J")
@@ -26,8 +29,24 @@ impl Donut {
                         Math.cos(B),
                         Math.sin(B),
                         c * h * g - f * e
+                    x, y, o, N :=
+                        (40 + 30 * D * (l * h * m - t * n)) as i32,
+                        (12 + 15 * D * (l * h * n + t * m)) as i32,
+                        x + 80 * y,
+                        (8 * ((f * e - c * d * g) * m - c * d * e - f * g - l * d * n)) as i32
+                    if 22 > y && y > 0 && x > 0 && 80 > x && D > z[o] {
+                        z[o] = D
+                        b[o] = [char;]{'.', ',', '-', '~', ':', ';', '=', '!', '*', '#', '$', '@'}[Math.max(N, 0)]
+                    }
                 }
             }
+
+            System.out.print("\u001b[H")
+            for mut k := 0; 1761 > k; k++ {
+                System.out.print(if k % 80 > 0 { b[k] } else { '\u000a' })
+            }
+            A = A + 0.04
+            B = B + 0.02
         }
     }
 }

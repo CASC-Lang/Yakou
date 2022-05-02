@@ -45,12 +45,7 @@ data class Scope(
         parent.scopeDepth + 1,
         isCompScope,
         isLoopScope
-    ) {
-        if (variables.isEmpty() && !isCompScope) {
-            // Insert a dummy variable
-            registerVariable(true, "dummy", null)
-        }
-    }
+    )
 
     init {
         if (usages.isEmpty()) {

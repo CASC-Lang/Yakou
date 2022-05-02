@@ -116,8 +116,8 @@ class Checker(private val preference: AbstractPreference) {
             Accessor.Pub -> {}
             Accessor.Prot -> {
                 val accessible = targetOwnerClass.type(preference)?.isAssignableFrom(
-                        currentScope.findType(currentScope.classReference)?.type(preference) ?: Any::class.java
-                    ).getOrElse()
+                    currentScope.findType(currentScope.classReference)?.type(preference) ?: Any::class.java
+                ).getOrElse()
 
                 if (!accessible) {
                     reports += Error(
@@ -241,10 +241,10 @@ class Checker(private val preference: AbstractPreference) {
         // Check if parameter has duplicate names
         val localScope = Scope(scope)
         val duplicateParameters = constructor.parameters.groupingBy {
-                checkIdentifierIsKeyword(it.name)
+            checkIdentifierIsKeyword(it.name)
 
-                it.name
-            }.eachCount().filter { it.value > 1 }
+            it.name
+        }.eachCount().filter { it.value > 1 }
         var validationPass = true
 
         if (duplicateParameters.isNotEmpty()) {
@@ -295,10 +295,10 @@ class Checker(private val preference: AbstractPreference) {
         // Validate types first then register it to scope
         // Check if parameter has duplicate names
         val duplicateParameters = function.parameters.groupingBy {
-                checkIdentifierIsKeyword(it.name)
+            checkIdentifierIsKeyword(it.name)
 
-                it.name
-            }.eachCount().filter { it.value > 1 }
+            it.name
+        }.eachCount().filter { it.value > 1 }
         var validationPass = true
 
         if (duplicateParameters.isNotEmpty()) {
@@ -444,6 +444,10 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkFunctionBody(function: Function, scope: Scope) {
+        if (function.selfKeyword != null) {
+            scope.registerVariable(true, "self", TypeUtil.asType(scope.classReference, preference))
+        }
+
         function.parameters.forEachIndexed { i, parameter ->
             scope.registerVariable(false, parameter.name!!.literal, function.parameterTypes?.get(i))
         }
@@ -726,7 +730,7 @@ class Checker(private val preference: AbstractPreference) {
                         }
                     }
                 } else if (expression.leftExpression is IndexExpression) {
-                    expression.leftExpression.isAssignedBy = expression.rightExpression !is IndexExpression
+                    expression.leftExpression.isAssignedBy = true
                 } else {
                     reports += Error(
                         expression.leftExpression?.pos,
@@ -1192,6 +1196,53 @@ class Checker(private val preference: AbstractPreference) {
                     reports += Error(
                         expression.pos, "If expression must have else clause"
                     )
+                }
+
+                expression.type
+            }
+            is AsExpression -> {
+                val originalType = checkExpression(expression.expression, scope)
+                val targetType = TypeUtil.asType(expression.targetTypeReference, preference)
+
+                if (originalType is PrimitiveType) {
+                    if (targetType is ClassType || targetType is ArrayType) {
+                        reports += Error(
+                            expression.targetTypeReference?.pos,
+                            "Cannot cast primitive type `${originalType.asCASCStyle()}` into non-primitive type `${targetType.asCASCStyle()}`"
+                        )
+                    } else if (targetType is PrimitiveType) {
+                        val castingOpcode = TypeUtil.findPrimitiveCastOpcode(originalType, targetType)
+
+                        if (castingOpcode != null) {
+                            expression.castOpcode = castingOpcode
+                            expression.type = targetType
+                        } else {
+                            // Cannot find casting relative
+                            reports += Error(
+                                expression.targetTypeReference?.pos,
+                                "Cannot cast primitive type `${originalType.asCASCStyle()}` into non-primitive type `${targetType.asCASCStyle()}`"
+                            )
+                        }
+                    }
+                } else if (originalType is ClassType) {
+                    if (targetType is PrimitiveType) {
+                        reports += Error(
+                            expression.targetTypeReference?.pos,
+                            "Cannot cast non-primitive type `${originalType.asCASCStyle()}` into primitive type `${targetType.asCASCStyle()}`"
+                        )
+                    } else expression.type = targetType
+                } else if (originalType is ArrayType) {
+                    if (targetType is PrimitiveType) {
+                        reports += Error(
+                            expression.targetTypeReference?.pos,
+                            "Cannot cast array type `${originalType.asCASCStyle()}` into primitive type `${targetType.asCASCStyle()}`"
+                        )
+                    } else if (targetType is ClassType) {
+                        reports += Error(
+                            expression.targetTypeReference?.pos,
+                            "Cannot cast array type `${originalType.asCASCStyle()}` into class type `${targetType.asCASCStyle()}`"
+                        )
+                    } else expression.type = targetType
                 }
 
                 expression.type

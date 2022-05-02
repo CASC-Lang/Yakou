@@ -17,7 +17,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         emitFile(file)
 
     private fun emitFile(file: File): ByteArray {
-        val bytecode = emitClass(file.clazz)
+        val bytecode = emitClass(file.path, file.clazz)
         val outFile = JFile(preference.outputDir, "/${file.clazz.name!!.literal}.class")
 
         if (!preference.noEmit) {
@@ -33,7 +33,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         return bytecode
     }
 
-    private fun emitClass(clazz: Class): ByteArray {
+    private fun emitClass(sourceFile: String, clazz: Class): ByteArray {
         val classWriter =
             CommonClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS, preference.classLoader)
 
@@ -45,6 +45,8 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
             clazz.parentClassReference?.fullQualifiedPath ?: "java/lang/Object",
             null
         )
+
+        classWriter.visitSource(sourceFile, null)
 
         if (!declarationOnly) {
             clazz.fields.forEach {
@@ -535,6 +537,16 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
                 emitStatement(methodVisitor, expression.elseStatement!!)
 
                 methodVisitor.visitLabel(endLabel)
+            }
+            is AsExpression -> {
+                emitExpression(methodVisitor, expression.expression!!)
+
+                if (expression.type is PrimitiveType) {
+                    // It must be primitive-to-primitive casting
+                    methodVisitor.visitInsn(expression.castOpcode)
+                } else {
+                    // It must be object-to-object casting
+                }
             }
         }
 

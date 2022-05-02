@@ -24,7 +24,7 @@ impl Main : Rock {
         r := [[i32; 3];3]{}
         System.out.println(q.len)
 
-        if f >= 1 {
+        if 22 > c && c > 0 {
             System.out.println("Yes")
         }
     }
