@@ -733,7 +733,9 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
 
     private fun emitAndOrOperators(
         methodVisitor: MethodVisitor,
-        expression: BinaryExpression
+        expression: BinaryExpression,
+        trueBranch: Label,
+        falseBranch: Label,
     ) {
         val operatorType = expression.operator!!.type
         val trueLabel = Label()
