@@ -435,8 +435,6 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
             is BinaryExpression -> {
                 when (expression.operator?.type) {
                     TokenType.DoubleAmpersand, TokenType.DoublePipe -> {
-                        emitBinaryExpressions(methodVisitor, expression.left!!, expression.right!!)
-
                         emitAndOrOperators(methodVisitor, expression)
                     }
                     TokenType.Greater, TokenType.GreaterEqual, TokenType.Lesser,
