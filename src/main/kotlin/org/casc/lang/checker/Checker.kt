@@ -240,6 +240,8 @@ class Checker(private val preference: AbstractPreference) {
         // Validate types first then register it to scope
         // Check if parameter has duplicate names
         val localScope = Scope(scope)
+        localScope.registerVariable(true, "self", TypeUtil.asType(localScope.classReference, preference))
+
         val duplicateParameters = constructor.parameters.groupingBy {
             checkIdentifierIsKeyword(it.name)
 
@@ -290,6 +292,7 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkFunction(function: Function, scope: Scope): Function {
+        val localScope = Scope(scope)
         checkIdentifierIsKeyword(function.name)
 
         // Validate types first then register it to scope
@@ -312,7 +315,7 @@ class Checker(private val preference: AbstractPreference) {
             validationPass = false
         } else {
             function.parameterTypes = function.parameters.map {
-                val type = findType(it.typeReference, scope)
+                val type = findType(it.typeReference, localScope)
 
                 if (type == null) {
                     reports.reportUnknownTypeSymbol(it.typeReference!!)
@@ -387,6 +390,8 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkConstructorBody(constructor: Constructor, scope: Scope) {
+        scope.registerVariable(true, "self", TypeUtil.asType(scope.classReference, preference))
+
         if (constructor.superKeyword != null) {
             // `super` call
             val superCallSignature = scope.findSignature(
