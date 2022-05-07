@@ -194,19 +194,18 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
                 }
             }
             is JForStatement -> {
-                if (statement.initStatement != null)
-                    emitStatement(methodVisitor, statement.initStatement)
-
                 val startLabel = Label()
                 val endLabel = Label()
 
+                if (statement.initStatement != null)
+                    emitStatement(methodVisitor, statement.initStatement)
+
                 methodVisitor.visitLabel(startLabel)
 
-                if (statement.condition != null)
+                if (statement.condition != null) {
                     emitExpression(methodVisitor, statement.condition)
-                else methodVisitor.visitInsn(Opcodes.ICONST_1)
-
-                methodVisitor.visitJumpInsn(Opcodes.IFEQ, endLabel)
+                    methodVisitor.visitJumpInsn(Opcodes.IFEQ, endLabel)
+                }
 
                 for (innerStatement in statement.statements) {
                     emitStatement(methodVisitor, innerStatement!!)
@@ -733,9 +732,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
 
     private fun emitAndOrOperators(
         methodVisitor: MethodVisitor,
-        expression: BinaryExpression,
-        trueBranch: Label,
-        falseBranch: Label,
+        expression: BinaryExpression
     ) {
         val operatorType = expression.operator!!.type
         val trueLabel = Label()
