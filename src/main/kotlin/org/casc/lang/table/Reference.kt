@@ -22,6 +22,10 @@ data class Reference(
         else "$pkgPath."
     } + className
 ) {
+    companion object {
+        val OBJECT_TYPE_REFERENCE = Reference(Any::class.java)
+    }
+
     constructor(clazz: Class<*>) : this(clazz.name, clazz.simpleName)
     constructor(packagePath: String?, className: String?, vararg tokens: Token?) : this(
         "${if (packagePath != null) "${packagePath}/" else ""}${className ?: ""}",
