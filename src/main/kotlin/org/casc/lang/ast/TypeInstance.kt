@@ -7,7 +7,7 @@ sealed class TypeInstance(open val packageReference: Reference?, open val typeRe
     var traitImpls: List<TraitImpl>? = null
     var memberTypeInstances: List<TypeInstance>? = null
 
-    val getReference: Reference by lazy {
+    val reference: Reference by lazy {
         Reference(packageReference?.fullQualifiedPath, typeReference?.fullQualifiedPath)
     }
 }
