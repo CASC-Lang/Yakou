@@ -110,9 +110,8 @@ class Compilation(private val preference: AbstractPreference) {
                          * Check all AST declaration's validity
                          */
                         val checker = Checker(preference)
-                        val (declarationCheckingReports, checkedFile, classScope) = checker.checkDeclaration(file)
+                        val (declarationCheckingReports, classScope) = checker.checkDeclaration(file)
 
-                        compilationUnit.file = checkedFile
                         compilationUnit.reports += declarationCheckingReports
                         compilationUnit.scope = classScope
                     }
@@ -249,13 +248,12 @@ class Compilation(private val preference: AbstractPreference) {
                     /**
                      * Checks complex syntax validity and variables' type.
                      */
-                    val (declarationReports, declarationCheckedFile, classScope) = checker.checkDeclaration(file!!)
+                    val (declarationReports, classScope) = checker.checkDeclaration(file!!)
 
-                    file = declarationCheckedFile
                     reports = declarationReports
                     scope = classScope
 
-                    Table.cachedClasses += declarationCheckedFile.typeInstance.reference to declarationCheckedFile
+                    Table.cachedClasses += file!!.typeInstance.reference to file
                 }
 
                 reports.forEach { it.printReport(outputFileName, source) }
