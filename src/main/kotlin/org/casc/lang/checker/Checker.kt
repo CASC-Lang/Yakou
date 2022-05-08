@@ -10,7 +10,6 @@ import org.casc.lang.compilation.Warning
 import org.casc.lang.table.*
 import org.casc.lang.utils.getOrElse
 import java.lang.reflect.Modifier
-import kotlin.math.sign
 import java.io.File as JFile
 
 class Checker(private val preference: AbstractPreference) {
@@ -23,16 +22,16 @@ class Checker(private val preference: AbstractPreference) {
     private lateinit var topScope: Scope
     private var reports: MutableSet<Report> = mutableSetOf()
 
-    fun checkDeclaration(file: File): Triple<List<Report>, File, Scope> {
-        val (checkedClass, scope) = checkClassDeclaration(file.clazz, file.path)
+    fun checkDeclaration(file: File): Pair<List<Report>, Scope> {
+        val scope = when (val typeInstance = file.typeInstance) {
+            is ClassInstance -> checkClassDeclaration(typeInstance, file.path)
+        }
 
-        file.clazz = checkedClass
-
-        return Triple(reports.toList(), file, scope)
+        return reports.toList() to scope
     }
 
-    private fun checkClassDeclaration(clazz: Class, filePath: String): Pair<Class, Scope> {
-        topScope = Scope(preference, companion = false, mutable = false, Accessor.Pub, clazz.getReference())
+    private fun checkClassDeclaration(clazz: ClassInstance, filePath: String): Scope {
+        topScope = Scope(preference, companion = false, mutable = false, Accessor.Pub, clazz.reference)
 
         val classScope = Scope(
             topScope, false, // TODO: Allow (nested) class has `comp`
@@ -51,48 +50,56 @@ class Checker(private val preference: AbstractPreference) {
             }
         }
 
-        checkIdentifierIsKeyword(clazz.name)
+        checkIdentifierIsKeyword(clazz.typeReference.fullQualifiedPath, clazz.typeReference.pos)
 
-        if (clazz.parentClassReference != null) {
-            val parentClassType = findType(clazz.parentClassReference, classScope)
+        if (clazz.impl?.parentClassReference != null) {
+            val parentClassReference = clazz.impl!!.parentClassReference!!
+
+            val parentClassType = findType(parentClassReference, classScope)
 
             classScope.parentClassPath = parentClassType?.getReference()
 
             if (parentClassType != null) {
                 if (parentClassType !is ClassType) {
                     reports += Error(
-                        clazz.parentClassReference.pos,
+                        parentClassReference.pos,
                         "Cannot inherit from non-class type ${parentClassType.asCASCStyle()}"
                     )
                 } else if (!parentClassType.mutable) {
                     reports += Error(
-                        clazz.parentClassReference.pos,
+                        parentClassReference.pos,
                         "Cannot inherit from final class ${parentClassType.asCASCStyle()}",
                         "Add `mut` to class ${parentClassType.asCASCStyle()}"
                     )
                 } else if (parentClassType.type(preference)?.let { Modifier.isFinal(it.modifiers) } == true) {
                     reports += Error(
-                        clazz.parentClassReference.pos,
+                        parentClassReference.pos,
                         "Cannot inherit from final class ${parentClassType.asCASCStyle()}",
                         "Add `mut` to class ${parentClassType.asCASCStyle()}"
                     )
                 }
             } else {
-                reports.reportUnknownTypeSymbol(clazz.parentClassReference)
+                reports.reportUnknownTypeSymbol(parentClassReference)
             }
         }
 
         clazz.fields.forEach {
             checkField(it, classScope)
         }
-        clazz.constructors = clazz.constructors.map {
-            checkConstructor(it, classScope)
-        }
-        clazz.functions = clazz.functions.map {
-            checkFunction(it, classScope)
+
+        if (clazz.impl != null) {
+            val impl = clazz.impl!!
+
+            for (constructor in impl.constructors) {
+                checkConstructor(constructor, classScope)
+            }
+
+            for (function in impl.functions) {
+                checkFunction(function, classScope)
+            }
         }
 
-        return clazz to classScope
+        return classScope
     }
 
     fun check(file: File, classScope: Scope): Pair<List<Report>, File> {
@@ -101,12 +108,12 @@ class Checker(private val preference: AbstractPreference) {
         return reports.toList() to checkedFile
     }
 
-    private fun checkIdentifierIsKeyword(identifierToken: Token?, isVariable: Boolean = false) {
-        if (isVariable && (identifierToken?.literal == "self" || identifierToken?.literal == "super")) return
+    private fun checkIdentifierIsKeyword(literal: String?, position: Position? = null, isVariable: Boolean = false) {
+        if (isVariable && (literal == "self" || literal == "super")) return
 
-        if (Token.keywords.contains(identifierToken?.literal)) {
+        if (Token.keywords.contains(literal)) {
             reports += Error(
-                identifierToken?.pos, "Cannot use ${identifierToken?.literal} as identifier since it's a keyword"
+                position, "Cannot use $literal as identifier since it's a keyword"
             )
         }
     }
@@ -143,16 +150,20 @@ class Checker(private val preference: AbstractPreference) {
     }
 
     private fun checkFile(file: File, classScope: Scope): File {
-        file.clazz = checkClass(file.clazz, classScope)
+        when (val typeInstance = file.typeInstance) {
+            is ClassInstance -> checkClass(file, typeInstance, classScope)
+        }
 
         return file
     }
 
-    private fun checkClass(clazz: Class, classScope: Scope): Class {
-        topScope = Scope(preference, companion = false, mutable = false, Accessor.Pub, clazz.getReference())
+    private fun checkClass(file: File, clazz: ClassInstance, classScope: Scope) {
+        topScope = Scope(preference, companion = false, mutable = false, Accessor.Pub, clazz.reference)
 
-        clazz.usages.mapNotNull {
-            it!!.tokens.forEach(::checkIdentifierIsKeyword)
+        file.usages.map {
+            it.tokens.forEach { token ->
+                checkIdentifierIsKeyword(token?.literal, token?.pos)
+            }
 
             if (topScope.usages.find { usage -> usage.fullQualifiedPath == it.fullQualifiedPath } != null) {
                 // Using an already used package or class
@@ -200,30 +211,32 @@ class Checker(private val preference: AbstractPreference) {
 
         val companionBlockScope = Scope(classScope)
 
-        clazz.companionBlock.forEach {
-            checkStatement(it, companionBlockScope, PrimitiveType.Unit)
-        }
+        if (clazz.impl != null) {
+            val impl = clazz.impl!!
 
-        clazz.constructors.forEach {
-            checkConstructorBody(it, Scope(classScope))
-        }
+            impl.companionBlock.forEach {
+                checkStatement(it, companionBlockScope, PrimitiveType.Unit)
+            }
 
-        clazz.functions.forEach {
-            checkFunctionBody(it, Scope(classScope, isCompScope = it.selfKeyword == null))
+            impl.constructors.forEach {
+                checkConstructorBody(it, Scope(classScope))
+            }
 
-            if (!checkControlFlow(it.statements, it.returnType)) {
-                // Not all code path returns value
-                reports += Error(
-                    it.name?.pos, "Not all code path returns value"
-                )
+            impl.functions.forEach {
+                checkFunctionBody(it, Scope(classScope, isCompScope = it.selfKeyword == null))
+
+                if (!checkControlFlow(it.statements, it.returnType)) {
+                    // Not all code path returns value
+                    reports += Error(
+                        it.name?.pos, "Not all code path returns value"
+                    )
+                }
             }
         }
-
-        return clazz
     }
 
     private fun checkField(field: Field, scope: Scope): Field {
-        checkIdentifierIsKeyword(field.name)
+        checkIdentifierIsKeyword(field.name?.literal, field.name?.pos)
 
         val fieldType = scope.findType(field.typeReference)
 
@@ -243,7 +256,7 @@ class Checker(private val preference: AbstractPreference) {
         localScope.registerVariable(true, "self", TypeUtil.asType(localScope.classReference, preference))
 
         val duplicateParameters = constructor.parameters.groupingBy {
-            checkIdentifierIsKeyword(it.name)
+            checkIdentifierIsKeyword(it.name?.literal, it.name?.pos)
 
             it.name
         }.eachCount().filter { it.value > 1 }
@@ -293,12 +306,12 @@ class Checker(private val preference: AbstractPreference) {
 
     private fun checkFunction(function: Function, scope: Scope): Function {
         val localScope = Scope(scope)
-        checkIdentifierIsKeyword(function.name)
+        checkIdentifierIsKeyword(function.name?.literal, function.name?.pos)
 
         // Validate types first then register it to scope
         // Check if parameter has duplicate names
         val duplicateParameters = function.parameters.groupingBy {
-            checkIdentifierIsKeyword(it.name)
+            checkIdentifierIsKeyword(it.name?.literal, it.name?.pos)
 
             it.name
         }.eachCount().filter { it.value > 1 }
@@ -507,7 +520,7 @@ class Checker(private val preference: AbstractPreference) {
                             reports += Error(
                                 nameToken.pos, "Cannot declare `$name` as local variable", "Rename this variable"
                             )
-                        } else checkIdentifierIsKeyword(nameToken)
+                        } else checkIdentifierIsKeyword(nameToken.literal, nameToken.pos)
 
                         if (!scope.registerVariable(mutKeyword != null, name, type)) {
                             reports += Error(
@@ -758,7 +771,7 @@ class Checker(private val preference: AbstractPreference) {
             is IdentifierCallExpression -> {
                 val ownerReference = expression.ownerReference
 
-                checkIdentifierIsKeyword(expression.name, isVariable = true)
+                checkIdentifierIsKeyword(expression.name?.literal, expression.name?.pos, isVariable = true)
 
                 fun checkCompanionAccessibility(field: ClassField) {
                     if (!field.companion && scope.isCompScope) {
