@@ -3,6 +3,11 @@ package org.casc.lang.table
 import org.casc.lang.compilation.AbstractPreference
 
 sealed interface Type : HasDescriptor {
+    companion object {
+        val OBJECT_TYPE = ClassType(Any::class.java)
+    }
+
+
     val typeName: String
     fun type(preference: AbstractPreference): Class<*>?
     val internalName: String
