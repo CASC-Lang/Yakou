@@ -258,7 +258,7 @@ class Parser(private val preference: AbstractPreference) {
         // Bind member type instances to major type instance
         // TODO
 
-        return typeInstance?.let { File(path, relativeFilePath, it) }
+        return typeInstance?.let { File(path, relativeFilePath, usages, it) }
     }
 
     /**
