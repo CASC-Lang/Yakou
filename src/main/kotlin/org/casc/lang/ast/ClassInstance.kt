@@ -10,7 +10,7 @@ data class ClassInstance(
     val accessorToken: Token?,
     val mutKeyword: Token?,
     val classKeyword: Token?,
-    override val typeReference: Reference?,
+    override val typeReference: Reference,
     var fields: List<Field>,
     override val accessor: Accessor = Accessor.fromString(accessorToken?.literal)
 ) : TypeInstance(packageReference, typeReference), HasFlag {
