@@ -1,8 +1,9 @@
 package org.casc.lang.table
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
+import org.casc.lang.ast.ClassInstance
 import org.casc.lang.ast.File
-import org.casc.lang.ast.Class as Cls
+import org.casc.lang.ast.TypeInstance
 
 /*
  Known as symbol table, used to store class compiled by CASC Compiler, the main idea of storing class objects here is:
@@ -19,11 +20,21 @@ object Table {
      */
     fun findType(classReference: Reference): ClassType? =
         cachedClasses[classReference]?.let {
-            ClassType(classReference.fullQualifiedPath, it.clazz.parentClassReference?.fullQualifiedPath, it.clazz.accessor, it.clazz.mutKeyword != null)
+            val typeInstance = it.typeInstance
+
+            ClassType(
+                classReference.fullQualifiedPath,
+                if (typeInstance is ClassInstance && typeInstance.packageReference != null)
+                    typeInstance.packageReference!!.fullQualifiedPath
+                else Reference.OBJECT_TYPE_REFERENCE.fullQualifiedPath,
+                it.typeInstance.accessor,
+                if (typeInstance is ClassInstance) typeInstance.mutKeyword != null
+                else false
+            )
         }
 
-    fun findClass(classReference: Reference): Cls? =
-        cachedClasses[classReference]?.clazz
+    fun findTypeInstance(classReference: Reference): TypeInstance? =
+        cachedClasses[classReference]?.typeInstance
 
     fun hasClass(classReference: Reference): Boolean =
         cachedClasses.containsKey(classReference)

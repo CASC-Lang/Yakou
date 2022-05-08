@@ -10,13 +10,14 @@ import org.casc.lang.table.HasFlag
 import org.casc.lang.table.Reference
 import org.casc.lang.utils.MutableObjectSet
 import org.objectweb.asm.Opcodes
+import java.io.File as JFile
 
 class Parser(private val preference: AbstractPreference) {
     private var pos: Int = 0
     private var reports = mutableListOf<Report>()
     private lateinit var tokens: List<Token>
 
-    fun parse(path: String, relativeFilePath: String, tokens: List<Token>): Pair<List<Report>, File> {
+    fun parse(path: String, relativeFilePath: String, tokens: List<Token>): Pair<List<Report>, File?> {
         pos = 0
         this.tokens = tokens
         val file = parseFile(path, relativeFilePath)
@@ -120,7 +121,9 @@ class Parser(private val preference: AbstractPreference) {
     // PARSING FUNCTIONS
     // ================================
 
-    private fun parseFile(path: String, relativeFilePath: String): File {
+    private fun parseFile(path: String, relativeFilePath: String): File? {
+        val fileName = JFile(path).nameWithoutExtension
+
         // Parse optional package declaration
         val packageReference = if (peekIf(Token::isPackageKeyword)) {
             // package Module
@@ -129,97 +132,142 @@ class Parser(private val preference: AbstractPreference) {
         } else null
 
         // Parse usages
-        val usages = mutableListOf<Reference?>()
+        val usages = mutableListOf<Reference>()
+        val typeInstances = mutableMapOf<Reference, TypeInstance>()
+        val majorImpls = mutableMapOf<Reference, Impl>()
+        val traitImpls = mutableMapOf<Reference, List<TraitImpl>>()
 
-        while (peekIf(Token::isUseKeyword)) {
-            // use ModuleA::...
-            consume()
-            usages += parseUsage()
+        while (hasNext()) {
+            if (peekIf(Token::isUseKeyword)) {
+                consume()
+                usages += parseUsage()
+                continue
+            }
+
+            val (accessor, _, mutable) = parseModifiers(ovrdKeyword = false) { it.isClassKeyword() || it.isImplKeyword() }
+
+            if (peekIf(Token::isClassKeyword)) {
+                val classKeyword = next()!!
+                val classReference = parseTypeSymbol()
+                val fields = if (peekIf(TokenType.OpenBrace)) {
+                    assertUntil(TokenType.OpenBrace)
+                    val fields = parseFields(classReference)
+                    assertUntil(TokenType.CloseBrace)
+                    fields
+                } else listOf()
+
+
+                // Missing class reference, most likely caused by token missing
+                if (classReference.fullQualifiedPath.isEmpty()) continue
+
+                val classInstance =
+                    ClassInstance(packageReference, accessor, mutable, classKeyword, classReference, fields)
+
+                if (typeInstances.containsKey(classReference)) {
+                    // Class declaration duplication
+                    reports += Error(
+                        classReference.pos,
+                        "Duplicated class declaration for class ${classReference.asCASCStyle()}",
+                        "Consider remove this class declaration"
+                    )
+                } else typeInstances[classReference] = classInstance
+            } else if (peekIf(Token::isImplKeyword)) {
+                val implKeyword = next()!!
+                val ownerReference = parseTypeSymbol()
+
+                if (peekIf(Token::isForKeyword)) {
+                    // TODO
+                } else {
+                    // Common implementation
+
+                    val parentClassReference = if (peekIf(TokenType.Colon)) {
+                        consume() // colon
+                        parseTypeSymbol()
+                    } else null
+
+                    var functions: List<Function>? = null
+                    var constructors: List<Constructor>? = null
+                    var companionBlock: List<Statement>? = null
+
+                    if (peekIf(TokenType.OpenBrace)) {
+                        consume() // open brace
+
+                        val (fns, ctors, compBlocks) = parseFunctions(ownerReference, parentClassReference)
+                        functions = fns
+                        constructors = ctors
+                        companionBlock = compBlocks
+
+                        assertUntil(TokenType.CloseBrace)
+                    }
+
+                    // Missing class reference, most likely caused by token missing
+                    if (ownerReference.fullQualifiedPath.isEmpty()) continue
+
+                    val impl = Impl(implKeyword, parentClassReference, companionBlock ?: listOf(), constructors ?: listOf(), functions ?: listOf())
+
+                    if (!typeInstances.containsKey(ownerReference)) {
+                        // Unknown type implementation
+                        reports += Error(
+                            ownerReference.pos,
+                            "Unknown type implementation for class ${ownerReference.asCASCStyle()}"
+                        )
+                    } else if (majorImpls.containsKey(ownerReference)) {
+                        // Implementation duplication
+                        reports += Error(
+                            ownerReference.pos,
+                            "Duplicated type implementation for class ${ownerReference.asCASCStyle()}",
+                            "Consider remove this type implementation"
+                        )
+                    } else majorImpls[ownerReference] = impl
+                }
+            } else if (hasNext()) {
+                reports.reportUnexpectedToken(next()!!)
+            } else break
         }
 
-        // Parse class declaration
-        val (accessor, _, mutable) = parseModifiers(ovrdKeyword = false, terminator = Token::isClassKeyword)
+        // Bind major type instance
+        var typeInstance: TypeInstance? = null
 
-        val classKeyword = assertUntil(Token::isClassKeyword)
-        val className = assertUntil(TokenType.Identifier)
-        val classReference =
-            if (className != null) Reference(
-                "${packageReference?.fullQualifiedPath?.let { "${it}/" } ?: ""}${className.literal}",
-                className.literal,
-                pos = className.pos
+        if (typeInstances.isEmpty()) {
+            // Type declaration missing
+            // CASC is unable to determine which type instance to be generated for single class file
+            reports += Error(
+                "Type declaration missing, unable to determine type instance $fileName"
             )
-            else null
-        var fields = listOf<Field>()
+        } else if (typeInstances.keys.find { it.className == fileName } == null) {
+            // No type instance's name is same as file name
+            reports += Error(
+                "Type instance $fileName must be declared."
+            )
+        } else if (typeInstances.keys.filter { it.fullQualifiedPath.split(".").size == 1 }.size > 1) {
+            // More than one major type instance
+            reports += Error(
+                "Cannot have multiple major type instances, only type instance $fileName is allowed"
+            )
+        } else typeInstance = typeInstances[Reference(fileName)]
 
-        if (peekIf(TokenType.OpenBrace)) { // Member declaration is optional
-            assertUntil(TokenType.OpenBrace)
-            fields = parseFields(usages, classReference)
-            assertUntil(TokenType.CloseBrace)
-        }
-
-        // Parse major implementation
-        var parentClassReference: Reference? = null
-        var functions = listOf<Function>()
-        var constructors = listOf<Constructor>()
-        var companionBlock = listOf<Statement?>()
-
-        if (peekIf(Token::isImplKeyword)) {
-            // Implementation
-            // a. class implementation (inheritance is optional)
-            // impl ClassName (: ParentClassName)? { ... }
-            // TODO: b. interface implementation on class
-            // impl InterfaceName for ClassName { ... }
-            next()
-            val implName = assertUntil(TokenType.Identifier)
-
-            if (implName?.literal != className?.literal) {
-                reports += Error(
-                    last()!!.pos,
-                    "Unexpected implementation for class ${className?.literal ?: "<Unknown>"}"
-                )
+        // Bind implementations to type instances
+        for ((typeInstanceReference, typeInstanceEntry) in typeInstances) {
+            majorImpls[typeInstanceReference]?.let {
+                typeInstanceEntry.impl = it
             }
 
-            if (peekIf(TokenType.Colon)) {
-                // Class inheritance
-                // impl ClassA : ClassB { ... }
-                consume()
-                parentClassReference = parseTypeSymbol()
-            }
-
-            if (peekIf(TokenType.OpenBrace)) {
-                consume()
-                val (fns, ctors, compBlocks) = parseFunctions(classReference, parentClassReference)
-                functions = fns
-                constructors = ctors
-                companionBlock = compBlocks
-                assertUntil(TokenType.CloseBrace)
+            traitImpls[typeInstanceReference]?.let {
+                typeInstanceEntry.traitImpls = it
             }
         }
 
-        // TODO: Abstract class inheritance & interface implementation etc. WIP
-        val clazz = Class(
-            packageReference,
-            usages,
-            parentClassReference,
-            listOf(),
-            accessor,
-            mutable,
-            classKeyword,
-            className,
-            fields,
-            companionBlock,
-            constructors,
-            functions
-        )
+        // Bind member type instances to major type instance
+        // TODO
 
-        return File(path, relativeFilePath, clazz)
+        return typeInstance?.let { File(path, relativeFilePath, usages, it) }
     }
 
     /**
      * Used to parse type symbol (excluding array type symbol), not designed to be parsed with `use` syntax.
      */
     private fun parseTypeSymbol(): Reference {
-        var currentIdentifier = assert(TokenType.Identifier)
+        var currentIdentifier = assertUntil(TokenType.Identifier)
         val tokens = mutableListOf<Token?>()
         var nameBuilder = currentIdentifier?.literal
 
@@ -440,7 +488,7 @@ class Parser(private val preference: AbstractPreference) {
                     )
                 }
             } else {
-                var builder = if (accessModifier) "access modifiers (`pub`, `prot`, `intl`, `priv`)" else ""
+                var builder = if (accessModifier) "access modifiers (`pub`, `prot`, `intl`, `priv`) " else ""
                 builder += if (builder.isNotEmpty() && ovrdKeyword) "or `ovrd` keyword" else if (ovrdKeyword) "`ovrd` keyword" else ""
                 builder += if (builder.isNotEmpty() && mutableKeyword) "or `mut` keyword" else if (mutableKeyword) "`mut` keyword" else ""
 
@@ -455,7 +503,6 @@ class Parser(private val preference: AbstractPreference) {
     }
 
     private fun parseFields(
-        usages: List<Reference?>,
         classReference: Reference?,
         compKeyword: Token? = null
     ): List<Field> {
@@ -497,7 +544,7 @@ class Parser(private val preference: AbstractPreference) {
                 }
 
                 assertUntil(TokenType.OpenBrace)
-                fields += parseFields(usages, classReference, comp)
+                fields += parseFields(classReference, comp)
                 assertUntil(TokenType.CloseBrace)
             } else if (peekIf(Token::isAccessorKeyword) || peekIf(Token::isMutKeyword)) {
                 // Scoped-modified fields
@@ -550,8 +597,8 @@ class Parser(private val preference: AbstractPreference) {
     private fun parseFunctions(
         classReference: Reference?,
         parentReference: Reference?
-    ): Triple<List<Function>, List<Constructor>, List<Statement?>> {
-        val companionBlock = mutableListOf<Statement?>()
+    ): Triple<List<Function>, List<Constructor>, List<Statement>> {
+        val companionBlock = mutableListOf<Statement>()
         val functions = object : MutableObjectSet<Function>() {
             override fun isDuplicate(a: Function, b: Function): Boolean =
                 a.name?.literal == b.name?.literal && a.parameters == b.parameters

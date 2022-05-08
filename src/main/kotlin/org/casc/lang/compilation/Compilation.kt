@@ -2,6 +2,7 @@ package org.casc.lang.compilation
 
 import com.diogonunes.jcolor.AnsiFormat
 import com.diogonunes.jcolor.Attribute
+import org.casc.lang.ast.ClassInstance
 import org.casc.lang.ast.File
 import org.casc.lang.ast.Token
 import org.casc.lang.checker.Checker
@@ -81,7 +82,9 @@ class Compilation(private val preference: AbstractPreference) {
                             Parser(preference).parse(cascFile.filePath, cascFile.relativePath, cascFile.tokens)
 
                         cascFile.reports += parseReports
-                        cascFile.file = parseResult
+                        parseResult?.let {
+                            cascFile.file = it
+                        }
                     }
                 }
 
@@ -94,7 +97,7 @@ class Compilation(private val preference: AbstractPreference) {
 
                 measureTime("Check (Prelude)") {
                     // Caches class for dummy type checking, used in declaration checking
-                    Table.cachedClasses += compilationUnits.map { it.file.clazz.getReference() to it.file }
+                    Table.cachedClasses += compilationUnits.map { it.file.typeInstance.reference to it.file }
 
                     for (compilationUnit in compilationUnits) {
                         val file = compilationUnit.file
@@ -107,9 +110,8 @@ class Compilation(private val preference: AbstractPreference) {
                          * Check all AST declaration's validity
                          */
                         val checker = Checker(preference)
-                        val (declarationCheckingReports, checkedFile, classScope) = checker.checkDeclaration(file)
+                        val (declarationCheckingReports, classScope) = checker.checkDeclaration(file)
 
-                        compilationUnit.file = checkedFile
                         compilationUnit.reports += declarationCheckingReports
                         compilationUnit.scope = classScope
                     }
@@ -128,14 +130,16 @@ class Compilation(private val preference: AbstractPreference) {
                     val declarations = compilationUnits.map(CompilationFileUnit::file)
 
                     fun addToQueue(file: File) {
-                        if (file.clazz.parentClassReference == null) {
-                            creationQueue.add(file.clazz.getReference().fullQualifiedPath)
-                        } else {
+                        val typeInstance = file.typeInstance
+
+                        if (typeInstance is ClassInstance && typeInstance.impl?.parentClassReference != null) {
                             val parentClazzFile =
-                                declarations.find { it.clazz.getReference().fullQualifiedPath == file.clazz.parentClassReference!!.fullQualifiedPath }
+                                declarations.find { it.typeInstance.reference.fullQualifiedPath == typeInstance.impl!!.parentClassReference!!.fullQualifiedPath }
                             if (parentClazzFile != null)
                                 addToQueue(parentClazzFile)
-                            creationQueue.add(file.clazz.getReference().fullQualifiedPath)
+                            creationQueue.add(file.typeInstance.reference.fullQualifiedPath)
+                        } else {
+                            creationQueue.add(file.typeInstance.reference.fullQualifiedPath)
                         }
                     }
 
@@ -143,14 +147,14 @@ class Compilation(private val preference: AbstractPreference) {
 
                     for (name in creationQueue) {
                         val cachedFile =
-                            declarations.find { it.clazz.getReference().fullQualifiedPath == name }!!
+                            declarations.find { it.typeInstance.reference.fullQualifiedPath == name }!!
 
                         val bytecode = Emitter(preference, true).emit(cachedFile)
 
                         preference.classLoader.defineClass(name, bytecode)
                     }
 
-                    Table.cachedClasses += declarations.map { it.clazz.getReference() to it }
+                    Table.cachedClasses += declarations.map { it.typeInstance.reference to it }
                 }
 
                 measureTime("Check (Main)") {
@@ -244,13 +248,12 @@ class Compilation(private val preference: AbstractPreference) {
                     /**
                      * Checks complex syntax validity and variables' type.
                      */
-                    val (declarationReports, declarationCheckedFile, classScope) = checker.checkDeclaration(file!!)
+                    val (declarationReports, classScope) = checker.checkDeclaration(file!!)
 
-                    file = declarationCheckedFile
                     reports = declarationReports
                     scope = classScope
 
-                    Table.cachedClasses += declarationCheckedFile.clazz.getReference() to declarationCheckedFile
+                    Table.cachedClasses += file!!.typeInstance.reference to file
                 }
 
                 reports.forEach { it.printReport(outputFileName, source) }

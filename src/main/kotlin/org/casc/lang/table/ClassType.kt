@@ -14,6 +14,10 @@ data class ClassType(
     override val internalName: String = typeName.replace('.', '/'),
     override val descriptor: String = "L$internalName;"
 ) : Type, HasAccessor {
+    companion object {
+        val OBJECT_TYPE = ClassType(Any::class.java)
+    }
+
     constructor(clazz: Class<*>) : this(
         clazz.typeName,
         clazz.superclass?.typeName,

@@ -22,10 +22,14 @@ data class Reference(
         else "$pkgPath."
     } + className
 ) {
+    companion object {
+        val OBJECT_TYPE_REFERENCE = Reference(Any::class.java)
+    }
+
     constructor(clazz: Class<*>) : this(clazz.name, clazz.simpleName)
-    constructor(packagePath: String, className: String, vararg tokens: Token?) : this(
-        packagePath,
-        className,
+    constructor(packagePath: String?, className: String?, vararg tokens: Token?) : this(
+        "${if (packagePath != null) "${packagePath}/" else ""}${className ?: ""}",
+        className ?: "",
         tokens.toMutableList(),
         tokens.firstOrNull()?.pos?.extendSelf(tokens.lastOrNull()?.pos)
     )
@@ -46,6 +50,9 @@ data class Reference(
 
     fun isSamePackage(reference: Reference?): Boolean =
         packagePath == reference?.packagePath
+
+    fun isChild(reference: Reference): Boolean =
+        fullQualifiedPath.contains(reference.fullQualifiedPath)
 
     fun prepend(pacakage: String) {
         packagePath = "$pacakage.$packagePath"

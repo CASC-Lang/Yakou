@@ -1,3 +1,9 @@
 package org.casc.lang.ast
 
-data class File(val path: String, val relativeFilePath: String, var clazz: Class)
+import org.casc.lang.table.Reference
+
+data class File(val path: String, val relativeFilePath: String, val usages: List<Reference>, var typeInstance: TypeInstance) {
+    val fileName: String by lazy {
+        relativeFilePath.split('\\', '/').last()
+    }
+}

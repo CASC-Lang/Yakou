@@ -19,8 +19,8 @@ data class Field(
     override val flag: Int =
         mutKeyword.getOrElse(0, Opcodes.ACC_FINAL) + accessor.access + compKeyword.getOrElse(Opcodes.ACC_STATIC)
 
-    fun asClassField(): ClassField =
-        ClassField(
+    fun asClassField(): TypeField =
+        TypeField(
             ownerReference,
             compKeyword != null,
             mutKeyword != null,
