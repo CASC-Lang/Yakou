@@ -17,7 +17,7 @@ class Parser(private val preference: AbstractPreference) {
     private var reports = mutableListOf<Report>()
     private lateinit var tokens: List<Token>
 
-    fun parse(path: String, relativeFilePath: String, tokens: List<Token>): Pair<List<Report>, File> {
+    fun parse(path: String, relativeFilePath: String, tokens: List<Token>): Pair<List<Report>, File?> {
         pos = 0
         this.tokens = tokens
         val file = parseFile(path, relativeFilePath)
@@ -121,7 +121,7 @@ class Parser(private val preference: AbstractPreference) {
     // PARSING FUNCTIONS
     // ================================
 
-    private fun parseFile(path: String, relativeFilePath: String): File {
+    private fun parseFile(path: String, relativeFilePath: String): File? {
         val fileName = JFile(path).nameWithoutExtension
 
         // Parse optional package declaration
@@ -258,7 +258,7 @@ class Parser(private val preference: AbstractPreference) {
         // Bind member type instances to major type instance
         // TODO
 
-        return File(path, relativeFilePath, typeInstance)
+        return typeInstance?.let { File(path, relativeFilePath, it) }
     }
 
     /**
