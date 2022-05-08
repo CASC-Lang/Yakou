@@ -12,7 +12,7 @@ data class ClassInstance(
     val classKeyword: Token?,
     override val typeReference: Reference?,
     var fields: List<Field>,
-    val accessor: Accessor = Accessor.fromString(accessorToken?.literal)
+    override val accessor: Accessor = Accessor.fromString(accessorToken?.literal)
 ) : TypeInstance(packageReference, typeReference), HasFlag {
     override val flag: Int by lazy {
         var flag = Opcodes.ACC_SUPER
