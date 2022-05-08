@@ -430,7 +430,7 @@ class Checker(private val preference: AbstractPreference) {
                 )
             } else constructor.parentConstructorSignature = thisCallSignature
         } else {
-            if (scope.parentClassPath != null) {
+            if (scope.parentClassPath != Reference.OBJECT_TYPE_REFERENCE && scope.parentClassPath != null) {
                 // Requires `super` call
                 reports += Error(
                     constructor.newKeyword?.pos,
