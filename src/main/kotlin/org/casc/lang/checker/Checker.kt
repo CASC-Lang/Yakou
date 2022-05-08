@@ -90,12 +90,12 @@ class Checker(private val preference: AbstractPreference) {
         if (clazz.impl != null) {
             val impl = clazz.impl!!
 
-            for (constructor in impl.constructors) {
-                checkConstructor(constructor, classScope)
+            impl.constructors.forEach {
+                checkConstructor(it, classScope)
             }
 
-            for (function in impl.functions) {
-                checkFunction(function, classScope)
+            impl.functions.forEach {
+                checkFunction(it, classScope)
             }
         }
 
