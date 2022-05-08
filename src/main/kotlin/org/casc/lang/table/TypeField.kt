@@ -2,7 +2,7 @@ package org.casc.lang.table
 
 import org.casc.lang.ast.Accessor
 
-data class ClassField(
+data class TypeField(
     val ownerReference: Reference?,
     val companion: Boolean,
     val mutable: Boolean,

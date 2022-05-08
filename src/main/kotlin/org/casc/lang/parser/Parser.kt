@@ -144,7 +144,7 @@ class Parser(private val preference: AbstractPreference) {
                 continue
             }
 
-            val (accessor, _, mutable) = parseModifiers(ovrdKeyword = false, terminator = Token::isClassKeyword)
+            val (accessor, _, mutable) = parseModifiers(ovrdKeyword = false) { it.isClassKeyword() || it.isImplKeyword() }
 
             if (peekIf(Token::isClassKeyword)) {
                 val classKeyword = next()!!
@@ -220,7 +220,9 @@ class Parser(private val preference: AbstractPreference) {
                         )
                     } else majorImpls[ownerReference] = impl
                 }
-            } else reports.reportUnexpectedToken(next()!!)
+            } else if (hasNext()) {
+                reports.reportUnexpectedToken(next()!!)
+            } else break
         }
 
         // Bind major type instance
@@ -486,7 +488,7 @@ class Parser(private val preference: AbstractPreference) {
                     )
                 }
             } else {
-                var builder = if (accessModifier) "access modifiers (`pub`, `prot`, `intl`, `priv`)" else ""
+                var builder = if (accessModifier) "access modifiers (`pub`, `prot`, `intl`, `priv`) " else ""
                 builder += if (builder.isNotEmpty() && ovrdKeyword) "or `ovrd` keyword" else if (ovrdKeyword) "`ovrd` keyword" else ""
                 builder += if (builder.isNotEmpty() && mutableKeyword) "or `mut` keyword" else if (mutableKeyword) "`mut` keyword" else ""
 

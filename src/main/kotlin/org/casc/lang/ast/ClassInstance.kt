@@ -11,7 +11,7 @@ data class ClassInstance(
     val mutKeyword: Token?,
     val classKeyword: Token?,
     override val typeReference: Reference,
-    var fields: List<Field>,
+    override val fields: List<Field>,
     override val accessor: Accessor = Accessor.fromString(accessorToken?.literal)
 ) : TypeInstance(packageReference, typeReference), HasFlag {
     override val flag: Int by lazy {
@@ -19,5 +19,9 @@ data class ClassInstance(
         flag += accessor.access
         flag += mutKeyword.getOrElse(0, Opcodes.ACC_FINAL)
         flag
+    }
+
+    val parentClassReference: Reference by lazy {
+        impl?.parentClassReference ?: Reference.OBJECT_TYPE_REFERENCE
     }
 }

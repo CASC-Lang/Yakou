@@ -33,7 +33,7 @@ object Table {
             )
         }
 
-    fun findClass(classReference: Reference): TypeInstance? =
+    fun findTypeInstance(classReference: Reference): TypeInstance? =
         cachedClasses[classReference]?.typeInstance
 
     fun hasClass(classReference: Reference): Boolean =

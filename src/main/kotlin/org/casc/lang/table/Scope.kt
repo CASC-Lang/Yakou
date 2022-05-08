@@ -2,6 +2,7 @@ package org.casc.lang.table
 
 import io.github.classgraph.ClassGraph
 import org.casc.lang.ast.Accessor
+import org.casc.lang.ast.ClassInstance
 import org.casc.lang.ast.Field
 import org.casc.lang.ast.HasSignature
 import org.casc.lang.compilation.AbstractPreference
@@ -16,7 +17,7 @@ data class Scope(
     var classReference: Reference,
     var parentClassPath: Reference? = null,
     var usages: MutableSet<Reference> = mutableSetOf(),
-    var fields: MutableSet<ClassField> = mutableSetOf(),
+    var fields: MutableSet<TypeField> = mutableSetOf(),
     var signatures: MutableSet<FunctionSignature> = mutableSetOf(),
     var variables: MutableList<Variable> = mutableListOf(),
     var scopeDepth: Int = 0, // Scope always starts from global scope
@@ -69,11 +70,11 @@ data class Scope(
         fields += field.asClassField()
     }
 
-    fun findField(ownerPath: Reference?, fieldName: String): ClassField? {
+    fun findField(ownerPath: Reference?, fieldName: String): TypeField? {
         if (ownerPath == null || ownerPath == classReference) return fields.find { it.name == fieldName }
 
         // Find function signature from cached classes first
-        val ownerClass = Table.findClass(ownerPath)
+        val ownerClass = Table.findTypeInstance(ownerPath)
 
         if (ownerClass != null) {
             return ownerClass.fields.find {
@@ -89,7 +90,7 @@ data class Scope(
             try {
                 val field = ownerClazz.getField(fieldName)
 
-                return ClassField(
+                return TypeField(
                     Reference(ownerClazz),
                     Modifier.isStatic(field.modifiers),
                     !Modifier.isFinal(field.modifiers),
@@ -112,7 +113,7 @@ data class Scope(
         signatures += signatureObject.asSignature()
     }
 
-    private fun findSignatureInSameClass(functionName: String, argumentTypes: List<Type?>): FunctionSignature? =
+    private fun findSignatureInSameType(functionName: String, argumentTypes: List<Type?>): FunctionSignature? =
         signatures.find {
             it.name == functionName &&
                     it.parameters.size == argumentTypes.size &&
@@ -124,28 +125,28 @@ data class Scope(
         }
 
     fun findSignature(ownerPath: Reference?, functionName: String, argumentTypes: List<Type?>): FunctionSignature? {
-        if (ownerPath == null) return findSignatureInSameClass(
+        if (ownerPath == null) return findSignatureInSameType(
             functionName,
             argumentTypes
         )
 
         val reference = findReference(ownerPath)
 
-        // Find function signature from cached classes first
-        val ownerClass = Table.findClass(reference)
+        // Find function signature from cached type instances first
+        val typeInstance = Table.findTypeInstance(reference)
 
-        if (ownerClass != null) {
-            return if (functionName == "<init>") {
-                ownerClass.constructors.find {
+        if (typeInstance != null) {
+            return if (typeInstance is ClassInstance && functionName == "<init>") {
+                typeInstance.impl?.constructors?.find {
                     it.parameterTypes.size == argumentTypes.size &&
                             argumentTypes
                                 .zip(it.parameterTypes)
                                 .all { (l, r) ->
                                     canCast(l, r)
                                 }
-                }?.asSignature() ?: findSignature(ownerClass.parentClassReference, functionName, argumentTypes)
+                }?.asSignature() ?: findSignature(typeInstance.parentClassReference, functionName, argumentTypes)
             } else {
-                ownerClass.functions.find {
+                typeInstance.impl?.functions?.find {
                     it.name?.literal == functionName &&
                             it.parameterTypes?.size == argumentTypes.size &&
                             argumentTypes
@@ -153,11 +154,13 @@ data class Scope(
                                 .all { (l, r) ->
                                     canCast(l, r)
                                 }
-                }?.let(HasSignature::asSignature) ?: findSignature(
-                    ownerClass.parentClassReference,
-                    functionName,
-                    argumentTypes
-                )
+                }?.let(HasSignature::asSignature) ?: when (typeInstance) {
+                    is ClassInstance -> findSignature(
+                        typeInstance.parentClassReference,
+                        functionName,
+                        argumentTypes
+                    )
+                }
             }
         }
 

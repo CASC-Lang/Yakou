@@ -52,35 +52,31 @@ class Checker(private val preference: AbstractPreference) {
 
         checkIdentifierIsKeyword(clazz.typeReference.fullQualifiedPath, clazz.typeReference.pos)
 
-        if (clazz.impl?.parentClassReference != null) {
-            val parentClassReference = clazz.impl!!.parentClassReference!!
+        val parentClassType = findType(clazz.parentClassReference, classScope)
 
-            val parentClassType = findType(parentClassReference, classScope)
+        classScope.parentClassPath = parentClassType?.getReference()
 
-            classScope.parentClassPath = parentClassType?.getReference()
-
-            if (parentClassType != null) {
-                if (parentClassType !is ClassType) {
-                    reports += Error(
-                        parentClassReference.pos,
-                        "Cannot inherit from non-class type ${parentClassType.asCASCStyle()}"
-                    )
-                } else if (!parentClassType.mutable) {
-                    reports += Error(
-                        parentClassReference.pos,
-                        "Cannot inherit from final class ${parentClassType.asCASCStyle()}",
-                        "Add `mut` to class ${parentClassType.asCASCStyle()}"
-                    )
-                } else if (parentClassType.type(preference)?.let { Modifier.isFinal(it.modifiers) } == true) {
-                    reports += Error(
-                        parentClassReference.pos,
-                        "Cannot inherit from final class ${parentClassType.asCASCStyle()}",
-                        "Add `mut` to class ${parentClassType.asCASCStyle()}"
-                    )
-                }
-            } else {
-                reports.reportUnknownTypeSymbol(parentClassReference)
+        if (parentClassType != null) {
+            if (parentClassType !is ClassType) {
+                reports += Error(
+                    clazz.parentClassReference.pos ?: clazz.classKeyword?.pos,
+                    "Cannot inherit from non-class type ${parentClassType.asCASCStyle()}"
+                )
+            } else if (parentClassType != ClassType.OBJECT_TYPE && !parentClassType.mutable) {
+                reports += Error(
+                    clazz.parentClassReference.pos ?: clazz.classKeyword?.pos,
+                    "Cannot inherit from final class ${parentClassType.asCASCStyle()}",
+                    "Add `mut` to class ${parentClassType.asCASCStyle()}"
+                )
+            } else if (parentClassType.type(preference)?.let { Modifier.isFinal(it.modifiers) } == true) {
+                reports += Error(
+                    clazz.parentClassReference.pos ?: clazz.classKeyword?.pos,
+                    "Cannot inherit from final class ${parentClassType.asCASCStyle()}",
+                    "Add `mut` to class ${parentClassType.asCASCStyle()}"
+                )
             }
+        } else {
+            reports.reportUnknownTypeSymbol(clazz.parentClassReference)
         }
 
         clazz.fields.forEach {
@@ -669,7 +665,7 @@ class Checker(private val preference: AbstractPreference) {
                     val leftPreviousType = expression.leftExpression.previousExpression?.type
                     val name = expression.leftExpression.name!!.literal
 
-                    fun checkFieldAssignment(field: ClassField?) {
+                    fun checkFieldAssignment(field: TypeField?) {
                         if (field == null) {
                             reports += Error(
                                 expression.leftExpression.pos, "Unknown identifier $name"
@@ -773,7 +769,7 @@ class Checker(private val preference: AbstractPreference) {
 
                 checkIdentifierIsKeyword(expression.name?.literal, expression.name?.pos, isVariable = true)
 
-                fun checkCompanionAccessibility(field: ClassField) {
+                fun checkCompanionAccessibility(field: TypeField) {
                     if (!field.companion && scope.isCompScope) {
                         reports += Error(
                             expression.name?.pos,

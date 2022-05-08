@@ -3,6 +3,7 @@ package org.casc.lang.ast
 import org.casc.lang.table.Reference
 
 sealed class TypeInstance(open val packageReference: Reference?, open val typeReference: Reference) {
+    abstract val fields: List<Field>
     var impl: Impl? = null
     var traitImpls: List<TraitImpl>? = null
     var memberTypeInstances: List<TypeInstance>? = null

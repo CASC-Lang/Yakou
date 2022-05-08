@@ -17,8 +17,10 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         emitFile(file)
 
     private fun emitFile(file: File): ByteArray {
-        val bytecode = emitClass(file.path, file.clazz)
-        val outFile = JFile(preference.outputDir, "/${file.clazz.name!!.literal}.class")
+        val bytecode = when (val typeInstance = file.typeInstance) {
+            is ClassInstance -> emitClass(file.path, typeInstance)
+        }
+        val outFile = JFile(preference.outputDir, "/${file.typeInstance.typeReference.className}.class")
 
         if (!preference.noEmit) {
             preference.outputDir.mkdirs()
@@ -33,16 +35,16 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         return bytecode
     }
 
-    private fun emitClass(sourceFile: String, clazz: Class): ByteArray {
+    private fun emitClass(sourceFile: String, clazz: ClassInstance): ByteArray {
         val classWriter =
             CommonClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS, preference.classLoader)
 
         classWriter.visit(
             Opcodes.V1_8,
             clazz.flag,
-            clazz.getReference().internalName(),
+            clazz.reference.internalName(),
             null,
-            clazz.parentClassReference?.fullQualifiedPath ?: "java/lang/Object",
+            clazz.impl?.parentClassReference?.fullQualifiedPath ?: Reference.OBJECT_TYPE_REFERENCE.internalName(),
             null
         )
 
@@ -53,26 +55,30 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
                 emitField(classWriter, it)
             }
 
-            if (clazz.companionBlock.isNotEmpty()) {
-                val methodVisitor = classWriter.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null)
+            if (clazz.impl != null) {
+                val impl = clazz.impl!!
 
-                methodVisitor.visitCode()
+                if (impl.companionBlock.isNotEmpty()) {
+                    val methodVisitor = classWriter.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null)
 
-                clazz.companionBlock.forEach {
-                    emitStatement(methodVisitor, it!!)
+                    methodVisitor.visitCode()
+
+                    impl.companionBlock.forEach {
+                        emitStatement(methodVisitor, it!!)
+                    }
+
+                    methodVisitor.visitInsn(Opcodes.RETURN)
+                    methodVisitor.visitMaxs(-1, -1)
+                    methodVisitor.visitEnd()
                 }
 
-                methodVisitor.visitInsn(Opcodes.RETURN)
-                methodVisitor.visitMaxs(-1, -1)
-                methodVisitor.visitEnd()
-            }
+                impl.constructors.forEach {
+                    emitConstructor(classWriter, it)
+                }
 
-            clazz.constructors.forEach {
-                emitConstructor(classWriter, it)
-            }
-
-            clazz.functions.forEach {
-                emitFunction(classWriter, it)
+                impl.functions.forEach {
+                    emitFunction(classWriter, it)
+                }
             }
         }
 
