@@ -29,8 +29,7 @@ class Parser(private val preference: AbstractPreference) {
     // PRIVATE UTILITY FUNCTIONS
     // ================================
 
-    private fun hasNext(): Boolean =
-        tokens.size > pos
+    private fun hasNext(): Boolean = tokens.size > pos
 
     private fun assertUntil(type: TokenType): Token? {
         while (hasNext()) {
@@ -66,8 +65,7 @@ class Parser(private val preference: AbstractPreference) {
         predicate(tokens[pos]) -> tokens[pos++]
         else -> {
             reports += Error(
-                tokens[pos].pos,
-                "Unexpected token ${tokens[pos++].type}, expected predicate $predicate"
+                tokens[pos].pos, "Unexpected token ${tokens[pos++].type}, expected predicate $predicate"
             )
             null
         }
@@ -79,28 +77,24 @@ class Parser(private val preference: AbstractPreference) {
         else -> tokens[pos + offset]
     }
 
-    private inline fun peekIf(predicate: (Token) -> Boolean, offset: Int = 0): Boolean =
-        peek(offset)?.let {
-            predicate(it)
-        } ?: false
+    private inline fun peekIf(predicate: (Token) -> Boolean, offset: Int = 0): Boolean = peek(offset)?.let {
+        predicate(it)
+    } ?: false
 
-    private fun peekIf(type: TokenType, offset: Int = 0): Boolean =
-        peek(offset)?.let {
-            it.type == type
-        } ?: false
+    private fun peekIf(type: TokenType, offset: Int = 0): Boolean = peek(offset)?.let {
+        it.type == type
+    } ?: false
 
     /**
      * peekMultiple is used to determine whether a set of tokens matches specific syntax pattern.
      */
     private fun peekMultiple(vararg types: TokenType): Boolean {
-        for (i in types.indices)
-            if (peek(i)?.type != types[i]) return false
+        for (i in types.indices) if (peek(i)?.type != types[i]) return false
 
         return true
     }
 
-    private fun last(): Token? =
-        peek(-1)
+    private fun last(): Token? = peek(-1)
 
     private fun next(): Token? = when {
         !hasNext() -> null
@@ -110,8 +104,7 @@ class Parser(private val preference: AbstractPreference) {
     /**
      * Get next token if there are more than 1 tokens remaining, otherwise return last token if it exists
      */
-    private fun nextOrLast(): Token? =
-        if (hasNext()) next() else tokens.lastOrNull()
+    private fun nextOrLast(): Token? = if (hasNext()) next() else tokens.lastOrNull()
 
     private fun consume() {
         if (hasNext()) pos++
@@ -214,8 +207,7 @@ class Parser(private val preference: AbstractPreference) {
                     if (!typeInstances.containsKey(ownerReference)) {
                         // Unknown type implementation
                         reports += Error(
-                            ownerReference.pos,
-                            "Unknown type implementation for class ${ownerReference.asCASCStyle()}"
+                            ownerReference.pos, "Unknown type implementation for class ${ownerReference.asCASCStyle()}"
                         )
                     } else if (majorImpls.containsKey(ownerReference)) {
                         // Implementation duplication
@@ -411,24 +403,18 @@ class Parser(private val preference: AbstractPreference) {
                             "Encountered first one here"
                         )
                         reports += Error(
-                            token.pos,
-                            "Duplicate access modifier `${token.literal}`",
-                            "Duplicate here"
+                            token.pos, "Duplicate access modifier `${token.literal}`", "Duplicate here"
                         )
                     }
 
                     if (ovrdKeyword && ovrd != null) {
                         reports += Error(
-                            ovrd.pos,
-                            "Cannot declare access modifier after `ovrd` keyword",
-                            "`ovrd` keyword here"
+                            ovrd.pos, "Cannot declare access modifier after `ovrd` keyword", "`ovrd` keyword here"
                         )
                     }
                     if (mutableKeyword && mutable != null) {
                         reports += Error(
-                            mutable.pos,
-                            "Cannot declare access modifier after `mut` keyword",
-                            "`mut` keyword here"
+                            mutable.pos, "Cannot declare access modifier after `mut` keyword", "`mut` keyword here"
                         )
                     }
                     if (forbidPubAccessor && token.literal == "pub") {
@@ -451,54 +437,40 @@ class Parser(private val preference: AbstractPreference) {
                 if (ovrdKeyword) {
                     if (ovrd != null) {
                         reports += Error(
-                            ovrd.pos,
-                            "Duplicate `ovrd` keyword",
-                            "Encountered first one here"
+                            ovrd.pos, "Duplicate `ovrd` keyword", "Encountered first one here"
                         )
                         reports += Error(
-                            token.pos,
-                            "Duplicate `ovrd` keyword",
-                            "Duplicate here"
+                            token.pos, "Duplicate `ovrd` keyword", "Duplicate here"
                         )
                     }
 
                     if (mutableKeyword && mutable != null) {
                         reports += Error(
-                            mutable.pos,
-                            "Cannot declare `ovrd` keyword after `mut` keyword",
-                            "`mut` keyword here"
+                            mutable.pos, "Cannot declare `ovrd` keyword after `mut` keyword", "`mut` keyword here"
                         )
                     }
 
                     ovrd = token
                 } else {
                     reports += Error(
-                        token.pos,
-                        "Cannot declare `ovrd` keyword in current context",
-                        "Remove this `ovrd` keyword"
+                        token.pos, "Cannot declare `ovrd` keyword in current context", "Remove this `ovrd` keyword"
                     )
                 }
             } else if (token.isMutKeyword()) {
                 if (mutableKeyword) {
                     if (mutable != null) {
                         reports += Error(
-                            mutable.pos,
-                            "Duplicate `mut` keyword",
-                            "Encountered first one here"
+                            mutable.pos, "Duplicate `mut` keyword", "Encountered first one here"
                         )
                         reports += Error(
-                            token.pos,
-                            "Duplicate `mut` keyword",
-                            "Duplicate here"
+                            token.pos, "Duplicate `mut` keyword", "Duplicate here"
                         )
                     }
 
                     mutable = token
                 } else {
                     reports += Error(
-                        token.pos,
-                        "Cannot declare `mut` keyword in current context",
-                        "Remove this `mut` keyword"
+                        token.pos, "Cannot declare `mut` keyword in current context", "Remove this `mut` keyword"
                     )
                 }
             } else {
@@ -507,8 +479,7 @@ class Parser(private val preference: AbstractPreference) {
                 builder += if (builder.isNotEmpty() && mutableKeyword) "or `mut` keyword" else if (mutableKeyword) "`mut` keyword" else ""
 
                 reports += Error(
-                    token.pos,
-                    "Unexpected token ${token.type}, expected $builder"
+                    token.pos, "Unexpected token ${token.type}, expected $builder"
                 )
             }
         }
@@ -517,16 +488,14 @@ class Parser(private val preference: AbstractPreference) {
     }
 
     private fun parseFields(
-        classReference: Reference?,
-        compKeyword: Token? = null
+        classReference: Reference?, compKeyword: Token? = null
     ): List<Field> {
         var accessorToken: Token? = null
         var mutKeyword: Token? = null
         var compScopeDeclared = false
         val usedFlags = mutableSetOf(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL) // Default flag is pub (final)
         val fields = object : MutableObjectSet<Field>() {
-            override fun isDuplicate(a: Field, b: Field): Boolean =
-                a.name?.literal == b.name?.literal
+            override fun isDuplicate(a: Field, b: Field): Boolean = a.name?.literal == b.name?.literal
         }
 
         while (hasNext()) {
@@ -539,16 +508,13 @@ class Parser(private val preference: AbstractPreference) {
 
                 if (compScopeDeclared) {
                     reports += Warning(
-                        comp.pos,
-                        "Companion declaration scope has been declared once"
+                        comp.pos, "Companion declaration scope has been declared once"
                     )
                 } else compScopeDeclared = true
 
                 if (compKeyword != null) {
                     reports += Error(
-                        compKeyword.pos,
-                        "Cannot declare nested companion declaration",
-                        "Encountered first one here"
+                        compKeyword.pos, "Cannot declare nested companion declaration", "Encountered first one here"
                     )
                     reports += Error(
                         comp.pos,
@@ -565,8 +531,7 @@ class Parser(private val preference: AbstractPreference) {
                 // (`pub`#1 / `prot` / `intl` / `priv`)? (`mut`)? :
                 // Assume it's accessor keyword or mut keyword
                 val (accessor, _, mutable) = parseModifiers(
-                    ovrdKeyword = false,
-                    forbidPubAccessor = false
+                    ovrdKeyword = false, forbidPubAccessor = false
                 ) { it.type == TokenType.Colon }
 
                 accessorToken = accessor
@@ -590,12 +555,7 @@ class Parser(private val preference: AbstractPreference) {
                 val typeReference = parseComplexTypeSymbol()
 
                 val field = Field(
-                    classReference,
-                    accessorToken,
-                    mutKeyword,
-                    compKeyword,
-                    name,
-                    typeReference
+                    classReference, accessorToken, mutKeyword, compKeyword, name, typeReference
                 )
 
                 if (!fields.add(field)) {
@@ -612,8 +572,7 @@ class Parser(private val preference: AbstractPreference) {
     }
 
     private fun parseFunctions(
-        classReference: Reference?,
-        parentReference: Reference?
+        classReference: Reference?, parentReference: Reference?
     ): Triple<List<Function>, List<Constructor>, List<Statement>> {
         val companionBlock = mutableListOf<Statement>()
         val functions = object : MutableObjectSet<Function>() {
@@ -621,18 +580,43 @@ class Parser(private val preference: AbstractPreference) {
                 a.name?.literal == b.name?.literal && a.parameters == b.parameters
         }
         val constructors = object : MutableObjectSet<Constructor>() {
-            override fun isDuplicate(a: Constructor, b: Constructor): Boolean =
-                a.parameters == b.parameters
+            override fun isDuplicate(a: Constructor, b: Constructor): Boolean = a.parameters == b.parameters
         }
 
         while (hasNext()) {
             if (peekIf(TokenType.CloseBrace)) break
 
+            val (accessor, ovrd, mutable) = parseModifiers { it.isNewKeyword() || it.isFnKeyword() || it.isCompKeyword() || it.type == TokenType.CloseBrace }
+
             if (peekIf(Token::isCompKeyword)) {
+                // Companion block
+                if (accessor != null) {
+                    // Companion block with access modifier
+                    reports += Error(
+                        accessor.pos,
+                        "Cannot declare companion block with access modifier `${accessor.literal}`",
+                        "Remove this access modifier `${accessor.literal}`"
+                    )
+                }
+
+                if (ovrd != null) {
+                    // Companion block with `ovrd` keyword
+                    reports += Error(
+                        ovrd.pos, "Cannot declare companion block with `ovrd` keyword", "Remove this `ovrd` keyword"
+                    )
+                }
+
+                if (mutable != null) {
+                    // Companion block with `mut` keyword
+                    reports += Error(
+                        mutable.pos, "Cannot declare companion block with `mut` keyword", "Remove this `mut` keyword"
+                    )
+                }
+
                 val compKeyword = next()
 
                 assertUntil(TokenType.OpenBrace)
-                // Companion block
+
                 if (companionBlock.isNotEmpty()) {
                     // Companion block already declared
                     reports += Error(
@@ -645,27 +629,19 @@ class Parser(private val preference: AbstractPreference) {
                 companionBlock += parseStatements(true)
 
                 assertUntil(TokenType.CloseBrace)
-            }
-
-            val (accessor, ovrd, mutable) = parseModifiers { it.isNewKeyword() || it.isFnKeyword() || it.type == TokenType.CloseBrace }
-
-            if (peekIf(Token::isNewKeyword)) {
+            } else if (peekIf(Token::isNewKeyword)) {
                 // Constructor declaration
                 if (ovrd != null) {
                     // Constructor with `ovrd` keyword
                     reports += Error(
-                        ovrd.pos,
-                        "Cannot declare constructor with `ovrd` keyword",
-                        "Remove this `ovrd` keyword"
+                        ovrd.pos, "Cannot declare constructor with `ovrd` keyword", "Remove this `ovrd` keyword"
                     )
                 }
 
                 if (mutable != null) {
                     // Constructor with `mut` keyword
                     reports += Error(
-                        mutable.pos,
-                        "Cannot declare constructor with `mut` keyword",
-                        "Remove this `mut` keyword"
+                        mutable.pos, "Cannot declare constructor with `mut` keyword", "Remove this `mut` keyword"
                     )
                 }
 
@@ -689,8 +665,7 @@ class Parser(private val preference: AbstractPreference) {
                     if (peekIf(Token::isSuperKeyword)) superKeyword = next()
                     else if (peekIf(Token::isSelfKeyword)) selfKeyword = next()
                     else reports += Error(
-                        nextOrLast()?.pos,
-                        "Unexpected token, expected `super` or `self` keyword"
+                        nextOrLast()?.pos, "Unexpected token, expected `super` or `self` keyword"
                     )
 
                     if (superKeyword != null || selfKeyword != null) {
@@ -768,8 +743,7 @@ class Parser(private val preference: AbstractPreference) {
                 val currentToken = next()
 
                 reports += Error(
-                    currentToken?.pos,
-                    "Unexpected token `${currentToken?.literal}`"
+                    currentToken?.pos, "Unexpected token `${currentToken?.literal}`"
                 )
             }
         }
@@ -806,9 +780,7 @@ class Parser(private val preference: AbstractPreference) {
                 val type = parseComplexTypeSymbol()
 
                 parameters += Parameter(
-                    parameterName,
-                    colon,
-                    type
+                    parameterName, colon, type
                 )
             }
 
@@ -833,9 +805,7 @@ class Parser(private val preference: AbstractPreference) {
                 val semiColonToken = next()!!
 
                 reports += Error(
-                    semiColonToken.pos,
-                    "Redundant semicolon after statement",
-                    "Remove this semicolon"
+                    semiColonToken.pos, "Redundant semicolon after statement", "Remove this semicolon"
                 )
             }
         }
@@ -844,16 +814,17 @@ class Parser(private val preference: AbstractPreference) {
     }
 
     private fun parseStatement(inCompanionContext: Boolean = false): Statement? {
-        val mutKeyword =
-            if (peekIf(Token::isMutKeyword)) next()
-            else null
+        val mutKeyword = if (peekIf(Token::isMutKeyword)) next()
+        else null
 
         // Situations:
         // after optional `mut` keyword:
         // a := will be identified as variable declaration
         // a, (mut | ID) will be also identified as variable declaration
-        if (peekMultiple(TokenType.Identifier, TokenType.ColonEqual) ||
-            peekMultiple(TokenType.Identifier, TokenType.Comma)
+        if (peekMultiple(TokenType.Identifier, TokenType.ColonEqual) || peekMultiple(
+                TokenType.Identifier,
+                TokenType.Comma
+            )
         ) {
             // Variable declaration
             // mut a := 1
@@ -866,9 +837,8 @@ class Parser(private val preference: AbstractPreference) {
                 if (peekIf(TokenType.Comma)) {
                     consume()
 
-                    val mutableKeyword =
-                        if (peekIf(Token::isMutKeyword)) next()
-                        else null
+                    val mutableKeyword = if (peekIf(Token::isMutKeyword)) next()
+                    else null
                     val name = assertUntil(TokenType.Identifier)
 
                     variables.add(mutableKeyword to name)
@@ -888,17 +858,13 @@ class Parser(private val preference: AbstractPreference) {
             }
 
             return VariableDeclaration(
-                variables,
-                operator,
-                expressions
+                variables, operator, expressions
             )
         }
 
         return if (mutKeyword != null) {
             reports += Error(
-                mutKeyword.pos,
-                "Unexpected `mut` keyword",
-                "Do you mean to declare variable?"
+                mutKeyword.pos, "Unexpected `mut` keyword", "Do you mean to declare variable?"
             )
             return null
         } else if (peekIf(Token::isReturnKeyword)) {
@@ -921,10 +887,7 @@ class Parser(private val preference: AbstractPreference) {
             } else null
 
             IfStatement(
-                condition,
-                trueStatement,
-                elseStatement,
-                ifKeyword?.pos?.extendSelf(trueStatement?.pos)
+                condition, trueStatement, elseStatement, ifKeyword?.pos?.extendSelf(trueStatement?.pos)
             )
         } else if (peekIf(TokenType.OpenBrace)) {
             // Block statement
@@ -933,8 +896,7 @@ class Parser(private val preference: AbstractPreference) {
             val closeBrace = assertUntil(TokenType.CloseBrace)
 
             BlockStatement(
-                statements,
-                openBrace?.pos?.extendSelf(closeBrace?.pos)
+                statements, openBrace?.pos?.extendSelf(closeBrace?.pos)
             )
         } else if (peekIf(Token::isForKeyword)) {
             // Java-style For loop
@@ -960,11 +922,7 @@ class Parser(private val preference: AbstractPreference) {
             assertUntil(TokenType.CloseBrace)
 
             JForStatement(
-                initStatement,
-                condition,
-                postExpression,
-                statements,
-                forKeyword?.pos
+                initStatement, condition, postExpression, statements, forKeyword?.pos
             )
         } else {
             val expression = parseExpression(inCompanionContext)
@@ -982,14 +940,9 @@ class Parser(private val preference: AbstractPreference) {
 
         if (expression is IdentifierCallExpression && (peekIf(TokenType.DoublePlus) || peekIf(TokenType.DoubleMinus))) {
             val operator = next()
-            expression =
-                UnaryExpression(
-                    operator,
-                    expression,
-                    true,
-                    retainValue,
-                    expression.copy().pos?.extend(operator?.pos)
-                )
+            expression = UnaryExpression(
+                operator, expression, true, retainValue, expression.copy().pos?.extend(operator?.pos)
+            )
         }
 
         while (peekIf(TokenType.Equal)) {
@@ -1005,9 +958,7 @@ class Parser(private val preference: AbstractPreference) {
     }
 
     private fun parseBinaryExpression(
-        parentPrecedence: Int = 0,
-        inCompanionContext: Boolean,
-        retainValue: Boolean
+        parentPrecedence: Int = 0, inCompanionContext: Boolean, retainValue: Boolean
     ): Expression? {
         var left: Expression?
         val unaryPrecedence = peek()?.type?.unaryPrecedence() ?: 0
@@ -1028,9 +979,7 @@ class Parser(private val preference: AbstractPreference) {
             val right = parseBinaryExpression(binaryPrecedence, inCompanionContext, retainValue)
 
             left = BinaryExpression(
-                left,
-                operator,
-                right
+                left, operator, right
             )
         }
 
@@ -1087,26 +1036,17 @@ class Parser(private val preference: AbstractPreference) {
                     assertUntil(TokenType.CloseParenthesis)
 
                     val pos = Position.fromMultipleAndExtend(
-                        name?.pos,
-                        arguments.lastOrNull()?.pos
+                        name?.pos, arguments.lastOrNull()?.pos
                     )?.extendSelf() // extend additional 1 character for `)`
 
                     expression = FunctionCallExpression(
-                        null,
-                        name,
-                        arguments,
-                        inCompanionContext,
-                        previousExpression = expression,
-                        pos = pos
+                        null, name, arguments, inCompanionContext, previousExpression = expression, pos = pos
                     )
                 } else {
                     // Member field
                     // owner.memberField
                     expression = IdentifierCallExpression(
-                        null,
-                        name,
-                        previousExpression = expression,
-                        pos = name?.pos?.extend(name.pos)
+                        null, name, previousExpression = expression, pos = name?.pos?.extend(name.pos)
                     )
                 }
             } else if (peekIf(TokenType.OpenBracket)) {
@@ -1118,11 +1058,8 @@ class Parser(private val preference: AbstractPreference) {
                 val closeBracket = assertUntil(TokenType.CloseBracket)
 
                 expression = IndexExpression(
-                    expression,
-                    indexExpression,
-                    pos = Position.fromMultipleAndExtend(
-                        expression?.pos,
-                        closeBracket?.pos
+                    expression, indexExpression, pos = Position.fromMultipleAndExtend(
+                        expression?.pos, closeBracket?.pos
                     )
                 )
             } else if (peekIf(Token::isAsKeyword)) {
@@ -1132,8 +1069,7 @@ class Parser(private val preference: AbstractPreference) {
                 val targetTypeReference = parseTypeSymbol()
 
                 expression = AsExpression(
-                    expression,
-                    targetTypeReference
+                    expression, targetTypeReference
                 )
             }
         }
@@ -1163,13 +1099,8 @@ class Parser(private val preference: AbstractPreference) {
         } else null
 
         return IfExpression(
-            condition,
-            trueStatement,
-            elseStatement,
-            Position.fromMultipleAndExtend(
-                ifKeyword?.pos,
-                trueStatement?.pos,
-                elseStatement?.pos
+            condition, trueStatement, elseStatement, Position.fromMultipleAndExtend(
+                ifKeyword?.pos, trueStatement?.pos, elseStatement?.pos
             )
         )
     }
@@ -1264,9 +1195,8 @@ class Parser(private val preference: AbstractPreference) {
 
         val arrayDimensionExpressions = MutableList<Expression?>(arrayDimensionCounter) { null }
         val arrayDimension = arrayDimensionCounter
-        val baseType =
-            if (peekIf(TokenType.SemiColon)) null
-            else parseTypeSymbol()
+        val baseType = if (peekIf(TokenType.SemiColon)) null
+        else parseTypeSymbol()
 
         while (arrayDimensionCounter != 0) {
             assertUntil(TokenType.SemiColon)
@@ -1302,8 +1232,7 @@ class Parser(private val preference: AbstractPreference) {
             ArrayDeclaration(baseType, arrayDimensionExpressions, arrayExpressionPos)
         } else {
             reports += Error(
-                arrayExpressionPos,
-                "Cannot declare array without type info or top-level dimension expression"
+                arrayExpressionPos, "Cannot declare array without type info or top-level dimension expression"
             )
 
             null
