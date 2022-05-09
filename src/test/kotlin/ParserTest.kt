@@ -9,29 +9,17 @@ import java.io.File
 import java.io.PrintStream
 
 class ParserTest {
-    private fun String.trimBeforeEveryLineBreaks(): String {
-        if (this.isBlank()) return ""
-
-        val new = StringBuilder()
-
-        this.split('\n').forEach {
-            new.append(it.trimEnd() + '\n')
-        }
-
-        return new.toString()
-    }
-
     @TestFactory
     fun testCompilationOutput(): List<DynamicTest> {
         val tests = mutableListOf<DynamicTest>()
         val outputStream = ByteArrayOutputStream()
         val printStream = PrintStream(outputStream)
-        val fileMap = File(Compilation::class.java.classLoader.getResource("parser")!!.file)
+        val fileMap = File(Compilation::class.java.classLoader.getResource("compilation")!!.file)
             .listFiles()
             ?.groupBy { it.extension }
 
         System.setOut(printStream)
-        val localPreference = LocalPreference(enableColor = false)
+        val localPreference = LocalPreference(enableColor = false, noEmit = true)
 
         fileMap?.get("casc")?.forEach {
             localPreference.sourceFile = it
@@ -40,7 +28,7 @@ class ParserTest {
 
             System.out.flush()
 
-            val output = outputStream.toString().trimBeforeEveryLineBreaks()
+            val output = outputStream.toString().trim()
 
             val outFile = fileMap["out"]?.find { outFile -> it.nameWithoutExtension == outFile.nameWithoutExtension }
 
@@ -50,7 +38,7 @@ class ParserTest {
                 }
             } else {
                 DynamicTest.dynamicTest("test ${it.name} compilation output has warning or error") {
-                    Assertions.assertEquals(outFile.readText(Charsets.UTF_8).trimBeforeEveryLineBreaks(), output)
+                    Assertions.assertEquals(outFile.readText(Charsets.UTF_8).trim().replace("\r", ""), output)
                 }
             }
 
@@ -77,7 +65,7 @@ class ParserTest {
 
         System.out.flush()
 
-        val output = outputStream.toString().trimBeforeEveryLineBreaks()
+        val output = outputStream.toString().trim()
 
         Assertions.assertTrue(output.isBlank())
     }
@@ -99,7 +87,7 @@ class ParserTest {
 
         System.out.flush()
 
-        val output = outputStream.toString().trimBeforeEveryLineBreaks()
+        val output = outputStream.toString().trim()
 
         Assertions.assertTrue(output.isBlank())
     }

@@ -29,9 +29,9 @@ sealed class Report {
         constructor(message: String) : this(null, message)
     }
 
-    fun printReport() {
+    fun printReport(preference: AbstractPreference) {
         var finalMessage = when {
-            GlobalPreference.enableColor -> {
+            preference.enableColor -> {
                 when (this) {
                     is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
                     is Error -> Ansi.colorize("error: ", reportAttribute[1])
@@ -45,13 +45,13 @@ sealed class Report {
             }
         }
 
-        finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
+        finalMessage += if (preference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
         println(finalMessage)
     }
 
-    fun printReport(filePath: String, source: List<String>) {
+    fun printReport(preference: AbstractPreference, filePath: String, source: List<String>) {
         var finalMessage = when {
-            GlobalPreference.enableColor -> {
+            preference.enableColor -> {
                 when (this) {
                     is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
                     is Error -> Ansi.colorize("error: ", reportAttribute[1])
@@ -74,13 +74,13 @@ sealed class Report {
                 if (lineNumber < source.lastIndex && lineNumber.toString().length != (lineNumber + 1).toString().length) " "
                 else ""
 
-            finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
+            finalMessage += if (preference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
             finalMessage += "\n--> $filePath:$position\n"
 
             if (lineNumber > 1) {
                 finalMessage +=
                     "${
-                        if (GlobalPreference.enableColor) Ansi.colorize(
+                        if (preference.enableColor) Ansi.colorize(
                             "${lineNumber - 1}$postExtend$preExtend | ",
                             reportAttribute[2]
                         ) else "${lineNumber - 1}$postExtend$preExtend | "
@@ -89,7 +89,7 @@ sealed class Report {
 
             finalMessage +=
                 "${
-                    if (GlobalPreference.enableColor) Ansi.colorize(
+                    if (preference.enableColor) Ansi.colorize(
                         "$lineNumber$postExtend | ",
                         reportAttribute[2]
                     ) else "$lineNumber$postExtend | "
@@ -97,7 +97,7 @@ sealed class Report {
 
             finalMessage += " ".repeat(start + 3 + lineNumber.toString().length)
             finalMessage += postExtend
-            finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(
+            finalMessage += if (preference.enableColor) Ansi.colorize(
                 "^".repeat(end - start),
                 when (this) {
                     is Warning -> reportAttribute[0]
@@ -106,7 +106,7 @@ sealed class Report {
             ) else "^".repeat(end - start)
 
             if (hint != null) {
-                finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(
+                finalMessage += if (preference.enableColor) Ansi.colorize(
                     "= hint: $hint\n", reportAttribute[when (this) {
                         is Warning -> 0
                         is Error -> 1
@@ -118,14 +118,14 @@ sealed class Report {
 
             if (lineNumber < source.lastIndex) {
                 finalMessage += "${
-                    if (GlobalPreference.enableColor) Ansi.colorize(
+                    if (preference.enableColor) Ansi.colorize(
                         "${lineNumber + 1} | ",
                         reportAttribute[2]
                     ) else "${lineNumber + 1} | "
                 }${source[lineNumber]}\n"
             }
         } else {
-            finalMessage += if (GlobalPreference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
+            finalMessage += if (preference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
             finalMessage += "\n--> $filePath\n"
         }
 
