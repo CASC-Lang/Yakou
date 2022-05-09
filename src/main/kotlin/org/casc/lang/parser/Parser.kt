@@ -431,7 +431,7 @@ class Parser(private val preference: AbstractPreference) {
                             "`mut` keyword here"
                         )
                     }
-                    if (forbidPubAccessor) {
+                    if (forbidPubAccessor && token.literal == "pub") {
                         reports += Error(
                             token.pos,
                             "Redundant access modifier `pub`, `pub` is declared under the hood by compiler",
