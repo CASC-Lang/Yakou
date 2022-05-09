@@ -141,10 +141,11 @@ class Parser(private val preference: AbstractPreference) {
             val (accessor, abstr, _, mutable) = parseModifiers(ovrdKeyword = false) { it.isClassKeyword() || it.isImplKeyword() }
 
             if (peekIf(Token::isClassKeyword)) {
+                // Class declaration
                 val classKeyword = next()!!
                 val classReference = parseTypeSymbol()
                 val fields = if (peekIf(TokenType.OpenBrace)) {
-                    assertUntil(TokenType.OpenBrace)
+                    consume() // open brace
                     val fields = parseFields(classReference)
                     assertUntil(TokenType.CloseBrace)
                     fields
@@ -165,6 +166,60 @@ class Parser(private val preference: AbstractPreference) {
                         "Consider remove this class declaration"
                     )
                 } else typeInstances[classReference] = classInstance
+            } else if (peekIf(Token::isTraitKeyword)) {
+                // Trait declaration
+                if (abstr != null) {
+                    // Trait with `abstr` keyword
+                    reports += Error(
+                        abstr.pos,
+                        "Cannot declare trait instance with `abstr` keyword, trait is implicitly abstract",
+                        "Remove this `abstr` keyword"
+                    )
+                }
+
+                if (mutable != null) {
+                    // Trait with `mut` keyword
+                    reports += Error(
+                        mutable.pos,
+                        "Cannot declare trait instance with `mut` keyword, trait is implicitly mutable",
+                        "Remove this `mut` keyword"
+                    )
+                }
+
+                val traitKeyword = next()!!
+                val traitReference = parseTypeSymbol()
+                val fields = if (peekIf(TokenType.OpenBrace)) {
+                    consume() // open brace
+                    val fields = parseFields(traitReference)
+                    assertUntil(TokenType.CloseBrace)
+                    fields
+                } else listOf()
+
+                for (field in fields) {
+                    if (field.compKeyword == null) {
+                        // non-companion field in trait
+                        reports += Error(
+                            field.name?.pos,
+                            "Cannot declare field ${field.name?.literal ?: "<Unknown>"} as non-companion field",
+                            "Wrap this field with companion block"
+                        )
+                    }
+                }
+
+                // Missing class reference, most likely caused by token missing
+                if (traitReference.fullQualifiedPath.isEmpty()) continue
+
+                val traitInstance =
+                    TraitInstance(packageReference, accessor, traitKeyword, traitReference, fields)
+
+                if (typeInstances.containsKey(traitReference)) {
+                    // Trait declaration duplication
+                    reports += Error(
+                        traitReference.pos,
+                        "Duplicated trait declaration for class ${traitReference.asCASCStyle()}",
+                        "Consider remove this trait declaration"
+                    )
+                } else typeInstances[traitReference] = traitInstance
             } else if (peekIf(Token::isImplKeyword)) {
                 val implKeyword = next()!!
                 val ownerReference = parseTypeSymbol()
@@ -219,9 +274,7 @@ class Parser(private val preference: AbstractPreference) {
                         )
                     } else majorImpls[ownerReference] = impl
                 }
-            } else if (hasNext()) {
-                reports.reportUnexpectedToken(next()!!)
-            } else break
+            }
         }
 
         // Bind major type instance
@@ -594,7 +647,8 @@ class Parser(private val preference: AbstractPreference) {
 
                 assertUntil(TokenType.Colon)
 
-                val currentFlag = HasFlag.getFlag(Accessor.fromString(accessorToken?.literal), abstrToken != null, mutKeyword != null)
+                val currentFlag =
+                    HasFlag.getFlag(Accessor.fromString(accessorToken?.literal), abstrToken != null, mutKeyword != null)
 
                 if (!usedFlags.add(currentFlag)) {
                     reports += Error(
