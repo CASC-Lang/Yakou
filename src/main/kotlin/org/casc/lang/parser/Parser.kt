@@ -665,6 +665,8 @@ class Parser(private val preference: AbstractPreference) {
 
                 var superKeyword: Token? = null
                 var selfKeyword: Token? = null
+                var statements: List<Statement>? = null
+
                 val superCallArguments = if (peekIf(TokenType.Colon)) {
                     // `super` call
                     consume()
@@ -674,18 +676,18 @@ class Parser(private val preference: AbstractPreference) {
                         nextOrLast()?.pos, "Unexpected token, expected `super` or `self` keyword"
                     )
 
-                    if (superKeyword != null || selfKeyword != null) {
-                        assertUntil(TokenType.OpenParenthesis)
-                        val arguments = parseArguments(true)
-                        assertUntil(TokenType.CloseParenthesis)
+                    assertUntil(TokenType.OpenParenthesis)
+                    val arguments = parseArguments(true)
+                    assertUntil(TokenType.CloseParenthesis)
 
-                        arguments
-                    } else listOf()
+                    arguments
                 } else listOf()
 
-                assertUntil(TokenType.OpenBrace)
-                val statements = parseStatements()
-                assertUntil(TokenType.CloseBrace)
+                if (peekIf(TokenType.OpenBrace)) {
+                    consume() // open brace
+                    statements = parseStatements()
+                    assertUntil(TokenType.CloseBrace)
+                }
 
                 val constructor = Constructor(
                     classReference,
@@ -693,7 +695,7 @@ class Parser(private val preference: AbstractPreference) {
                     accessor,
                     newKeyword,
                     parameters,
-                    statements,
+                    statements ?: listOf(),
                     superKeyword,
                     selfKeyword,
                     superCallArguments
