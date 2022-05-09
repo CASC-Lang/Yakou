@@ -879,7 +879,7 @@ class Parser(private val preference: AbstractPreference) {
                 val name = assertUntil(TokenType.Identifier)
                 val (parameterSelfKeyword, parameters) = parseParameters()
 
-                if (parameterSelfKeyword != null && mutable != null) {
+                if (parameterSelfKeyword == null && mutable != null) {
                     // Companion function cannot be mutable
                     reports += Error(
                         mutable.pos,

@@ -7,5 +7,5 @@ impl InvalidModifier {
 
     mut ovrd new() {}
 
-    mut fn a1(self) {}
+    mut fn a1() {}
 }
