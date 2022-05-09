@@ -301,6 +301,15 @@ class Parser(private val preference: AbstractPreference) {
         // Bind implementations to type instances
         for ((typeInstanceReference, typeInstanceEntry) in typeInstances) {
             majorImpls[typeInstanceReference]?.let {
+                if (typeInstanceEntry is TraitInstance && it.parentClassReference != null) {
+                    // Illegal inheritance for trait instance's implementation
+                    reports += Error(
+                        it.parentClassReference.pos,
+                        "Trait cannot inherit type instance by major implementation",
+                        "Replace `:` (colon) with `for` keyword"
+                    )
+                }
+
                 typeInstanceEntry.impl = it
             }
 
