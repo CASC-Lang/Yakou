@@ -279,7 +279,7 @@ class Checker(private val preference: AbstractPreference) {
             }
         }
 
-        if (constructor.parentReference == null) constructor.parentReference = Reference(Any::class.java)
+        if (constructor.parentReference == null) constructor.parentReference = Reference.OBJECT_TYPE_REFERENCE
 
         constructor.ownerType = findType(constructor.ownerReference, localScope)
         constructor.parentType = findType(constructor.parentReference, localScope)
@@ -438,7 +438,7 @@ class Checker(private val preference: AbstractPreference) {
                     "Add `super` call after constructor declaration"
                 )
             } else constructor.parentConstructorSignature = FunctionSignature(
-                Reference(Any::class.java),
+                Reference.OBJECT_TYPE_REFERENCE,
                 companion = true,
                 mutable = false,
                 Accessor.Pub,
