@@ -1,0 +1,5 @@
+mut mut class DuplicateMut
+
+impl DuplicateMut {
+    mut fn a1() {}
+}

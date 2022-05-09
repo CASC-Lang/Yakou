@@ -1,8 +1,8 @@
-error: Duplicate access modifier `pub`
+error: Duplicate access modifier `prot`
 --> ./DuplicateAccessModifier.casc:1:0
-1 | pub priv class DuplicateAccessModifier
-    ^^^= hint: Encountered first one here
+1 | prot priv class DuplicateAccessModifier
+    ^^^^= hint: Encountered first one here
 error: Duplicate access modifier `priv`
---> ./DuplicateAccessModifier.casc:1:4
-1 | pub priv class DuplicateAccessModifier
-        ^^^^= hint: Duplicate here
+--> ./DuplicateAccessModifier.casc:1:5
+1 | prot priv class DuplicateAccessModifier
+         ^^^^= hint: Duplicate here

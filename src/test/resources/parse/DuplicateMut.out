@@ -1,0 +1,10 @@
+error: Duplicate `mut` keyword
+--> ./DuplicateMut.casc:1:0
+1 | mut mut class DuplicateMut
+    ^^^= hint: Encountered first one here
+2 |
+error: Duplicate `mut` keyword
+--> ./DuplicateMut.casc:1:4
+1 | mut mut class DuplicateMut
+        ^^^= hint: Duplicate here
+2 |

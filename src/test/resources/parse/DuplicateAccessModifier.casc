@@ -1,1 +1,1 @@
-pub priv class DuplicateAccessModifier
+prot priv class DuplicateAccessModifier
