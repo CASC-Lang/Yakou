@@ -18,7 +18,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
 
     private fun emitFile(file: File): ByteArray {
         val bytecode = when (val typeInstance = file.typeInstance) {
-            is ClassInstance -> emitClass(file.path, typeInstance)
+            is ClassInstance -> emitClass(file.fileName, typeInstance)
         }
         val outFile = JFile(preference.outputDir, "/${file.typeInstance.typeReference.className}.class")
 
