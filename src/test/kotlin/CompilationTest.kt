@@ -14,8 +14,9 @@ class CompilationTest {
         val outputStream = ByteArrayOutputStream()
         val printStream = PrintStream(outputStream)
         val fileMap = File(Compilation::class.java.classLoader.getResource("parse")!!.file)
-            .listFiles()
-            ?.groupBy { it.extension }
+            .walkTopDown()
+            .toList()
+            .groupBy { it.extension }
 
         System.setOut(printStream)
         val localPreference = LocalPreference(enableColor = false, noEmit = true)
