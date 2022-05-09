@@ -6,6 +6,7 @@ import org.objectweb.asm.Opcodes
 
 data class FunctionSignature(
     val ownerReference: Reference,
+    val ownerType: ClassType?,
     val companion: Boolean,
     val mutable: Boolean,
     override val accessor: Accessor,

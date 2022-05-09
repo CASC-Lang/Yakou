@@ -138,7 +138,7 @@ class Parser(private val preference: AbstractPreference) {
                 continue
             }
 
-            val (accessor, abstr, _, mutable) = parseModifiers(ovrdKeyword = false) { it.isClassKeyword() || it.isImplKeyword() }
+            val (accessor, abstr, _, mutable) = parseModifiers(ovrdKeyword = false) { it.isClassKeyword() || it.isTraitKeyword() || it.isImplKeyword() }
 
             if (peekIf(Token::isClassKeyword)) {
                 // Class declaration
@@ -200,8 +200,8 @@ class Parser(private val preference: AbstractPreference) {
                         // non-companion field in trait
                         reports += Error(
                             field.name?.pos,
-                            "Cannot declare field ${field.name?.literal ?: "<Unknown>"} as non-companion field",
-                            "Wrap this field with companion block"
+                            "Cannot declare non-companion field ${field.name?.literal ?: "<Unknown>"} in trait",
+                            "Declare this field in companion block"
                         )
                     }
                 }
@@ -301,13 +301,58 @@ class Parser(private val preference: AbstractPreference) {
         // Bind implementations to type instances
         for ((typeInstanceReference, typeInstanceEntry) in typeInstances) {
             majorImpls[typeInstanceReference]?.let {
-                if (typeInstanceEntry is TraitInstance && it.parentClassReference != null) {
-                    // Illegal inheritance for trait instance's implementation
-                    reports += Error(
-                        it.parentClassReference.pos,
-                        "Trait cannot inherit type instance by major implementation",
-                        "Replace `:` (colon) with `for` keyword"
-                    )
+                when (typeInstanceEntry) {
+                    is ClassInstance -> {
+                        for (function in it.functions) {
+                            if (function.statements == null && (typeInstanceEntry.abstrToken == null || function.abstrKeyword == null)) {
+                                // Function body missing while function is not declared with `abstr` keyword
+                                reports += Error(
+                                    function.name?.pos,
+                                    "Function body must be implemented when both class instance and function didn't declared with `abstr` keyword",
+                                    "Add function body"
+                                )
+                            }
+
+                            if (function.selfKeyword == null && function.statements == null) {
+                                // Companion function body missing
+                                reports += Error(
+                                    function.name?.pos,
+                                    "Companion function must have function body"
+                                )
+                            }
+                        }
+                    }
+                    is TraitInstance -> {
+                        if (it.parentClassReference != null) {
+                            // Illegal inheritance for trait instance's implementation
+                            reports += Error(
+                                it.parentClassReference.pos,
+                                "Trait cannot inherit type instance by major implementation",
+                                "Replace `:` (colon) with `for` keyword"
+                            )
+                        }
+
+                        if (it.constructors.isNotEmpty()) {
+                            // Illegal constructor declaration for trait instance's implementation
+                            for (constructor in it.constructors) {
+                                reports += Error(
+                                    constructor.newKeyword?.pos,
+                                    "Trait cannot have constructors",
+                                    "Remove this constructor declaration"
+                                )
+                            }
+                        }
+
+                        for (function in it.functions) {
+                            if (function.selfKeyword == null && function.statements == null) {
+                                // Companion function body missing
+                                reports += Error(
+                                    function.name?.pos,
+                                    "Companion function must have function body"
+                                )
+                            }
+                        }
+                    }
                 }
 
                 typeInstanceEntry.impl = it
@@ -839,9 +884,13 @@ class Parser(private val preference: AbstractPreference) {
                     parseComplexTypeSymbol()
                 } else null
 
-                assertUntil(TokenType.OpenBrace)
-                val statements = parseStatements(parameterSelfKeyword != null)
-                assertUntil(TokenType.CloseBrace)
+                val statements = if (peekIf(TokenType.OpenBrace)) {
+                    consume() // open brace
+                    val statements = parseStatements(parameterSelfKeyword != null)
+                    assertUntil(TokenType.CloseBrace)
+
+                    statements
+                } else null
 
                 val function = Function(
                     classReference,

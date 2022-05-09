@@ -12,8 +12,8 @@ data class Constructor(
     val superKeyword: Token?,
     val selfKeyword: Token?,
     val parentConstructorArguments: List<Expression?>,
-    var ownerType: Type? = null,
-    var parentType: Type? = null,
+    var ownerType: ClassType? = null,
+    var parentType: ClassType? = null,
     val accessor: Accessor = Accessor.fromString(accessorToken?.literal),
     var parameterTypes: List<Type?> = listOf(),
     var parentConstructorArgumentsTypes: List<Type?> = listOf(),
@@ -31,6 +31,7 @@ data class Constructor(
     override fun asSignature(): FunctionSignature =
         FunctionSignature(
             ownerReference!!,
+            ownerType,
             companion = true,
             mutable = false,
             accessor,

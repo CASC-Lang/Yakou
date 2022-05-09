@@ -129,10 +129,13 @@ class Compilation(private val preference: AbstractPreference) {
                                 declarations.find { it.typeInstance.reference.fullQualifiedPath == typeInstance.impl!!.parentClassReference!!.fullQualifiedPath }
                             if (parentClazzFile != null)
                                 addToQueue(parentClazzFile)
-                            creationQueue.add(file.typeInstance.reference.fullQualifiedPath)
-                        } else {
-                            creationQueue.add(file.typeInstance.reference.fullQualifiedPath)
                         }
+
+                        if (typeInstance.traitImpls != null) {
+                            // TODO: implement traitImpls precaching
+                        }
+
+                        creationQueue.add(file.typeInstance.reference.fullQualifiedPath)
                     }
 
                     declarations.forEach(::addToQueue)
@@ -156,9 +159,8 @@ class Compilation(private val preference: AbstractPreference) {
                          * Check all AST declaration's body's validity
                          */
                         val checker = Checker(preference)
-                        val (checkReports, checkResult) = checker.check(compilationUnit.file, compilationUnit.scope)
+                        val checkReports = checker.check(compilationUnit.file, compilationUnit.scope)
 
-                        compilationUnit.file = checkResult
                         compilationUnit.reports = checkReports
                     }
                 }
@@ -256,9 +258,8 @@ class Compilation(private val preference: AbstractPreference) {
                 }
 
                 measureTime("Check (Main)") {
-                    val (bodyReports, finalFile) = checker.check(file!!, scope!!)
+                    val bodyReports = checker.check(file!!, scope!!)
 
-                    file = finalFile
                     reports = bodyReports
                 }
 

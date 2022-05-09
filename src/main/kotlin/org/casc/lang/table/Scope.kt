@@ -1,10 +1,7 @@
 package org.casc.lang.table
 
 import io.github.classgraph.ClassGraph
-import org.casc.lang.ast.Accessor
-import org.casc.lang.ast.ClassInstance
-import org.casc.lang.ast.Field
-import org.casc.lang.ast.HasSignature
+import org.casc.lang.ast.*
 import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.utils.getOrElse
 import java.lang.reflect.Modifier
@@ -14,7 +11,8 @@ data class Scope(
     var companion: Boolean,
     var mutable: Boolean,
     var accessor: Accessor,
-    var classReference: Reference,
+    var typeReference: Reference,
+    var isTrait: Boolean = false,
     var parentClassPath: Reference? = null,
     var usages: MutableSet<Reference> = mutableSetOf(),
     var fields: MutableSet<TypeField> = mutableSetOf(),
@@ -30,6 +28,7 @@ data class Scope(
         mutable: Boolean? = null,
         accessor: Accessor? = null,
         classPath: Reference? = null,
+        isTrait: Boolean? = null,
         isCompScope: Boolean = false,
         isLoopScope: Boolean = false,
     ) : this(
@@ -37,7 +36,8 @@ data class Scope(
         companion ?: parent.companion,
         mutable ?: parent.mutable,
         accessor ?: parent.accessor,
-        classPath ?: parent.classReference,
+        classPath ?: parent.typeReference,
+        isTrait ?: parent.isTrait,
         parent.parentClassPath,
         parent.usages.toMutableSet(),
         parent.fields.toMutableSet(),
@@ -71,7 +71,7 @@ data class Scope(
     }
 
     fun findField(ownerPath: Reference?, fieldName: String): TypeField? {
-        if (ownerPath == null || ownerPath == classReference) return fields.find { it.name == fieldName }
+        if (ownerPath == null || ownerPath == typeReference) return fields.find { it.name == fieldName }
 
         // Find function signature from cached classes first
         val ownerClass = Table.findTypeInstance(ownerPath)
@@ -146,6 +146,7 @@ data class Scope(
                                 }
                 }?.asSignature() ?: findSignature(typeInstance.parentClassReference, functionName, argumentTypes)
             } else {
+                // TODO: Find functions from implemented traits
                 typeInstance.impl?.functions?.find {
                     it.name?.literal == functionName &&
                             it.parameterTypes?.size == argumentTypes.size &&
@@ -160,6 +161,7 @@ data class Scope(
                         functionName,
                         argumentTypes
                     )
+                    is TraitInstance -> null
                 }
             }
         }
@@ -179,6 +181,7 @@ data class Scope(
                         if (constructor.parameterTypes.zip(argumentClasses).all { (l, r) -> l.isAssignableFrom(r) }) {
                             return FunctionSignature(
                                 Reference(ownerClazz),
+                                TypeUtil.asType(ownerClazz, preference) as ClassType,
                                 companion = true,
                                 mutable = false,
                                 Accessor.fromModifier(constructor.modifiers),
@@ -194,7 +197,7 @@ data class Scope(
                 // Function
                 try {
                     var (ownerClazz, argumentClasses) =
-                        if (ownerPath == classReference) retrieveExecutableInfo(
+                        if (ownerPath == typeReference) retrieveExecutableInfo(
                             findType(parentClassPath) ?: ClassType(Any::class.java), argTypes
                         )
                         else retrieveExecutableInfo(ownerType, argTypes)
@@ -211,6 +214,7 @@ data class Scope(
                                 ) {
                                     signature = FunctionSignature(
                                         Reference(ownerClazz),
+                                        TypeUtil.asType(ownerClazz, preference) as ClassType,
                                         Modifier.isStatic(function.modifiers),
                                         Modifier.isFinal(function.modifiers),
                                         Accessor.fromModifier(function.modifiers),
@@ -264,7 +268,7 @@ data class Scope(
     fun findVariable(variableName: String): Variable? =
         if (!isCompScope && (variableName == "self" || variableName == "super")) {
             when (variableName) {
-                "self" -> Variable(true, "self", findType(classReference), 0, scopeDepth)
+                "self" -> Variable(true, "self", findType(typeReference), 0, scopeDepth)
                 "super" -> Variable(true, "super", findType(parentClassPath), 0, scopeDepth)
                 else -> null // Should not happen
             }
@@ -282,11 +286,12 @@ data class Scope(
 
     fun findType(reference: Reference?): Type? = when (reference) {
         null -> null
-        classReference -> ClassType(
-            classReference.fullQualifiedPath,
+        typeReference -> ClassType(
+            typeReference.fullQualifiedPath,
             parentClassPath?.fullQualifiedPath,
             accessor,
-            mutable
+            mutable,
+            isTrait
         )
         else -> TypeUtil.asType(findReference(reference), preference)
     }
@@ -306,7 +311,7 @@ data class Scope(
     fun isChildType(parentReference: Reference?, childReference: Reference?): Boolean = when {
         childReference == null -> false
         parentReference == childReference -> false
-        childReference == classReference -> isChildType(
+        childReference == typeReference -> isChildType(
             findType(parentReference),
             findType(parentClassPath)
         )
@@ -314,7 +319,7 @@ data class Scope(
     }
 
     fun isChildType(parentReference: Reference?): Boolean =
-        isChildType(parentReference, classReference)
+        isChildType(parentReference, typeReference)
 
     private fun retrieveExecutableInfo(
         ownerType: Type,
