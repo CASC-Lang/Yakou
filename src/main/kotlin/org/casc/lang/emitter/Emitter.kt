@@ -397,7 +397,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
                         functionSignature.ownerReference.internalName(),
                         functionSignature.name,
                         functionSignature.descriptor,
-                        functionSignature.ownerType?.isTrait == true // TODO: Support interface function calling
+                        functionSignature.ownerType?.isTrait == true
                     )
                 } else {
                     // Use INVOKEVIRTUAL instead
@@ -410,7 +410,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
                         functionSignature.ownerReference.internalName(),
                         functionSignature.name,
                         functionSignature.descriptor,
-                        functionSignature.ownerType?.isTrait == true // TODO: Support interface function calling
+                        functionSignature.ownerType?.isTrait == true
                     )
                 }
             }
