@@ -3,3 +3,15 @@ error: Constructor has already added `self` variable under the hood
 3 | impl InvalidSelf {
 4 |     new(self)
             ^^^^= hint: Remove `self` keyword
+5 |
+error: `self` can only be at the start of parameters
+--> ./InvalidSelf.casc:6:16
+5 |
+6 |     new(i: i32, self)
+                    ^^^^= hint: move `self` to the start of parameters
+7 |
+error: `self` can only be at the start of parameters
+--> ./InvalidSelf.casc:8:18
+7 |
+8 |     fn a1(i: i32, self) {}
+                      ^^^^= hint: move `self` to the start of parameters

@@ -2,4 +2,8 @@ class InvalidConstructor
 
 impl InvalidConstructor {
     new() : pub()
+
+    new(a: i32)
+
+    new(b: i32)
 }
