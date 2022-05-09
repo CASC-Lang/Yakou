@@ -18,7 +18,8 @@ data class ClassInstance(
     override val flag: Int by lazy {
         var flag = Opcodes.ACC_SUPER
         flag += accessor.access
-        flag += abstrToken.getOrElse(Opcodes.ACC_ABSTRACT, mutKeyword.getOrElse(0, Opcodes.ACC_FINAL))
+        flag += abstrToken.getOrElse(Opcodes.ACC_ABSTRACT)
+        flag += mutKeyword.getOrElse(0, Opcodes.ACC_FINAL)
         flag
     }
 
