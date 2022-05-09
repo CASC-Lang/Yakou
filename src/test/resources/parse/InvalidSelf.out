@@ -1,0 +1,5 @@
+error: Constructor has already added `self` variable under the hood
+--> ./InvalidSelf.casc:4:8
+3 | impl InvalidSelf {
+4 |     new(self)
+            ^^^^= hint: Remove `self` keyword
