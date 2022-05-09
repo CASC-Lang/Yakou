@@ -1,0 +1,12 @@
+error: Companion block already declared
+--> ./MultipleCompanionBlock.casc:8:4
+7 |
+8 |     comp {
+        ^^^^= hint: Try merge companion blocks together
+9 |
+error: Companion block already declared
+--> ./MultipleCompanionBlock.casc:4:4
+3 | impl MultipleCompanionBlock {
+4 |     comp {
+        ^^^^= hint: Merge to this companion block
+5 |
