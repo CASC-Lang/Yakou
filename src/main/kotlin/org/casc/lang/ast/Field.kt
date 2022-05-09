@@ -7,6 +7,7 @@ import org.objectweb.asm.Opcodes
 data class Field(
     val ownerReference: Reference?,
     val accessorToken: Token?,
+    val abstrKeyword: Token?,
     val mutKeyword: Token?,
     val compKeyword: Token?,
     val name: Token?,
@@ -16,8 +17,13 @@ data class Field(
 ) : HasDescriptor, HasFlag {
     override val descriptor: String
         get() = type?.descriptor ?: ""
-    override val flag: Int =
-        mutKeyword.getOrElse(0, Opcodes.ACC_FINAL) + accessor.access + compKeyword.getOrElse(Opcodes.ACC_STATIC)
+    override val flag: Int by lazy {
+        var flag = accessor.access
+        flag += compKeyword.getOrElse(Opcodes.ACC_STATIC)
+        flag += abstrKeyword.getOrElse(Opcodes.ACC_ABSTRACT)
+        flag += mutKeyword.getOrElse(0, Opcodes.ACC_FINAL)
+        flag
+    }
 
     fun asClassField(): TypeField =
         TypeField(

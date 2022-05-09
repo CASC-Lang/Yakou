@@ -10,6 +10,7 @@ import org.objectweb.asm.*
 import java.lang.invoke.CallSite
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType
+import java.util.OptionalDouble
 import java.io.File as JFile
 
 class Emitter(private val preference: AbstractPreference, private val declarationOnly: Boolean) {
@@ -18,7 +19,8 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
 
     private fun emitFile(file: File): ByteArray {
         val bytecode = when (val typeInstance = file.typeInstance) {
-            is ClassInstance -> emitClass(file.path, typeInstance)
+            is ClassInstance -> emitClass(typeInstance, file.fileName)
+            is TraitInstance -> emitTrait(typeInstance, file.fileName)
         }
         val outFile = JFile(preference.outputDir, "/${file.typeInstance.typeReference.className}.class")
 
@@ -35,7 +37,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         return bytecode
     }
 
-    private fun emitClass(sourceFile: String, clazz: ClassInstance): ByteArray {
+    private fun emitClass(clazz: ClassInstance, sourceFile: String): ByteArray {
         val classWriter =
             CommonClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS, preference.classLoader)
 
@@ -64,7 +66,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
                     methodVisitor.visitCode()
 
                     impl.companionBlock.forEach {
-                        emitStatement(methodVisitor, it!!)
+                        emitStatement(methodVisitor, it)
                     }
 
                     methodVisitor.visitInsn(Opcodes.RETURN)
@@ -83,6 +85,52 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         }
 
         classWriter.visitEnd()
+
+        return classWriter.toByteArray()
+    }
+
+    private fun emitTrait(trait: TraitInstance, sourceFile: String): ByteArray {
+        val classWriter =
+            CommonClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS, preference.classLoader)
+
+        classWriter.visit(
+            Opcodes.V1_8,
+            trait.flag,
+            trait.reference.internalName(),
+            null,
+            trait.impl?.parentClassReference?.fullQualifiedPath ?: Reference.OBJECT_TYPE_REFERENCE.internalName(),
+            null
+        )
+
+        classWriter.visitSource(sourceFile, null)
+
+        if (!declarationOnly) {
+            trait.fields.forEach {
+                emitField(classWriter, it)
+            }
+
+            if (trait.impl != null) {
+                val impl = trait.impl!!
+
+                if (impl.companionBlock.isNotEmpty()) {
+                    val methodVisitor = classWriter.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null)
+
+                    methodVisitor.visitCode()
+
+                    impl.companionBlock.forEach {
+                        emitStatement(methodVisitor, it)
+                    }
+
+                    methodVisitor.visitInsn(Opcodes.RETURN)
+                    methodVisitor.visitMaxs(-1, -1)
+                    methodVisitor.visitEnd()
+                }
+
+                impl.functions.forEach {
+                    emitFunction(classWriter, it)
+                }
+            }
+        }
 
         return classWriter.toByteArray()
     }
@@ -137,17 +185,19 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
             null
         )
 
-        methodVisitor.visitCode()
+        if (function.statements != null) {
+            methodVisitor.visitCode()
 
-        function.statements.forEach {
-            emitStatement(methodVisitor, it)
+            function.statements.forEach {
+                emitStatement(methodVisitor, it)
+            }
+
+            if (function.returnType == PrimitiveType.Unit)
+                methodVisitor.visitInsn(Opcodes.RETURN)
+
+            methodVisitor.visitMaxs(-1, -1)
+            methodVisitor.visitEnd()
         }
-
-        if (function.returnType == PrimitiveType.Unit)
-            methodVisitor.visitInsn(Opcodes.RETURN)
-
-        methodVisitor.visitMaxs(-1, -1)
-        methodVisitor.visitEnd()
     }
 
     private fun emitStatement(methodVisitor: MethodVisitor, statement: Statement) {
@@ -347,16 +397,20 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
                         functionSignature.ownerReference.internalName(),
                         functionSignature.name,
                         functionSignature.descriptor,
-                        false // TODO: Support interface function calling
+                        functionSignature.ownerType?.isTrait == true
                     )
                 } else {
                     // Use INVOKEVIRTUAL instead
                     methodVisitor.visitMethodInsn(
-                        if (expression.superCall) Opcodes.INVOKESPECIAL else Opcodes.INVOKEVIRTUAL,
+                        when {
+                            expression.superCall -> Opcodes.INVOKESPECIAL
+                            functionSignature.ownerType?.isTrait == true -> Opcodes.INVOKEINTERFACE
+                            else -> Opcodes.INVOKEVIRTUAL
+                        },
                         functionSignature.ownerReference.internalName(),
                         functionSignature.name,
                         functionSignature.descriptor,
-                        false // TODO: Support interface function calling
+                        functionSignature.ownerType?.isTrait == true
                     )
                 }
             }

@@ -11,6 +11,7 @@ data class ClassType(
     val parentClassName: String?,
     override val accessor: Accessor,
     val mutable: Boolean,
+    val isTrait: Boolean,
     override val internalName: String = typeName.replace('.', '/'),
     override val descriptor: String = "L$internalName;"
 ) : Type, HasAccessor {
@@ -22,7 +23,8 @@ data class ClassType(
         clazz.typeName,
         clazz.superclass?.typeName,
         Accessor.fromModifier(clazz.modifiers),
-        Modifier.isFinal(clazz.modifiers)
+        Modifier.isFinal(clazz.modifiers),
+        clazz.isInterface
     )
 
     override fun type(preference: AbstractPreference): Class<*>? = try {

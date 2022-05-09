@@ -3,6 +3,7 @@ package org.casc.lang.table
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 import org.casc.lang.ast.ClassInstance
 import org.casc.lang.ast.File
+import org.casc.lang.ast.TraitInstance
 import org.casc.lang.ast.TypeInstance
 
 /*
@@ -29,7 +30,8 @@ object Table {
                 else Reference.OBJECT_TYPE_REFERENCE.fullQualifiedPath,
                 it.typeInstance.accessor,
                 if (typeInstance is ClassInstance) typeInstance.mutKeyword != null
-                else false
+                else false,
+                typeInstance is TraitInstance
             )
         }
 

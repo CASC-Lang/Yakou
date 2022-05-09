@@ -9,6 +9,7 @@ import org.casc.lang.compilation.Warning
 import org.casc.lang.table.HasFlag
 import org.casc.lang.table.Reference
 import org.casc.lang.utils.MutableObjectSet
+import org.casc.lang.utils.Tuple4
 import org.objectweb.asm.Opcodes
 import java.io.File as JFile
 
@@ -137,13 +138,14 @@ class Parser(private val preference: AbstractPreference) {
                 continue
             }
 
-            val (accessor, _, mutable) = parseModifiers(ovrdKeyword = false) { it.isClassKeyword() || it.isImplKeyword() }
+            val (accessor, abstr, _, mutable) = parseModifiers(ovrdKeyword = false) { it.isClassKeyword() || it.isTraitKeyword() || it.isImplKeyword() }
 
             if (peekIf(Token::isClassKeyword)) {
+                // Class declaration
                 val classKeyword = next()!!
                 val classReference = parseTypeSymbol()
                 val fields = if (peekIf(TokenType.OpenBrace)) {
-                    assertUntil(TokenType.OpenBrace)
+                    consume() // open brace
                     val fields = parseFields(classReference)
                     assertUntil(TokenType.CloseBrace)
                     fields
@@ -154,7 +156,7 @@ class Parser(private val preference: AbstractPreference) {
                 if (classReference.fullQualifiedPath.isEmpty()) continue
 
                 val classInstance =
-                    ClassInstance(packageReference, accessor, mutable, classKeyword, classReference, fields)
+                    ClassInstance(packageReference, accessor, abstr, mutable, classKeyword, classReference, fields)
 
                 if (typeInstances.containsKey(classReference)) {
                     // Class declaration duplication
@@ -164,6 +166,60 @@ class Parser(private val preference: AbstractPreference) {
                         "Consider remove this class declaration"
                     )
                 } else typeInstances[classReference] = classInstance
+            } else if (peekIf(Token::isTraitKeyword)) {
+                // Trait declaration
+                if (abstr != null) {
+                    // Trait with `abstr` keyword
+                    reports += Error(
+                        abstr.pos,
+                        "Cannot declare trait instance with `abstr` keyword, trait is implicitly abstract",
+                        "Remove this `abstr` keyword"
+                    )
+                }
+
+                if (mutable != null) {
+                    // Trait with `mut` keyword
+                    reports += Error(
+                        mutable.pos,
+                        "Cannot declare trait instance with `mut` keyword, trait is implicitly mutable",
+                        "Remove this `mut` keyword"
+                    )
+                }
+
+                val traitKeyword = next()!!
+                val traitReference = parseTypeSymbol()
+                val fields = if (peekIf(TokenType.OpenBrace)) {
+                    consume() // open brace
+                    val fields = parseFields(traitReference)
+                    assertUntil(TokenType.CloseBrace)
+                    fields
+                } else listOf()
+
+                for (field in fields) {
+                    if (field.compKeyword == null) {
+                        // non-companion field in trait
+                        reports += Error(
+                            field.name?.pos,
+                            "Cannot declare non-companion field ${field.name?.literal ?: "<Unknown>"} in trait",
+                            "Declare this field in companion block"
+                        )
+                    }
+                }
+
+                // Missing class reference, most likely caused by token missing
+                if (traitReference.fullQualifiedPath.isEmpty()) continue
+
+                val traitInstance =
+                    TraitInstance(packageReference, accessor, traitKeyword, traitReference, fields)
+
+                if (typeInstances.containsKey(traitReference)) {
+                    // Trait declaration duplication
+                    reports += Error(
+                        traitReference.pos,
+                        "Duplicated trait declaration for class ${traitReference.asCASCStyle()}",
+                        "Consider remove this trait declaration"
+                    )
+                } else typeInstances[traitReference] = traitInstance
             } else if (peekIf(Token::isImplKeyword)) {
                 val implKeyword = next()!!
                 val ownerReference = parseTypeSymbol()
@@ -218,9 +274,7 @@ class Parser(private val preference: AbstractPreference) {
                         )
                     } else majorImpls[ownerReference] = impl
                 }
-            } else if (hasNext()) {
-                reports.reportUnexpectedToken(next()!!)
-            } else break
+            }
         }
 
         // Bind major type instance
@@ -247,6 +301,60 @@ class Parser(private val preference: AbstractPreference) {
         // Bind implementations to type instances
         for ((typeInstanceReference, typeInstanceEntry) in typeInstances) {
             majorImpls[typeInstanceReference]?.let {
+                when (typeInstanceEntry) {
+                    is ClassInstance -> {
+                        for (function in it.functions) {
+                            if (function.statements == null && (typeInstanceEntry.abstrToken == null || function.abstrKeyword == null)) {
+                                // Function body missing while function is not declared with `abstr` keyword
+                                reports += Error(
+                                    function.name?.pos,
+                                    "Function body must be implemented when both class instance and function didn't declared with `abstr` keyword",
+                                    "Add function body"
+                                )
+                            }
+
+                            if (function.selfKeyword == null && function.statements == null) {
+                                // Companion function body missing
+                                reports += Error(
+                                    function.name?.pos,
+                                    "Companion function must have function body"
+                                )
+                            }
+                        }
+                    }
+                    is TraitInstance -> {
+                        if (it.parentClassReference != null) {
+                            // Illegal inheritance for trait instance's implementation
+                            reports += Error(
+                                it.parentClassReference.pos,
+                                "Trait cannot inherit type instance by major implementation",
+                                "Replace `:` (colon) with `for` keyword"
+                            )
+                        }
+
+                        if (it.constructors.isNotEmpty()) {
+                            // Illegal constructor declaration for trait instance's implementation
+                            for (constructor in it.constructors) {
+                                reports += Error(
+                                    constructor.newKeyword?.pos,
+                                    "Trait cannot have constructors",
+                                    "Remove this constructor declaration"
+                                )
+                            }
+                        }
+
+                        for (function in it.functions) {
+                            if (function.selfKeyword == null && function.statements == null) {
+                                // Companion function body missing
+                                reports += Error(
+                                    function.name?.pos,
+                                    "Companion function must have function body"
+                                )
+                            }
+                        }
+                    }
+                }
+
                 typeInstanceEntry.impl = it
             }
 
@@ -376,18 +484,23 @@ class Parser(private val preference: AbstractPreference) {
 
     /**
      * parseModifiers follows the following modifier sequence:
-     * (`pub`#1 / `prot` / `intl` / `priv`)? (`ovrd`)? (`mut`)?
+     * (`pub`#1 / `prot` / `intl` / `priv`)? (`ovrd`)? (`abstr`)? (`mut`)?
+     *
+     * Notice that `abstr` and `mut` keywords are conflicted, when conflicted, sequence error will be muted, instead,
+     * generates a conflicted error
      *
      * #1: Will generate a warning by default.
      */
     private fun parseModifiers(
         accessModifier: Boolean = true,
-        mutableKeyword: Boolean = true,
         ovrdKeyword: Boolean = true,
+        abstrKeyword: Boolean = true,
+        mutableKeyword: Boolean = true,
         forbidPubAccessor: Boolean = true,
         terminator: (Token) -> Boolean
-    ): Triple<Token?, Token?, Token?> {
+    ): Tuple4<Token?, Token?, Token?, Token?> {
         var accessor: Token? = null
+        var abstr: Token? = null
         var ovrd: Token? = null
         var mutable: Token? = null
 
@@ -407,6 +520,11 @@ class Parser(private val preference: AbstractPreference) {
                         )
                     }
 
+                    if (abstrKeyword && abstr != null) {
+                        reports += Error(
+                            abstr.pos, "Cannot declare access modifier after `abstr` keyword", "`abstr` keyword here"
+                        )
+                    }
                     if (ovrdKeyword && ovrd != null) {
                         reports += Error(
                             ovrd.pos, "Cannot declare access modifier after `ovrd` keyword", "`ovrd` keyword here"
@@ -433,6 +551,34 @@ class Parser(private val preference: AbstractPreference) {
                         "Remove this access modifier `${token.literal}`"
                     )
                 }
+            } else if (token.isAbstrKeyword()) {
+                if (abstrKeyword) {
+                    if (abstr != null) {
+                        reports += Error(
+                            abstr.pos, "Duplicate `abstr` keyword", "Encountered first one here"
+                        )
+                        reports += Error(
+                            token.pos, "Duplicate `abstr` keyword", "Duplicate here"
+                        )
+                    }
+
+                    if (mutableKeyword && mutable != null) {
+                        // Conflicted modifiers
+                        reports += Error(
+                            mutable.pos,
+                            "Cannot declare `abstr` keyword while `mut` keyword was declared",
+                            "`mut` keyword here"
+                        )
+                    }
+
+                    abstr = token
+                } else {
+                    reports += Error(
+                        token.pos,
+                        "Cannot declare `abstr` keyword in current context",
+                        "Remove this `abstr` keyword"
+                    )
+                }
             } else if (token.isOvrdKeyword()) {
                 if (ovrdKeyword) {
                     if (ovrd != null) {
@@ -444,6 +590,11 @@ class Parser(private val preference: AbstractPreference) {
                         )
                     }
 
+                    if (abstrKeyword && abstr != null) {
+                        reports += Error(
+                            abstr.pos, "Cannot declare `ovrd` keyword after `abstr` keyword", "`abstr` keyword here"
+                        )
+                    }
                     if (mutableKeyword && mutable != null) {
                         reports += Error(
                             mutable.pos, "Cannot declare `ovrd` keyword after `mut` keyword", "`mut` keyword here"
@@ -467,6 +618,15 @@ class Parser(private val preference: AbstractPreference) {
                         )
                     }
 
+                    if (abstrKeyword && abstr != null) {
+                        // Conflicted modifiers
+                        reports += Error(
+                            abstr.pos,
+                            "Cannot declare `mut` keyword while `abstr` keyword was declared",
+                            "`abstr` keyword here"
+                        )
+                    }
+
                     mutable = token
                 } else {
                     reports += Error(
@@ -484,13 +644,14 @@ class Parser(private val preference: AbstractPreference) {
             }
         }
 
-        return Triple(accessor, ovrd, mutable)
+        return Tuple4(accessor, abstr, ovrd, mutable)
     }
 
     private fun parseFields(
         classReference: Reference?, compKeyword: Token? = null
     ): List<Field> {
         var accessorToken: Token? = null
+        var abstrToken: Token? = null
         var mutKeyword: Token? = null
         var compScopeDeclared = false
         val usedFlags = mutableSetOf(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL) // Default flag is pub (final)
@@ -530,16 +691,18 @@ class Parser(private val preference: AbstractPreference) {
                 // Scoped-modified fields
                 // (`pub`#1 / `prot` / `intl` / `priv`)? (`mut`)? :
                 // Assume it's accessor keyword or mut keyword
-                val (accessor, _, mutable) = parseModifiers(
+                val (accessor, abstr, _, mutable) = parseModifiers(
                     ovrdKeyword = false, forbidPubAccessor = false
                 ) { it.type == TokenType.Colon }
 
                 accessorToken = accessor
+                abstrToken = abstr
                 mutKeyword = mutable
 
                 assertUntil(TokenType.Colon)
 
-                val currentFlag = HasFlag.getFlag(Accessor.fromString(accessorToken?.literal), mutKeyword != null)
+                val currentFlag =
+                    HasFlag.getFlag(Accessor.fromString(accessorToken?.literal), abstrToken != null, mutKeyword != null)
 
                 if (!usedFlags.add(currentFlag)) {
                     reports += Error(
@@ -555,7 +718,7 @@ class Parser(private val preference: AbstractPreference) {
                 val typeReference = parseComplexTypeSymbol()
 
                 val field = Field(
-                    classReference, accessorToken, mutKeyword, compKeyword, name, typeReference
+                    classReference, accessorToken, abstrToken, mutKeyword, compKeyword, name, typeReference
                 )
 
                 if (!fields.add(field)) {
@@ -587,7 +750,7 @@ class Parser(private val preference: AbstractPreference) {
         while (hasNext()) {
             if (peekIf(TokenType.CloseBrace)) break
 
-            val (accessor, ovrd, mutable) = parseModifiers { it.isNewKeyword() || it.isFnKeyword() || it.isCompKeyword() || it.type == TokenType.CloseBrace }
+            val (accessor, abstr, ovrd, mutable) = parseModifiers { it.isNewKeyword() || it.isFnKeyword() || it.isCompKeyword() || it.type == TokenType.CloseBrace }
 
             if (peekIf(Token::isCompKeyword)) {
                 // Companion block
@@ -721,14 +884,19 @@ class Parser(private val preference: AbstractPreference) {
                     parseComplexTypeSymbol()
                 } else null
 
-                assertUntil(TokenType.OpenBrace)
-                val statements = parseStatements(parameterSelfKeyword != null)
-                assertUntil(TokenType.CloseBrace)
+                val statements = if (peekIf(TokenType.OpenBrace)) {
+                    consume() // open brace
+                    val statements = parseStatements(parameterSelfKeyword != null)
+                    assertUntil(TokenType.CloseBrace)
+
+                    statements
+                } else null
 
                 val function = Function(
                     classReference,
                     accessor,
                     ovrd,
+                    abstr,
                     mutable,
                     parameterSelfKeyword,
                     name,
