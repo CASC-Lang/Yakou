@@ -32,11 +32,11 @@ class CompilationTest {
             val outFile = fileMap["out"]?.find { outFile -> it.nameWithoutExtension == outFile.nameWithoutExtension }
 
             tests += if (outFile == null) {
-                DynamicTest.dynamicTest("test ${it.name} compilation output is clear") {
+                DynamicTest.dynamicTest(it.name) {
                     Assertions.assertEquals("", output)
                 }
             } else {
-                DynamicTest.dynamicTest("test ${it.name} compilation output has warning or error") {
+                DynamicTest.dynamicTest(it.name) {
                     Assertions.assertEquals(outFile.readText(Charsets.UTF_8).trim().replace("\r", ""), output)
                 }
             }

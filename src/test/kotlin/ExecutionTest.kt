@@ -36,7 +36,7 @@ class ExecutionTest {
 
             val outFile = fileMap["out"]?.find { outFile -> it.nameWithoutExtension == outFile.nameWithoutExtension }!!
 
-            tests += DynamicTest.dynamicTest("test ${it.name} execution output is match") {
+            tests += DynamicTest.dynamicTest(it.name) {
                 Assertions.assertEquals(outFile.readText(Charsets.UTF_8).trimEnd(), output)
             }
 
