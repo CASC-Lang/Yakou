@@ -1,0 +1,6 @@
+error: Redundant semicolon after statement
+--> ./InvalidSemicolon.casc:5:14
+4 |     comp {
+5 |         a := 1;
+                  ^= hint: Remove this semicolon
+6 |     }

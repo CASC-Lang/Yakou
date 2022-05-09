@@ -1,0 +1,9 @@
+class InvalidSelf
+
+impl InvalidSelf {
+    new(self)
+
+    new(i: i32, self)
+
+    fn a1(i: i32, self) {}
+}

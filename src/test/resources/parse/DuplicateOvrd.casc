@@ -1,0 +1,5 @@
+class DuplicateOvrd
+
+impl DuplicateOvrd {
+    ovrd ovrd fn a1() {}
+}

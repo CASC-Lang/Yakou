@@ -1,0 +1,44 @@
+error: Cannot declare `ovrd` keyword in current context
+--> ./InvalidModifier.casc:1:0
+1 | ovrd class InvalidModifier
+    ^^^^= hint: Remove this `ovrd` keyword
+2 |
+error: Cannot declare `ovrd` keyword after `mut` keyword
+--> ./InvalidModifier.casc:4:9
+3 | impl InvalidModifier {
+4 |     priv mut ovrd comp {
+             ^^^= hint: `mut` keyword here
+5 |
+error: Cannot declare companion block with access modifier `priv`
+--> ./InvalidModifier.casc:4:4
+3 | impl InvalidModifier {
+4 |     priv mut ovrd comp {
+        ^^^^= hint: Remove this access modifier `priv`
+5 |
+error: Cannot declare companion block with `ovrd` keyword
+--> ./InvalidModifier.casc:4:13
+3 | impl InvalidModifier {
+4 |     priv mut ovrd comp {
+                 ^^^^= hint: Remove this `ovrd` keyword
+5 |
+error: Cannot declare companion block with `mut` keyword
+--> ./InvalidModifier.casc:4:9
+3 | impl InvalidModifier {
+4 |     priv mut ovrd comp {
+             ^^^= hint: Remove this `mut` keyword
+5 |
+error: Cannot declare `ovrd` keyword after `mut` keyword
+--> ./InvalidModifier.casc:8:4
+7 |
+8 |     mut ovrd new() {}
+        ^^^= hint: `mut` keyword here
+error: Cannot declare constructor with `ovrd` keyword
+--> ./InvalidModifier.casc:8:8
+7 |
+8 |     mut ovrd new() {}
+            ^^^^= hint: Remove this `ovrd` keyword
+error: Cannot declare constructor with `mut` keyword
+--> ./InvalidModifier.casc:8:4
+7 |
+8 |     mut ovrd new() {}
+        ^^^= hint: Remove this `mut` keyword

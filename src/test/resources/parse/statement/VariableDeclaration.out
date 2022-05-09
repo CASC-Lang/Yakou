@@ -1,0 +1,6 @@
+error: Unexpected `mut` keyword
+--> ./VariableDeclaration.casc:12:8
+11 |         k, m, l, m := 1, 2, 3, 4
+12 |         mut
+             ^^^= hint: Do you mean to declare variable?
+13 |     }

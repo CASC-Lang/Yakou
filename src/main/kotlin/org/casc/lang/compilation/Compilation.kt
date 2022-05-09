@@ -17,14 +17,6 @@ import kotlin.time.ExperimentalTime
 
 class Compilation(private val preference: AbstractPreference) {
     companion object {
-        private fun List<CompilationFileUnit>.anyError(): Boolean = this.any(CompilationFileUnit::anyError)
-
-        private fun List<Report>.hasError(): Boolean = this.filterIsInstance<Error>().isNotEmpty()
-
-        private fun List<CompilationFileUnit>.printReports() = this.forEach {
-            it.printReports()
-        }
-
         val entryFormat = AnsiFormat(Attribute.CYAN_TEXT())
         const val outputFormat = "%-35s%s"
     }
@@ -210,7 +202,7 @@ class Compilation(private val preference: AbstractPreference) {
                     tokens = lexResult
                 }
 
-                reports.forEach { it.printReport(outputFileName, source) }
+                reports.forEach { it.printReport(preference, outputFileName, source) }
 
                 if (reports.hasError()) {
                     panic = true
@@ -233,7 +225,7 @@ class Compilation(private val preference: AbstractPreference) {
                     file = parseResult
                 }
 
-                reports.forEach { it.printReport(outputFileName, source) }
+                reports.forEach { it.printReport(preference, outputFileName, source) }
 
                 if (reports.hasError()) {
                     panic = true
@@ -256,7 +248,7 @@ class Compilation(private val preference: AbstractPreference) {
                     Table.cachedClasses += file!!.typeInstance.reference to file
                 }
 
-                reports.forEach { it.printReport(outputFileName, source) }
+                reports.forEach { it.printReport(preference, outputFileName, source) }
 
                 if (reports.hasError()) {
                     panic = true
@@ -270,14 +262,14 @@ class Compilation(private val preference: AbstractPreference) {
                     reports = bodyReports
                 }
 
-                reports.forEach { it.printReport(outputFileName, source) }
+                reports.forEach { it.printReport(preference, outputFileName, source) }
 
                 if (reports.hasError()) {
                     panic = true
                     return@measureTime
                 }
 
-                reports.forEach { it.printReport(outputFileName, source) }
+                reports.forEach { it.printReport(preference, outputFileName, source) }
 
                 if (reports.hasError()) {
                     panic = true
@@ -319,5 +311,13 @@ class Compilation(private val preference: AbstractPreference) {
     @OptIn(ExperimentalTime::class)
     fun measureTime(programName: String, block: () -> Unit) {
         timings += programName to kotlin.time.measureTime(block).toDouble(DurationUnit.SECONDS)
+    }
+
+    private fun List<CompilationFileUnit>.anyError(): Boolean = this.any(CompilationFileUnit::anyError)
+
+    private fun List<Report>.hasError(): Boolean = this.filterIsInstance<Error>().isNotEmpty()
+
+    private fun List<CompilationFileUnit>.printReports() = this.forEach {
+        it.printReports(preference)
     }
 }

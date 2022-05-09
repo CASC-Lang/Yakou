@@ -10,8 +10,8 @@ data class CompilationFileUnit(val fileName: String, val source: List<String>, v
     lateinit var file: File
     lateinit var scope: Scope
 
-    fun printReports() =
-        reports.forEach { it.printReport(relativePath, source) }
+    fun printReports(preference: AbstractPreference) =
+        reports.forEach { it.printReport(preference, relativePath, source) }
 
     fun anyError() =
         reports.filterIsInstance<Error>().isNotEmpty()

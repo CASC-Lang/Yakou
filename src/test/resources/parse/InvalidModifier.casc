@@ -1,0 +1,9 @@
+ovrd class InvalidModifier
+
+impl InvalidModifier {
+    priv mut ovrd comp {
+
+    }
+
+    mut ovrd new() {}
+}

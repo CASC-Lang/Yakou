@@ -1,0 +1,6 @@
+error: Unknown type implementation for class UnknownImpl
+--> ./UnknownImpl.casc:1:5
+1 | impl UnknownImpl
+         ^^^^^^^^^^^
+error: Type declaration missing, unable to determine type instance UnknownImpl
+--> ./UnknownImpl.casc

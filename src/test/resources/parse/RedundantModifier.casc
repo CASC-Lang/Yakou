@@ -1,0 +1,7 @@
+pub class RedundantModifier
+
+impl RedundantModifier {
+    pub new() {}
+
+    pub fn a1() {}
+}

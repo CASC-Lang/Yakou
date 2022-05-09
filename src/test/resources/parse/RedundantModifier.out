@@ -1,0 +1,16 @@
+error: Redundant access modifier `pub`, `pub` is declared under the hood by compiler
+--> ./RedundantModifier.casc:1:0
+1 | pub class RedundantModifier
+    ^^^= hint: Remove this access modifier `pub`
+2 |
+error: Redundant access modifier `pub`, `pub` is declared under the hood by compiler
+--> ./RedundantModifier.casc:4:4
+3 | impl RedundantModifier {
+4 |     pub new() {}
+        ^^^= hint: Remove this access modifier `pub`
+5 |
+error: Redundant access modifier `pub`, `pub` is declared under the hood by compiler
+--> ./RedundantModifier.casc:6:4
+5 |
+6 |     pub fn a1() {}
+        ^^^= hint: Remove this access modifier `pub`

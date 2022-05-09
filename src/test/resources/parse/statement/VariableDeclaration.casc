@@ -1,0 +1,14 @@
+class VariableDeclaration
+
+impl VariableDeclaration {
+    comp {
+        a := 1
+        mut b := 1
+        c, d := 1
+        mut e, f := 1
+        g, mut h := 1
+        mut i, mut j := 1
+        k, m, l, m := 1, 2, 3, 4
+        mut
+    }
+}

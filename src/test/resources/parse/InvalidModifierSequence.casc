@@ -1,0 +1,7 @@
+mut priv class InvalidModifierSequence
+
+impl InvalidModifierSequence {
+    mut ovrd fn a1() {}
+
+    ovrd priv fn a2() {}
+}

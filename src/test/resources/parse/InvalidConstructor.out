@@ -1,0 +1,11 @@
+error: Unexpected token, expected `super` or `self` keyword
+--> ./InvalidConstructor.casc:4:12
+3 | impl InvalidConstructor {
+4 |     new() : pub()
+                ^^^
+5 |
+error: Constructor `new`(i32) has already declared in same context
+--> ./InvalidConstructor.casc:8:4
+7 |
+8 |     new(b: i32)
+        ^^^= hint: Try modify parameters' type

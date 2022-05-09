@@ -75,7 +75,7 @@ enum class CommandType(val helpMessage: String) {
 
                         if (sourceFile.exists()) {
                             if (sourceFile.isDirectory && type == RUN) {
-                                Error("Cannot compile and run a project source directory").printReport()
+                                Error("Cannot compile and run a project source directory").printReport(preference)
                                 false
                             } else {
                                 preference.sourceFile = sourceFile
@@ -87,17 +87,17 @@ enum class CommandType(val helpMessage: String) {
                                             preference.outputDir = outputFolder
                                             true
                                         } else {
-                                            Error("Output path `$outputFolderPath` is not a directory").printReport()
+                                            Error("Output path `$outputFolderPath` is not a directory").printReport(preference)
                                             false
                                         }
                                     } else {
-                                        Error("Command `run` does not have flag -o").printReport()
+                                        Error("Command `run` does not have flag -o").printReport(preference)
                                         false
                                     }
                                 } else true
                             }
                         } else {
-                            Error("Source file `$sourceFilePath` does not exist").printReport()
+                            Error("Source file `$sourceFilePath` does not exist").printReport(preference)
                             false
                         }
                     } else {

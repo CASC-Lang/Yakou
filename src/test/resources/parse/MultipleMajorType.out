@@ -1,0 +1,2 @@
+error: Cannot have multiple major type instances, only type instance MultipleMajorType is allowed
+--> ./MultipleMajorType.casc
