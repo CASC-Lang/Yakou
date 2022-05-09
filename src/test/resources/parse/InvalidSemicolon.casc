@@ -1,0 +1,7 @@
+class InvalidSemicolon
+
+impl InvalidSemicolon {
+    comp {
+        a := 1;
+    }
+}
