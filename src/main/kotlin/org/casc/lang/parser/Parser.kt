@@ -574,7 +574,7 @@ class Parser(private val preference: AbstractPreference) {
     private fun parseFunctions(
         classReference: Reference?, parentReference: Reference?
     ): Triple<List<Function>, List<Constructor>, List<Statement>> {
-        val companionBlock = mutableListOf<Statement>()
+        var companionBlock: List<Statement>? = null
         val functions = object : MutableObjectSet<Function>() {
             override fun isDuplicate(a: Function, b: Function): Boolean =
                 a.name?.literal == b.name?.literal && a.parameters == b.parameters
@@ -617,7 +617,7 @@ class Parser(private val preference: AbstractPreference) {
 
                 assertUntil(TokenType.OpenBrace)
 
-                if (companionBlock.isNotEmpty()) {
+                if (companionBlock != null) {
                     // Companion block already declared
                     reports += Error(
                         compKeyword?.pos,
@@ -626,7 +626,7 @@ class Parser(private val preference: AbstractPreference) {
                     )
                 }
 
-                companionBlock += parseStatements(true)
+                companionBlock = parseStatements(true)
 
                 assertUntil(TokenType.CloseBrace)
             } else if (peekIf(Token::isNewKeyword)) {
@@ -748,7 +748,7 @@ class Parser(private val preference: AbstractPreference) {
             }
         }
 
-        return Triple(functions.toList(), constructors.toList(), companionBlock)
+        return Triple(functions.toList(), constructors.toList(), companionBlock ?: listOf())
     }
 
     /**
