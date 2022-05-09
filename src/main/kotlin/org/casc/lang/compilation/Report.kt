@@ -86,19 +86,19 @@ sealed class Report {
                 finalMessage +=
                     "${
                         if (preference.enableColor) Ansi.colorize(
-                            "${lineNumber - 1}$postExtend$preExtend | ",
+                            "${lineNumber - 1}$postExtend$preExtend |",
                             reportAttribute[2]
-                        ) else "${lineNumber - 1}$postExtend$preExtend | "
-                    }${source[lineNumber - 2]}\n"
+                        ) else "${lineNumber - 1}$postExtend$preExtend |"
+                    }${if (source[lineNumber - 2].isBlank()) "" else " ${source[lineNumber - 2]}"}\n"
             }
 
             finalMessage +=
                 "${
                     if (preference.enableColor) Ansi.colorize(
-                        "$lineNumber$postExtend | ",
+                        "$lineNumber$postExtend |",
                         reportAttribute[2]
-                    ) else "$lineNumber$postExtend | "
-                }${source[lineNumber - 1]}\n"
+                    ) else "$lineNumber$postExtend |"
+                }${if (source[lineNumber - 1].isBlank()) "" else " ${source[lineNumber - 1]}"}\n"
 
             finalMessage += " ".repeat(start + 3 + lineNumber.toString().length)
             finalMessage += postExtend
@@ -124,10 +124,10 @@ sealed class Report {
             if (lineNumber < source.lastIndex) {
                 finalMessage += "${
                     if (preference.enableColor) Ansi.colorize(
-                        "${lineNumber + 1} | ",
+                        "${lineNumber + 1} |",
                         reportAttribute[2]
-                    ) else "${lineNumber + 1} | "
-                }${source[lineNumber]}\n"
+                    ) else "${lineNumber + 1} |"
+                }${if (source[lineNumber].isBlank()) "" else " ${source[lineNumber]}"}\n"
             }
         } else {
             finalMessage += if (preference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
