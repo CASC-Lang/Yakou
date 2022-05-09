@@ -203,7 +203,13 @@ class Parser(private val preference: AbstractPreference) {
                     // Missing class reference, most likely caused by token missing
                     if (ownerReference.fullQualifiedPath.isEmpty()) continue
 
-                    val impl = Impl(implKeyword, parentClassReference, companionBlock ?: listOf(), constructors ?: listOf(), functions ?: listOf())
+                    val impl = Impl(
+                        implKeyword,
+                        parentClassReference,
+                        companionBlock ?: listOf(),
+                        constructors ?: listOf(),
+                        functions ?: listOf()
+                    )
 
                     if (!typeInstances.containsKey(ownerReference)) {
                         // Unknown type implementation
@@ -386,6 +392,7 @@ class Parser(private val preference: AbstractPreference) {
         accessModifier: Boolean = true,
         mutableKeyword: Boolean = true,
         ovrdKeyword: Boolean = true,
+        forbidPubAccessor: Boolean = true,
         terminator: (Token) -> Boolean
     ): Triple<Token?, Token?, Token?> {
         var accessor: Token? = null
@@ -422,6 +429,13 @@ class Parser(private val preference: AbstractPreference) {
                             mutable.pos,
                             "Cannot declare access modifier after `mut` keyword",
                             "`mut` keyword here"
+                        )
+                    }
+                    if (forbidPubAccessor) {
+                        reports += Error(
+                            token.pos,
+                            "Redundant access modifier `pub`, `pub` is declared under the hood by compiler",
+                            "Remove this access modifier `pub`"
                         )
                     }
 
@@ -550,7 +564,10 @@ class Parser(private val preference: AbstractPreference) {
                 // Scoped-modified fields
                 // (`pub`#1 / `prot` / `intl` / `priv`)? (`mut`)? :
                 // Assume it's accessor keyword or mut keyword
-                val (accessor, _, mutable) = parseModifiers(ovrdKeyword = false) { it.type == TokenType.Colon }
+                val (accessor, _, mutable) = parseModifiers(
+                    ovrdKeyword = false,
+                    forbidPubAccessor = false
+                ) { it.type == TokenType.Colon }
 
                 accessorToken = accessor
                 mutKeyword = mutable
