@@ -30,40 +30,45 @@ sealed class Report {
     }
 
     fun printReport(preference: AbstractPreference) {
-        var finalMessage = when {
-            preference.enableColor -> {
-                when (this) {
-                    is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
-                    is Error -> Ansi.colorize("error: ", reportAttribute[1])
+        var finalMessage = StringBuilder(
+            when {
+                preference.enableColor -> {
+                    when (this) {
+                        is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
+                        is Error -> Ansi.colorize("error: ", reportAttribute[1])
+                    }
+                }
+                else -> {
+                    when (this) {
+                        is Warning -> "warning: "
+                        is Error -> "error: "
+                    }
                 }
             }
-            else -> {
-                when (this) {
-                    is Warning -> "warning: "
-                    is Error -> "error: "
-                }
-            }
-        }
+        )
+
 
         finalMessage += if (preference.enableColor) Ansi.colorize(message, reportAttribute[2]) else message
-        println(finalMessage)
+        println(finalMessage.toString())
     }
 
     fun printReport(preference: AbstractPreference, filePath: String, source: List<String>) {
-        var finalMessage = when {
-            preference.enableColor -> {
-                when (this) {
-                    is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
-                    is Error -> Ansi.colorize("error: ", reportAttribute[1])
+        var finalMessage = StringBuilder(
+            when {
+                preference.enableColor -> {
+                    when (this) {
+                        is Warning -> Ansi.colorize("warning: ", reportAttribute[0])
+                        is Error -> Ansi.colorize("error: ", reportAttribute[1])
+                    }
+                }
+                else -> {
+                    when (this) {
+                        is Warning -> "warning: "
+                        is Error -> "error: "
+                    }
                 }
             }
-            else -> {
-                when (this) {
-                    is Warning -> "warning: "
-                    is Error -> "error: "
-                }
-            }
-        }
+        )
 
         if (position != null) {
             val (lineNumber, start, end) = position!!
@@ -130,5 +135,9 @@ sealed class Report {
         }
 
         print(finalMessage)
+    }
+
+    operator fun StringBuilder.plusAssign(string: String) {
+        this.append(string)
     }
 }
