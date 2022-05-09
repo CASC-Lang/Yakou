@@ -574,6 +574,7 @@ class Parser(private val preference: AbstractPreference) {
     private fun parseFunctions(
         classReference: Reference?, parentReference: Reference?
     ): Triple<List<Function>, List<Constructor>, List<Statement>> {
+        var firstCompKeyword: Token? = null
         var companionBlock: List<Statement>? = null
         val functions = object : MutableObjectSet<Function>() {
             override fun isDuplicate(a: Function, b: Function): Boolean =
@@ -624,7 +625,12 @@ class Parser(private val preference: AbstractPreference) {
                         "Companion block already declared",
                         "Try merge companion blocks together"
                     )
-                }
+                    reports += Error(
+                        firstCompKeyword?.pos,
+                        "Companion block already declared",
+                        "Merge to this companion block"
+                    )
+                } else firstCompKeyword = compKeyword
 
                 companionBlock = parseStatements(true)
 
