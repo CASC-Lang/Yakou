@@ -746,14 +746,6 @@ class Parser(private val preference: AbstractPreference) {
                     )
                 }
             } else if (peekIf(TokenType.CloseBrace)) break
-            else {
-                // Unknown declaration
-                val currentToken = next()
-
-                reports += Error(
-                    currentToken?.pos, "Unexpected token `${currentToken?.literal}`"
-                )
-            }
         }
 
         return Triple(functions.toList(), constructors.toList(), companionBlock ?: listOf())
