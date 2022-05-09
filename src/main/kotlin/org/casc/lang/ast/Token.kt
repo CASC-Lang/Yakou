@@ -6,7 +6,7 @@ data class Token(var literal: String, val type: TokenType, val pos: Position) {
     companion object {
         val keywords = arrayOf(
             "package", "use", "class", "impl", "comp", "pub", "prot", "intl", "priv", "true", "false", "null",
-            "mut", "fn", "if", "else", "for", "return", "as", "is", "new", "self", "super", "ovrd"
+            "mut", "fn", "if", "else", "for", "return", "as", "is", "new", "self", "super", "ovrd", "abstr"
         )
     }
 
@@ -60,6 +60,9 @@ data class Token(var literal: String, val type: TokenType, val pos: Position) {
 
     fun isOvrdKeyword(): Boolean =
         literal == "ovrd"
+
+    fun isAbstrKeyword(): Boolean =
+        literal == "abstr"
 
     fun isAccessorKeyword(): Boolean =
         Accessor.validKeywords.contains(literal)

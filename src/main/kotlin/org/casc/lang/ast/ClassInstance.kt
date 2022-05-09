@@ -8,6 +8,7 @@ import org.objectweb.asm.Opcodes
 data class ClassInstance(
     override val packageReference: Reference?,
     val accessorToken: Token?,
+    val abstrToken: Token?, // Unused
     val mutKeyword: Token?,
     val classKeyword: Token?,
     override val typeReference: Reference,
@@ -17,7 +18,7 @@ data class ClassInstance(
     override val flag: Int by lazy {
         var flag = Opcodes.ACC_SUPER
         flag += accessor.access
-        flag += mutKeyword.getOrElse(0, Opcodes.ACC_FINAL)
+        flag += abstrToken.getOrElse(Opcodes.ACC_ABSTRACT, mutKeyword.getOrElse(0, Opcodes.ACC_FINAL))
         flag
     }
 

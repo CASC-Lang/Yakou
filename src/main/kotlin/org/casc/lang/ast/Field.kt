@@ -7,6 +7,7 @@ import org.objectweb.asm.Opcodes
 data class Field(
     val ownerReference: Reference?,
     val accessorToken: Token?,
+    val abstrKeyword: Token?,
     val mutKeyword: Token?,
     val compKeyword: Token?,
     val name: Token?,

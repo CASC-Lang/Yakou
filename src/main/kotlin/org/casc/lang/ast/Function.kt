@@ -8,6 +8,7 @@ data class Function(
     val ownerReference: Reference?,
     val accessorToken: Token?,
     val ovrdKeyword: Token?,
+    val abstrKeyword: Token?,
     val mutKeyword: Token?,
     val selfKeyword: Token?, // determine whether function is companion
     val name: Token?,
