@@ -1,0 +1,5 @@
+error: Duplicated type implementation for class ImplDuplication
+--> ./ImplDuplication.casc:5:5
+4 |
+5 | impl ImplDuplication
+         ^^^^^^^^^^^^^^^= hint: Consider remove this type implementation

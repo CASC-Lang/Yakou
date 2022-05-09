@@ -1,0 +1,5 @@
+error: Duplicated class declaration for class ClassDuplication
+--> ./ClassDuplication.casc:3:6
+2 |
+3 | class ClassDuplication
+          ^^^^^^^^^^^^^^^^= hint: Consider remove this class declaration
