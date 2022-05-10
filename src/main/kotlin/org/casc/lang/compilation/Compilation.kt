@@ -5,10 +5,12 @@ import com.diogonunes.jcolor.Attribute
 import org.casc.lang.ast.ClassInstance
 import org.casc.lang.ast.File
 import org.casc.lang.ast.Token
+import org.casc.lang.ast.TraitInstance
 import org.casc.lang.checker.Checker
 import org.casc.lang.emitter.Emitter
 import org.casc.lang.lexer.Lexer
 import org.casc.lang.parser.Parser
+import org.casc.lang.table.Reference
 import org.casc.lang.table.Scope
 import org.casc.lang.table.Table
 import java.io.BufferedReader
@@ -87,7 +89,7 @@ class Compilation(private val preference: AbstractPreference) {
                     return@measureTime
                 }
 
-                measureTime("Check (Prelude)") {
+                measureTime("Check (Prelude)") checkPrelude@ {
                     // Caches class for dummy type checking, used in declaration checking
                     Table.cachedClasses += compilationUnits.map { it.file.typeInstance.reference to it.file }
 
@@ -108,18 +110,51 @@ class Compilation(private val preference: AbstractPreference) {
                         compilationUnit.scope = classScope
                     }
 
-                    compilationUnits.printReports()
+                    if (compilationUnits.anyError()) {
+                        panic = true
+                        return@checkPrelude
+                    }
+
+                    val declarations = compilationUnits.map(CompilationFileUnit::file)
+
+                    for ((file, compilationUnit) in declarations.zip(compilationUnits)) {
+                        // Check parent class has no cyclic inheritance
+                        val (_, _, _, typeInstance) = file
+
+                        when (typeInstance) {
+                            is ClassInstance -> {
+                                val parentClassReferenceSet = hashSetOf<Reference>()
+                                var currentTypeInstance = typeInstance
+
+                                while (currentTypeInstance.impl != null && currentTypeInstance.impl!!.parentClassReference != null) {
+                                    currentTypeInstance =
+                                        Table.findTypeInstance(currentTypeInstance.impl!!.parentClassReference!!)
+                                            ?: break
+
+                                    if (!parentClassReferenceSet.add(currentTypeInstance.typeReference)) {
+                                        // Cyclic inheritance
+                                        compilationUnit.reports += Error(
+                                            typeInstance.impl!!.parentClassReference!!.pos,
+                                            "Circular inheritance is forbidden",
+                                            "Class ${typeInstance.reference.asCASCStyle()} inherits class ${currentTypeInstance.reference.asCASCStyle()} but class ${currentTypeInstance.reference.asCASCStyle()} also inherits class ${typeInstance.reference.asCASCStyle()}"
+                                        )
+                                        break
+                                    }
+                                }
+                            }
+                            is TraitInstance -> {}
+                        }
+                    }
 
                     if (compilationUnits.anyError()) {
                         panic = true
-                        return@measureTime
+                        return@checkPrelude
                     }
 
                     Table.cachedClasses.clear()
 
                     // Define temporary class through bytecode for ASM library to process (See [getClassLoader][org.casc.lang.asm.CommonClassWriter])
                     val creationQueue = LinkedHashSet<String>()
-                    val declarations = compilationUnits.map(CompilationFileUnit::file)
 
                     fun addToQueue(file: File) {
                         val typeInstance = file.typeInstance
@@ -150,6 +185,13 @@ class Compilation(private val preference: AbstractPreference) {
                     }
 
                     Table.cachedClasses += declarations.map { it.typeInstance.reference to it }
+                }
+
+                compilationUnits.printReports()
+
+                if (compilationUnits.anyError()) {
+                    panic = true
+                    return@measureTime
                 }
 
                 measureTime("Check (Main)") {
