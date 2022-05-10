@@ -156,8 +156,7 @@ class Compilation(private val preference: AbstractPreference) {
                     }
 
                     // Define temporary class through bytecode for ASM library to process (See [getClassLoader][org.casc.lang.asm.CommonClassWriter])
-
-                    for (reference in creationQueue) {
+                    for (reference in creationQueue.distinct()) {
                         val cachedFile = Table.findFile(reference)!!
                         val bytecode = Emitter(preference, true).emit(cachedFile)
 
