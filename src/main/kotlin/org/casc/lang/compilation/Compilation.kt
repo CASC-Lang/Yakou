@@ -14,6 +14,7 @@ import org.casc.lang.table.Reference
 import org.casc.lang.table.Scope
 import org.casc.lang.table.Table
 import java.io.BufferedReader
+import java.util.*
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 
@@ -89,7 +90,7 @@ class Compilation(private val preference: AbstractPreference) {
                     return@measureTime
                 }
 
-                measureTime("Check (Prelude)") checkPrelude@ {
+                measureTime("Check (Prelude)") checkPrelude@{
                     // Caches class for dummy type checking, used in declaration checking
                     Table.cachedClasses += compilationUnits.map { it.file.typeInstance.reference to it.file }
 
@@ -115,11 +116,14 @@ class Compilation(private val preference: AbstractPreference) {
                         return@checkPrelude
                     }
 
+                    val creationQueue = LinkedList<Reference>()
                     val declarations = compilationUnits.map(CompilationFileUnit::file)
 
                     for ((file, compilationUnit) in declarations.zip(compilationUnits)) {
                         // Check parent class has no cyclic inheritance
                         val (_, _, _, typeInstance) = file
+
+                        creationQueue += typeInstance.reference
 
                         when (typeInstance) {
                             is ClassInstance -> {
@@ -139,7 +143,7 @@ class Compilation(private val preference: AbstractPreference) {
                                             "Class ${typeInstance.reference.asCASCStyle()} inherits class ${currentTypeInstance.reference.asCASCStyle()} but class ${currentTypeInstance.reference.asCASCStyle()} also inherits class ${typeInstance.reference.asCASCStyle()}"
                                         )
                                         break
-                                    }
+                                    } else creationQueue.push(currentTypeInstance.reference)
                                 }
                             }
                             is TraitInstance -> {}
@@ -151,40 +155,14 @@ class Compilation(private val preference: AbstractPreference) {
                         return@checkPrelude
                     }
 
-                    Table.cachedClasses.clear()
-
                     // Define temporary class through bytecode for ASM library to process (See [getClassLoader][org.casc.lang.asm.CommonClassWriter])
-                    val creationQueue = LinkedHashSet<String>()
 
-                    fun addToQueue(file: File) {
-                        val typeInstance = file.typeInstance
-
-                        if (typeInstance is ClassInstance && typeInstance.impl?.parentClassReference != null) {
-                            val parentClazzFile =
-                                declarations.find { it.typeInstance.reference.fullQualifiedPath == typeInstance.impl!!.parentClassReference!!.fullQualifiedPath }
-                            if (parentClazzFile != null)
-                                addToQueue(parentClazzFile)
-                        }
-
-                        if (typeInstance.traitImpls != null) {
-                            // TODO: implement traitImpls precaching
-                        }
-
-                        creationQueue.add(file.typeInstance.reference.fullQualifiedPath)
-                    }
-
-                    declarations.forEach(::addToQueue)
-
-                    for (name in creationQueue) {
-                        val cachedFile =
-                            declarations.find { it.typeInstance.reference.fullQualifiedPath == name }!!
-
+                    for (reference in creationQueue) {
+                        val cachedFile = Table.findFile(reference)!!
                         val bytecode = Emitter(preference, true).emit(cachedFile)
 
-                        preference.classLoader.defineClass(name, bytecode)
+                        preference.classLoader.defineClass(reference.fullQualifiedPath, bytecode)
                     }
-
-                    Table.cachedClasses += declarations.map { it.typeInstance.reference to it }
                 }
 
                 compilationUnits.printReports()

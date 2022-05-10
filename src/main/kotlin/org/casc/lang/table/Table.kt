@@ -19,12 +19,12 @@ object Table {
     /**
      * By given full qualified class path (including package path) will return a ClassType if exists or null
      */
-    fun findType(classReference: Reference): ClassType? =
-        cachedClasses[classReference]?.let {
+    fun findType(typeReference: Reference): ClassType? =
+        cachedClasses[typeReference]?.let {
             val typeInstance = it.typeInstance
 
             ClassType(
-                classReference.fullQualifiedPath,
+                typeReference.fullQualifiedPath,
                 if (typeInstance is ClassInstance && typeInstance.packageReference != null)
                     typeInstance.packageReference!!.fullQualifiedPath
                 else Reference.OBJECT_TYPE_REFERENCE.fullQualifiedPath,
@@ -35,8 +35,11 @@ object Table {
             )
         }
 
-    fun findTypeInstance(classReference: Reference): TypeInstance? =
-        cachedClasses[classReference]?.typeInstance
+    fun findTypeInstance(typeReference: Reference): TypeInstance? =
+        cachedClasses[typeReference]?.typeInstance
+
+    fun findFile(typeReference: Reference): File? =
+        cachedClasses[typeReference]
 
     fun hasClass(classReference: Reference): Boolean =
         cachedClasses.containsKey(classReference)
