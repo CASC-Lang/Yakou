@@ -10,9 +10,16 @@ data class Variable(
     val index: Int,
     val declaredScopeDepth: Int
 ) {
-    override fun equals(other: Any?): Boolean =
-        if (other !is Variable) false
-        else other.name == name
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Variable
+
+        if (name != other.name) return false
+
+        return true
+    }
 
     override fun hashCode(): Int {
         return name.hashCode()
