@@ -246,7 +246,7 @@ class Checker(private val preference: AbstractPreference) {
         if (clazz.impl != null) {
             val impl = clazz.impl!!
 
-            impl.companionBlock.forEach {
+            impl.companionBlock?.statements?.forEach {
                 checkStatement(it, companionBlockScope, PrimitiveType.Unit)
             }
 
@@ -281,7 +281,7 @@ class Checker(private val preference: AbstractPreference) {
         if (trait.impl != null) {
             val impl = trait.impl!!
 
-            impl.companionBlock.forEach {
+            impl.companionBlock?.statements?.forEach {
                 checkStatement(it, companionBlockScope, PrimitiveType.Unit)
             }
 
