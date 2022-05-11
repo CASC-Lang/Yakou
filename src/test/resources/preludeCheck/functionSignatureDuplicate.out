@@ -9,3 +9,4 @@ error: Function a(i32, i32) has already declared in same context
 9  |
 10 |     fn a(self, x: i32, y: i32) {}
             ^= hint: Try rename this function or modify parameters' type
+11 | }

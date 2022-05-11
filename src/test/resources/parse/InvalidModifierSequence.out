@@ -14,3 +14,4 @@ error: Cannot declare access modifier after `ovrd` keyword
 5 |
 6 |     ovrd priv fn a2() {}
         ^^^^= hint: `ovrd` keyword here
+7 | }

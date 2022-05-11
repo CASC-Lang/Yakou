@@ -3,8 +3,10 @@ error: Duplicate `ovrd` keyword
 3 | impl DuplicateOvrd {
 4 |     ovrd ovrd fn a1() {}
         ^^^^= hint: Encountered first one here
+5 | }
 error: Duplicate `ovrd` keyword
 --> ./DuplicateOvrd.casc:4:9
 3 | impl DuplicateOvrd {
 4 |     ovrd ovrd fn a1() {}
              ^^^^= hint: Duplicate here
+5 | }
