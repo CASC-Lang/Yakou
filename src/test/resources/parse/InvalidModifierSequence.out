@@ -6,7 +6,7 @@ error: Cannot declare access modifier after `mut` keyword
 error: Cannot declare `ovrd` keyword after `mut` keyword
 --> ./InvalidModifierSequence.casc:4:4
 3 | impl InvalidModifierSequence {
-4 |     mut ovrd fn a1() {}
+4 |     mut ovrd fn a1(self) {}
         ^^^= hint: `mut` keyword here
 5 |
 error: Cannot declare access modifier after `ovrd` keyword

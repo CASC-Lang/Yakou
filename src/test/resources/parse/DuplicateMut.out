@@ -8,3 +8,13 @@ error: Duplicate `mut` keyword
 1 | mut mut class DuplicateMut
         ^^^= hint: Duplicate here
 2 |
+error: Duplicate `mut` keyword
+--> ./DuplicateMut.casc:4:4
+3 | impl DuplicateMut {
+4 |     mut mut fn a1(self) {}
+        ^^^= hint: Encountered first one here
+error: Duplicate `mut` keyword
+--> ./DuplicateMut.casc:4:8
+3 | impl DuplicateMut {
+4 |     mut mut fn a1(self) {}
+            ^^^= hint: Duplicate here
