@@ -57,31 +57,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
                 emitField(classWriter, it)
             }
 
-            if (clazz.impl != null) {
-                val impl = clazz.impl!!
-
-                if (impl.companionBlock.isNotEmpty()) {
-                    val methodVisitor = classWriter.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null)
-
-                    methodVisitor.visitCode()
-
-                    impl.companionBlock.forEach {
-                        emitStatement(methodVisitor, it)
-                    }
-
-                    methodVisitor.visitInsn(Opcodes.RETURN)
-                    methodVisitor.visitMaxs(-1, -1)
-                    methodVisitor.visitEnd()
-                }
-
-                impl.constructors.forEach {
-                    emitConstructor(classWriter, it)
-                }
-
-                impl.functions.forEach {
-                    emitFunction(classWriter, it)
-                }
-            }
+            clazz.impl?.let { emitImpl(classWriter, it) }
         }
 
         classWriter.visitEnd()
@@ -109,30 +85,32 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
                 emitField(classWriter, it)
             }
 
-            if (trait.impl != null) {
-                val impl = trait.impl!!
-
-                if (impl.companionBlock.isNotEmpty()) {
-                    val methodVisitor = classWriter.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null)
-
-                    methodVisitor.visitCode()
-
-                    impl.companionBlock.forEach {
-                        emitStatement(methodVisitor, it)
-                    }
-
-                    methodVisitor.visitInsn(Opcodes.RETURN)
-                    methodVisitor.visitMaxs(-1, -1)
-                    methodVisitor.visitEnd()
-                }
-
-                impl.functions.forEach {
-                    emitFunction(classWriter, it)
-                }
-            }
+            trait.impl?.let { emitImpl(classWriter, it) }
         }
 
         return classWriter.toByteArray()
+    }
+
+    private fun emitImpl(classWriter: ClassWriter, impl: Impl) {
+        val companionBlock = impl.companionBlock
+
+        if (companionBlock != null && companionBlock.statements.isNotEmpty()) {
+            val methodVisitor = classWriter.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null)
+
+            methodVisitor.visitCode()
+
+            companionBlock.statements.forEach {
+                emitStatement(methodVisitor, it)
+            }
+
+            methodVisitor.visitInsn(Opcodes.RETURN)
+            methodVisitor.visitMaxs(-1, -1)
+            methodVisitor.visitEnd()
+        }
+
+        impl.functions.forEach {
+            emitFunction(classWriter, it)
+        }
     }
 
     private fun emitField(classWriter: ClassWriter, field: Field) {
