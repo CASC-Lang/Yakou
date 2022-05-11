@@ -33,17 +33,20 @@ class Parser(private val preference: AbstractPreference) {
     private fun hasNext(): Boolean = tokens.size > pos
 
     private fun assertUntil(type: TokenType): Token? {
-        while (hasNext()) {
+        do {
             val token = assert(type)
 
             if (token != null) return token
-        }
+        } while ((hasNext()))
 
         return null
     }
 
     private fun assert(type: TokenType): Token? = when {
-        !hasNext() -> null
+        !hasNext() -> {
+            reports.reportUnexpectedToken(type, last()?.pos, "Reached last token")
+            null
+        }
         tokens[pos].type == type -> tokens[pos++]
         else -> {
             reports.reportUnexpectedToken(type, tokens[pos++])
@@ -52,21 +55,26 @@ class Parser(private val preference: AbstractPreference) {
     }
 
     private fun assertUntil(predicate: (Token) -> Boolean): Token? {
-        while (hasNext()) {
+        do {
             val token = assert(predicate)
 
             if (token != null) return token
-        }
+        } while ((hasNext()))
 
         return null
     }
 
     private fun assert(predicate: (Token) -> Boolean): Token? = when {
-        !hasNext() -> null
+        !hasNext() -> {
+            reports += Error(
+                last()?.pos, "Expected token but got nothing", "Reached last token"
+            )
+            null
+        }
         predicate(tokens[pos]) -> tokens[pos++]
         else -> {
             reports += Error(
-                tokens[pos].pos, "Unexpected token ${tokens[pos++].type}, expected predicate $predicate"
+                tokens[pos].pos, "Unexpected token ${tokens[pos++].type}"
             )
             null
         }
