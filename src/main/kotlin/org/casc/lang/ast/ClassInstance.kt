@@ -14,7 +14,7 @@ data class ClassInstance(
     override val typeReference: Reference,
     override val fields: List<Field>,
     override val accessor: Accessor = Accessor.fromString(accessorToken?.literal)
-) : TypeInstance(), HasFlag {
+) : TypeInstance() {
     override val flag: Int by lazy {
         var flag = Opcodes.ACC_SUPER
         flag += accessor.access

@@ -17,10 +17,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         emitFile(file)
 
     private fun emitFile(file: File): ByteArray {
-        val bytecode = when (val typeInstance = file.typeInstance) {
-            is ClassInstance -> emitClass(typeInstance, file.fileName)
-            is TraitInstance -> emitTrait(typeInstance, file.fileName)
-        }
+        val bytecode = emitTypeInstance(file.typeInstance, file.fileName)
         val outFile = JFile(preference.outputDir, "/${file.typeInstance.typeReference.className}.class")
 
         if (!preference.noEmit) {
@@ -36,27 +33,26 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         return bytecode
     }
 
-    private fun emitClass(clazz: ClassInstance, sourceFile: String): ByteArray {
+    private fun emitTypeInstance(typeInstance: TypeInstance, sourceFile: String): ByteArray {
         val classWriter =
             CommonClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS, preference.classLoader)
 
         classWriter.visit(
             Opcodes.V1_8,
-            clazz.flag,
-            clazz.reference.internalName(),
+            typeInstance.flag,
+            typeInstance.reference.internalName(),
             null,
-            clazz.parentClassReference.internalName(),
+            typeInstance.parentClassReference.internalName(),
             null
         )
 
         classWriter.visitSource(sourceFile, null)
 
         if (!declarationOnly) {
-            clazz.fields.forEach {
-                emitField(classWriter, it)
+            when (typeInstance) {
+                is ClassInstance -> emitClass(classWriter, typeInstance)
+                is TraitInstance -> emitTrait(classWriter, typeInstance)
             }
-
-            clazz.impl?.let { emitImpl(classWriter, it) }
         }
 
         classWriter.visitEnd()
@@ -64,30 +60,20 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         return classWriter.toByteArray()
     }
 
-    private fun emitTrait(trait: TraitInstance, sourceFile: String): ByteArray {
-        val classWriter =
-            CommonClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS, preference.classLoader)
-
-        classWriter.visit(
-            Opcodes.V1_8,
-            trait.flag,
-            trait.reference.internalName(),
-            null,
-            trait.parentClassReference.internalName(),
-            null
-        )
-
-        classWriter.visitSource(sourceFile, null)
-
-        if (!declarationOnly) {
-            trait.fields.forEach {
-                emitField(classWriter, it)
-            }
-
-            trait.impl?.let { emitImpl(classWriter, it) }
+    private fun emitClass(classWriter: ClassWriter, clazz: ClassInstance) {
+        clazz.fields.forEach {
+            emitField(classWriter, it)
         }
 
-        return classWriter.toByteArray()
+        clazz.impl?.let { emitImpl(classWriter, it) }
+    }
+
+    private fun emitTrait(classWriter: ClassWriter, trait: TraitInstance) {
+        trait.fields.forEach {
+            emitField(classWriter, it)
+        }
+
+        trait.impl?.let { emitImpl(classWriter, it) }
     }
 
     private fun emitImpl(classWriter: ClassWriter, impl: Impl) {

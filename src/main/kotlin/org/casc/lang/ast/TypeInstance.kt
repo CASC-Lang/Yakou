@@ -1,8 +1,9 @@
 package org.casc.lang.ast
 
+import org.casc.lang.table.HasFlag
 import org.casc.lang.table.Reference
 
-sealed class TypeInstance {
+sealed class TypeInstance: HasFlag {
     abstract val packageReference: Reference?
     abstract val typeReference: Reference
     abstract val fields: List<Field>
