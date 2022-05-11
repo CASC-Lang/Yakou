@@ -116,7 +116,7 @@ class Compilation(private val preference: AbstractPreference) {
                         return@checkPrelude
                     }
 
-                    val creationQueue = LinkedList<Reference>()
+                    val creationQueue = mutableListOf<Reference>()
                     val declarations = compilationUnits.map(CompilationFileUnit::file)
 
                     for ((file, compilationUnit) in declarations.zip(compilationUnits)) {
@@ -143,7 +143,7 @@ class Compilation(private val preference: AbstractPreference) {
                                             "Class ${typeInstance.reference.asCASCStyle()} inherits class ${currentTypeInstance.reference.asCASCStyle()} but class ${currentTypeInstance.reference.asCASCStyle()} also inherits class ${typeInstance.reference.asCASCStyle()}"
                                         )
                                         break
-                                    } else creationQueue.push(currentTypeInstance.reference)
+                                    } else creationQueue.add(0, currentTypeInstance.reference)
                                 }
                             }
                             is TraitInstance -> {}
