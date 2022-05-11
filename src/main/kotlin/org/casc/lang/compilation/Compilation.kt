@@ -58,6 +58,8 @@ class Compilation(private val preference: AbstractPreference) {
                     }
                 }
 
+                compilationUnits.sortBy { it.relativePath }
+
                 compilationUnits.printReports()
 
                 if (compilationUnits.anyError()) {
