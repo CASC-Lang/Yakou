@@ -22,8 +22,4 @@ data class ClassInstance(
         flag += mutKeyword.getOrElse(0, Opcodes.ACC_FINAL)
         flag
     }
-
-    val parentClassReference: Reference by lazy {
-        impl?.parentClassReference ?: Reference.OBJECT_TYPE_REFERENCE
-    }
 }

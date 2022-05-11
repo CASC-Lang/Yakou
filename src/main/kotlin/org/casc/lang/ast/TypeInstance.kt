@@ -14,4 +14,8 @@ sealed class TypeInstance {
     val reference: Reference by lazy {
         Reference(packageReference?.fullQualifiedPath, typeReference.fullQualifiedPath)
     }
+
+    val parentClassReference: Reference by lazy {
+        impl?.parentClassReference ?: Reference.OBJECT_TYPE_REFERENCE
+    }
 }

@@ -10,7 +10,6 @@ import org.objectweb.asm.*
 import java.lang.invoke.CallSite
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType
-import java.util.OptionalDouble
 import java.io.File as JFile
 
 class Emitter(private val preference: AbstractPreference, private val declarationOnly: Boolean) {
@@ -46,7 +45,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
             clazz.flag,
             clazz.reference.internalName(),
             null,
-            clazz.impl?.parentClassReference?.fullQualifiedPath ?: Reference.OBJECT_TYPE_REFERENCE.internalName(),
+            clazz.parentClassReference.internalName(),
             null
         )
 
@@ -74,7 +73,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
             trait.flag,
             trait.reference.internalName(),
             null,
-            trait.impl?.parentClassReference?.fullQualifiedPath ?: Reference.OBJECT_TYPE_REFERENCE.internalName(),
+            trait.parentClassReference.internalName(),
             null
         )
 
@@ -110,6 +109,10 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
 
         impl.functions.forEach {
             emitFunction(classWriter, it)
+        }
+
+        impl.constructors.forEach {
+            emitConstructor(classWriter, it)
         }
     }
 
