@@ -1,0 +1,10 @@
+error: Cannot inherit from final class ClassB
+--> C:\Users\chaos\IdeaProjects\CASC\build\resources\test\preludeCheck\circularInheritance\ClassA.casc:3:14
+2 |
+3 | impl ClassA : ClassB
+                  ^^^^^^= hint: Add `mut` to class ClassB
+error: Cannot inherit from final class ClassA
+--> C:\Users\chaos\IdeaProjects\CASC\build\resources\test\preludeCheck\circularInheritance\ClassB.casc:3:14
+2 |
+3 | impl ClassB : ClassA
+                  ^^^^^^= hint: Add `mut` to class ClassA

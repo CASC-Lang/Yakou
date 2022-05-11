@@ -1,0 +1,3 @@
+class ClassB
+
+impl ClassB : ClassA
