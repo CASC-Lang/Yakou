@@ -60,18 +60,18 @@ class Checker(private val preference: AbstractPreference) {
         if (parentClassType != null) {
             if (parentClassType !is ClassType) {
                 reports += Error(
-                    clazz.parentClassReference.pos ?: clazz.classKeyword?.pos,
+                    clazz.parentClassReference.pos,
                     "Cannot inherit from non-class type ${parentClassType.asCASCStyle()}"
                 )
             } else if (parentClassType != ClassType.OBJECT_TYPE && !parentClassType.mutable) {
                 reports += Error(
-                    clazz.parentClassReference.pos ?: clazz.classKeyword?.pos,
+                    clazz.parentClassReference.pos,
                     "Cannot inherit from final class ${parentClassType.asCASCStyle()}",
                     "Add `mut` to class ${parentClassType.asCASCStyle()}"
                 )
             } else if (parentClassType.type(preference)?.let { Modifier.isFinal(it.modifiers) } == true) {
                 reports += Error(
-                    clazz.parentClassReference.pos ?: clazz.classKeyword?.pos,
+                    clazz.parentClassReference.pos,
                     "Cannot inherit from final class ${parentClassType.asCASCStyle()}",
                     "Add `mut` to class ${parentClassType.asCASCStyle()}"
                 )
@@ -479,7 +479,7 @@ class Checker(private val preference: AbstractPreference) {
             if (superCallSignature == null) {
                 // No super call match
                 reports += Error(
-                    constructor.newKeyword?.pos, "Cannot find matched super call `super`(${
+                    constructor.newKeyword.pos, "Cannot find matched super call `super`(${
                         constructor.parentConstructorArgumentsTypes.mapNotNull { it?.typeName }.joinToString()
                     })"
                 )
@@ -493,7 +493,7 @@ class Checker(private val preference: AbstractPreference) {
             if (thisCallSignature == null) {
                 // No super call match
                 reports += Error(
-                    constructor.newKeyword?.pos, "Cannot find matched super call `this`(${
+                    constructor.newKeyword.pos, "Cannot find matched super call `this`(${
                         constructor.parentConstructorArgumentsTypes.mapNotNull { it?.typeName }.joinToString()
                     })"
                 )
@@ -502,7 +502,7 @@ class Checker(private val preference: AbstractPreference) {
             if (scope.parentClassPath != Reference.OBJECT_TYPE_REFERENCE && scope.parentClassPath != null) {
                 // Requires `super` call
                 reports += Error(
-                    constructor.newKeyword?.pos,
+                    constructor.newKeyword.pos,
                     "Class ${scope.typeReference} extends class ${scope.parentClassPath} but doesn't `super` any parent class' constructor",
                     "Add `super` call after constructor declaration"
                 )
@@ -1316,17 +1316,21 @@ class Checker(private val preference: AbstractPreference) {
                         )
                     } else expression.type = targetType
                 } else if (originalType is ArrayType) {
-                    if (targetType is PrimitiveType) {
-                        reports += Error(
-                            expression.targetTypeReference?.pos,
-                            "Cannot cast array type `${originalType.asCASCStyle()}` into primitive type `${targetType.asCASCStyle()}`"
-                        )
-                    } else if (targetType is ClassType) {
-                        reports += Error(
-                            expression.targetTypeReference?.pos,
-                            "Cannot cast array type `${originalType.asCASCStyle()}` into class type `${targetType.asCASCStyle()}`"
-                        )
-                    } else expression.type = targetType
+                    when (targetType) {
+                        is PrimitiveType -> {
+                            reports += Error(
+                                expression.targetTypeReference?.pos,
+                                "Cannot cast array type `${originalType.asCASCStyle()}` into primitive type `${targetType.asCASCStyle()}`"
+                            )
+                        }
+                        is ClassType -> {
+                            reports += Error(
+                                expression.targetTypeReference?.pos,
+                                "Cannot cast array type `${originalType.asCASCStyle()}` into class type `${targetType.asCASCStyle()}`"
+                            )
+                        }
+                        else -> expression.type = targetType
+                    }
                 }
 
                 expression.type
