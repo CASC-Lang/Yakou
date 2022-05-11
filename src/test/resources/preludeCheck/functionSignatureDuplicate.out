@@ -1,0 +1,11 @@
+error: Function a(i32, i32) has already declared in same context
+--> Class.casc:6:7
+5 |
+6 |     fn a(x: i32, y: i32) {}
+           ^= hint: Try rename this function or modify parameters' type
+7 |
+error: Function a(i32, i32) has already declared in same context
+--> Class.casc:10:7
+9  |
+10 |     fn a(self, x: i32, y: i32) {}
+            ^= hint: Try rename this function or modify parameters' type
