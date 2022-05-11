@@ -792,13 +792,8 @@ class Parser(private val preference: AbstractPreference) {
         classReference: Reference?, parentReference: Reference?
     ): Triple<List<Function>, List<Constructor>, CompanionBlock?> {
         var companionBlock: CompanionBlock? = null
-        val functions = object : MutableObjectSet<Function>() {
-            override fun isDuplicate(a: Function, b: Function): Boolean =
-                a.name?.literal == b.name?.literal && a.parameters == b.parameters
-        }
-        val constructors = object : MutableObjectSet<Constructor>() {
-            override fun isDuplicate(a: Constructor, b: Constructor): Boolean = a.parameters == b.parameters
-        }
+        val functions = mutableListOf<Function>()
+        val constructors = mutableListOf<Constructor>()
 
         while (hasNext()) {
             if (peekIf(TokenType.CloseBrace)) break
@@ -919,14 +914,7 @@ class Parser(private val preference: AbstractPreference) {
                     superCallArguments
                 )
 
-                if (!constructors.add(constructor)) {
-                    // Duplicate constructors
-                    reports += Error(
-                        newKeyword.pos,
-                        "Constructor `new`(${DisplayFactory.getParametersTypePretty(parameters)}) has already declared in same context",
-                        "Try modify parameters' type"
-                    )
-                }
+                constructors += constructor
             } else if (peekIf(Token::isFnKeyword)) {
                 // Function declaration
                 val fnKeyword = next()!!
@@ -970,14 +958,7 @@ class Parser(private val preference: AbstractPreference) {
                     statements,
                 )
 
-                if (!functions.add(function)) {
-                    // Duplicate functions
-                    reports += Error(
-                        name?.pos,
-                        "Function ${name?.literal}(${DisplayFactory.getParametersTypePretty(parameters)}) has already declared in same context",
-                        "Try rename this function or modify parameters' type"
-                    )
-                }
+                functions += function
             } else if (peekIf(TokenType.CloseBrace)) break
         }
 

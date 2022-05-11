@@ -366,7 +366,14 @@ class Checker(private val preference: AbstractPreference) {
             }
         }
 
-        if (validationPass) scope.registerSignature(constructor)
+        if (validationPass && !scope.registerSignature(constructor)) {
+            // Duplicate constructors
+            reports += Error(
+                constructor.newKeyword.pos,
+                "Constructor `new`(${DisplayFactory.getParametersTypePretty(constructor.parameters)}) has already declared in same context",
+                "Try modify parameters' type"
+            )
+        }
 
         return constructor
     }
@@ -464,7 +471,14 @@ class Checker(private val preference: AbstractPreference) {
             )
         }
 
-        if (validationPass) scope.registerSignature(function)
+        if (validationPass && !scope.registerSignature(function)) {
+            // Duplicate functions
+            reports += Error(
+                function.name.pos,
+                "Function ${function.name.literal}(${DisplayFactory.getParametersTypePretty(function.parameters)}) has already declared in same context",
+                "Try rename this function or modify parameters' type"
+            )
+        }
 
         return function
     }

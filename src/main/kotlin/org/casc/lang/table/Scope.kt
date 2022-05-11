@@ -109,9 +109,8 @@ data class Scope(
     //         Function Signatures           //
     //=======================================//
 
-    fun registerSignature(signatureObject: HasSignature) {
-        signatures += signatureObject.asSignature()
-    }
+    fun registerSignature(signatureObject: HasSignature): Boolean =
+        signatures.add(signatureObject.asSignature())
 
     private fun findSignatureInSameType(functionName: String, argumentTypes: List<Type?>): FunctionSignature? =
         signatures.find {
