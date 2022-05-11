@@ -121,7 +121,7 @@ sealed class Report {
                 finalMessage += "\n"
             }
 
-            if (lineNumber < source.lastIndex) {
+            if (lineNumber <= source.lastIndex) {
                 finalMessage += "${
                     if (preference.enableColor) Ansi.colorize(
                         "${lineNumber + 1} |",
