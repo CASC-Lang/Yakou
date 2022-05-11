@@ -1,0 +1,4 @@
+error: Cannot declare trait instance with `mut` keyword, trait is implicitly mutable
+--> ./MutableTrait.casc:1:0
+1 | mut trait MutableTrait
+    ^^^= hint: Remove this `mut` keyword
