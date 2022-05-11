@@ -198,7 +198,9 @@ class Checker(private val preference: AbstractPreference) {
         if (topScope.usages.find { usage -> usage.fullQualifiedPath == reference.fullQualifiedPath } != null) {
             // Using an already used package or class
             reports += Warning(
-                reference.pos, "${reference.asCASCStyle()} is already used in this context", "Consider removing this usage"
+                reference.pos,
+                "${reference.asCASCStyle()} is already used in this context",
+                "Consider removing this usage"
             )
         }
 

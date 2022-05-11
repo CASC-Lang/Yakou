@@ -1,6 +1,5 @@
 package org.casc.lang.ast
 
-import org.casc.lang.table.HasFlag
 import org.casc.lang.table.Reference
 import org.casc.lang.utils.getOrElse
 import org.objectweb.asm.Opcodes

@@ -1,6 +1,5 @@
 package org.casc.lang
 
-import io.github.classgraph.ClassGraph
 import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.compilation.Compilation
 import org.casc.lang.compilation.Error
@@ -87,7 +86,9 @@ enum class CommandType(val helpMessage: String) {
                                             preference.outputDir = outputFolder
                                             true
                                         } else {
-                                            Error("Output path `$outputFolderPath` is not a directory").printReport(preference)
+                                            Error("Output path `$outputFolderPath` is not a directory").printReport(
+                                                preference
+                                            )
                                             false
                                         }
                                     } else {

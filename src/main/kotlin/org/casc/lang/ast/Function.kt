@@ -3,7 +3,6 @@ package org.casc.lang.ast
 import org.casc.lang.table.*
 import org.casc.lang.utils.getOrElse
 import org.objectweb.asm.Opcodes
-import java.lang.reflect.Modifier
 
 data class Function(
     val ownerReference: Reference?,

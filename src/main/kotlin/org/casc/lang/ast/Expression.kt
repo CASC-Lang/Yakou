@@ -5,7 +5,6 @@ import org.casc.lang.table.PrimitiveType
 import org.casc.lang.table.Reference
 import org.casc.lang.table.Type
 import org.objectweb.asm.Opcodes
-import org.objectweb.asm.TypeReference
 
 sealed class Expression {
     companion object {

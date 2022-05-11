@@ -1,8 +1,7 @@
 package org.casc.lang.asm
 
-import java.net.URLClassLoader
-import java.lang.ClassNotFoundException
 import java.net.URL
+import java.net.URLClassLoader
 
 class BytecodeClassLoader(urls: Array<URL?>?, parent: ClassLoader?) : URLClassLoader(urls, parent) {
     fun defineClass(className: String?, bytecode: ByteArray): Class<*> {
