@@ -14,7 +14,6 @@ import org.casc.lang.table.Reference
 import org.casc.lang.table.Scope
 import org.casc.lang.table.Table
 import java.io.BufferedReader
-import java.util.*
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 
@@ -28,7 +27,7 @@ class Compilation(private val preference: AbstractPreference) {
 
     fun compile() {
         var panic = false
-        val sourceFile = preference.sourceFile!!.absoluteFile!!
+        val sourceFile = preference.sourceFile!!.absoluteFile
 
         measureTime("Compilation") {
             if (sourceFile.isDirectory) {
