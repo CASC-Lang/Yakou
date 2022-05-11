@@ -3,4 +3,4 @@ error: Unexpected token, expected `super` or `self` keyword
 3 | impl InvalidConstructor {
 4 |     new() : pub()
                 ^^^
-5 |
+5 | }
