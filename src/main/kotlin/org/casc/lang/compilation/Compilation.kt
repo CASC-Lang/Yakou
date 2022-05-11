@@ -43,7 +43,7 @@ class Compilation(private val preference: AbstractPreference) {
                         val source = cascFile.readLines()
                         val relativeFilePath = cascFile.toRelativeString(sourceFile)
                         val compilationUnit =
-                            CompilationFileUnit(cascFile.name, source, relativeFilePath, cascFile.path)
+                            CompilationFileUnit(cascFile.name, source, cascFile.path, relativeFilePath)
 
                         // Unit I: Lexer
                         /**
