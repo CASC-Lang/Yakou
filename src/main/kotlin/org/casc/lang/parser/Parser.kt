@@ -129,7 +129,7 @@ class Parser(private val preference: AbstractPreference) {
         val usages = mutableListOf<Reference>()
         val typeInstances = mutableMapOf<Reference, TypeInstance>()
         val majorImpls = mutableMapOf<Reference, Impl>()
-        val traitImpls = mutableMapOf<Reference, List<TraitImpl>>()
+        val traitImpls = mutableMapOf<Reference, MutableList<TraitImpl>>()
 
         while (hasNext()) {
             if (peekIf(Token::isUseKeyword)) {
@@ -225,10 +225,64 @@ class Parser(private val preference: AbstractPreference) {
                 val ownerReference = parseTypeSymbol()
 
                 if (peekIf(Token::isForKeyword)) {
-                    // TODO
+                    consume() // `for` keyword
+
+                    val implementedTraitReference = parseTypeSymbol()
+
+                    var functions: List<Function>? = null
+
+                    if (peekIf(TokenType.OpenBrace)) {
+                        consume() // open brace
+
+                        val (fns, ctors, compBlock) = parseFunctions(ownerReference, null)
+
+                        if (ctors.isNotEmpty()) {
+                            // Constructor declarations in trait implementation
+                            for (constructor in ctors) {
+                                reports += Error(
+                                    constructor.newKeyword?.pos,
+                                    "Constructor cannot be declared in trait implementation",
+                                    "Remove this constructor declaration"
+                                )
+                            }
+                        }
+
+                        if (compBlock != null) {
+                            // Companion blocks in trait implementation
+
+                        }
+
+                        functions = fns
+
+                        assertUntil(TokenType.CloseBrace)
+                    }
+
+                    val traitImpl = TraitImpl(
+                        implKeyword,
+                        implementedTraitReference,
+                        functions ?: listOf()
+                    )
+
+                    if (!typeInstances.containsKey(ownerReference)) {
+                        // Unknown type implementation
+                        reports += Error(
+                            ownerReference.pos, "Unknown trait implementation for class ${ownerReference.asCASCStyle()}"
+                        )
+                    } else if (traitImpls[ownerReference]?.find { it.implementedTraitReference == implementedTraitReference } != null) {
+                        // Implementation duplication
+                        reports += Error(
+                            ownerReference.pos,
+                            "Duplicated trait implementation for class ${ownerReference.asCASCStyle()}",
+                            "Consider remove this trait implementation"
+                        )
+                    } else {
+                        if (traitImpls[ownerReference] == null)
+                            traitImpls[ownerReference] = mutableListOf()
+
+                        traitImpls[ownerReference]!! += traitImpl
+                    }
                 } else {
                     // Common implementation
-
                     val parentClassReference = if (peekIf(TokenType.Colon)) {
                         consume() // colon
                         parseTypeSymbol()
@@ -236,7 +290,7 @@ class Parser(private val preference: AbstractPreference) {
 
                     var functions: List<Function>? = null
                     var constructors: List<Constructor>? = null
-                    var companionBlock: List<Statement>? = null
+                    var companionBlock: CompanionBlock? = null
 
                     if (peekIf(TokenType.OpenBrace)) {
                         consume() // open brace
@@ -255,7 +309,7 @@ class Parser(private val preference: AbstractPreference) {
                     val impl = Impl(
                         implKeyword,
                         parentClassReference,
-                        companionBlock ?: listOf(),
+                        companionBlock,
                         constructors ?: listOf(),
                         functions ?: listOf()
                     )
@@ -736,9 +790,8 @@ class Parser(private val preference: AbstractPreference) {
 
     private fun parseFunctions(
         classReference: Reference?, parentReference: Reference?
-    ): Triple<List<Function>, List<Constructor>, List<Statement>> {
-        var firstCompKeyword: Token? = null
-        var companionBlock: List<Statement>? = null
+    ): Triple<List<Function>, List<Constructor>, CompanionBlock?> {
+        var companionBlock: CompanionBlock? = null
         val functions = object : MutableObjectSet<Function>() {
             override fun isDuplicate(a: Function, b: Function): Boolean =
                 a.name?.literal == b.name?.literal && a.parameters == b.parameters
@@ -777,7 +830,7 @@ class Parser(private val preference: AbstractPreference) {
                     )
                 }
 
-                val compKeyword = next()
+                val compKeyword = next()!!
 
                 assertUntil(TokenType.OpenBrace)
 
@@ -789,13 +842,15 @@ class Parser(private val preference: AbstractPreference) {
                         "Try merge companion blocks together"
                     )
                     reports += Error(
-                        firstCompKeyword?.pos,
+                        companionBlock.compKeyword.pos,
                         "Companion block already declared",
                         "Merge to this companion block"
                     )
-                } else firstCompKeyword = compKeyword
+                }
 
-                companionBlock = parseStatements(true)
+                val statements = parseStatements(true)
+
+                companionBlock = CompanionBlock(compKeyword, statements)
 
                 assertUntil(TokenType.CloseBrace)
             } else if (peekIf(Token::isNewKeyword)) {
@@ -925,7 +980,7 @@ class Parser(private val preference: AbstractPreference) {
             } else if (peekIf(TokenType.CloseBrace)) break
         }
 
-        return Triple(functions.toList(), constructors.toList(), companionBlock ?: listOf())
+        return Triple(functions.toList(), constructors.toList(), companionBlock)
     }
 
     /**

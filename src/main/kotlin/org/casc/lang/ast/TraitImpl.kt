@@ -1,3 +1,5 @@
 package org.casc.lang.ast
 
-data class TraitImpl(val implKeyword: Token, val functions: List<Function>)
+import org.casc.lang.table.Reference
+
+data class TraitImpl(val implKeyword: Token, val implementedTraitReference: Reference, val functions: List<Function>)
