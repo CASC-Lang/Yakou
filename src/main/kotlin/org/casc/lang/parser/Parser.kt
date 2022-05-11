@@ -240,7 +240,7 @@ class Parser(private val preference: AbstractPreference) {
                             // Constructor declarations in trait implementation
                             for (constructor in ctors) {
                                 reports += Error(
-                                    constructor.newKeyword?.pos,
+                                    constructor.newKeyword.pos,
                                     "Constructor cannot be declared in trait implementation",
                                     "Remove this constructor declaration"
                                 )
@@ -390,7 +390,7 @@ class Parser(private val preference: AbstractPreference) {
                             // Illegal constructor declaration for trait instance's implementation
                             for (constructor in it.constructors) {
                                 reports += Error(
-                                    constructor.newKeyword?.pos,
+                                    constructor.newKeyword.pos,
                                     "Trait cannot have constructors",
                                     "Remove this constructor declaration"
                                 )
@@ -837,7 +837,7 @@ class Parser(private val preference: AbstractPreference) {
                 if (companionBlock != null) {
                     // Companion block already declared
                     reports += Error(
-                        compKeyword?.pos,
+                        compKeyword.pos,
                         "Companion block already declared",
                         "Try merge companion blocks together"
                     )
@@ -869,7 +869,7 @@ class Parser(private val preference: AbstractPreference) {
                     )
                 }
 
-                val newKeyword = next() // `new` keyword
+                val newKeyword = next()!! // `new` keyword
 
                 val (parameterSelfKeyword, parameters) = parseParameters()
 
@@ -922,14 +922,14 @@ class Parser(private val preference: AbstractPreference) {
                 if (!constructors.add(constructor)) {
                     // Duplicate constructors
                     reports += Error(
-                        newKeyword?.pos,
+                        newKeyword.pos,
                         "Constructor `new`(${DisplayFactory.getParametersTypePretty(parameters)}) has already declared in same context",
                         "Try modify parameters' type"
                     )
                 }
             } else if (peekIf(Token::isFnKeyword)) {
                 // Function declaration
-                consume() // `fn` keyword
+                val fnKeyword = next()!!
 
                 val name = assertUntil(TokenType.Identifier)
                 val (parameterSelfKeyword, parameters) = parseParameters()
@@ -962,6 +962,7 @@ class Parser(private val preference: AbstractPreference) {
                     ovrd,
                     abstr,
                     mutable,
+                    fnKeyword,
                     parameterSelfKeyword,
                     name,
                     parameters,

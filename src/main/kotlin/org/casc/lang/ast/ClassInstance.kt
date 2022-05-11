@@ -10,7 +10,7 @@ data class ClassInstance(
     val accessorToken: Token?,
     val abstrToken: Token?, // Unused
     val mutKeyword: Token?,
-    val classKeyword: Token?,
+    val classKeyword: Token,
     override val typeReference: Reference,
     override val fields: List<Field>,
     override val accessor: Accessor = Accessor.fromString(accessorToken?.literal)

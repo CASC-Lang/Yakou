@@ -6,7 +6,7 @@ data class Constructor(
     val ownerReference: Reference?,
     var parentReference: Reference?,
     val accessorToken: Token?,
-    val newKeyword: Token?,
+    val newKeyword: Token,
     val parameters: List<Parameter>,
     val statements: List<Statement>,
     val superKeyword: Token?,

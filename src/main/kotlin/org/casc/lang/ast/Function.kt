@@ -11,6 +11,7 @@ data class Function(
     val ovrdKeyword: Token?,
     val abstrKeyword: Token?,
     val mutKeyword: Token?,
+    val fnKeyword: Token,
     val selfKeyword: Token?, // determine whether function is companion
     val name: Token?,
     val parameters: List<Parameter>,
