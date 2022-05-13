@@ -19,7 +19,6 @@ class Parser(private val preference: AbstractPreference) {
     private lateinit var tokens: List<Token>
 
     fun parse(path: String, relativeFilePath: String, tokens: List<Token>): Pair<List<Report>, File?> {
-        pos = 0
         this.tokens = tokens
         val file = parseFile(path, relativeFilePath)
 
