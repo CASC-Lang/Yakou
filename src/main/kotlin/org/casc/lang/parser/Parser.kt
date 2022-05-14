@@ -263,6 +263,17 @@ class Parser(private val preference: AbstractPreference) {
                             )
                         }
 
+                        // All functions in trait implementation must be override functions
+                        for (function in fns) {
+                            if (function.ovrdKeyword == null) {
+                                // Function does not attempt to override trait functions
+                                reports += Error(
+                                    function.name?.pos,
+                                    "Function a"
+                                )
+                            }
+                        }
+
                         functions = fns
 
                         assertUntil(TokenType.CloseBrace)
