@@ -1,8 +1,11 @@
 package org.casc.lang.table
 
 import org.casc.lang.ast.Accessor
+import org.casc.lang.compilation.AbstractPreference
 import org.casc.lang.utils.getOrElse
 import org.objectweb.asm.Opcodes
+import java.lang.reflect.Method
+import java.lang.reflect.Modifier
 
 data class FunctionSignature(
     val ownerReference: Reference,
@@ -14,6 +17,17 @@ data class FunctionSignature(
     val parameters: List<Type>,
     val returnType: Type
 ) : HasDescriptor, HasFlag, HasAccessor {
+    constructor(ownerClass: Class<*>, function: Method, preference: AbstractPreference) : this(
+        Reference(ownerClass),
+        TypeUtil.asType(ownerClass, preference) as ClassType,
+        Modifier.isStatic(function.modifiers),
+        Modifier.isFinal(function.modifiers),
+        Accessor.fromModifier(function.modifiers),
+        function.name,
+        function.parameterTypes.map { TypeUtil.asType(it, preference)!! },
+        TypeUtil.asType(function.returnType, preference)!!
+    )
+
     override val descriptor: String =
         if (name == "<init>") {
             // Constructor
