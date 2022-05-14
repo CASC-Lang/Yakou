@@ -8,3 +8,5 @@ impl Atom {
         java::lang::System.out.println("Atomic Powah!")
     }
 }
+
+impl Atom for Animal

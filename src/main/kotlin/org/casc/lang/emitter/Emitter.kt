@@ -43,7 +43,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
             typeInstance.reference.internalName(),
             null,
             typeInstance.parentClassReference.internalName(),
-            null
+            typeInstance.traitClassReferences.map(Reference::internalName).toTypedArray()
         )
 
         classWriter.visitSource(sourceFile, null)

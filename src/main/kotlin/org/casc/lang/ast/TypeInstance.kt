@@ -19,4 +19,8 @@ sealed class TypeInstance : HasFlag {
     val parentClassReference: Reference by lazy {
         impl?.parentClassReference ?: Reference.OBJECT_TYPE_REFERENCE
     }
+
+    val traitClassReferences: Array<Reference> by lazy {
+        traitImpls?.map(TraitImpl::implementedTraitReference)?.toTypedArray() ?: arrayOf()
+    }
 }
