@@ -244,7 +244,7 @@ data class Scope(
 
                 ownerClazz = ownerClazz.superclass
 
-                while (ownerClazz != null) {
+                while (true) {
                     functions = filterFunction(ownerClazz, functionName, argumentClasses)
 
                     for (function in functions) {
@@ -253,7 +253,8 @@ data class Scope(
                         }
                     }
 
-                    ownerClazz = ownerClazz.superclass
+                    if (ownerClazz.superclass == null) return null
+                    else ownerClazz = ownerClazz.superclass
                 }
             }
         }
