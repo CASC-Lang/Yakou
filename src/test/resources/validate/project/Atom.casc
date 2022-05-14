@@ -9,4 +9,6 @@ impl Atom {
     }
 }
 
-impl Atom for Animal
+impl Atom for Animal {
+    ovrd fn roar(self) {}
+}

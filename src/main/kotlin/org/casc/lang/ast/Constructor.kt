@@ -34,6 +34,7 @@ data class Constructor(
             ownerType,
             companion = true,
             mutable = false,
+            abstract = false,
             accessor,
             "<init>",
             parameterTypes.mapNotNull { it },

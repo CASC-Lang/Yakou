@@ -96,6 +96,14 @@ class Checker(private val preference: AbstractPreference) {
             }
         }
 
+        if (clazz.traitImpls != null) {
+            clazz.traitImpls!!.forEach {
+                it.functions.forEach {
+
+                }
+            }
+        }
+
         return classScope
     }
 
@@ -130,6 +138,14 @@ class Checker(private val preference: AbstractPreference) {
 
             impl.functions.forEach {
                 checkFunction(it, traitScope)
+            }
+        }
+
+        if (trait.traitImpls != null) {
+            trait.traitImpls!!.forEach {
+                it.functions.forEach {
+
+                }
             }
         }
 
@@ -378,7 +394,7 @@ class Checker(private val preference: AbstractPreference) {
         return constructor
     }
 
-    private fun checkFunction(function: Function, scope: Scope): Function {
+    private fun checkFunction(function: Function, scope: Scope, searchTraitFunction: Boolean = false): Function {
         val localScope = Scope(scope)
         checkIdentifierIsKeyword(function.name?.literal, function.name?.pos)
 
@@ -527,6 +543,7 @@ class Checker(private val preference: AbstractPreference) {
                 ClassType.OBJECT_TYPE,
                 companion = true,
                 mutable = false,
+                abstract = false,
                 Accessor.Pub,
                 "<init>",
                 listOf(),

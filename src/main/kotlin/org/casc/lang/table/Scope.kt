@@ -200,6 +200,7 @@ data class Scope(
                             TypeUtil.asType(ownerClazz, preference) as ClassType,
                             companion = true,
                             mutable = false,
+                            abstract = false,
                             Accessor.fromModifier(constructor.modifiers),
                             functionName,
                             constructor.parameterTypes.map { TypeUtil.asType(it, preference)!! },

@@ -21,7 +21,7 @@ impl Rock: Atom {
         } else {
             new Rock("")
         }
-        a.hello()
+        a.roar()
     }
 
     mut fn lol(self): i32 {

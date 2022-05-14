@@ -42,6 +42,7 @@ data class Function(
             ownerType,
             selfKeyword == null,
             mutKeyword != null,
+            abstrKeyword != null,
             accessor,
             name?.literal ?: "",
             parameterTypes!!.mapNotNull { it },

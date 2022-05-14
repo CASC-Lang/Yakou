@@ -6,4 +6,10 @@ class CommonClassWriter(flags: Int, private val classLoader: ClassLoader) : Clas
     override fun getClassLoader(): ClassLoader {
         return classLoader
     }
+
+    override fun getCommonSuperClass(type1: String?, type2: String?): String {
+        // search common type from Table
+
+        return super.getCommonSuperClass(type1, type2)
+    }
 }
