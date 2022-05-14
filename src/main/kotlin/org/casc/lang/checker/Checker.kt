@@ -664,10 +664,12 @@ class Checker(private val preference: AbstractPreference) {
                 }
             }
             is BlockStatement -> {
+                val blockScope = Scope(scope)
+
                 statement.statements.forEachIndexed { i, it ->
                     checkStatement(
                         it!!,
-                        Scope(scope),
+                        blockScope,
                         returnType,
                         if (i == statement.statements.size - 1) retainLastExpression else false
                     )
