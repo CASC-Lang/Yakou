@@ -256,7 +256,11 @@ class Parser(private val preference: AbstractPreference) {
 
                         if (compBlock != null) {
                             // Companion blocks in trait implementation
-
+                            reports += Error(
+                                compBlock.compKeyword.pos,
+                                "Companion block is forbidden in trait implementation",
+                                "Remove this companion block"
+                            )
                         }
 
                         functions = fns
