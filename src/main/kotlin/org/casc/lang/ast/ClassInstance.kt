@@ -7,7 +7,7 @@ import org.objectweb.asm.Opcodes
 data class ClassInstance(
     override val packageReference: Reference?,
     val accessorToken: Token?,
-    val abstrToken: Token?, // Unused
+    val abstrToken: Token?,
     val mutKeyword: Token?,
     val classKeyword: Token,
     override val typeReference: Reference,
