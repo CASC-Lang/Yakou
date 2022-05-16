@@ -2,16 +2,16 @@ package org.casc.lang.compilation
 
 import com.diogonunes.jcolor.AnsiFormat
 import com.diogonunes.jcolor.Attribute
-import org.casc.lang.ast.ClassInstance
-import org.casc.lang.ast.File
-import org.casc.lang.ast.Token
+import org.casc.lang.ast.*
 import org.casc.lang.checker.Checker
 import org.casc.lang.emitter.Emitter
 import org.casc.lang.lexer.Lexer
 import org.casc.lang.parser.Parser
+import org.casc.lang.table.Reference
 import org.casc.lang.table.Scope
 import org.casc.lang.table.Table
 import java.io.BufferedReader
+import java.util.*
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 
@@ -25,7 +25,7 @@ class Compilation(private val preference: AbstractPreference) {
 
     fun compile() {
         var panic = false
-        val sourceFile = preference.sourceFile!!.absoluteFile!!
+        val sourceFile = preference.sourceFile!!.absoluteFile
 
         measureTime("Compilation") {
             if (sourceFile.isDirectory) {
@@ -41,7 +41,7 @@ class Compilation(private val preference: AbstractPreference) {
                         val source = cascFile.readLines()
                         val relativeFilePath = cascFile.toRelativeString(sourceFile)
                         val compilationUnit =
-                            CompilationFileUnit(cascFile.name, source, relativeFilePath, cascFile.path)
+                            CompilationFileUnit(cascFile.name, source, cascFile.path, relativeFilePath)
 
                         // Unit I: Lexer
                         /**
@@ -55,6 +55,8 @@ class Compilation(private val preference: AbstractPreference) {
                         compilationUnits += compilationUnit
                     }
                 }
+
+                compilationUnits.sortBy { it.relativePath }
 
                 compilationUnits.printReports()
 
@@ -87,7 +89,7 @@ class Compilation(private val preference: AbstractPreference) {
                     return@measureTime
                 }
 
-                measureTime("Check (Prelude)") {
+                measureTime("Check (Prelude)") checkPrelude@{
                     // Caches class for dummy type checking, used in declaration checking
                     Table.cachedClasses += compilationUnits.map { it.file.typeInstance.reference to it.file }
 
@@ -108,48 +110,87 @@ class Compilation(private val preference: AbstractPreference) {
                         compilationUnit.scope = classScope
                     }
 
-                    compilationUnits.printReports()
-
                     if (compilationUnits.anyError()) {
                         panic = true
-                        return@measureTime
+                        return@checkPrelude
                     }
 
-                    Table.cachedClasses.clear()
-
-                    // Define temporary class through bytecode for ASM library to process (See [getClassLoader][org.casc.lang.asm.CommonClassWriter])
-                    val creationQueue = LinkedHashSet<String>()
+                    val traitQueue = mutableListOf<Reference>()
+                    val classQueue = mutableListOf<Reference>()
                     val declarations = compilationUnits.map(CompilationFileUnit::file)
 
-                    fun addToQueue(file: File) {
-                        val typeInstance = file.typeInstance
+                    for ((file, compilationUnit) in declarations.zip(compilationUnits)) {
+                        // Check parent class has no cyclic inheritance
+                        val (_, _, _, typeInstance) = file
 
-                        if (typeInstance is ClassInstance && typeInstance.impl?.parentClassReference != null) {
-                            val parentClazzFile =
-                                declarations.find { it.typeInstance.reference.fullQualifiedPath == typeInstance.impl!!.parentClassReference!!.fullQualifiedPath }
-                            if (parentClazzFile != null)
-                                addToQueue(parentClazzFile)
+                        when (typeInstance) {
+                            is ClassInstance ->
+                                classQueue += typeInstance.reference
+                            is TraitInstance ->
+                                traitQueue += typeInstance.reference
+                        }
+
+
+                        if (typeInstance is ClassInstance) {
+                            val parentClassReferenceSet = hashSetOf<Reference>()
+                            var currentTypeInstance = typeInstance
+
+                            while (currentTypeInstance.impl != null && currentTypeInstance.impl!!.parentClassReference != null) {
+                                currentTypeInstance =
+                                    Table.findTypeInstance(currentTypeInstance.impl!!.parentClassReference!!)
+                                        ?: break
+
+                                if (!parentClassReferenceSet.add(currentTypeInstance.typeReference)) {
+                                    // Cyclic inheritance
+                                    compilationUnit.reports += Error(
+                                        typeInstance.impl!!.parentClassReference!!.pos,
+                                        "Circular inheritance is forbidden",
+                                        "Class ${typeInstance.reference.asCASCStyle()} inherits class ${currentTypeInstance.reference.asCASCStyle()} but class ${currentTypeInstance.reference.asCASCStyle()} also inherits class ${typeInstance.reference.asCASCStyle()}"
+                                    )
+                                    break
+                                } else classQueue.add(0, currentTypeInstance.reference)
+                            }
                         }
 
                         if (typeInstance.traitImpls != null) {
-                            // TODO: implement traitImpls precaching
-                        }
+                            val currentTraitQueue =
+                                LinkedList(typeInstance.traitImpls!!.map(TraitImpl::implementedTraitReference))
 
-                        creationQueue.add(file.typeInstance.reference.fullQualifiedPath)
+                            while (currentTraitQueue.isNotEmpty()) {
+                                val trait = currentTraitQueue.remove()
+                                traitQueue.add(0, trait)
+                                Table.findFile(trait)!!.typeInstance.traitImpls?.map(TraitImpl::implementedTraitReference)
+                                    ?.let(currentTraitQueue::addAll)
+                            }
+                        }
                     }
 
-                    declarations.forEach(::addToQueue)
+                    if (compilationUnits.anyError()) {
+                        panic = true
+                        return@checkPrelude
+                    }
 
-                    for (name in creationQueue) {
-                        val cachedFile =
-                            declarations.find { it.typeInstance.reference.fullQualifiedPath == name }!!
-
+                    // Define temporary class through bytecode for ASM library to process (See [getClassLoader][org.casc.lang.asm.CommonClassWriter])
+                    for (reference in traitQueue.distinct()) {
+                        val cachedFile = Table.findFile(reference)!!
                         val bytecode = Emitter(preference, true).emit(cachedFile)
 
-                        preference.classLoader.defineClass(name, bytecode)
+                        preference.classLoader.defineClass(reference.fullQualifiedPath, bytecode)
                     }
 
-                    Table.cachedClasses += declarations.map { it.typeInstance.reference to it }
+                    for (reference in classQueue.distinct()) {
+                        val cachedFile = Table.findFile(reference)!!
+                        val bytecode = Emitter(preference, true).emit(cachedFile)
+
+                        preference.classLoader.defineClass(reference.fullQualifiedPath, bytecode)
+                    }
+                }
+
+                compilationUnits.printReports()
+
+                if (compilationUnits.anyError()) {
+                    panic = true
+                    return@measureTime
                 }
 
                 measureTime("Check (Main)") {

@@ -1,0 +1,5 @@
+class MutableCompanionFunction
+
+impl MutableCompanionFunction {
+    mut fn a1() {}
+}

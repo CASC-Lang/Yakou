@@ -14,3 +14,4 @@ error: Redundant access modifier `pub`, `pub` is declared under the hood by comp
 5 |
 6 |     pub fn a1() {}
         ^^^= hint: Remove this access modifier `pub`
+7 | }

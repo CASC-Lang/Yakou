@@ -4,7 +4,12 @@ import org.casc.lang.ast.File
 import org.casc.lang.ast.Token
 import org.casc.lang.table.Scope
 
-data class CompilationFileUnit(val fileName: String, val source: List<String>, val filePath: String, val relativePath: String) {
+data class CompilationFileUnit(
+    val fileName: String,
+    val source: List<String>,
+    val filePath: String,
+    val relativePath: String
+) {
     var tokens: List<Token> = listOf()
     var reports: List<Report> = mutableListOf()
     lateinit var file: File

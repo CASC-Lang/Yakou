@@ -1,5 +1,5 @@
 mut mut class DuplicateMut
 
 impl DuplicateMut {
-    mut fn a1() {}
+    mut mut fn a1(self) {}
 }

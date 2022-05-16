@@ -3,7 +3,6 @@ package org.casc.lang.ast
 import org.casc.lang.table.*
 import org.casc.lang.utils.getOrElse
 import org.objectweb.asm.Opcodes
-import java.lang.reflect.Modifier
 
 data class Function(
     val ownerReference: Reference?,
@@ -11,6 +10,7 @@ data class Function(
     val ovrdKeyword: Token?,
     val abstrKeyword: Token?,
     val mutKeyword: Token?,
+    val fnKeyword: Token,
     val selfKeyword: Token?, // determine whether function is companion
     val name: Token?,
     val parameters: List<Parameter>,
@@ -26,7 +26,7 @@ data class Function(
             parameterTypes?.fold("") { s, type ->
                 s + type?.descriptor
             }
-        })${returnType?.descriptor}"
+        })${returnType?.descriptor ?: "V"}"
     override val flag: Int by lazy {
         var flag = accessor.access
         flag += selfKeyword.getOrElse(0, Opcodes.ACC_STATIC)
@@ -35,6 +35,7 @@ data class Function(
             flag += mutKeyword.getOrElse(0, Opcodes.ACC_FINAL)
         flag
     }
+    var abstract: Boolean = abstrKeyword != null
 
     override fun asSignature() =
         FunctionSignature(
@@ -42,6 +43,7 @@ data class Function(
             ownerType,
             selfKeyword == null,
             mutKeyword != null,
+            abstrKeyword != null,
             accessor,
             name?.literal ?: "",
             parameterTypes!!.mapNotNull { it },

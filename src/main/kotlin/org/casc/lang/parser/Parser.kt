@@ -19,7 +19,6 @@ class Parser(private val preference: AbstractPreference) {
     private lateinit var tokens: List<Token>
 
     fun parse(path: String, relativeFilePath: String, tokens: List<Token>): Pair<List<Report>, File?> {
-        pos = 0
         this.tokens = tokens
         val file = parseFile(path, relativeFilePath)
 
@@ -33,17 +32,20 @@ class Parser(private val preference: AbstractPreference) {
     private fun hasNext(): Boolean = tokens.size > pos
 
     private fun assertUntil(type: TokenType): Token? {
-        while (hasNext()) {
+        do {
             val token = assert(type)
 
             if (token != null) return token
-        }
+        } while ((hasNext()))
 
         return null
     }
 
     private fun assert(type: TokenType): Token? = when {
-        !hasNext() -> null
+        !hasNext() -> {
+            reports.reportUnexpectedToken(type, last()?.pos, "Reached last token")
+            null
+        }
         tokens[pos].type == type -> tokens[pos++]
         else -> {
             reports.reportUnexpectedToken(type, tokens[pos++])
@@ -52,21 +54,26 @@ class Parser(private val preference: AbstractPreference) {
     }
 
     private fun assertUntil(predicate: (Token) -> Boolean): Token? {
-        while (hasNext()) {
+        do {
             val token = assert(predicate)
 
             if (token != null) return token
-        }
+        } while ((hasNext()))
 
         return null
     }
 
     private fun assert(predicate: (Token) -> Boolean): Token? = when {
-        !hasNext() -> null
+        !hasNext() -> {
+            reports += Error(
+                last()?.pos, "Expected token but got nothing", "Reached last token"
+            )
+            null
+        }
         predicate(tokens[pos]) -> tokens[pos++]
         else -> {
             reports += Error(
-                tokens[pos].pos, "Unexpected token ${tokens[pos++].type}, expected predicate $predicate"
+                tokens[pos].pos, "Unexpected token ${tokens[pos++].type}"
             )
             null
         }
@@ -129,7 +136,7 @@ class Parser(private val preference: AbstractPreference) {
         val usages = mutableListOf<Reference>()
         val typeInstances = mutableMapOf<Reference, TypeInstance>()
         val majorImpls = mutableMapOf<Reference, Impl>()
-        val traitImpls = mutableMapOf<Reference, List<TraitImpl>>()
+        val traitImpls = mutableMapOf<Reference, MutableList<TraitImpl>>()
 
         while (hasNext()) {
             if (peekIf(Token::isUseKeyword)) {
@@ -225,10 +232,79 @@ class Parser(private val preference: AbstractPreference) {
                 val ownerReference = parseTypeSymbol()
 
                 if (peekIf(Token::isForKeyword)) {
-                    // TODO
+                    consume() // `for` keyword
+
+                    val implementedTraitReference = parseTypeSymbol()
+
+                    var functions: List<Function>? = null
+
+                    if (peekIf(TokenType.OpenBrace)) {
+                        consume() // open brace
+
+                        val (fns, ctors, compBlock) = parseFunctions(ownerReference, null)
+
+                        if (ctors.isNotEmpty()) {
+                            // Constructor declarations in trait implementation
+                            for (constructor in ctors) {
+                                reports += Error(
+                                    constructor.newKeyword.pos,
+                                    "Constructor cannot be declared in trait implementation",
+                                    "Remove this constructor declaration"
+                                )
+                            }
+                        }
+
+                        if (compBlock != null) {
+                            // Companion blocks in trait implementation
+                            reports += Error(
+                                compBlock.compKeyword.pos,
+                                "Companion block is forbidden in trait implementation",
+                                "Remove this companion block"
+                            )
+                        }
+
+                        // All functions in trait implementation must be override functions
+                        for (function in fns) {
+                            if (function.ovrdKeyword == null) {
+                                // Function does not attempt to override trait functions
+                                reports += Error(
+                                    function.name?.pos,
+                                    "Function a"
+                                )
+                            }
+                        }
+
+                        functions = fns
+
+                        assertUntil(TokenType.CloseBrace)
+                    }
+
+                    val traitImpl = TraitImpl(
+                        implKeyword,
+                        implementedTraitReference,
+                        functions ?: listOf()
+                    )
+
+                    if (!typeInstances.containsKey(ownerReference)) {
+                        // Unknown type implementation
+                        reports += Error(
+                            ownerReference.pos, "Unknown trait implementation for class ${ownerReference.asCASCStyle()}"
+                        )
+                    } else if (traitImpls[ownerReference]?.find { it.implementedTraitReference == implementedTraitReference } != null) {
+                        // Implementation duplication
+                        reports += Error(
+                            ownerReference.pos,
+                            "Duplicated trait implementation for class ${ownerReference.asCASCStyle()}",
+                            "Consider remove this trait implementation"
+                        )
+                    } else {
+                        if (traitImpls[ownerReference] == null)
+                            traitImpls[ownerReference] = mutableListOf()
+
+                        traitImpls[ownerReference]!! += traitImpl
+                    }
                 } else {
                     // Common implementation
-
                     val parentClassReference = if (peekIf(TokenType.Colon)) {
                         consume() // colon
                         parseTypeSymbol()
@@ -236,7 +312,7 @@ class Parser(private val preference: AbstractPreference) {
 
                     var functions: List<Function>? = null
                     var constructors: List<Constructor>? = null
-                    var companionBlock: List<Statement>? = null
+                    var companionBlock: CompanionBlock? = null
 
                     if (peekIf(TokenType.OpenBrace)) {
                         consume() // open brace
@@ -255,7 +331,7 @@ class Parser(private val preference: AbstractPreference) {
                     val impl = Impl(
                         implKeyword,
                         parentClassReference,
-                        companionBlock ?: listOf(),
+                        companionBlock,
                         constructors ?: listOf(),
                         functions ?: listOf()
                     )
@@ -336,7 +412,7 @@ class Parser(private val preference: AbstractPreference) {
                             // Illegal constructor declaration for trait instance's implementation
                             for (constructor in it.constructors) {
                                 reports += Error(
-                                    constructor.newKeyword?.pos,
+                                    constructor.newKeyword.pos,
                                     "Trait cannot have constructors",
                                     "Remove this constructor declaration"
                                 )
@@ -736,16 +812,10 @@ class Parser(private val preference: AbstractPreference) {
 
     private fun parseFunctions(
         classReference: Reference?, parentReference: Reference?
-    ): Triple<List<Function>, List<Constructor>, List<Statement>> {
-        var firstCompKeyword: Token? = null
-        var companionBlock: List<Statement>? = null
-        val functions = object : MutableObjectSet<Function>() {
-            override fun isDuplicate(a: Function, b: Function): Boolean =
-                a.name?.literal == b.name?.literal && a.parameters == b.parameters
-        }
-        val constructors = object : MutableObjectSet<Constructor>() {
-            override fun isDuplicate(a: Constructor, b: Constructor): Boolean = a.parameters == b.parameters
-        }
+    ): Triple<List<Function>, List<Constructor>, CompanionBlock?> {
+        var companionBlock: CompanionBlock? = null
+        val functions = mutableListOf<Function>()
+        val constructors = mutableListOf<Constructor>()
 
         while (hasNext()) {
             if (peekIf(TokenType.CloseBrace)) break
@@ -777,25 +847,27 @@ class Parser(private val preference: AbstractPreference) {
                     )
                 }
 
-                val compKeyword = next()
+                val compKeyword = next()!!
 
                 assertUntil(TokenType.OpenBrace)
 
                 if (companionBlock != null) {
                     // Companion block already declared
                     reports += Error(
-                        compKeyword?.pos,
+                        compKeyword.pos,
                         "Companion block already declared",
                         "Try merge companion blocks together"
                     )
                     reports += Error(
-                        firstCompKeyword?.pos,
+                        companionBlock.compKeyword.pos,
                         "Companion block already declared",
                         "Merge to this companion block"
                     )
-                } else firstCompKeyword = compKeyword
+                }
 
-                companionBlock = parseStatements(true)
+                val statements = parseStatements(true)
+
+                companionBlock = CompanionBlock(compKeyword, statements)
 
                 assertUntil(TokenType.CloseBrace)
             } else if (peekIf(Token::isNewKeyword)) {
@@ -814,7 +886,7 @@ class Parser(private val preference: AbstractPreference) {
                     )
                 }
 
-                val newKeyword = next() // `new` keyword
+                val newKeyword = next()!! // `new` keyword
 
                 val (parameterSelfKeyword, parameters) = parseParameters()
 
@@ -864,20 +936,22 @@ class Parser(private val preference: AbstractPreference) {
                     superCallArguments
                 )
 
-                if (!constructors.add(constructor)) {
-                    // Duplicate constructors
-                    reports += Error(
-                        newKeyword?.pos,
-                        "Constructor `new`(${DisplayFactory.getParametersTypePretty(parameters)}) has already declared in same context",
-                        "Try modify parameters' type"
-                    )
-                }
+                constructors += constructor
             } else if (peekIf(Token::isFnKeyword)) {
                 // Function declaration
-                consume() // `fn` keyword
+                val fnKeyword = next()!!
 
                 val name = assertUntil(TokenType.Identifier)
                 val (parameterSelfKeyword, parameters) = parseParameters()
+
+                if (parameterSelfKeyword == null && mutable != null) {
+                    // Companion function cannot be mutable
+                    reports += Error(
+                        mutable.pos,
+                        "Companion function cannot be mutable",
+                        "Remove this `mut` keyword"
+                    )
+                }
 
                 val returnType = if (peekIf(TokenType.Colon)) {
                     consume()
@@ -898,6 +972,7 @@ class Parser(private val preference: AbstractPreference) {
                     ovrd,
                     abstr,
                     mutable,
+                    fnKeyword,
                     parameterSelfKeyword,
                     name,
                     parameters,
@@ -905,18 +980,11 @@ class Parser(private val preference: AbstractPreference) {
                     statements,
                 )
 
-                if (!functions.add(function)) {
-                    // Duplicate functions
-                    reports += Error(
-                        name?.pos,
-                        "Function ${name?.literal}(${DisplayFactory.getParametersTypePretty(parameters)}) has already declared in same context",
-                        "Try rename this function or modify parameters' type"
-                    )
-                }
+                functions += function
             } else if (peekIf(TokenType.CloseBrace)) break
         }
 
-        return Triple(functions.toList(), constructors.toList(), companionBlock ?: listOf())
+        return Triple(functions.toList(), constructors.toList(), companionBlock)
     }
 
     /**

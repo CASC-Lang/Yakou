@@ -110,18 +110,18 @@ sealed class Report {
                 }
             ) else "^".repeat(end - start)
 
-            if (hint != null) {
-                finalMessage += if (preference.enableColor) Ansi.colorize(
+            finalMessage += if (hint != null) {
+                if (preference.enableColor) Ansi.colorize(
                     "= hint: $hint\n", reportAttribute[when (this) {
                         is Warning -> 0
                         is Error -> 1
                     }]
                 ) else "= hint: $hint\n"
             } else {
-                finalMessage += "\n"
+                "\n"
             }
 
-            if (lineNumber < source.lastIndex) {
+            if (lineNumber <= source.lastIndex) {
                 finalMessage += "${
                     if (preference.enableColor) Ansi.colorize(
                         "${lineNumber + 1} |",

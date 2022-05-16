@@ -10,7 +10,6 @@ import org.objectweb.asm.*
 import java.lang.invoke.CallSite
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType
-import java.util.OptionalDouble
 import java.io.File as JFile
 
 class Emitter(private val preference: AbstractPreference, private val declarationOnly: Boolean) {
@@ -18,10 +17,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         emitFile(file)
 
     private fun emitFile(file: File): ByteArray {
-        val bytecode = when (val typeInstance = file.typeInstance) {
-            is ClassInstance -> emitClass(typeInstance, file.fileName)
-            is TraitInstance -> emitTrait(typeInstance, file.fileName)
-        }
+        val bytecode = emitTypeInstance(file.typeInstance, file.fileName)
         val outFile = JFile(preference.outputDir, "/${file.typeInstance.typeReference.className}.class")
 
         if (!preference.noEmit) {
@@ -37,50 +33,25 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         return bytecode
     }
 
-    private fun emitClass(clazz: ClassInstance, sourceFile: String): ByteArray {
+    private fun emitTypeInstance(typeInstance: TypeInstance, sourceFile: String): ByteArray {
         val classWriter =
             CommonClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS, preference.classLoader)
 
         classWriter.visit(
             Opcodes.V1_8,
-            clazz.flag,
-            clazz.reference.internalName(),
+            typeInstance.flag,
+            typeInstance.reference.internalName(),
             null,
-            clazz.impl?.parentClassReference?.fullQualifiedPath ?: Reference.OBJECT_TYPE_REFERENCE.internalName(),
-            null
+            typeInstance.parentClassReference.internalName(),
+            typeInstance.traitClassReferences.map(Reference::internalName).toTypedArray()
         )
 
         classWriter.visitSource(sourceFile, null)
 
         if (!declarationOnly) {
-            clazz.fields.forEach {
-                emitField(classWriter, it)
-            }
-
-            if (clazz.impl != null) {
-                val impl = clazz.impl!!
-
-                if (impl.companionBlock.isNotEmpty()) {
-                    val methodVisitor = classWriter.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null)
-
-                    methodVisitor.visitCode()
-
-                    impl.companionBlock.forEach {
-                        emitStatement(methodVisitor, it)
-                    }
-
-                    methodVisitor.visitInsn(Opcodes.RETURN)
-                    methodVisitor.visitMaxs(-1, -1)
-                    methodVisitor.visitEnd()
-                }
-
-                impl.constructors.forEach {
-                    emitConstructor(classWriter, it)
-                }
-
-                impl.functions.forEach {
-                    emitFunction(classWriter, it)
-                }
+            when (typeInstance) {
+                is ClassInstance -> emitClass(classWriter, typeInstance)
+                is TraitInstance -> emitTrait(classWriter, typeInstance)
             }
         }
 
@@ -89,50 +60,48 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         return classWriter.toByteArray()
     }
 
-    private fun emitTrait(trait: TraitInstance, sourceFile: String): ByteArray {
-        val classWriter =
-            CommonClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS, preference.classLoader)
-
-        classWriter.visit(
-            Opcodes.V1_8,
-            trait.flag,
-            trait.reference.internalName(),
-            null,
-            trait.impl?.parentClassReference?.fullQualifiedPath ?: Reference.OBJECT_TYPE_REFERENCE.internalName(),
-            null
-        )
-
-        classWriter.visitSource(sourceFile, null)
-
-        if (!declarationOnly) {
-            trait.fields.forEach {
-                emitField(classWriter, it)
-            }
-
-            if (trait.impl != null) {
-                val impl = trait.impl!!
-
-                if (impl.companionBlock.isNotEmpty()) {
-                    val methodVisitor = classWriter.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null)
-
-                    methodVisitor.visitCode()
-
-                    impl.companionBlock.forEach {
-                        emitStatement(methodVisitor, it)
-                    }
-
-                    methodVisitor.visitInsn(Opcodes.RETURN)
-                    methodVisitor.visitMaxs(-1, -1)
-                    methodVisitor.visitEnd()
-                }
-
-                impl.functions.forEach {
-                    emitFunction(classWriter, it)
-                }
-            }
+    private fun emitClass(classWriter: ClassWriter, clazz: ClassInstance) {
+        clazz.fields.forEach {
+            emitField(classWriter, it)
         }
 
-        return classWriter.toByteArray()
+        clazz.impl?.let { emitImpl(classWriter, it) }
+        clazz.traitImpls?.let { for (traitImpl in it) for (function in traitImpl.functions) emitFunction(classWriter, function) }
+    }
+
+    private fun emitTrait(classWriter: ClassWriter, trait: TraitInstance) {
+        trait.fields.forEach {
+            emitField(classWriter, it)
+        }
+
+        trait.impl?.let { emitImpl(classWriter, it) }
+        trait.traitImpls?.let { for (traitImpl in it) for (function in traitImpl.functions) emitFunction(classWriter, function) }
+    }
+
+    private fun emitImpl(classWriter: ClassWriter, impl: Impl) {
+        val companionBlock = impl.companionBlock
+
+        if (companionBlock != null && companionBlock.statements.isNotEmpty()) {
+            val methodVisitor = classWriter.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null)
+
+            methodVisitor.visitCode()
+
+            companionBlock.statements.forEach {
+                emitStatement(methodVisitor, it)
+            }
+
+            methodVisitor.visitInsn(Opcodes.RETURN)
+            methodVisitor.visitMaxs(-1, -1)
+            methodVisitor.visitEnd()
+        }
+
+        impl.functions.forEach {
+            emitFunction(classWriter, it)
+        }
+
+        impl.constructors.forEach {
+            emitConstructor(classWriter, it)
+        }
     }
 
     private fun emitField(classWriter: ClassWriter, field: Field) {
@@ -403,8 +372,8 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
                     // Use INVOKEVIRTUAL instead
                     methodVisitor.visitMethodInsn(
                         when {
-                            expression.superCall -> Opcodes.INVOKESPECIAL
                             functionSignature.ownerType?.isTrait == true -> Opcodes.INVOKEINTERFACE
+                            expression.superCall -> Opcodes.INVOKESPECIAL
                             else -> Opcodes.INVOKEVIRTUAL
                         },
                         functionSignature.ownerReference.internalName(),

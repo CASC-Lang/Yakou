@@ -1,8 +1,9 @@
 package org.casc.lang.ast
 
+import org.casc.lang.table.HasFlag
 import org.casc.lang.table.Reference
 
-sealed class TypeInstance {
+sealed class TypeInstance : HasFlag {
     abstract val packageReference: Reference?
     abstract val typeReference: Reference
     abstract val fields: List<Field>
@@ -13,5 +14,13 @@ sealed class TypeInstance {
 
     val reference: Reference by lazy {
         Reference(packageReference?.fullQualifiedPath, typeReference.fullQualifiedPath)
+    }
+
+    val parentClassReference: Reference by lazy {
+        impl?.parentClassReference ?: Reference.OBJECT_TYPE_REFERENCE
+    }
+
+    val traitClassReferences: Array<Reference> by lazy {
+        traitImpls?.map(TraitImpl::implementedTraitReference)?.toTypedArray() ?: arrayOf()
     }
 }

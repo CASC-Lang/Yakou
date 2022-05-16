@@ -1,0 +1,6 @@
+error: Companion function cannot be mutable
+--> ./MutableCompanionFunction.casc:4:4
+3 | impl MutableCompanionFunction {
+4 |     mut fn a1() {}
+        ^^^= hint: Remove this `mut` keyword
+5 | }

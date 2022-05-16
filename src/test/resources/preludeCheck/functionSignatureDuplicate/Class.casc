@@ -1,0 +1,15 @@
+class Class
+
+impl Class {
+    new(a: i32, b: i32) {}
+
+    new(x: i32, y: i32) {}
+
+    fn a(a: i32, b: i32) {}
+
+    fn a(x: i32, y: i32) {}
+
+    fn a(self, a: i32, b: i32) {}
+
+    fn a(self, x: i32, y: i32) {}
+}

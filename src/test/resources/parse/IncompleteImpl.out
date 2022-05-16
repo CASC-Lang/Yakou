@@ -1,0 +1,5 @@
+error: Expected token CloseBrace, but got nothing
+--> ./IncompleteImpl.casc:3:20
+2 |
+3 | impl IncompleteImpl {
+                        ^= hint: Reached last token

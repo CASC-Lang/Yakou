@@ -1,0 +1,3 @@
+mut class ClassA
+
+impl ClassA : ClassB

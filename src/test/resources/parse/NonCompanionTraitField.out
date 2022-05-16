@@ -1,0 +1,6 @@
+error: Cannot declare non-companion field a in trait
+--> ./NonCompanionTraitField.casc:2:4
+1 | trait NonCompanionTraitField {
+2 |     a: i32
+        ^= hint: Declare this field in companion block
+3 | }

@@ -1,0 +1,10 @@
+error: Circular inheritance is forbidden
+--> ClassA.casc:3:14
+2 |
+3 | impl ClassA : ClassB
+                  ^^^^^^= hint: Class ClassA inherits class ClassB but class ClassB also inherits class ClassA
+error: Circular inheritance is forbidden
+--> ClassB.casc:3:14
+2 |
+3 | impl ClassB : ClassA
+                  ^^^^^^= hint: Class ClassB inherits class ClassA but class ClassA also inherits class ClassB

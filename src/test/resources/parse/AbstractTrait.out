@@ -1,0 +1,4 @@
+error: Cannot declare trait instance with `abstr` keyword, trait is implicitly abstract
+--> ./AbstractTrait.casc:1:0
+1 | abstr trait AbstractTrait
+    ^^^^^= hint: Remove this `abstr` keyword

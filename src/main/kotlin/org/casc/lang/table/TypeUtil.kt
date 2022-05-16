@@ -40,8 +40,7 @@ object TypeUtil {
             name.substring(name.length - 2) == "[]" -> {
                 val baseType = asType(Reference(name.substring(0 until name.length - 2)), preference)
 
-                if (baseType == null) null
-                else ArrayType(baseType)
+                baseType?.let(::ArrayType)
             }
             else -> null
         }

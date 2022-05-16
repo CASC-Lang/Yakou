@@ -1,8 +1,6 @@
 package org.casc.lang.compilation
 
-import org.casc.lang.asm.BytecodeClassLoader
 import java.io.File
-import java.net.URLClassLoader
 
 object GlobalPreference : AbstractPreference() {
     override var enableColor: Boolean = true

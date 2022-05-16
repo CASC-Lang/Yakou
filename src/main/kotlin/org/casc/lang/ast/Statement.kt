@@ -11,7 +11,8 @@ sealed class Statement {
         val expressions: List<Expression?>,
         var indexes: MutableList<Int> = mutableListOf(),
         override val pos: Position? = Position.fromMultipleAndExtend(
-            *variables.firstOrNull()?.toList()?.map { it?.pos }?.toTypedArray() ?: arrayOf())
+            *variables.firstOrNull()?.toList()?.map { it?.pos }?.toTypedArray() ?: arrayOf()
+        )
             ?.extend(expressions.lastOrNull()?.pos)
     ) : Statement()
 

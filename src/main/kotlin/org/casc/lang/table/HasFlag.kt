@@ -1,7 +1,6 @@
 package org.casc.lang.table
 
 import org.casc.lang.ast.Accessor
-import org.casc.lang.utils.getOrElse
 import org.objectweb.asm.Opcodes
 
 interface HasFlag {

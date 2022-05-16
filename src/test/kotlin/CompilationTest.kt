@@ -21,7 +21,7 @@ class CompilationTest {
         System.setOut(printStream)
         val localPreference = LocalPreference(enableColor = false, noEmit = true)
 
-        fileMap?.get("casc")?.forEach {
+        fileMap["casc"]?.forEach {
             localPreference.sourceFile = it
             val compilation = Compilation(localPreference)
             compilation.compile()
@@ -31,6 +31,45 @@ class CompilationTest {
             val output = outputStream.toString().trim()
 
             val outFile = fileMap["out"]?.find { outFile -> it.nameWithoutExtension == outFile.nameWithoutExtension }
+
+            tests += if (outFile == null) {
+                DynamicTest.dynamicTest(it.name) {
+                    Assertions.assertEquals("", output)
+                }
+            } else {
+                DynamicTest.dynamicTest(it.name) {
+                    Assertions.assertEquals(outFile.readText(Charsets.UTF_8).trim().replace("\r", ""), output)
+                }
+            }
+
+            outputStream.reset()
+        }
+
+        return tests
+    }
+
+    @TestFactory
+    fun testPreludeChecker(): List<DynamicTest> {
+        val tests = mutableListOf<DynamicTest>()
+        val outputStream = ByteArrayOutputStream()
+        val printStream = PrintStream(outputStream)
+        val fileMap = File(Compilation::class.java.classLoader.getResource("preludeCheck")!!.file)
+            .listFiles()!!
+            .toList()
+
+        System.setOut(printStream)
+        val localPreference = LocalPreference(enableColor = false, noEmit = true)
+
+        fileMap.filter(File::isDirectory).forEach {
+            localPreference.sourceFile = it
+            val compilation = Compilation(localPreference)
+            compilation.compile()
+
+            System.out.flush()
+
+            val output = outputStream.toString().trim()
+
+            val outFile = fileMap.find { file -> file.name == "${it.nameWithoutExtension}.out" }
 
             tests += if (outFile == null) {
                 DynamicTest.dynamicTest(it.name) {

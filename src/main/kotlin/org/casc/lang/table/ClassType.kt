@@ -2,7 +2,6 @@ package org.casc.lang.table
 
 import org.casc.lang.ast.Accessor
 import org.casc.lang.compilation.AbstractPreference
-import org.casc.lang.compilation.GlobalPreference
 import org.objectweb.asm.Opcodes
 import java.lang.reflect.Modifier
 
@@ -28,7 +27,7 @@ data class ClassType(
     )
 
     override fun type(preference: AbstractPreference): Class<*>? = try {
-        preference.classLoader?.loadClass(typeName)
+        preference.classLoader.loadClass(typeName)
     } catch (e: Exception) {
         null
     }

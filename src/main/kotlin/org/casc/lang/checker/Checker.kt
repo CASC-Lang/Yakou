@@ -60,18 +60,18 @@ class Checker(private val preference: AbstractPreference) {
         if (parentClassType != null) {
             if (parentClassType !is ClassType) {
                 reports += Error(
-                    clazz.parentClassReference.pos ?: clazz.classKeyword?.pos,
+                    clazz.parentClassReference.pos,
                     "Cannot inherit from non-class type ${parentClassType.asCASCStyle()}"
                 )
             } else if (parentClassType != ClassType.OBJECT_TYPE && !parentClassType.mutable) {
                 reports += Error(
-                    clazz.parentClassReference.pos ?: clazz.classKeyword?.pos,
+                    clazz.parentClassReference.pos,
                     "Cannot inherit from final class ${parentClassType.asCASCStyle()}",
                     "Add `mut` to class ${parentClassType.asCASCStyle()}"
                 )
             } else if (parentClassType.type(preference)?.let { Modifier.isFinal(it.modifiers) } == true) {
                 reports += Error(
-                    clazz.parentClassReference.pos ?: clazz.classKeyword?.pos,
+                    clazz.parentClassReference.pos,
                     "Cannot inherit from final class ${parentClassType.asCASCStyle()}",
                     "Add `mut` to class ${parentClassType.asCASCStyle()}"
                 )
@@ -93,6 +93,14 @@ class Checker(private val preference: AbstractPreference) {
 
             impl.functions.forEach {
                 checkFunction(it, classScope)
+            }
+        }
+
+        if (clazz.traitImpls != null) {
+            clazz.traitImpls!!.forEach {
+                it.functions.forEach { function ->
+                    checkFunction(function, classScope, it.implementedTraitReference)
+                }
             }
         }
 
@@ -130,6 +138,14 @@ class Checker(private val preference: AbstractPreference) {
 
             impl.functions.forEach {
                 checkFunction(it, traitScope)
+            }
+        }
+
+        if (trait.traitImpls != null) {
+            trait.traitImpls!!.forEach {
+                it.functions.forEach { function ->
+                    checkFunction(function, traitScope, it.implementedTraitReference)
+                }
             }
         }
 
@@ -198,7 +214,9 @@ class Checker(private val preference: AbstractPreference) {
         if (topScope.usages.find { usage -> usage.fullQualifiedPath == reference.fullQualifiedPath } != null) {
             // Using an already used package or class
             reports += Warning(
-                reference.pos, "${reference.asCASCStyle()} is already used in this context", "Consider removing this usage"
+                reference.pos,
+                "${reference.asCASCStyle()} is already used in this context",
+                "Consider removing this usage"
             )
         }
 
@@ -246,7 +264,7 @@ class Checker(private val preference: AbstractPreference) {
         if (clazz.impl != null) {
             val impl = clazz.impl!!
 
-            impl.companionBlock.forEach {
+            impl.companionBlock?.statements?.forEach {
                 checkStatement(it, companionBlockScope, PrimitiveType.Unit)
             }
 
@@ -267,6 +285,23 @@ class Checker(private val preference: AbstractPreference) {
                 }
             }
         }
+
+        if (clazz.traitImpls != null) {
+            for (traitImpl in clazz.traitImpls!!) {
+                traitImpl.functions.forEach {
+                    if (it.statements != null) {
+                        checkFunctionBody(it, Scope(classScope, isCompScope = it.selfKeyword == null))
+
+                        if (!checkControlFlow(it.statements, it.returnType)) {
+                            // Not all code path returns value
+                            reports += Error(
+                                it.name?.pos, "Not all code path returns value"
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun checkTrait(file: File, trait: TraitInstance, traitScope: Scope) {
@@ -281,7 +316,7 @@ class Checker(private val preference: AbstractPreference) {
         if (trait.impl != null) {
             val impl = trait.impl!!
 
-            impl.companionBlock.forEach {
+            impl.companionBlock?.statements?.forEach {
                 checkStatement(it, companionBlockScope, PrimitiveType.Unit)
             }
 
@@ -294,6 +329,23 @@ class Checker(private val preference: AbstractPreference) {
                         reports += Error(
                             it.name?.pos, "Not all code path returns value"
                         )
+                    }
+                }
+            }
+        }
+
+        if (trait.traitImpls != null) {
+            for (traitImpl in trait.traitImpls!!) {
+                traitImpl.functions.forEach {
+                    if (it.statements != null) {
+                        checkFunctionBody(it, Scope(traitScope, isCompScope = it.selfKeyword == null))
+
+                        if (!checkControlFlow(it.statements, it.returnType)) {
+                            // Not all code path returns value
+                            reports += Error(
+                                it.name?.pos, "Not all code path returns value"
+                            )
+                        }
                     }
                 }
             }
@@ -364,12 +416,19 @@ class Checker(private val preference: AbstractPreference) {
             }
         }
 
-        if (validationPass) scope.registerSignature(constructor)
+        if (validationPass && !scope.registerSignature(constructor)) {
+            // Duplicate constructors
+            reports += Error(
+                constructor.newKeyword.pos,
+                "Constructor `new`(${DisplayFactory.getParametersTypePretty(constructor.parameters)}) has already declared in same context",
+                "Try modify parameters' type"
+            )
+        }
 
         return constructor
     }
 
-    private fun checkFunction(function: Function, scope: Scope): Function {
+    private fun checkFunction(function: Function, scope: Scope, traitReference: Reference? = null): Function {
         val localScope = Scope(scope)
         checkIdentifierIsKeyword(function.name?.literal, function.name?.pos)
 
@@ -420,7 +479,7 @@ class Checker(private val preference: AbstractPreference) {
 
         // Check is overriding parent function
         val parentFunction =
-            scope.findSignature(scope.parentClassPath, function.name!!.literal, function.parameterTypes ?: listOf())
+            scope.findSignature(traitReference ?: scope.parentClassPath, function.name!!.literal, function.parameterTypes ?: listOf())
 
         if (parentFunction != null) {
             if (function.ovrdKeyword == null) {
@@ -462,7 +521,14 @@ class Checker(private val preference: AbstractPreference) {
             )
         }
 
-        if (validationPass) scope.registerSignature(function)
+        if (validationPass && !scope.registerSignature(function)) {
+            // Duplicate functions
+            reports += Error(
+                function.name.pos,
+                "Function ${function.name.literal}(${DisplayFactory.getParametersTypePretty(function.parameters)}) has already declared in same context",
+                "Try rename this function or modify parameters' type"
+            )
+        }
 
         return function
     }
@@ -479,7 +545,7 @@ class Checker(private val preference: AbstractPreference) {
             if (superCallSignature == null) {
                 // No super call match
                 reports += Error(
-                    constructor.newKeyword?.pos, "Cannot find matched super call `super`(${
+                    constructor.newKeyword.pos, "Cannot find matched super call `super`(${
                         constructor.parentConstructorArgumentsTypes.mapNotNull { it?.typeName }.joinToString()
                     })"
                 )
@@ -493,7 +559,7 @@ class Checker(private val preference: AbstractPreference) {
             if (thisCallSignature == null) {
                 // No super call match
                 reports += Error(
-                    constructor.newKeyword?.pos, "Cannot find matched super call `this`(${
+                    constructor.newKeyword.pos, "Cannot find matched super call `this`(${
                         constructor.parentConstructorArgumentsTypes.mapNotNull { it?.typeName }.joinToString()
                     })"
                 )
@@ -502,7 +568,7 @@ class Checker(private val preference: AbstractPreference) {
             if (scope.parentClassPath != Reference.OBJECT_TYPE_REFERENCE && scope.parentClassPath != null) {
                 // Requires `super` call
                 reports += Error(
-                    constructor.newKeyword?.pos,
+                    constructor.newKeyword.pos,
                     "Class ${scope.typeReference} extends class ${scope.parentClassPath} but doesn't `super` any parent class' constructor",
                     "Add `super` call after constructor declaration"
                 )
@@ -511,6 +577,7 @@ class Checker(private val preference: AbstractPreference) {
                 ClassType.OBJECT_TYPE,
                 companion = true,
                 mutable = false,
+                abstract = false,
                 Accessor.Pub,
                 "<init>",
                 listOf(),
@@ -648,10 +715,12 @@ class Checker(private val preference: AbstractPreference) {
                 }
             }
             is BlockStatement -> {
+                val blockScope = Scope(scope)
+
                 statement.statements.forEachIndexed { i, it ->
                     checkStatement(
                         it!!,
-                        Scope(scope),
+                        blockScope,
                         returnType,
                         if (i == statement.statements.size - 1) retainLastExpression else false
                     )
@@ -960,7 +1029,7 @@ class Checker(private val preference: AbstractPreference) {
                 // Check function call expression's context, e.g companion context
                 val ownerReference = expression.ownerReference ?: previousType?.getReference() ?: scope.typeReference
                 val functionSignature = scope.findSignature(
-                    ownerReference, expression.name!!.literal, argumentTypes
+                    ownerReference, expression.name!!.literal, argumentTypes, allowAbstract = false
                 )
 
                 if (functionSignature == null) {
@@ -1316,17 +1385,21 @@ class Checker(private val preference: AbstractPreference) {
                         )
                     } else expression.type = targetType
                 } else if (originalType is ArrayType) {
-                    if (targetType is PrimitiveType) {
-                        reports += Error(
-                            expression.targetTypeReference?.pos,
-                            "Cannot cast array type `${originalType.asCASCStyle()}` into primitive type `${targetType.asCASCStyle()}`"
-                        )
-                    } else if (targetType is ClassType) {
-                        reports += Error(
-                            expression.targetTypeReference?.pos,
-                            "Cannot cast array type `${originalType.asCASCStyle()}` into class type `${targetType.asCASCStyle()}`"
-                        )
-                    } else expression.type = targetType
+                    when (targetType) {
+                        is PrimitiveType -> {
+                            reports += Error(
+                                expression.targetTypeReference?.pos,
+                                "Cannot cast array type `${originalType.asCASCStyle()}` into primitive type `${targetType.asCASCStyle()}`"
+                            )
+                        }
+                        is ClassType -> {
+                            reports += Error(
+                                expression.targetTypeReference?.pos,
+                                "Cannot cast array type `${originalType.asCASCStyle()}` into class type `${targetType.asCASCStyle()}`"
+                            )
+                        }
+                        else -> expression.type = targetType
+                    }
                 }
 
                 expression.type
