@@ -130,7 +130,7 @@ data class Scope(
      *     - if previous step does not return available function signature, search parent class
      */
     fun findSignature(
-        ownerPath: Reference?, functionName: String, argumentTypes: List<Type?>, searchTraitOnly: Boolean = false
+        ownerPath: Reference?, functionName: String, argumentTypes: List<Type?>, searchTraitOnly: Boolean = false, allowAbstract: Boolean = true
     ): FunctionSignature? {
         if (ownerPath == null) return findSignatureInSameType(
             functionName, argumentTypes
@@ -148,40 +148,41 @@ data class Scope(
                         canCast(l, r)
                     }
                 }?.asSignature()
-            } else {
-                // TODO: Find functions from implemented traits
-                var functionSignature = typeInstance.impl?.functions?.find {
-                    it.name?.literal == functionName && it.parameterTypes?.size == argumentTypes.size && argumentTypes.zip(
-                        it.parameterTypes!!
-                    ).all { (l, r) ->
-                        canCast(l, r)
-                    }
-                }?.let(HasSignature::asSignature)
-
-                if (functionSignature != null) return functionSignature
-
-                // Search trait function first
-                if (typeInstance.traitImpls != null) {
-                    for (traitImpl in typeInstance.traitImpls!!) {
-                        functionSignature =
-                            findSignature(traitImpl.implementedTraitReference, functionName, argumentTypes)
-
-                        if (functionSignature != null) return functionSignature
-                    }
-                }
-
-                if (searchTraitOnly) return null
-
-                // Search function in parent class
-                return if (typeInstance.impl != null) {
-                    findSignature(
-                        typeInstance.impl!!.parentClassReference ?: Reference.OBJECT_TYPE_REFERENCE,
-                        functionName,
-                        argumentTypes
-                    )
-                } else null
             }
+            // TODO: Find functions from implemented traits
+            var functionSignature = typeInstance.impl?.functions?.filter { if (!allowAbstract) !it.abstract else true }?.find {
+                it.name?.literal == functionName && it.parameterTypes?.size == argumentTypes.size && argumentTypes.zip(
+                    it.parameterTypes!!
+                ).all { (l, r) ->
+                    canCast(l, r)
+                }
+            }?.let(HasSignature::asSignature)
+
+            if (functionSignature != null) return functionSignature
+
+            // Search trait function first
+            if (typeInstance.traitImpls != null) {
+                for (traitImpl in typeInstance.traitImpls!!) {
+                    functionSignature =
+                        findSignature(traitImpl.implementedTraitReference, functionName, argumentTypes, allowAbstract)
+
+                    if (functionSignature != null) return functionSignature
+                }
+            }
+
+            if (searchTraitOnly) return null
+
+            // Search function in parent class
+            return if (typeInstance.impl != null) {
+                findSignature(
+                    typeInstance.impl!!.parentClassReference ?: Reference.OBJECT_TYPE_REFERENCE,
+                    functionName,
+                    argumentTypes,
+                    allowAbstract
+                )
+            } else null
         }
+
 
         val ownerType = findType(reference)
 
@@ -215,7 +216,7 @@ data class Scope(
                 )
                 else retrieveExecutableInfo(ownerType, argTypes)
 
-                var functions = filterFunction(ownerClazz, functionName, argumentClasses)
+                var functions = filterFunction(ownerClazz, functionName, argumentClasses, allowAbstract)
 
                 for (function in functions) {
                     if (isSameFunction(function, argumentClasses)) {
@@ -228,7 +229,7 @@ data class Scope(
 
                 while (traits.isNotEmpty()) {
                     val trait = traits.remove()
-                    functions = filterFunction(trait, functionName, argumentClasses)
+                    functions = filterFunction(trait, functionName, argumentClasses, allowAbstract)
 
                     for (function in functions) {
                         if (isSameFunction(function, argumentClasses)) {
@@ -246,7 +247,7 @@ data class Scope(
                 ownerClazz = ownerClazz.superclass
 
                 while (true) {
-                    functions = filterFunction(ownerClazz, functionName, argumentClasses)
+                    functions = filterFunction(ownerClazz, functionName, argumentClasses, allowAbstract)
 
                     for (function in functions) {
                         if (isSameFunction(function, argumentClasses)) {
@@ -266,9 +267,10 @@ data class Scope(
     private fun filterFunction(
         ownerClass: Class<*>,
         functionName: String,
-        argumentClasses: Array<Class<*>>
+        argumentClasses: Array<Class<*>>,
+        allowAbstract: Boolean
     ): List<Method> =
-        ownerClass.declaredMethods.filter { it.name == functionName && it.parameters.size == argumentClasses.size }
+        ownerClass.declaredMethods.filter { it.name == functionName && it.parameters.size == argumentClasses.size && if (!allowAbstract) !Modifier.isAbstract(it.modifiers) else true }
 
     private fun isSameFunction(function: Method, argumentClasses: Array<Class<*>>): Boolean {
         for ((i, parameterType) in function.parameterTypes.withIndex()) {

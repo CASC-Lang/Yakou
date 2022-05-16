@@ -26,7 +26,7 @@ data class Function(
             parameterTypes?.fold("") { s, type ->
                 s + type?.descriptor
             }
-        })${returnType?.descriptor}"
+        })${returnType?.descriptor ?: "V"}"
     override val flag: Int by lazy {
         var flag = accessor.access
         flag += selfKeyword.getOrElse(0, Opcodes.ACC_STATIC)
@@ -35,6 +35,7 @@ data class Function(
             flag += mutKeyword.getOrElse(0, Opcodes.ACC_FINAL)
         flag
     }
+    var abstract: Boolean = abstrKeyword != null
 
     override fun asSignature() =
         FunctionSignature(

@@ -98,8 +98,8 @@ class Checker(private val preference: AbstractPreference) {
 
         if (clazz.traitImpls != null) {
             clazz.traitImpls!!.forEach {
-                it.functions.forEach {
-
+                it.functions.forEach { function ->
+                    checkFunction(function, classScope, it.implementedTraitReference)
                 }
             }
         }
@@ -143,8 +143,8 @@ class Checker(private val preference: AbstractPreference) {
 
         if (trait.traitImpls != null) {
             trait.traitImpls!!.forEach {
-                it.functions.forEach {
-
+                it.functions.forEach { function ->
+                    checkFunction(function, traitScope, it.implementedTraitReference)
                 }
             }
         }
@@ -285,6 +285,23 @@ class Checker(private val preference: AbstractPreference) {
                 }
             }
         }
+
+        if (clazz.traitImpls != null) {
+            for (traitImpl in clazz.traitImpls!!) {
+                traitImpl.functions.forEach {
+                    if (it.statements != null) {
+                        checkFunctionBody(it, Scope(classScope, isCompScope = it.selfKeyword == null))
+
+                        if (!checkControlFlow(it.statements, it.returnType)) {
+                            // Not all code path returns value
+                            reports += Error(
+                                it.name?.pos, "Not all code path returns value"
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun checkTrait(file: File, trait: TraitInstance, traitScope: Scope) {
@@ -312,6 +329,23 @@ class Checker(private val preference: AbstractPreference) {
                         reports += Error(
                             it.name?.pos, "Not all code path returns value"
                         )
+                    }
+                }
+            }
+        }
+
+        if (trait.traitImpls != null) {
+            for (traitImpl in trait.traitImpls!!) {
+                traitImpl.functions.forEach {
+                    if (it.statements != null) {
+                        checkFunctionBody(it, Scope(traitScope, isCompScope = it.selfKeyword == null))
+
+                        if (!checkControlFlow(it.statements, it.returnType)) {
+                            // Not all code path returns value
+                            reports += Error(
+                                it.name?.pos, "Not all code path returns value"
+                            )
+                        }
                     }
                 }
             }
@@ -394,7 +428,7 @@ class Checker(private val preference: AbstractPreference) {
         return constructor
     }
 
-    private fun checkFunction(function: Function, scope: Scope, searchTraitFunction: Boolean = false): Function {
+    private fun checkFunction(function: Function, scope: Scope, traitReference: Reference? = null): Function {
         val localScope = Scope(scope)
         checkIdentifierIsKeyword(function.name?.literal, function.name?.pos)
 
@@ -445,7 +479,7 @@ class Checker(private val preference: AbstractPreference) {
 
         // Check is overriding parent function
         val parentFunction =
-            scope.findSignature(scope.parentClassPath, function.name!!.literal, function.parameterTypes ?: listOf())
+            scope.findSignature(traitReference ?: scope.parentClassPath, function.name!!.literal, function.parameterTypes ?: listOf())
 
         if (parentFunction != null) {
             if (function.ovrdKeyword == null) {
@@ -995,7 +1029,7 @@ class Checker(private val preference: AbstractPreference) {
                 // Check function call expression's context, e.g companion context
                 val ownerReference = expression.ownerReference ?: previousType?.getReference() ?: scope.typeReference
                 val functionSignature = scope.findSignature(
-                    ownerReference, expression.name!!.literal, argumentTypes
+                    ownerReference, expression.name!!.literal, argumentTypes, allowAbstract = false
                 )
 
                 if (functionSignature == null) {

@@ -66,6 +66,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         }
 
         clazz.impl?.let { emitImpl(classWriter, it) }
+        clazz.traitImpls?.let { for (traitImpl in it) for (function in traitImpl.functions) emitFunction(classWriter, function) }
     }
 
     private fun emitTrait(classWriter: ClassWriter, trait: TraitInstance) {
@@ -74,6 +75,7 @@ class Emitter(private val preference: AbstractPreference, private val declaratio
         }
 
         trait.impl?.let { emitImpl(classWriter, it) }
+        trait.traitImpls?.let { for (traitImpl in it) for (function in traitImpl.functions) emitFunction(classWriter, function) }
     }
 
     private fun emitImpl(classWriter: ClassWriter, impl: Impl) {

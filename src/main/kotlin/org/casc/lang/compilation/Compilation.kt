@@ -2,10 +2,7 @@ package org.casc.lang.compilation
 
 import com.diogonunes.jcolor.AnsiFormat
 import com.diogonunes.jcolor.Attribute
-import org.casc.lang.ast.ClassInstance
-import org.casc.lang.ast.File
-import org.casc.lang.ast.Token
-import org.casc.lang.ast.TraitInstance
+import org.casc.lang.ast.*
 import org.casc.lang.checker.Checker
 import org.casc.lang.emitter.Emitter
 import org.casc.lang.lexer.Lexer
@@ -14,6 +11,7 @@ import org.casc.lang.table.Reference
 import org.casc.lang.table.Scope
 import org.casc.lang.table.Table
 import java.io.BufferedReader
+import java.util.*
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 
@@ -117,37 +115,53 @@ class Compilation(private val preference: AbstractPreference) {
                         return@checkPrelude
                     }
 
-                    val creationQueue = mutableListOf<Reference>()
+                    val traitQueue = mutableListOf<Reference>()
+                    val classQueue = mutableListOf<Reference>()
                     val declarations = compilationUnits.map(CompilationFileUnit::file)
 
                     for ((file, compilationUnit) in declarations.zip(compilationUnits)) {
                         // Check parent class has no cyclic inheritance
                         val (_, _, _, typeInstance) = file
 
-                        creationQueue += typeInstance.reference
-
                         when (typeInstance) {
-                            is ClassInstance -> {
-                                val parentClassReferenceSet = hashSetOf<Reference>()
-                                var currentTypeInstance = typeInstance
+                            is ClassInstance ->
+                                classQueue += typeInstance.reference
+                            is TraitInstance ->
+                                traitQueue += typeInstance.reference
+                        }
 
-                                while (currentTypeInstance.impl != null && currentTypeInstance.impl!!.parentClassReference != null) {
-                                    currentTypeInstance =
-                                        Table.findTypeInstance(currentTypeInstance.impl!!.parentClassReference!!)
-                                            ?: break
 
-                                    if (!parentClassReferenceSet.add(currentTypeInstance.typeReference)) {
-                                        // Cyclic inheritance
-                                        compilationUnit.reports += Error(
-                                            typeInstance.impl!!.parentClassReference!!.pos,
-                                            "Circular inheritance is forbidden",
-                                            "Class ${typeInstance.reference.asCASCStyle()} inherits class ${currentTypeInstance.reference.asCASCStyle()} but class ${currentTypeInstance.reference.asCASCStyle()} also inherits class ${typeInstance.reference.asCASCStyle()}"
-                                        )
-                                        break
-                                    } else creationQueue.add(0, currentTypeInstance.reference)
-                                }
+                        if (typeInstance is ClassInstance) {
+                            val parentClassReferenceSet = hashSetOf<Reference>()
+                            var currentTypeInstance = typeInstance
+
+                            while (currentTypeInstance.impl != null && currentTypeInstance.impl!!.parentClassReference != null) {
+                                currentTypeInstance =
+                                    Table.findTypeInstance(currentTypeInstance.impl!!.parentClassReference!!)
+                                        ?: break
+
+                                if (!parentClassReferenceSet.add(currentTypeInstance.typeReference)) {
+                                    // Cyclic inheritance
+                                    compilationUnit.reports += Error(
+                                        typeInstance.impl!!.parentClassReference!!.pos,
+                                        "Circular inheritance is forbidden",
+                                        "Class ${typeInstance.reference.asCASCStyle()} inherits class ${currentTypeInstance.reference.asCASCStyle()} but class ${currentTypeInstance.reference.asCASCStyle()} also inherits class ${typeInstance.reference.asCASCStyle()}"
+                                    )
+                                    break
+                                } else classQueue.add(0, currentTypeInstance.reference)
                             }
-                            is TraitInstance -> {}
+                        }
+
+                        if (typeInstance.traitImpls != null) {
+                            val currentTraitQueue =
+                                LinkedList(typeInstance.traitImpls!!.map(TraitImpl::implementedTraitReference))
+
+                            while (currentTraitQueue.isNotEmpty()) {
+                                val trait = currentTraitQueue.remove()
+                                traitQueue.add(0, trait)
+                                Table.findFile(trait)!!.typeInstance.traitImpls?.map(TraitImpl::implementedTraitReference)
+                                    ?.let(currentTraitQueue::addAll)
+                            }
                         }
                     }
 
@@ -157,7 +171,14 @@ class Compilation(private val preference: AbstractPreference) {
                     }
 
                     // Define temporary class through bytecode for ASM library to process (See [getClassLoader][org.casc.lang.asm.CommonClassWriter])
-                    for (reference in creationQueue.distinct()) {
+                    for (reference in traitQueue.distinct()) {
+                        val cachedFile = Table.findFile(reference)!!
+                        val bytecode = Emitter(preference, true).emit(cachedFile)
+
+                        preference.classLoader.defineClass(reference.fullQualifiedPath, bytecode)
+                    }
+
+                    for (reference in classQueue.distinct()) {
                         val cachedFile = Table.findFile(reference)!!
                         val bytecode = Emitter(preference, true).emit(cachedFile)
 
