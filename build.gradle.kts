@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.6.20"
+    kotlin("jvm") version "1.7.0"
 }
 
 group = "org.yakou.lang"
@@ -9,9 +9,14 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    maven { setUrl("https://jitpack.io") }
 }
 
 dependencies {
+    implementation("commons-cli:commons-cli:1.5.0")
+
+    implementation("com.github.ChAoSUnItY:Nenggao:1.1.1")
+
     testImplementation(kotlin("test"))
 }
 
@@ -20,5 +25,5 @@ tasks.test {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "17"
 }
