@@ -15,7 +15,7 @@ repositories {
 dependencies {
     implementation("commons-cli:commons-cli:1.5.0")
 
-    implementation("com.github.ChAoSUnItY:Nenggao:1.1.1")
+    implementation("com.github.ChAoSUnItY:Nenggao:1.1.2")
 
     testImplementation(kotlin("test"))
 }
