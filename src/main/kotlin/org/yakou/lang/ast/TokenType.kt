@@ -1,4 +1,4 @@
-package org.yakou.lang.lexer
+package org.yakou.lang.ast
 
 sealed class TokenType(val literal: String) {
     class Identifier(literal: String): TokenType(literal)
@@ -27,8 +27,11 @@ sealed class TokenType(val literal: String) {
     object DoubleEqual : SizedTokenType("==")
     object BangEqual : SizedTokenType("!=")
     object Greater : SizedTokenType(">")
+    object DoubleGreater : SizedTokenType(">>")
+    object TripleGreater : SizedTokenType(">>>")
     object GreaterEqual : SizedTokenType(">=")
     object Lesser : SizedTokenType("<")
+    object DoubleLesser : SizedTokenType("<<")
     object LesserEqual : SizedTokenType("<=")
     object Pipe : SizedTokenType("|")
     object DoublePipe : SizedTokenType("||")

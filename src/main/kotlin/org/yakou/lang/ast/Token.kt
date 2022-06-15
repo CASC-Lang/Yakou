@@ -1,4 +1,4 @@
-package org.yakou.lang.lexer
+package org.yakou.lang.ast
 
 import chaos.unity.nenggao.Span
 

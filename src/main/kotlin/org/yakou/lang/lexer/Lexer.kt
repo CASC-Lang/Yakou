@@ -6,6 +6,8 @@ import chaos.unity.nenggao.SourceCache
 import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Attribute
 import org.yakou.lang.ast.Keyword
+import org.yakou.lang.ast.Token
+import org.yakou.lang.ast.TokenType
 import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.util.SpanHelper
 import java.io.File
@@ -170,10 +172,15 @@ class Lexer(sourceFile: File) {
                 else -> charToken(TokenType.Ampersand)
             }
             '>' -> when (peek(1)) {
+                '>' -> when (peek(2)) {
+                    '>' -> stringToken(TokenType.TripleGreater)
+                    else -> stringToken(TokenType.DoubleGreater)
+                }
                 '=' -> stringToken(TokenType.GreaterEqual)
                 else -> charToken(TokenType.Greater)
             }
             '<' -> when (peek(1)) {
+                '<' -> stringToken(TokenType.DoubleLesser)
                 '=' -> stringToken(TokenType.LesserEqual)
                 else -> charToken(TokenType.Lesser)
             }
@@ -204,7 +211,7 @@ class Lexer(sourceFile: File) {
         }
     }
 
-    private fun charToken(type: TokenType) {
+    private fun charToken(type: TokenType.SizedTokenType) {
         tokens += Token(currentLine.substring(pos..pos), type, Span.singleLine(line, pos, pos++))
     }
 
