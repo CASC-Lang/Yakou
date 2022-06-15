@@ -2,6 +2,7 @@ package org.yakou.lang.cli
 
 import chaos.unity.nenggao.FileReportBuilder
 import chaos.unity.nenggao.Span
+import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
 import org.apache.commons.cli.Option
 import org.apache.commons.cli.Options
@@ -15,7 +16,7 @@ class ArgumentProcessor {
     }
 
     private val command: String = System.getProperty("sun.java.command")
-    private val commandReporter: FileReportBuilder = FileReportBuilder.source("$command\n")
+    private val commandReporter: FileReportBuilder = FileReportBuilder.source("$command\n").sourceName("Command line")
     private val markedFlags: MutableMap<String, Span> = mutableMapOf()
     private val preference: AbstractPreference = DefaultPreference()
     private var pos: Int = 0
@@ -90,8 +91,10 @@ class ArgumentProcessor {
         val (folderPath, folderSpan) = nextArg()
 
         if (folderPath.isBlank()) {
-            commandReporter.error(COMMON_SPAN, "Not enough value for flag `$flag`")
-                .label(flagSpan, "Flag `$flag` requires 1 value")
+            val colorizedFlag = Ansi.colorize(flag, Attribute.BRIGHT_CYAN_TEXT())
+
+            commandReporter.error(COMMON_SPAN, "Not enough value for flag `$colorizedFlag`")
+                .label(flagSpan, "Flag `$colorizedFlag` requires 1 value")
                 .color(Attribute.RED_TEXT())
                 .build().build()
             return
@@ -128,11 +131,13 @@ class ArgumentProcessor {
      */
     private fun checkReassignment(flag: String, flagName: String, reassignmentFlagSpan: Span): Boolean =
         if (markedFlags.containsKey(flag)) {
-            commandReporter.warning(COMMON_SPAN, "Reassignment of flag `$flagName`")
-                .label(markedFlags[flag]!!, "First assignment of flag `$flagName`")
+            val colorizedFlag = Ansi.colorize(flagName, Attribute.BRIGHT_CYAN_TEXT())
+
+            commandReporter.warning(COMMON_SPAN, "Reassignment of flag `%s`", colorizedFlag)
+                .label(markedFlags[flag]!!, "First assignment of flag `%s`", colorizedFlag)
                 .color(Attribute.CYAN_TEXT())
                 .build()
-                .label(reassignmentFlagSpan, "Reassignment of flag `$flagName`")
+                .label(reassignmentFlagSpan, "Reassignment of flag `%s`", colorizedFlag)
                 .color(Attribute.YELLOW_TEXT())
                 .build().build()
             true
