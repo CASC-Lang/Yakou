@@ -9,12 +9,12 @@ import org.yakou.lang.ast.Keyword
 import org.yakou.lang.ast.Token
 import org.yakou.lang.ast.TokenType
 import org.yakou.lang.bind.PrimitiveType
+import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
-import java.io.File
 
-class Lexer(sourceFile: File) {
-    private val report: FileReportBuilder =
-        FileReportBuilder.sourceFile(sourceFile).relativePath(sourceFile.parentFile.toPath())
+class Lexer(private val parentCompilationUnit: CompilationUnit) {
+    private val sourceFile = parentCompilationUnit.sourceFile
+    private val report: FileReportBuilder = parentCompilationUnit.reportBuilder
     private val lines: List<Line> = SourceCache.INSTANCE.getOrAdd(sourceFile).lines
     private lateinit var currentLine: String
     private val tokens: MutableList<Token> = mutableListOf()
@@ -80,8 +80,6 @@ class Lexer(sourceFile: File) {
 
             line++
         }
-
-        report.print(System.out)
 
         return tokens
     }

@@ -49,17 +49,29 @@ class ArgumentProcessor {
 
             if (flag == "-o" || flag == "-output") {
                 processOutputFile(flag, flagSpan)
+            } else if (flag == "-t" || flag == "-timing") {
+                if (checkReassignment("timing", flag, flagSpan))
+                    continue
+
+                preference.enableTiming = true
+                markedFlags["timing"] = flagSpan
             } else if (flag == "-a" || flag == "-ascii") {
                 if (checkReassignment("ascii", flag, flagSpan))
                     continue
 
                 preference.useAscii = true
                 markedFlags["ascii"] = flagSpan
+            } else if (flag == "-c" || flag == "-color") {
+                if (checkReassignment("color", flag, flagSpan))
+                    continue
+
+                preference.enableColor = true
+                markedFlags["color"] = flagSpan
             } else if (preference.sourceFile == null) {
                 val sourceFile = File(flag)
 
                 if (!sourceFile.exists()) {
-                    commandReporter.error(COMMON_SPAN, "Invalid source file, file does not exists")
+                    commandReporter.error(COMMON_SPAN, "Invalid source file, file does not exist")
                         .label(flagSpan, "Source file must be an existed file or folder")
                         .color(Attribute.RED_TEXT())
                         .build().build()
