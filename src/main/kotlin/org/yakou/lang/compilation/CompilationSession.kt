@@ -65,7 +65,7 @@ class CompilationSession(private val preference: AbstractPreference) {
 
     private inline fun measureTime(crossinline process: () -> Boolean): Pair<Boolean, Long> {
         val before = Instant.now()
-        val result = process.invoke()
+        val result = process()
         val after = Instant.now()
         return result to Duration.between(before, after).toMillis()
     }
