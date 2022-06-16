@@ -26,7 +26,7 @@ class CompilationSession(private val preference: AbstractPreference) {
         if (preference.enableTiming) {
             for ((unitName, result) in unitProcessResult) {
                 println(
-                    "%-15s %s status: %-5s | elapsed time: %d ms".format(
+                    "%-30s %s status: %-5s | elapsed time: %d ms".format(
                         if (preference.enableColor) Ansi.colorize(unitName, Attribute.CYAN_TEXT()) else unitName,
                         if (preference.useAscii) CharacterSet.ASCII.rightArrow else CharacterSet.UNICODE.rightArrow,
                         if (preference.enableColor) Ansi.colorize(
@@ -67,9 +67,9 @@ class CompilationSession(private val preference: AbstractPreference) {
         val compilationUnit = CompilationUnit(sourceFile!!, preference)
 
         // PHASE I: LEXICAL ANALYZE
-        unitProcessResult["lexical analyze"] = measureTime(compilationUnit::lex)
+        unitProcessResult["lexical analysis"] = measureTime(compilationUnit::lex)
 
-        if (!unitProcessResult["lexical analyze"]!!.first)
+        if (!unitProcessResult["lexical analysis"]!!.first)
             return
 
         // PHASE II: SYNTACTIC ANALYSIS
