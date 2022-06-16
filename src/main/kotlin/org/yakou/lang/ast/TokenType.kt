@@ -1,11 +1,11 @@
 package org.yakou.lang.ast
 
-sealed class TokenType(val literal: String) {
-    class Identifier(literal: String): TokenType(literal)
-    class Keyword(literal: String): TokenType(literal)
-    class NumberLiteral(literal: String): TokenType(literal)
+sealed class TokenType(open val literal: String?) {
+    object Identifier: TokenType(null)
+    object Keyword: TokenType(null)
+    object NumberLiteral: TokenType(null)
 
-    sealed class SizedTokenType(literal: String): TokenType(literal) {
+    sealed class SizedTokenType(override val literal: String): TokenType(literal) {
         fun size(): Int =
             literal.length
     }

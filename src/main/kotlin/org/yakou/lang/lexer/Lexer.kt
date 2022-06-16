@@ -69,8 +69,8 @@ class Lexer(parentCompilationUnit: CompilationUnit) {
 
                     tokens += Token(
                         finalIdentifier,
-                        if (Keyword.isKeyword(finalIdentifier)) TokenType.Keyword(finalIdentifier)
-                        else TokenType.Identifier(finalIdentifier),
+                        if (Keyword.isKeyword(finalIdentifier)) TokenType.Keyword
+                        else TokenType.Identifier,
                         identifierSpan
                     )
                     continue
