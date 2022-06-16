@@ -1,5 +1,6 @@
 package org.yakou.lang.compilation
 
+import chaos.unity.nenggao.CharacterSet
 import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
 import org.yakou.lang.api.AbstractPreference
@@ -25,8 +26,9 @@ class CompilationSession(private val preference: AbstractPreference) {
         if (preference.enableTiming) {
             for ((unitName, result) in unitProcessResult) {
                 println(
-                    "%-15s > status: %-5s | elapsed time: %d ms".format(
+                    "%-15s %s status: %-5s | elapsed time: %d ms".format(
                         if (preference.enableColor) Ansi.colorize(unitName, Attribute.CYAN_TEXT()) else unitName,
+                        if (preference.useAscii) CharacterSet.ASCII.rightArrow else CharacterSet.UNICODE.rightArrow,
                         if (preference.enableColor) Ansi.colorize(
                             result.first.toString(),
                             if (result.first) Attribute.GREEN_BACK() else Attribute.RED_BACK(),
