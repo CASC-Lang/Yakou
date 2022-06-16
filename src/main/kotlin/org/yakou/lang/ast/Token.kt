@@ -16,12 +16,7 @@ open class Token(open val literal: String, val type: TokenType, val span: Span) 
          * @return A nonnull synthetic token.
          */
         fun syntheticToken(expectedType: TokenType, previousSpan: Span?): Token =
-            Token(
-                "",
-                expectedType,
-                previousSpan?.let { Span.singleLine(it.endPosition.line, it.endPosition.pos, it.endPosition.pos) }
-                    ?: Span.singleLine(1, 0, 0)
-            )
+            Token("", expectedType, previousSpan ?: Span.singleLine(1, 0, 0))
     }
 
     fun isKeyword(keyword: Keyword): Boolean =
