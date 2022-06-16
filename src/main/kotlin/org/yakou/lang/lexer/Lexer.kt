@@ -12,7 +12,7 @@ import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
 
-class Lexer(private val parentCompilationUnit: CompilationUnit) {
+class Lexer(parentCompilationUnit: CompilationUnit) {
     private val sourceFile = parentCompilationUnit.sourceFile
     private val report: FileReportBuilder = parentCompilationUnit.reportBuilder
     private val lines: List<Line> = SourceCache.INSTANCE.getOrAdd(sourceFile).lines
@@ -62,14 +62,15 @@ class Lexer(private val parentCompilationUnit: CompilationUnit) {
                 }
 
                 // Identifier / Keyword lexing
-                if (currentLine[pos].isLetter()) {
-                    val (identifier, identifierSpan) = lexSegment { !it.isWhitespace() }
+                if (currentLine[pos].isJavaIdentifierStart()) {
+                    val startChar = currentLine[pos++] // Store first character of identifier since identifier checking algorithm behaves differently at start and latter
+                    val (identifier, identifierSpan) = lexSegment(Char::isJavaIdentifierPart)
+                    val finalIdentifier = startChar + identifier
 
                     tokens += Token(
-                        identifier,
-                        if (Keyword.isKeyword(identifier)) TokenType.Keyword(identifier) else TokenType.Identifier(
-                            identifier
-                        ),
+                        finalIdentifier,
+                        if (Keyword.isKeyword(finalIdentifier)) TokenType.Keyword(finalIdentifier)
+                        else TokenType.Identifier(finalIdentifier),
                         identifierSpan
                     )
                     continue
