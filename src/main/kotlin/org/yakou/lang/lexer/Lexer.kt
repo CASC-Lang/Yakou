@@ -1,9 +1,9 @@
 package org.yakou.lang.lexer
 
-import chaos.unity.nenggao.FileReportBuilder
 import chaos.unity.nenggao.Line
 import chaos.unity.nenggao.SourceCache
 import chaos.unity.nenggao.Span
+import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
 import org.yakou.lang.ast.Keyword
 import org.yakou.lang.ast.Token
@@ -12,10 +12,8 @@ import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
 
-class Lexer(parentCompilationUnit: CompilationUnit) {
-    private val sourceFile = parentCompilationUnit.sourceFile
-    private val report: FileReportBuilder = parentCompilationUnit.reportBuilder
-    private val lines: List<Line> = SourceCache.INSTANCE.getOrAdd(sourceFile).lines
+class Lexer(private val compilationUnit: CompilationUnit) {
+    private val lines: List<Line> = SourceCache.INSTANCE.getOrAdd(compilationUnit.sourceFile).lines
     private lateinit var currentLine: String
     private val tokens: MutableList<Token> = mutableListOf()
     private var line: Int = 0
@@ -63,7 +61,8 @@ class Lexer(parentCompilationUnit: CompilationUnit) {
 
                 // Identifier / Keyword lexing
                 if (currentLine[pos].isJavaIdentifierStart()) {
-                    val startChar = currentLine[pos++] // Store first character of identifier since identifier checking algorithm behaves differently at start and latter
+                    val startChar =
+                        currentLine[pos++] // Store first character of identifier since identifier checking algorithm behaves differently at start and latter
                     val (identifier, identifierSpan) = lexSegment(Char::isJavaIdentifierPart)
                     val finalIdentifier = startChar + identifier
 
@@ -198,10 +197,16 @@ class Lexer(parentCompilationUnit: CompilationUnit) {
             '%' -> charToken(TokenType.Percentage)
             else -> {
                 val currentSpan = currentSpan()
+                val colorizedCharacter =
+                    if (compilationUnit.preference.enableColor) Ansi.colorize(
+                        currentLine[pos++].toString(),
+                        Attribute.CYAN_TEXT()
+                    )
+                    else currentLine[pos++].toString()
 
-                report.error(
+                compilationUnit.reportBuilder.error(
                     SpanHelper.expandView(currentSpan, lines.size),
-                    "Unknown character `${currentLine[pos++]}`"
+                    "Unknown character `${colorizedCharacter}`"
                 )
                     .label(currentSpan, "This character is unable to be lexical analyzed")
                     .color(Attribute.RED_TEXT())
@@ -225,7 +230,7 @@ class Lexer(parentCompilationUnit: CompilationUnit) {
 
     private fun reportInvalidTypeAnnotation(typeAnnotation: String?, typeAnnotationSpan: Span?) {
         if (typeAnnotation != null && typeAnnotationSpan != null && !PrimitiveType.isNumberType(typeAnnotation)) {
-            report.error(
+            compilationUnit.reportBuilder.error(
                 SpanHelper.expandView(typeAnnotationSpan, lines.size),
                 "Unknown type annotation $typeAnnotation"
             )

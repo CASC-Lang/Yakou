@@ -1,16 +1,13 @@
 package org.yakou.lang.parser
 
-import chaos.unity.nenggao.FileReportBuilder
 import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
-import org.yakou.lang.api.AbstractPreference
 import org.yakou.lang.ast.*
 import org.yakou.lang.compilation.CompilationUnit
+import org.yakou.lang.util.SpanHelper
 
-class Parser(compilationUnit: CompilationUnit) {
-    private val preference: AbstractPreference = compilationUnit.preference
+class Parser(private val compilationUnit: CompilationUnit) {
     private val tokens: List<Token> = compilationUnit.tokens ?: listOf()
-    private val report: FileReportBuilder = compilationUnit.reportBuilder
     private var pos: Int = 0
 
     fun parse(): YkFile {
@@ -25,6 +22,7 @@ class Parser(compilationUnit: CompilationUnit) {
         while (pos < tokens.size) {
             if (peek()?.isKeyword(Keyword.PKG) == true) {
                 // Item.Package
+                consume() // `pkg` keyword
                 val identifier = expect(TokenType.Identifier)
                 val innerItems = mutableListOf<Item>()
 
@@ -49,11 +47,11 @@ class Parser(compilationUnit: CompilationUnit) {
         return when {
             token == null -> {
                 // Token out of bound
-                reportUnexpectedToken(Token.syntheticToken(type, peek(-1)?.span))
+                reportUnexpectedToken(null, Token.syntheticToken(type, peek(-2)?.span))
             }
             token.type != type -> {
                 // Token mismatch, returns a synthetic token
-                reportUnexpectedToken(Token.syntheticToken(type, peek(-1)?.span))
+                reportUnexpectedToken(token, Token.syntheticToken(type, token.span))
             }
             else -> token
         }
@@ -62,18 +60,23 @@ class Parser(compilationUnit: CompilationUnit) {
     private fun peek(offset: Int = 0): Token? =
         tokens.getOrNull(pos + offset)
 
-    private fun reportUnexpectedToken(syntheticToken: Token): Token {
-        val tokenLiteral = when (syntheticToken.type) {
-            is TokenType.SizedTokenType -> "`${syntheticToken.type.literal}`"
-            TokenType.Identifier -> "<Identifier>"
-            TokenType.Keyword -> "<Keyword>" // TODO: Necessary?
-            TokenType.NumberLiteral -> "<Number Literal>" // TODO: Necessary
-        }
-        val colorizedTokenLiteral =
-            if (preference.enableColor) Ansi.colorize(tokenLiteral, Attribute.CYAN_TEXT())
-            else tokenLiteral
+    private fun consume(count: Int = 1) {
+        pos += count
+    }
 
-        report.error(syntheticToken.span, "Unexpected token %s", colorizedTokenLiteral)
+    private fun reportUnexpectedToken(originalToken: Token?, syntheticToken: Token): Token {
+        val originalTokenLiteral = originalToken?.colorizeTokenType(compilationUnit.preference, Attribute.RED_TEXT())
+        val syntheticTokenLiteral = syntheticToken.colorizeTokenType(compilationUnit.preference, Attribute.CYAN_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(syntheticToken.span, compilationUnit.maxLineCount),
+                "Unexpected token%s",
+                originalToken?.let { " $originalTokenLiteral" }.orEmpty()
+            )
+            .label(syntheticToken.span, "Expected $syntheticTokenLiteral")
+            .color(Attribute.CYAN_TEXT())
+            .build().build()
 
         return syntheticToken
     }

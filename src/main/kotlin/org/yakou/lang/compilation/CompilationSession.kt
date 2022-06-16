@@ -46,12 +46,20 @@ class CompilationSession(private val preference: AbstractPreference) {
             .filter { Constants.VALID_YAKOU_FILE_EXTENSIONS.contains(it.extension) }
             .map { CompilationUnit(it, preference) }
 
-        // PHASE I: LEXICAL ANALYZE
-        unitProcessResult["lexical analyze"] = measureTime {
+        // PHASE I: LEXICAL ANALYSIS
+        unitProcessResult["lexical analysis"] = measureTime {
             compilationUnits.all(CompilationUnit::lex)
         }
 
-        if (!unitProcessResult["lexical analyze"]!!.first)
+        if (!unitProcessResult["lexical analysis"]!!.first)
+            return
+
+        // PHASE II: SYNTACTIC ANALYSIS
+        unitProcessResult["syntactic analysis"] = measureTime {
+            compilationUnits.all(CompilationUnit::parse)
+        }
+
+        if (!unitProcessResult["syntactic analysis"]!!.first)
             return
     }
 
@@ -62,6 +70,12 @@ class CompilationSession(private val preference: AbstractPreference) {
         unitProcessResult["lexical analyze"] = measureTime(compilationUnit::lex)
 
         if (!unitProcessResult["lexical analyze"]!!.first)
+            return
+
+        // PHASE II: SYNTACTIC ANALYSIS
+        unitProcessResult["syntactic analysis"] = measureTime(compilationUnit::parse)
+
+        if (!unitProcessResult["syntactic analysis"]!!.first)
             return
     }
 

@@ -1,6 +1,9 @@
 package org.yakou.lang.ast
 
 import chaos.unity.nenggao.Span
+import com.diogonunes.jcolor.Ansi
+import com.diogonunes.jcolor.Attribute
+import org.yakou.lang.api.AbstractPreference
 
 open class Token(open val literal: String, val type: TokenType, val span: Span) {
     companion object {
@@ -23,6 +26,17 @@ open class Token(open val literal: String, val type: TokenType, val span: Span) 
 
     fun isKeyword(keyword: Keyword): Boolean =
         type == TokenType.Keyword && literal == keyword.literal
+
+    fun colorizeTokenType(preference: AbstractPreference, vararg attribute: Attribute): String {
+        val tokenLiteral = when (type) {
+            is TokenType.SizedTokenType -> "`${type.literal}`"
+            TokenType.Identifier -> "<Identifier>"
+            TokenType.Keyword -> "<Keyword>" // TODO: Necessary?
+            TokenType.NumberLiteral -> "<Number Literal>" // TODO: Necessary
+        }
+        return if (preference.enableColor) Ansi.colorize(tokenLiteral, *attribute)
+        else tokenLiteral
+    }
 
     class NumberLiteralToken(
         val integerLiteral: String?,
