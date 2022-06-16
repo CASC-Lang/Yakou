@@ -1,6 +1,5 @@
 package org.yakou.lang.parser
 
-import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
 import org.yakou.lang.ast.*
 import org.yakou.lang.compilation.CompilationUnit
@@ -20,7 +19,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val items = mutableListOf<Item>()
 
         while (pos < tokens.size) {
-            if (peek()?.isKeyword(Keyword.PKG) == true) {
+            if (optExpectKeyword(Keyword.PKG)) {
                 // Item.Package
                 consume() // `pkg` keyword
                 val identifier = expect(TokenType.Identifier)
@@ -56,6 +55,9 @@ class Parser(private val compilationUnit: CompilationUnit) {
             else -> token
         }
     }
+
+    private fun optExpectKeyword(keyword: Keyword): Boolean =
+        peek()?.isKeyword(keyword) == true
 
     private fun peek(offset: Int = 0): Token? =
         tokens.getOrNull(pos + offset)
