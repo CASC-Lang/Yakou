@@ -26,7 +26,7 @@ class CompilationSession(private val preference: AbstractPreference) {
         if (preference.enableTiming) {
             for ((unitName, result) in unitProcessResult) {
                 println(
-                    "%-30s %s status: %-5s | elapsed time: %d ms".format(
+                    "%-30s %s status: %-17s | elapsed time: %d ms".format(
                         if (preference.enableColor) Ansi.colorize(unitName, Attribute.CYAN_TEXT()) else unitName,
                         if (preference.useAscii) CharacterSet.ASCII.rightArrow else CharacterSet.UNICODE.rightArrow,
                         if (preference.enableColor) Ansi.colorize(
