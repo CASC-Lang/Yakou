@@ -5,6 +5,7 @@ enum class Keyword(val literal: String) {
     INTL("intl"),
     PROT("prot"),
     PRIV("priv"),
+    PKG("pkg"),
     CLASS("class"),
     IMPL("impl"),
     COMP("comp"),
