@@ -19,6 +19,6 @@ object SpanHelper {
         if (endLine < maxLineNumber)
             endLine++
 
-        return Span.multipleLine(startLine, span.startPosition.pos, endLine, 0)
+        return Span.multipleLine(startLine, span.startPosition.pos + 1, endLine, 0) // Character's actual start position starts from 1 instead of 0
     }
 }
