@@ -2,17 +2,17 @@ package org.yakou.lang.ast
 
 import chaos.unity.nenggao.Span
 
-data class Modifiers(val maskMap: LinkedHashMap<Int, Span> = linkedMapOf()) {
-    fun set(flag: Int, modifierSpan: Span): Boolean =
-        if (maskMap.containsKey(flag)) false
+data class Modifiers(val modifierMap: LinkedHashMap<Modifier, Span> = linkedMapOf(), val immutable: Boolean) {
+    fun set(modifier: Modifier, span: Span): Boolean =
+        if (modifierMap.containsKey(modifier)) false
         else {
-            maskMap[flag] = modifierSpan
+            modifierMap[modifier] = span
             true
         }
 
-    operator fun get(flag: Int): Span? =
-        maskMap[flag]
+    operator fun get(modifier: Modifier): Span? =
+        modifierMap[modifier]
 
     fun isEmpty(): Boolean =
-        maskMap.isEmpty()
+        modifierMap.isEmpty()
 }

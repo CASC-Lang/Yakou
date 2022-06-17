@@ -72,8 +72,8 @@ class Parser(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun parseModifiers(): Modifiers {
-        val modifiers = Modifiers()
+    private fun parseModifiers(immutable: Boolean = true): Modifiers {
+        val modifiers = Modifiers(immutable = immutable)
 
         while (pos < tokens.size) {
             when {
@@ -85,18 +85,18 @@ class Parser(private val compilationUnit: CompilationUnit) {
                         // `pub (pkg)`
                         val modifierSpan = peek()!!.span.expand(peek(3)!!.span)
 
-                        if (!modifiers.set(0, modifierSpan)) {
+                        if (!modifiers.set(Modifier.PUB_PKG, modifierSpan)) {
                             // Duplication
-                            reportModifierDuplication(modifiers[0]!!, modifierSpan)
+                            reportModifierDuplication(modifiers[Modifier.PUB_PKG]!!, modifierSpan)
                         }
                         consume(4)
                     } else {
                         // `pub`
                         val span = next()!!.span
 
-                        if (!modifiers.set(Opcodes.ACC_PUBLIC, span)) {
+                        if (!modifiers.set(Modifier.PUB, span)) {
                             // Duplication
-                            reportModifierDuplication(modifiers[Opcodes.ACC_PUBLIC]!!, span)
+                            reportModifierDuplication(modifiers[Modifier.PUB]!!, span)
                         }
                     }
                 }
@@ -104,18 +104,27 @@ class Parser(private val compilationUnit: CompilationUnit) {
                     // `priv`
                     val span = next()!!.span
 
-                    if (!modifiers.set(Opcodes.ACC_PRIVATE, span)) {
+                    if (!modifiers.set(Modifier.PRIV, span)) {
                         // Duplication
-                        reportModifierDuplication(modifiers[Opcodes.ACC_PRIVATE]!!, span)
+                        reportModifierDuplication(modifiers[Modifier.PRIV]!!, span)
                     }
                 }
                 optExpectKeyword(Keyword.PROT) -> {
                     // `prot`
                     val span = next()!!.span
 
-                    if (!modifiers.set(Opcodes.ACC_PROTECTED, span)) {
+                    if (!modifiers.set(Modifier.PROT, span)) {
                         // Duplication
-                        reportModifierDuplication(modifiers[Opcodes.ACC_PROTECTED]!!, span)
+                        reportModifierDuplication(modifiers[Modifier.PROT]!!, span)
+                    }
+                }
+                optExpectKeyword(Keyword.MUT) -> {
+                    // `mut`
+                    val span = next()!!.span
+
+                    if (!modifiers.set(Modifier.MUT, span)) {
+                        // Duplication
+                        reportModifierDuplication(modifiers[Modifier.MUT]!!, span)
                     }
                 }
                 else -> break // Not a modifier
@@ -181,7 +190,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun reportIllegalModifiersInPlace(modifiers: Modifiers) {
-        for ((_, span) in modifiers.maskMap) {
+        for ((_, span) in modifiers.modifierMap) {
             compilationUnit.reportBuilder
                 .error(
                     SpanHelper.expandView(span, compilationUnit.maxLineCount),
