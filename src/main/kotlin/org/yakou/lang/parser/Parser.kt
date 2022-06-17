@@ -1,7 +1,9 @@
 package org.yakou.lang.parser
 
+import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
+import org.objectweb.asm.Opcodes
 import org.yakou.lang.ast.*
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
@@ -34,33 +36,74 @@ class Parser(private val compilationUnit: CompilationUnit) {
         return items
     }
 
-    private fun parseItem(): Item? =
-        if (optExpectKeyword(Keyword.PKG)) {
-            // Item.Package
-            consume() // `pkg` keyword
-            val identifier = expect(TokenType.Identifier)
-            val openBrace: Token?
-            val innerItems: List<Item>?
-            val closeBrace: Token?
+    private fun parseItem(): Item? {
+        val modifiers = parseModifiers()
 
-            if (optExpectType(TokenType.OpenBrace)) {
-                openBrace = next()
-                innerItems = parseScopedItems()
-                closeBrace = expect(TokenType.CloseBrace)
-            } else {
-                openBrace = null
-                innerItems = null
-                closeBrace = null
+        return when {
+            optExpectKeyword(Keyword.PKG) -> {
+                // Item.Package
+                consume() // `pkg` keyword
+                val identifier = expect(TokenType.Identifier)
+                val openBrace: Token?
+                val innerItems: List<Item>?
+                val closeBrace: Token?
+
+                if (optExpectType(TokenType.OpenBrace)) {
+                    openBrace = next()
+                    innerItems = parseScopedItems()
+                    closeBrace = expect(TokenType.CloseBrace)
+                } else {
+                    openBrace = null
+                    innerItems = null
+                    closeBrace = null
+                }
+
+                if (!modifiers.isEmpty()) {
+                    reportIllegalModifiersInPlace(modifiers)
+                }
+
+                Item.Package(identifier, openBrace, innerItems, closeBrace)
             }
+            else -> {
+                reportUnexpectedToken(next()!!, Keyword.PKG, Keyword.CLASS, Keyword.IMPL)
 
-            // TODO: Allow items declared in pkg scope (same as Module in Rust)
-
-            Item.Package(identifier, openBrace, innerItems, closeBrace)
-        } else {
-            reportUnexpectedToken(next()!!, Keyword.PKG, Keyword.CLASS, Keyword.IMPL)
-
-            null
+                null
+            }
         }
+    }
+
+    private fun parseModifiers(): Modifiers {
+        val maskMap = linkedMapOf<Int, Span>()
+
+        while (pos < tokens.size) {
+            when {
+                optExpectKeyword(Keyword.PUB) -> {
+                    if (optExpectType(TokenType.OpenParenthesis, 1) &&
+                        optExpectKeyword(Keyword.PKG, 2) &&
+                        optExpectType(TokenType.CloseParenthesis, 3)
+                    ) {
+                        // `pub (pkg)`
+                        maskMap[0] = peek()!!.span.expand(peek(3)!!.span)
+                        consume(4)
+                    } else {
+                        // `pub`
+                        maskMap[Opcodes.ACC_PUBLIC] = next()!!.span
+                    }
+                }
+                optExpectKeyword(Keyword.PRIV) -> {
+                    // `priv`
+                    maskMap[Opcodes.ACC_PRIVATE] = next()!!.span
+                }
+                optExpectKeyword(Keyword.PROT) -> {
+                    // `prot`
+                    maskMap[Opcodes.ACC_PROTECTED] = next()!!.span
+                }
+                else -> break // Not a modifier
+            }
+        }
+
+        return Modifiers(maskMap)
+    }
 
     private fun parseSimplePath(): Path.SimplePath {
         TODO("AUTO GENERATED")
@@ -84,11 +127,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun optExpectKeyword(keyword: Keyword): Boolean =
-        peek()?.isKeyword(keyword) == true
+    private fun optExpectKeyword(keyword: Keyword, offset: Int = 0): Boolean =
+        peek(offset)?.isKeyword(keyword) == true
 
-    private fun optExpectType(type: TokenType): Boolean =
-        peek()?.isType(type) == true
+    private fun optExpectType(type: TokenType, offset: Int = 0): Boolean =
+        peek(offset)?.isType(type) == true
 
     private fun peek(offset: Int = 0): Token? =
         tokens.getOrNull(pos + offset)
@@ -100,6 +143,19 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun next(): Token? {
         pos++
         return peek(-1)
+    }
+
+    private fun reportIllegalModifiersInPlace(modifiers: Modifiers) {
+        for ((_, span) in modifiers.maskMap) {
+            compilationUnit.reportBuilder
+                .error(
+                    SpanHelper.expandView(span, compilationUnit.maxLineCount),
+                    "Illegal modifier in current context"
+                )
+                .label(span, "Illegal modifier")
+                .color(Attribute.RED_TEXT())
+                .build().build()
+        }
     }
 
     private fun reportUnexpectedToken(originalToken: Token?, syntheticToken: Token): Token {
