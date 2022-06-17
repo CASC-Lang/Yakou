@@ -73,7 +73,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseModifiers(): Modifiers {
-        val maskMap = linkedMapOf<Int, Span>()
+        val modifiers = Modifiers()
 
         while (pos < tokens.size) {
             when {
@@ -83,26 +83,46 @@ class Parser(private val compilationUnit: CompilationUnit) {
                         optExpectType(TokenType.CloseParenthesis, 3)
                     ) {
                         // `pub (pkg)`
-                        maskMap[0] = peek()!!.span.expand(peek(3)!!.span)
+                        val modifierSpan = peek()!!.span.expand(peek(3)!!.span)
+
+                        if (!modifiers.set(0, modifierSpan)) {
+                            // Duplication
+                            reportModifierDuplication(modifiers[0]!!, modifierSpan)
+                        }
                         consume(4)
                     } else {
                         // `pub`
-                        maskMap[Opcodes.ACC_PUBLIC] = next()!!.span
+                        val span = next()!!.span
+
+                        if (!modifiers.set(Opcodes.ACC_PUBLIC, span)) {
+                            // Duplication
+                            reportModifierDuplication(modifiers[Opcodes.ACC_PUBLIC]!!, span)
+                        }
                     }
                 }
                 optExpectKeyword(Keyword.PRIV) -> {
                     // `priv`
-                    maskMap[Opcodes.ACC_PRIVATE] = next()!!.span
+                    val span = next()!!.span
+
+                    if (!modifiers.set(Opcodes.ACC_PRIVATE, span)) {
+                        // Duplication
+                        reportModifierDuplication(modifiers[Opcodes.ACC_PRIVATE]!!, span)
+                    }
                 }
                 optExpectKeyword(Keyword.PROT) -> {
                     // `prot`
-                    maskMap[Opcodes.ACC_PROTECTED] = next()!!.span
+                    val span = next()!!.span
+
+                    if (!modifiers.set(Opcodes.ACC_PROTECTED, span)) {
+                        // Duplication
+                        reportModifierDuplication(modifiers[Opcodes.ACC_PROTECTED]!!, span)
+                    }
                 }
                 else -> break // Not a modifier
             }
         }
 
-        return Modifiers(maskMap)
+        return modifiers
     }
 
     private fun parseSimplePath(): Path.SimplePath {
@@ -143,6 +163,21 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun next(): Token? {
         pos++
         return peek(-1)
+    }
+
+    private fun reportModifierDuplication(firstSpan: Span, duplicatedSpan: Span) {
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(firstSpan.expand(duplicatedSpan), compilationUnit.maxLineCount),
+                "Modifier duplicated"
+            )
+            .label(firstSpan, "First encountered here")
+            .color(Attribute.CYAN_TEXT())
+            .build()
+            .label(duplicatedSpan, "Duplicated here")
+            .color(Attribute.RED_TEXT())
+            .build()
+            .build()
     }
 
     private fun reportIllegalModifiersInPlace(modifiers: Modifiers) {
