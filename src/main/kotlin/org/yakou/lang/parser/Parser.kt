@@ -3,7 +3,6 @@ package org.yakou.lang.parser
 import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
-import org.objectweb.asm.Opcodes
 import org.yakou.lang.ast.*
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
@@ -42,7 +41,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         return when {
             optExpectKeyword(Keyword.PKG) -> {
                 // Item.Package
-                consume() // `pkg` keyword
+                val pkg = next()!!
                 val identifier = expect(TokenType.Identifier)
                 val openBrace: Token?
                 val innerItems: List<Item>?
@@ -62,13 +61,106 @@ class Parser(private val compilationUnit: CompilationUnit) {
                     reportIllegalModifiersInPlace(modifiers)
                 }
 
-                Item.Package(identifier, openBrace, innerItems, closeBrace)
+                Item.Package(pkg, identifier, openBrace, innerItems, closeBrace)
             }
+            optExpectKeyword(Keyword.FN) -> parseFunction()
             else -> {
-                reportUnexpectedToken(next()!!, Keyword.PKG, Keyword.CLASS, Keyword.IMPL)
+                reportUnexpectedToken(next()!!, Keyword.PKG, Keyword.CLASS, Keyword.IMPL, Keyword.FN)
 
                 null
             }
+        }
+    }
+
+    private fun parseFunction(): Item.Function {
+        val fn = next()!! // Should be asserted when called
+        val name = expect(TokenType.Identifier)
+        val openParenthesis = expect(TokenType.OpenParenthesis)
+        val parameters = parseParameters()
+        val closeParenthesis = expect(TokenType.CloseParenthesis)
+        val arrow: Token?
+        val returnType: Type?
+
+        if (optExpectType(TokenType.Arrow)) {
+            // Has return type
+            arrow = next()!!
+            returnType = parseType()
+        } else {
+            arrow = null
+            returnType = null
+        }
+
+        val functionBody = parseFunctionBody()
+
+        return Item.Function(fn, name, openParenthesis, parameters, closeParenthesis, arrow, returnType, functionBody)
+    }
+
+    private fun parseFunctionBody(): FunctionBody? = when {
+        optExpectType(TokenType.Equal) -> {
+            // Single expression
+            val equal = next()!!
+            val expression = parseExpression()
+
+            FunctionBody.SingleExpression(equal, expression)
+        }
+        optExpectType(TokenType.OpenBrace) -> {
+            // Block expression
+            val openBrace = next()!!
+            val statements = parseStatements()
+            val closeBrace = expect(TokenType.CloseBrace)
+
+            FunctionBody.BlockExpression(openBrace, statements, closeBrace)
+        }
+        else -> null // Empty function body
+    }
+
+    private fun parseStatements(): List<Statement> {
+        val statements = mutableListOf<Statement>()
+
+        TODO()
+
+        return statements
+    }
+
+    private fun parseStatement(): Statement {
+        TODO()
+    }
+
+    private fun parseExpression(): Expression {
+        TODO()
+    }
+
+    private fun parseParameters(): List<Parameter> {
+        val parameters = mutableListOf<Parameter>()
+
+        while (pos < tokens.size && !optExpectType(TokenType.CloseParenthesis))
+            parameters += parseParameter()
+
+        return parameters
+    }
+
+    private fun parseParameter(): Parameter {
+        val name = expect(TokenType.Identifier)
+        val colon = expect(TokenType.Colon)
+        val type = parseType()
+
+        return Parameter(name, colon, type)
+    }
+
+    private fun parseType(): Type = when {
+        optExpectType(TokenType.OpenBracket) -> {
+            // Array type
+            val openBracket = next()!!
+            val type = parseType()
+            val closeBracket = expect(TokenType.CloseBracket)
+
+            Type.Array(openBracket, type, closeBracket)
+        }
+        else -> {
+            // Path type
+            val simplePath = parseSimplePath()
+
+            Type.TypePath(simplePath)
         }
     }
 
@@ -135,7 +227,16 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseSimplePath(): Path.SimplePath {
-        TODO("AUTO GENERATED")
+        val baseSegment =
+            expect(TokenType.Identifier) // simple path's segment should not be empty, and always starts with identifier
+        val pathSegments = mutableListOf(baseSegment)
+
+        while (pos < tokens.size && optExpectType(TokenType.DoubleColon)) {
+            pathSegments += next()!!
+            pathSegments += expect(TokenType.Identifier)
+        }
+
+        return Path.SimplePath(pathSegments)
     }
 
     private fun expect(type: TokenType): Token {
