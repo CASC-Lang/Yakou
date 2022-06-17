@@ -9,7 +9,7 @@ enum class Keyword(val literal: String) {
     CLASS("class"),
     IMPL("impl"),
     COMP("comp"),
-    FN("impl"),
+    FN("fn"),
     SELF("self");
 
     companion object {
