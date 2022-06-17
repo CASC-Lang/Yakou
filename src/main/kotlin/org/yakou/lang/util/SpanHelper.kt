@@ -19,6 +19,6 @@ object SpanHelper {
         if (endLine < maxLineNumber)
             endLine++
 
-        return Span.range(startLine, endLine)
+        return Span.multipleLine(startLine, span.startPosition.pos, endLine, 0)
     }
 }
