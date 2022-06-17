@@ -2,7 +2,6 @@ package org.yakou.lang.ast
 
 enum class Keyword(val literal: String) {
     PUB("pub"),
-    INTL("intl"),
     PROT("prot"),
     PRIV("priv"),
     PKG("pkg"),
