@@ -21,6 +21,7 @@ class Lexer(private val compilationUnit: CompilationUnit) {
 
     fun lex(): List<Token> {
         while (line < lines.size) {
+            pos = 0
             currentLine = lines[line].chars
 
             while (pos < currentLine.length) {
