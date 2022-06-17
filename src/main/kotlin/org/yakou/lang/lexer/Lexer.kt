@@ -217,14 +217,14 @@ class Lexer(private val compilationUnit: CompilationUnit) {
     }
 
     private fun charToken(type: TokenType.SizedTokenType) {
-        tokens += Token(currentLine.substring(pos..pos), type, Span.singleLine(line, pos, pos++))
+        tokens += Token(currentLine.substring(pos..pos), type, Span.singleLine(line + 1, pos, ++pos))
     }
 
     private fun stringToken(type: TokenType.SizedTokenType) {
         tokens += Token(
             currentLine.substring(pos..pos + type.size()),
             type,
-            Span.singleLine(line, pos, pos + type.size())
+            Span.singleLine(line + 1, pos, pos + type.size())
         )
         pos += type.size()
     }

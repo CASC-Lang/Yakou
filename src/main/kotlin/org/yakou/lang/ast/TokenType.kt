@@ -1,6 +1,21 @@
 package org.yakou.lang.ast
 
+import com.diogonunes.jcolor.Ansi
+import com.diogonunes.jcolor.Attribute
+import org.yakou.lang.api.AbstractPreference
+
 sealed class TokenType(open val literal: String?) {
+    fun colorizeLiteral(preference: AbstractPreference, vararg attribute: Attribute): String {
+        val tokenLiteral = when (this) {
+            is SizedTokenType -> "`$literal`"
+            Identifier -> "<Identifier>"
+            Keyword -> "<Keyword>" // TODO: Necessary?
+            NumberLiteral -> "<Number Literal>" // TODO: Necessary
+        }
+        return if (preference.enableColor) Ansi.colorize(tokenLiteral, *attribute)
+        else tokenLiteral
+    }
+
     object Identifier: TokenType(null)
     object Keyword: TokenType(null)
     object NumberLiteral: TokenType(null)
