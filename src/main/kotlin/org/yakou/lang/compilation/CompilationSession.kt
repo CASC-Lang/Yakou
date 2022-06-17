@@ -25,7 +25,7 @@ class CompilationSession(private val preference: AbstractPreference) {
 
         if (preference.enableTiming) {
             val unitNamePadding = if (preference.enableColor) 30 else 20
-            val statusPadding = if (preference.enableColor) 17 else 5
+            val statusPadding = if (preference.enableColor) 10 else 1
 
             for ((unitName, result) in unitProcessResult) {
                 println(
@@ -33,10 +33,10 @@ class CompilationSession(private val preference: AbstractPreference) {
                         if (preference.enableColor) Ansi.colorize(unitName, Attribute.CYAN_TEXT()) else unitName,
                         if (preference.useAscii) CharacterSet.ASCII.rightArrow else CharacterSet.UNICODE.rightArrow,
                         if (preference.enableColor) Ansi.colorize(
-                            result.first.toString(),
+                            if (result.first) "✔" else "✖",
                             if (result.first) Attribute.GREEN_BACK() else Attribute.RED_BACK(),
                             Attribute.BLACK_TEXT()
-                        ) else result.first.toString(),
+                        ) else if (result.first) "✔" else "✖",
                         result.second
                     )
                 )
