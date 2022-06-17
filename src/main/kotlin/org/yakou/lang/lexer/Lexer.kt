@@ -66,12 +66,17 @@ class Lexer(private val compilationUnit: CompilationUnit) {
                         currentLine[pos++] // Store first character of identifier since identifier checking algorithm behaves differently at start and latter
                     val (identifier, identifierSpan) = lexSegment(Char::isJavaIdentifierPart)
                     val finalIdentifier = startChar + identifier
+                    val finalIdentifierSpan = Span.singleLine(
+                        identifierSpan.startPosition.line,
+                        identifierSpan.startPosition.pos - 1,
+                        identifierSpan.endPosition.pos
+                    )
 
                     tokens += Token(
                         finalIdentifier,
                         if (Keyword.isKeyword(finalIdentifier)) TokenType.Keyword
                         else TokenType.Identifier,
-                        identifierSpan
+                        finalIdentifierSpan
                     )
                     continue
                 }
