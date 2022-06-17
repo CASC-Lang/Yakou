@@ -195,6 +195,7 @@ class Lexer(private val compilationUnit: CompilationUnit) {
                 else -> charToken(TokenType.Plus)
             }
             '-' -> when (peek(1)) {
+                '>' -> stringToken(TokenType.Arrow)
                 '-' -> stringToken(TokenType.DoubleMinus)
                 else -> charToken(TokenType.Minus)
             }

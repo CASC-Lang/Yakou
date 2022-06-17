@@ -58,6 +58,7 @@ sealed class TokenType(open val literal: String?) {
     object DoublePlus : SizedTokenType("++")
     object Minus : SizedTokenType("-")
     object DoubleMinus : SizedTokenType("--")
+    object Arrow : SizedTokenType("->")
     object Star : SizedTokenType("*")
     object Slash : SizedTokenType("/")
     object Percentage : SizedTokenType("%")
