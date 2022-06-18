@@ -1,3 +1,5 @@
 pkg name {
-    fn main(a: a::b)
+    fn main(a: i32) {
+
+    }
 }

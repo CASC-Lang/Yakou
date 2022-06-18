@@ -1,5 +1,7 @@
 package org.yakou.lang.ast
 
+import org.yakou.lang.bind.TypeInfo
+
 sealed class Item {
     data class Package(
         val pkg: Token,
@@ -18,5 +20,7 @@ sealed class Item {
         val arrow: Token?,
         val returnType: Type?,
         val body: FunctionBody?,
-    ) : Item()
+    ) : Item() {
+        lateinit var returnTypeInfo: TypeInfo
+    }
 }

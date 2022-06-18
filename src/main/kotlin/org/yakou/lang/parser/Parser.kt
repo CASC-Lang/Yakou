@@ -117,7 +117,8 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun parseStatements(): List<Statement> {
         val statements = mutableListOf<Statement>()
 
-        TODO()
+        while (pos < tokens.size && !optExpectType(TokenType.CloseBrace))
+            statements += parseStatement()
 
         return statements
     }

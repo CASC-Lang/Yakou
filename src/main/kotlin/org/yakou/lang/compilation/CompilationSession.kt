@@ -4,12 +4,14 @@ import chaos.unity.nenggao.CharacterSet
 import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
 import org.yakou.lang.api.AbstractPreference
+import org.yakou.lang.bind.Table
 import org.yakou.lang.util.Constants
 import java.io.File
 import java.time.Duration
 import java.time.Instant
 
-class CompilationSession(private val preference: AbstractPreference) {
+class CompilationSession(val preference: AbstractPreference) {
+    val table: Table = Table()
     private val sourceFile: File? = preference.sourceFile
     private val unitProcessResult: MutableMap<String, Pair<Boolean, Long>> = mutableMapOf()
 
@@ -52,7 +54,7 @@ class CompilationSession(private val preference: AbstractPreference) {
     private fun compileDirectory() {
         val compilationUnits = sourceFile!!.walk()
             .filter { Constants.VALID_YAKOU_FILE_EXTENSIONS.contains(it.extension) }
-            .map { CompilationUnit(it, preference) }
+            .map { CompilationUnit(it, this) }
 
         // PHASE I: LEXICAL ANALYSIS
         unitProcessResult["lexical analysis"] = measureTime {
@@ -69,10 +71,18 @@ class CompilationSession(private val preference: AbstractPreference) {
 
         if (!unitProcessResult["syntactic analysis"]!!.first)
             return
+
+        // PHASE III: TYPE BINDING
+        unitProcessResult["type binding"] = measureTime {
+            compilationUnits.all(CompilationUnit::bind)
+        }
+
+        if (!unitProcessResult["type binding"]!!.first)
+            return
     }
 
     private fun compileSingleSource() {
-        val compilationUnit = CompilationUnit(sourceFile!!, preference)
+        val compilationUnit = CompilationUnit(sourceFile!!, this)
 
         // PHASE I: LEXICAL ANALYZE
         unitProcessResult["lexical analysis"] = measureTime(compilationUnit::lex)
@@ -84,6 +94,12 @@ class CompilationSession(private val preference: AbstractPreference) {
         unitProcessResult["syntactic analysis"] = measureTime(compilationUnit::parse)
 
         if (!unitProcessResult["syntactic analysis"]!!.first)
+            return
+
+        // PHASE III: TYPE BINDING
+        unitProcessResult["type binding"] = measureTime(compilationUnit::bind)
+
+        if (!unitProcessResult["type binding"]!!.first)
             return
     }
 

@@ -6,11 +6,13 @@ import chaos.unity.nenggao.SourceCache
 import org.yakou.lang.api.AbstractPreference
 import org.yakou.lang.ast.Token
 import org.yakou.lang.ast.YkFile
+import org.yakou.lang.bind.Binder
 import org.yakou.lang.lexer.Lexer
 import org.yakou.lang.parser.Parser
 import java.io.File
 
-class CompilationUnit(val sourceFile: File, val preference: AbstractPreference) {
+class CompilationUnit(val sourceFile: File, val session: CompilationSession) {
+    val preference: AbstractPreference = session.preference
     val maxLineCount = SourceCache.INSTANCE.getOrAdd(sourceFile).lines.size
     val reportBuilder: FileReportBuilder = FileReportBuilder.sourceFile(sourceFile)
         .enableColor(preference.enableColor)
@@ -26,6 +28,11 @@ class CompilationUnit(val sourceFile: File, val preference: AbstractPreference) 
 
     fun parse(): Boolean {
         ykFile = Parser(this).parse()
+        return dumpReportStatus()
+    }
+
+    fun bind(): Boolean {
+        Binder(this).bind()
         return dumpReportStatus()
     }
 
