@@ -23,7 +23,7 @@ class Table {
                 }
 
                 typeBuilder.append("[".repeat(dimensionCount))
-                typeBuilder.append(standardizeType(type))
+                typeBuilder.append(standardizeType(innerType))
                 typeBuilder.append("]".repeat(dimensionCount))
 
                 typeBuilder.toString()
