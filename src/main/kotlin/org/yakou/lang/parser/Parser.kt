@@ -63,7 +63,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
                 Item.Package(pkg, identifier, openBrace, innerItems, closeBrace)
             }
-            optExpectKeyword(Keyword.FN) -> parseFunction()
+            optExpectKeyword(Keyword.FN) -> parseFunction(modifiers)
             else -> {
                 reportUnexpectedToken(next()!!, Keyword.PKG, Keyword.CLASS, Keyword.IMPL, Keyword.FN)
 
@@ -72,7 +72,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun parseFunction(): Item.Function {
+    private fun parseFunction(modifiers: Modifiers): Item.Function {
         val fn = next()!! // Should be asserted when called
         val name = expect(TokenType.Identifier)
         val openParenthesis = expect(TokenType.OpenParenthesis)
@@ -92,7 +92,17 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
         val functionBody = parseFunctionBody()
 
-        return Item.Function(fn, name, openParenthesis, parameters, closeParenthesis, arrow, returnType, functionBody)
+        return Item.Function(
+            modifiers,
+            fn,
+            name,
+            openParenthesis,
+            parameters,
+            closeParenthesis,
+            arrow,
+            returnType,
+            functionBody
+        )
     }
 
     private fun parseFunctionBody(): FunctionBody? = when {
@@ -178,18 +188,29 @@ class Parser(private val compilationUnit: CompilationUnit) {
                         // `pub (pkg)`
                         val modifierSpan = peek()!!.span.expand(peek(3)!!.span)
 
-                        if (!modifiers.set(Modifier.PUB_PKG, modifierSpan)) {
+                        if (!modifiers.set(Modifier.PubPkg, modifierSpan)) {
                             // Duplication
-                            reportModifierDuplication(modifiers[Modifier.PUB_PKG]!!, modifierSpan)
+                            reportModifierDuplication(modifiers[Modifier.PubPkg]!!, modifierSpan)
                         }
                         consume(4)
                     } else {
                         // `pub`
                         val span = next()!!.span
 
-                        if (!modifiers.set(Modifier.PUB, span)) {
+                        if (!modifiers.set(Modifier.Pub, span)) {
                             // Duplication
-                            reportModifierDuplication(modifiers[Modifier.PUB]!!, span)
+                            reportModifierDuplication(modifiers[Modifier.Pub]!!, span)
+                        } else {
+                            // Warning about modifiers contains `pub` access modifier by default (it's hidden though)
+                            val pubLiteral =
+                                if (compilationUnit.preference.enableColor) Ansi.colorize("pub", Attribute.CYAN_TEXT())
+                                else "pub"
+
+                            compilationUnit.reportBuilder
+                                .warning(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Redundant `$pubLiteral` access modifier")
+                                .label(span, "Access modifier is `$pubLiteral` by default")
+                                .color(Attribute.CYAN_TEXT())
+                                .build().build()
                         }
                     }
                 }
@@ -197,27 +218,27 @@ class Parser(private val compilationUnit: CompilationUnit) {
                     // `priv`
                     val span = next()!!.span
 
-                    if (!modifiers.set(Modifier.PRIV, span)) {
+                    if (!modifiers.set(Modifier.Priv, span)) {
                         // Duplication
-                        reportModifierDuplication(modifiers[Modifier.PRIV]!!, span)
+                        reportModifierDuplication(modifiers[Modifier.Priv]!!, span)
                     }
                 }
                 optExpectKeyword(Keyword.PROT) -> {
                     // `prot`
                     val span = next()!!.span
 
-                    if (!modifiers.set(Modifier.PROT, span)) {
+                    if (!modifiers.set(Modifier.Prot, span)) {
                         // Duplication
-                        reportModifierDuplication(modifiers[Modifier.PROT]!!, span)
+                        reportModifierDuplication(modifiers[Modifier.Prot]!!, span)
                     }
                 }
                 optExpectKeyword(Keyword.MUT) -> {
                     // `mut`
                     val span = next()!!.span
 
-                    if (!modifiers.set(Modifier.MUT, span)) {
+                    if (!modifiers.set(Modifier.Mut, span)) {
                         // Duplication
-                        reportModifierDuplication(modifiers[Modifier.MUT]!!, span)
+                        reportModifierDuplication(modifiers[Modifier.Mut]!!, span)
                     }
                 }
                 else -> break // Not a modifier
