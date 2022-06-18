@@ -5,6 +5,7 @@ import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
 import org.yakou.lang.api.AbstractPreference
 import org.yakou.lang.bind.Table
+import org.yakou.lang.gen.jvm.JvmBytecodeGenerator
 import org.yakou.lang.util.Constants
 import java.io.File
 import java.time.Duration
@@ -79,6 +80,26 @@ class CompilationSession(val preference: AbstractPreference) {
 
         if (!unitProcessResult["type binding"]!!.first)
             return
+
+        // PHASE III: SEMANTIC CHECKING
+        unitProcessResult["semantic checking"] = measureTime {
+            compilationUnits.all(CompilationUnit::check)
+        }
+
+        if (!unitProcessResult["semantic checking"]!!.first)
+            return
+
+        // PHASE IV: CODE GENERATION
+        unitProcessResult["semantic checking"] = measureTime {
+            val generator = JvmBytecodeGenerator(this)
+
+            for (compilationUnit in compilationUnits)
+                generator.gen(compilationUnit)
+
+            generator.finalize()
+
+            true
+        }
     }
 
     private fun compileSingleSource() {
@@ -101,6 +122,21 @@ class CompilationSession(val preference: AbstractPreference) {
 
         if (!unitProcessResult["type binding"]!!.first)
             return
+
+        // PHASE III: SEMANTIC CHECKING
+        unitProcessResult["semantic checking"] = measureTime(compilationUnit::check)
+
+        if (!unitProcessResult["semantic checking"]!!.first)
+            return
+
+        // PHASE IV: CODE GENERATION
+        unitProcessResult["semantic checking"] = measureTime {
+            val generator = JvmBytecodeGenerator(this)
+            generator.gen(compilationUnit)
+            generator.finalize()
+
+            true
+        }
     }
 
     private inline fun measureTime(crossinline process: () -> Boolean): Pair<Boolean, Long> {

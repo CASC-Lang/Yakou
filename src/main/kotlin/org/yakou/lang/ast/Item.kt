@@ -1,6 +1,7 @@
 package org.yakou.lang.ast
 
 import chaos.unity.nenggao.Span
+import org.yakou.lang.bind.Fn
 import org.yakou.lang.bind.TypeInfo
 
 sealed class Item {
@@ -42,5 +43,6 @@ sealed class Item {
             finalSpan
         }
         lateinit var returnTypeInfo: TypeInfo
+        lateinit var functionInstance: Fn
     }
 }

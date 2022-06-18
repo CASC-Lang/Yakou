@@ -1,11 +1,11 @@
 pkg chaos {
     pkg unity {
-        fn main(a: i32) {
+        fn main(a: i32, b: [i32]) {
 
         }
+    }
 
-        fn main(a: i32) {
-            
-        }
+    fn test(kek: str) {
+        
     }
 }

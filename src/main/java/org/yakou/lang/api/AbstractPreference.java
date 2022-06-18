@@ -9,7 +9,7 @@ import java.io.PrintStream;
 
 public abstract class AbstractPreference {
     public @Nullable File sourceFile = null;
-    public @Nullable File outputFolder = new File("out");
+    public @NotNull File outputFolder = new File("out");
     public @NotNull PrintStream outputStream = System.out;
     public boolean enableColor = false;
     public boolean useAscii = false;

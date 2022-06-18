@@ -7,6 +7,7 @@ import org.yakou.lang.api.AbstractPreference
 import org.yakou.lang.ast.Token
 import org.yakou.lang.ast.YkFile
 import org.yakou.lang.bind.Binder
+import org.yakou.lang.checker.Checker
 import org.yakou.lang.lexer.Lexer
 import org.yakou.lang.parser.Parser
 import java.io.File
@@ -33,6 +34,11 @@ class CompilationUnit(val sourceFile: File, val session: CompilationSession) {
 
     fun bind(): Boolean {
         Binder(this).bind()
+        return dumpReportStatus()
+    }
+
+    fun check(): Boolean {
+        Checker(this).check()
         return dumpReportStatus()
     }
 

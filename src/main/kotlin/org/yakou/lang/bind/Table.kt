@@ -42,66 +42,33 @@ class Table {
                 typeBuilder.toString()
             }
         }
-
-        private fun asTypeInfo(type: Type): TypeInfo = when (type) {
-            is Type.Array -> {
-                var finalArrayType: TypeInfo.Array
-                var dimensionCount = 0
-                var innerType = type.type
-
-                while (innerType is Type.Array) {
-                    dimensionCount++
-                    innerType = innerType.type
-                }
-
-                finalArrayType = TypeInfo.Array(asTypeInfo(innerType))
-
-                while (dimensionCount > 0) {
-                    finalArrayType = TypeInfo.Array(finalArrayType)
-                    dimensionCount--
-                }
-
-                finalArrayType
-            }
-            is Type.TypePath -> {
-                val typeName = standardizeType(type)
-
-                PrimitiveType.findPrimitiveType(typeName)?.let {
-                    TypeInfo.Primitive(it)
-                } ?: TypeInfo.Type(typeName)
-            }
-        }
     }
 
-    private val typeTable: HashMap<String, TypeInfo> = hashMapOf()
+    private val typeTable: MutableMap<String, TypeInfo> = hashMapOf()
 
     /**
      * fnTable stores class' / package's standardized path as key and list of its member functions
      */
-    private val fnTable: HashMap<String, MutableList<Fn>> = hashMapOf()
+    private val fnTable: MutableMap<String, MutableList<Fn>> = hashMapOf()
 
     fun registerFunction(fn: Fn): Boolean {
         val qualifiedOwnerPath = fn.qualifiedOwnerPath
+        val ownerTypeInfo = typeTable.getOrPut(qualifiedOwnerPath) {
+            TypeInfo.Class(qualifiedOwnerPath, TypeInfo.fromClass(Any::class.java) as TypeInfo.Class, listOf())
+        } as TypeInfo.Class
 
         return if (!fnTable.containsKey(qualifiedOwnerPath)) {
             // Create a new set of functions
             fnTable[qualifiedOwnerPath] = mutableListOf(fn)
+
+            fn.ownerTypeInfo = ownerTypeInfo
 
             true
         } else if (fnTable[qualifiedOwnerPath]!!.any { it == fn }) false
         else {
             fnTable[qualifiedOwnerPath]!! += fn
 
-            true
-        }
-    }
-
-    fun addType(type: Type): Boolean {
-        val typeName = standardizeType(type)
-
-        return if (typeTable.containsKey(typeName)) false
-        else {
-            typeTable[typeName] = asTypeInfo(type)
+            fn.ownerTypeInfo = ownerTypeInfo
 
             true
         }
@@ -121,11 +88,44 @@ class Table {
             // Check if base type is type path, and validate if type path exists
             return when ((arrayTypeInfo as TypeInfo.Array).baseType) {
                 is TypeInfo.Primitive -> arrayTypeInfo
-                is TypeInfo.Type -> if (typeTable.containsKey(typeName)) arrayTypeInfo else null
+                is TypeInfo.Class -> if (typeTable.containsKey(typeName)) arrayTypeInfo else null
                 is TypeInfo.Array -> null // Unreachable
             }
         }
 
         return typeTable[typeName]
+    }
+
+    private fun asTypeInfo(type: Type): TypeInfo? = when (type) {
+        is Type.Array -> {
+            var finalArrayType: TypeInfo.Array
+            var dimensionCount = 0
+            var innerType = type.type
+
+            while (innerType is Type.Array) {
+                dimensionCount++
+                innerType = innerType.type
+            }
+
+            val baseType = asTypeInfo(innerType)
+
+            if (baseType != null) {
+                finalArrayType = TypeInfo.Array(baseType)
+
+                while (dimensionCount > 0) {
+                    finalArrayType = TypeInfo.Array(finalArrayType)
+                    dimensionCount--
+                }
+
+                finalArrayType
+            } else null
+        }
+        is Type.TypePath -> {
+            val typeName = standardizeType(type)
+
+            PrimitiveType.findPrimitiveType(typeName)?.let {
+                TypeInfo.Primitive(it)
+            } ?: typeTable[typeName]
+        }
     }
 }

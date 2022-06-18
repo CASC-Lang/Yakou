@@ -56,7 +56,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         if (!table.registerFunction(fn)) {
             // Failed to register function
             reportFunctionAlreadyDefined(fn, function)
-        }
+        } else function.functionInstance = fn
     }
 
     private fun reportFunctionAlreadyDefined(fn: Fn, function: Item.Function) {

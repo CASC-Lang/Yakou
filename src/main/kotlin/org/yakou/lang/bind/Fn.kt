@@ -1,16 +1,17 @@
 package org.yakou.lang.bind
 
+import org.yakou.lang.ast.Declaration
 import org.yakou.lang.ast.Item
 import org.yakou.lang.ast.Parameter
 import org.yakou.lang.ast.Path
 
 data class Fn(
-    val packagePath: String,
-    val classPath: String,
+    override val packagePath: String,
+    override val classPath: String,
     val name: String,
     val parameterTypeInfos: List<TypeInfo>,
     val returnTypeInfo: TypeInfo
-) {
+) : Declaration {
     companion object {
         fun fromFunction(
             packageSimplePath: Path.SimplePath,
@@ -29,6 +30,8 @@ data class Fn(
             )
         }
     }
+    val descriptor: String = "(${parameterTypeInfos.map(TypeInfo::descriptor).joinToString(separator = "")})${returnTypeInfo.descriptor}"
+    lateinit var ownerTypeInfo: TypeInfo.Class
 
     val qualifiedOwnerPath: String by lazy {
         (if (packagePath.isBlank()) "" else "$packagePath::") + classPath
