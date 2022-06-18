@@ -90,7 +90,7 @@ class CompilationSession(val preference: AbstractPreference) {
             return
 
         // PHASE IV: CODE GENERATION
-        unitProcessResult["semantic checking"] = measureTime {
+        unitProcessResult["code generation"] = measureTime {
             val generator = JvmBytecodeGenerator(this)
 
             for (compilationUnit in compilationUnits)
@@ -130,7 +130,7 @@ class CompilationSession(val preference: AbstractPreference) {
             return
 
         // PHASE IV: CODE GENERATION
-        unitProcessResult["semantic checking"] = measureTime {
+        unitProcessResult["code generation"] = measureTime {
             val generator = JvmBytecodeGenerator(this)
             generator.gen(compilationUnit)
             generator.finalize()
