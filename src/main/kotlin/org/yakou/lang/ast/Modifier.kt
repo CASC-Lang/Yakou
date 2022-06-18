@@ -2,10 +2,12 @@ package org.yakou.lang.ast
 
 import org.objectweb.asm.Opcodes
 
-enum class Modifier(val flag: Int) {
-    PUB(Opcodes.ACC_PUBLIC),
-    PROT(Opcodes.ACC_PROTECTED),
-    PUB_PKG(0),
-    PRIV(Opcodes.ACC_PRIVATE),
-    MUT(-Opcodes.ACC_FINAL);
+sealed class Modifier(val flag: Int) {
+    sealed class AccessModifier(flag: Int): Modifier(flag)
+
+    object Pub: AccessModifier(Opcodes.ACC_PUBLIC)
+    object Prot: AccessModifier(Opcodes.ACC_PROTECTED)
+    object PubPkg: AccessModifier(0)
+    object Priv: Modifier(Opcodes.ACC_PRIVATE)
+    object Mut: Modifier(-Opcodes.ACC_FINAL)
 }
