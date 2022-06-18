@@ -1,6 +1,6 @@
 package org.yakou.lang.bind
 
-enum class PrimitiveType(private val typeLiteral: String) {
+enum class PrimitiveType(val typeLiteral: String) {
     Unit("unit"),
     Bool("bool"),
     Char("char"),

@@ -4,7 +4,7 @@ import org.yakou.lang.ast.TokenType
 import org.yakou.lang.ast.Type
 
 /**
- * Table class stores type infos in Yakou standard type format.
+ * Table class stores type infos and function infos in Yakou standard type format.
  * Example standard type formats:
  * - pkgA::pkgB::class   (Normal type or just package path)
  * - [pkgA::pkgB::class] (Array type)
@@ -74,6 +74,27 @@ class Table {
     }
 
     private val typeTable: HashMap<String, TypeInfo> = hashMapOf()
+
+    /**
+     * fnTable stores class' / package's standardized path as key and list of its member functions
+     */
+    private val fnTable: HashMap<String, MutableList<Fn>> = hashMapOf()
+
+    fun registerFunction(fn: Fn): Boolean {
+        val qualifiedOwnerPath = fn.qualifiedOwnerPath
+
+        return if (!fnTable.containsKey(qualifiedOwnerPath)) {
+            // Create a new set of functions
+            fnTable[qualifiedOwnerPath] = mutableListOf(fn)
+
+            true
+        } else if (fnTable[qualifiedOwnerPath]!!.any { it == fn }) false
+        else {
+            fnTable[qualifiedOwnerPath]!! += fn
+
+            true
+        }
+    }
 
     fun addType(type: Type): Boolean {
         val typeName = standardizeType(type)

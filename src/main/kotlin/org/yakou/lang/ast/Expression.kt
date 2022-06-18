@@ -1,5 +1,7 @@
 package org.yakou.lang.ast
 
-sealed class Expression {
+import chaos.unity.nenggao.Span
 
+sealed class Expression {
+    abstract val span: Span
 }

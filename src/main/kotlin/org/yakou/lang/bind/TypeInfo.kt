@@ -5,8 +5,14 @@ sealed class TypeInfo {
         companion object {
             val UNIT_TYPE_INFO = Primitive(PrimitiveType.Unit)
         }
+
+        override fun toString(): String =
+            type.typeLiteral
     }
-    data class Type(val standardTypePath: String) : TypeInfo()
+    data class Type(val standardTypePath: String) : TypeInfo() {
+        override fun toString(): String =
+            standardTypePath
+    }
     data class Array(val innerType: TypeInfo) : TypeInfo() {
         val baseType: TypeInfo by lazy {
             var innerType = this.innerType
@@ -16,5 +22,8 @@ sealed class TypeInfo {
 
             innerType
         }
+
+        override fun toString(): String =
+            "[$innerType]"
     }
 }
