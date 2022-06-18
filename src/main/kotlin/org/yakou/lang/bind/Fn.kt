@@ -35,7 +35,7 @@ data class Fn(
     }
 
     override fun toString(): String =
-        "$name()"
+        "$name(${parameterTypeInfos.joinToString(transform = TypeInfo::toString)}) -> $returnTypeInfo"
 
     override fun equals(other: Any?): Boolean {
         if (other is Fn) {
