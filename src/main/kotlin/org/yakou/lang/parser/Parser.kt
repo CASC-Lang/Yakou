@@ -144,8 +144,12 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun parseParameters(): List<Parameter> {
         val parameters = mutableListOf<Parameter>()
 
-        while (pos < tokens.size && !optExpectType(TokenType.CloseParenthesis))
+        while (pos < tokens.size && optExpectType(TokenType.Identifier)) {
             parameters += parseParameter()
+
+            if (optExpectType(TokenType.Comma)) consume()
+            else break
+        }
 
         return parameters
     }
