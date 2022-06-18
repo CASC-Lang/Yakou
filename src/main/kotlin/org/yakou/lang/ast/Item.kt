@@ -12,6 +12,7 @@ sealed class Item {
     ) : Item()
 
     data class Function(
+        val modifiers: Modifiers,
         val fn: Token,
         val name: Token,
         val openParenthesis: Token,
