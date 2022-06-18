@@ -14,9 +14,9 @@ enum class PrimitiveType(val typeLiteral: String) {
 
     companion object {
         private val values: Array<PrimitiveType> = values()
-        val numberTypes: Array<PrimitiveType> = arrayOf(I8, I16, I32, I64, F32, F64)
-        val integerTypes: Array<PrimitiveType> = arrayOf(I8, I16, I32, I64)
-        val floatTypes: Array<PrimitiveType> = arrayOf(F32, F64)
+        private val numberTypes: Array<PrimitiveType> = arrayOf(I8, I16, I32, I64, F32, F64)
+        private val integerTypes: Array<PrimitiveType> = arrayOf(I8, I16, I32, I64)
+        private val floatTypes: Array<PrimitiveType> = arrayOf(F32, F64)
 
         fun isPrimitiveType(typeLiteral: String): Boolean =
             values.any { it.typeLiteral == typeLiteral }
