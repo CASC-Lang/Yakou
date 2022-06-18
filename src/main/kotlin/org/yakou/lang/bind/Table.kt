@@ -117,10 +117,9 @@ class Table {
         if (typeName.startsWith("[")) {
             // Array type
             val arrayTypeInfo = asTypeInfo(type)
-            val baseType = (arrayTypeInfo as TypeInfo.Array).baseType
 
             // Check if base type is type path, and validate if type path exists
-            return when (baseType) {
+            return when ((arrayTypeInfo as TypeInfo.Array).baseType) {
                 is TypeInfo.Primitive -> arrayTypeInfo
                 is TypeInfo.Type -> if (typeTable.containsKey(typeName)) arrayTypeInfo else null
                 is TypeInfo.Array -> null // Unreachable
