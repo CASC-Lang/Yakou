@@ -1,11 +1,14 @@
 package org.yakou.lang.bind
 
+import org.objectweb.asm.Opcodes
+
 sealed class TypeInfo {
     companion object {
         fun fromClass(clazz: java.lang.Class<*>): TypeInfo = when {
             clazz.isArray -> Array(fromClass(clazz.arrayType()))
             clazz.isPrimitive -> PrimitiveType.fromClass(clazz)!!
             else -> Class(
+                clazz.modifiers,
                 standardizeTypeName(clazz.typeName),
                 clazz.superclass?.let { fromClass(it) as Class },
                 clazz.interfaces.map(::fromClass).map { it as Class }
@@ -19,7 +22,7 @@ sealed class TypeInfo {
     abstract val internalName: String?
     abstract val descriptor: String
 
-    data class Primitive(val type: PrimitiveType) : TypeInfo() {
+    class Primitive(val type: PrimitiveType) : TypeInfo() {
         companion object {
             val UNIT_TYPE_INFO = Primitive(PrimitiveType.Unit)
         }
@@ -32,9 +35,29 @@ sealed class TypeInfo {
 
         override fun toString(): String =
             type.typeLiteral
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Primitive
+
+            if (type != other.type) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return type.hashCode()
+        }
     }
 
-    data class Class(
+    class PackageClass(
+        standardPackagePath: String
+    ) : Class(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL, "$standardPackagePath::PackageYk", fromClass(Any::class.java) as Class, listOf())
+
+    open class Class(
+        val access: Int,
         val standardTypePath: String,
         val superClassType: Class?,
         val interfaceTypes: List<Class>
@@ -44,9 +67,24 @@ sealed class TypeInfo {
 
         override fun toString(): String =
             standardTypePath
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Class
+
+            if (standardTypePath != other.standardTypePath) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return standardTypePath.hashCode()
+        }
     }
 
-    data class Array(val innerType: TypeInfo) : TypeInfo() {
+    class Array(val innerType: TypeInfo) : TypeInfo() {
         override val internalName: String? = null
         override val descriptor: String = "[${innerType.descriptor}"
         val baseType: TypeInfo by lazy {
@@ -60,5 +98,20 @@ sealed class TypeInfo {
 
         override fun toString(): String =
             "[$innerType]"
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Array
+
+            if (innerType != other.innerType) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return innerType.hashCode()
+        }
     }
 }
