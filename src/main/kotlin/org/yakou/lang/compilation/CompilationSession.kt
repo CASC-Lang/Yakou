@@ -56,6 +56,7 @@ class CompilationSession(val preference: AbstractPreference) {
         val compilationUnits = sourceFile!!.walk()
             .filter { Constants.VALID_YAKOU_FILE_EXTENSIONS.contains(it.extension) }
             .map { CompilationUnit(it, this) }
+            .toList()
 
         // PHASE I: LEXICAL ANALYSIS
         unitProcessResult["lexical analysis"] = measureTime {

@@ -55,7 +55,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private fun genFunction(function: Item.Function) {
         val classWriter = getClassWriter(function.functionInstance.ownerTypeInfo)
         val methodVisitor = classWriter.visitMethod(
-            0 /*TODO: Get access from ast.Modifiers*/,
+            function.functionInstance.access,
             function.functionInstance.name,
             function.functionInstance.descriptor,
             null,
@@ -75,7 +75,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
             classWriter.visit(
                 Opcodes.V17,
-                0 /*TODO: Replace when class is implemented*/ + Opcodes.ACC_SUPER,
+                clazz.access + Opcodes.ACC_SUPER,
                 clazz.internalName,
                 null, // TODO: Implement generic
                 clazz.superClassType?.internalName.orEmpty(),

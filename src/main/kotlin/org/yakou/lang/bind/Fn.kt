@@ -1,11 +1,9 @@
 package org.yakou.lang.bind
 
-import org.yakou.lang.ast.Declaration
-import org.yakou.lang.ast.Item
-import org.yakou.lang.ast.Parameter
-import org.yakou.lang.ast.Path
+import org.yakou.lang.ast.*
 
 data class Fn(
+    val access: Int,
     override val packagePath: String,
     override val classPath: String,
     val name: String,
@@ -16,12 +14,14 @@ data class Fn(
         fun fromFunction(
             packageSimplePath: Path.SimplePath,
             classSimplePath: Path.SimplePath,
-            function: Item.Function
+            function: Item.Function,
+            vararg additionalAccessFlags: Int
         ): Fn {
             val packagePath = packageSimplePath.toString()
             val classPath = classSimplePath.toString()
 
             return Fn(
+                function.modifiers.sum(*additionalAccessFlags),
                 packagePath,
                 classPath.ifBlank { "PackageYk" },
                 function.name.literal,

@@ -2,6 +2,7 @@ package org.yakou.lang.bind
 
 import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
+import org.objectweb.asm.Opcodes
 import org.yakou.lang.ast.Item
 import org.yakou.lang.ast.Path
 import org.yakou.lang.ast.Type
@@ -10,10 +11,15 @@ import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
 
 class Binder(private val compilationUnit: CompilationUnit) {
+    companion object {
+        val PACKAGE_LEVEL_FUNCTION_ADDITIONAL_FLAGS: IntArray = intArrayOf(Opcodes.ACC_STATIC)
+    }
+
     private val table = compilationUnit.session.table
 
-    var currentPackagePath: Path.SimplePath = Path.SimplePath(listOf())
-    var currentClassPath: Path.SimplePath = Path.SimplePath(listOf())
+    private var currentPackagePath: Path.SimplePath = Path.SimplePath(listOf())
+    private var currentClassPath: Path.SimplePath = Path.SimplePath(listOf())
+    private var insideClass: Boolean = false
 
     fun bind() {
         bindYkFile(compilationUnit.ykFile!!)
@@ -51,9 +57,14 @@ class Binder(private val compilationUnit: CompilationUnit) {
             if (function.returnType != null) findType(function.returnType)
             else TypeInfo.Primitive.UNIT_TYPE_INFO
 
-        val fn = Fn.fromFunction(currentPackagePath, currentClassPath, function)
+        val fn = Fn.fromFunction(
+            currentPackagePath,
+            currentClassPath,
+            function,
+            *(if (!insideClass) PACKAGE_LEVEL_FUNCTION_ADDITIONAL_FLAGS else intArrayOf())
+        )
 
-        if (!table.registerFunction(fn)) {
+        if (!table.registerFunction(fn, true)) {
             // Failed to register function
             reportFunctionAlreadyDefined(fn, function)
         } else function.functionInstance = fn

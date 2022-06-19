@@ -51,10 +51,14 @@ class Table {
      */
     private val fnTable: MutableMap<String, MutableList<Fn>> = hashMapOf()
 
-    fun registerFunction(fn: Fn): Boolean {
+    fun registerFunction(fn: Fn, packageLevel: Boolean = false): Boolean {
         val qualifiedOwnerPath = fn.qualifiedOwnerPath
         val ownerTypeInfo = typeTable.getOrPut(qualifiedOwnerPath) {
-            TypeInfo.Class(qualifiedOwnerPath, TypeInfo.fromClass(Any::class.java) as TypeInfo.Class, listOf())
+            if (packageLevel) {
+                TypeInfo.PackageClass(fn.packagePath)
+            } else {
+                TODO()
+            }
         } as TypeInfo.Class
 
         return if (!fnTable.containsKey(qualifiedOwnerPath)) {

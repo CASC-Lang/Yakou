@@ -1,0 +1,5 @@
+pkg chaos {
+    fn test(kek: str) {
+
+    }
+}

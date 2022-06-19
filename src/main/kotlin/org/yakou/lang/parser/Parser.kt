@@ -179,8 +179,8 @@ class Parser(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun parseModifiers(immutable: Boolean = true): Modifiers {
-        val modifiers = Modifiers(immutable = immutable)
+    private fun parseModifiers(): Modifiers {
+        val modifiers = Modifiers()
 
         while (pos < tokens.size) {
             when {
