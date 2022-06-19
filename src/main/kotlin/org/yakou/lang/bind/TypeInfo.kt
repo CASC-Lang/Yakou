@@ -62,8 +62,8 @@ sealed class TypeInfo {
         val superClassType: Class?,
         val interfaceTypes: List<Class>
     ) : TypeInfo() {
-        override val internalName: String = standardTypePath.replace("::", "/")
-        override val descriptor: String = "L$internalName;"
+        final override val internalName: String = standardTypePath.replace("::", "/")
+        final override val descriptor: String = "L$internalName;"
 
         override fun toString(): String =
             standardTypePath

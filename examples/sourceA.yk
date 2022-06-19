@@ -1,11 +1,7 @@
 pkg chaos {
     pkg unity {
-        fn main(a: i32, b: [i32]) {
+        fn main(arg: [java::lang::Integer]) {
 
         }
-    }
-
-    fn test(kek: str) {
-
     }
 }

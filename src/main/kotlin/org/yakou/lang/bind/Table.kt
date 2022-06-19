@@ -10,40 +10,6 @@ import org.yakou.lang.ast.Type
  * - [pkgA::pkgB::class] (Array type)
  */
 class Table {
-    companion object {
-        fun standardizeType(type: Type): String = when (type) {
-            is Type.Array -> {
-                val typeBuilder = StringBuilder()
-                var dimensionCount = 1
-                var innerType = type.type
-
-                while (innerType is Type.Array) {
-                    dimensionCount++
-                    innerType = innerType.type
-                }
-
-                typeBuilder.append("[".repeat(dimensionCount))
-                typeBuilder.append(standardizeType(innerType))
-                typeBuilder.append("]".repeat(dimensionCount))
-
-                typeBuilder.toString()
-            }
-            is Type.TypePath -> {
-                val typeBuilder = StringBuilder()
-
-                for (token in type.path.pathSegments) {
-                    if (token.type is TokenType.Identifier) {
-                        typeBuilder.append(token.literal)
-                    } else if (token.type is TokenType.DoubleColon) {
-                        typeBuilder.append("::")
-                    }
-                }
-
-                typeBuilder.toString()
-            }
-        }
-    }
-
     private val typeTable: MutableMap<String, TypeInfo> = hashMapOf()
 
     /**
@@ -51,7 +17,7 @@ class Table {
      */
     private val fnTable: MutableMap<String, MutableList<Fn>> = hashMapOf()
 
-    fun registerFunction(fn: Fn, packageLevel: Boolean = false): Boolean {
+    fun registerFunction(fn: Fn, packageLevel: Boolean): Boolean {
         val qualifiedOwnerPath = fn.qualifiedOwnerPath
         val ownerTypeInfo = typeTable.getOrPut(qualifiedOwnerPath) {
             if (packageLevel) {
@@ -79,7 +45,7 @@ class Table {
     }
 
     fun findType(type: Type): TypeInfo? {
-        val typeName = standardizeType(type)
+        val typeName = type.standardizeType()
 
         PrimitiveType.findPrimitiveType(typeName)?.let {
             return TypeInfo.Primitive(it)
@@ -91,8 +57,7 @@ class Table {
 
             // Check if base type is type path, and validate if type path exists
             return when ((arrayTypeInfo as TypeInfo.Array).baseType) {
-                is TypeInfo.Primitive -> arrayTypeInfo
-                is TypeInfo.Class -> if (typeTable.containsKey(typeName)) arrayTypeInfo else null
+                is TypeInfo.Primitive, is TypeInfo.Class -> arrayTypeInfo
                 is TypeInfo.Array -> null // Unreachable
             }
         }
@@ -125,11 +90,23 @@ class Table {
             } else null
         }
         is Type.TypePath -> {
-            val typeName = standardizeType(type)
+            val typeName = type.standardizeType()
 
             PrimitiveType.findPrimitiveType(typeName)?.let {
                 TypeInfo.Primitive(it)
-            } ?: typeTable[typeName]
+            } ?: typeTable[typeName] ?: run {
+                try {
+                    val clazz = Class.forName(typeName.replace("::", "."))
+
+                    return@run TypeInfo.fromClass(clazz)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } catch (e: Error) {
+                    e.printStackTrace()
+                }
+
+                null
+            }
         }
     }
 }

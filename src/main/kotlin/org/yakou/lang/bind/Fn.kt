@@ -4,12 +4,12 @@ import org.yakou.lang.ast.*
 
 data class Fn(
     val access: Int,
-    override val packagePath: String,
-    override val classPath: String,
+    val packagePath: String,
+    val classPath: String,
     val name: String,
     val parameterTypeInfos: List<TypeInfo>,
     val returnTypeInfo: TypeInfo
-) : Declaration {
+) {
     companion object {
         fun fromFunction(
             packageSimplePath: Path.SimplePath,

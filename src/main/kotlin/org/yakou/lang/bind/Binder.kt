@@ -19,7 +19,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private var currentPackagePath: Path.SimplePath = Path.SimplePath(listOf())
     private var currentClassPath: Path.SimplePath = Path.SimplePath(listOf())
-    private var insideClass: Boolean = false
+    private var topLevel: Boolean = true
 
     fun bind() {
         bindYkFile(compilationUnit.ykFile!!)
@@ -61,10 +61,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
             currentPackagePath,
             currentClassPath,
             function,
-            *(if (!insideClass) PACKAGE_LEVEL_FUNCTION_ADDITIONAL_FLAGS else intArrayOf())
+            *(if (topLevel) PACKAGE_LEVEL_FUNCTION_ADDITIONAL_FLAGS else intArrayOf())
         )
 
-        if (!table.registerFunction(fn, true)) {
+        if (!table.registerFunction(fn, topLevel)) {
             // Failed to register function
             reportFunctionAlreadyDefined(fn, function)
         } else function.functionInstance = fn
@@ -92,7 +92,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         return if (typeInfo == null) {
             // Unknown type
             val span = type.span
-            val typeName = Table.standardizeType(type)
+            val typeName = type.standardizeType()
             val colorizedTypeName =
                 if (compilationUnit.preference.enableColor) Ansi.colorize(typeName, Attribute.RED_TEXT())
                 else typeName
