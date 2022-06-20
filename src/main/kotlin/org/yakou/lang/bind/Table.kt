@@ -1,6 +1,5 @@
 package org.yakou.lang.bind
 
-import org.yakou.lang.ast.TokenType
 import org.yakou.lang.ast.Type
 
 /**
