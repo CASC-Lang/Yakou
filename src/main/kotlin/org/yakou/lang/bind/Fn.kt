@@ -1,6 +1,9 @@
 package org.yakou.lang.bind
 
-import org.yakou.lang.ast.*
+import org.yakou.lang.ast.Item
+import org.yakou.lang.ast.Parameter
+import org.yakou.lang.ast.Path
+import java.lang.reflect.Method
 
 data class Fn(
     val access: Int,
@@ -11,26 +14,33 @@ data class Fn(
     val returnTypeInfo: TypeInfo
 ) {
     companion object {
+        fun fromMethod(method: Method): Fn =
+            Fn(
+                method.modifiers,
+                method.declaringClass.packageName.replace(".", "::"),
+                method.declaringClass.typeName.split('.').last().replace("$", "::"),
+                method.name,
+                method.parameters.map { TypeInfo.fromClass(it.type) },
+                TypeInfo.fromClass(method.returnType)
+            )
+
         fun fromFunction(
             packageSimplePath: Path.SimplePath,
             classSimplePath: Path.SimplePath,
             function: Item.Function,
             vararg additionalAccessFlags: Int
-        ): Fn {
-            val packagePath = packageSimplePath.toString()
-            val classPath = classSimplePath.toString()
-
-            return Fn(
-                function.modifiers.sum(*additionalAccessFlags),
-                packagePath,
-                classPath.ifBlank { "PackageYk" },
-                function.identifier.literal,
-                function.parameters.map(Parameter::typeInfo),
-                function.returnTypeInfo
-            )
-        }
+        ): Fn = Fn(
+            function.modifiers.sum(*additionalAccessFlags),
+            packageSimplePath.toString(),
+            classSimplePath.toString().ifBlank { "PackageYk" },
+            function.identifier.literal,
+            function.parameters.map(Parameter::typeInfo),
+            function.returnTypeInfo
+        )
     }
-    val descriptor: String = "(${parameterTypeInfos.map(TypeInfo::descriptor).joinToString(separator = "")})${returnTypeInfo.descriptor}"
+
+    val descriptor: String =
+        "(${parameterTypeInfos.map(TypeInfo::descriptor).joinToString(separator = "")})${returnTypeInfo.descriptor}"
     lateinit var ownerTypeInfo: TypeInfo.Class
 
     val qualifiedOwnerPath: String by lazy {

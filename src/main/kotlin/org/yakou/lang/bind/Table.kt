@@ -14,7 +14,35 @@ class Table {
     /**
      * fnTable stores class' / package's standardized path as key and list of its member functions
      */
+    private val fieldTable: MutableMap<String, MutableList<Field>> = hashMapOf()
     private val fnTable: MutableMap<String, MutableList<Fn>> = hashMapOf()
+
+    fun registerField(field: Field, packageLevel: Boolean): Boolean {
+        val qualifiedOwnerPath = field.qualifiedOwnerPath
+        val ownerTypeInfo = typeTable.getOrPut(qualifiedOwnerPath) {
+            if (packageLevel) {
+                TypeInfo.PackageClass(field.packagePath)
+            } else {
+                TODO()
+            }
+        } as TypeInfo.Class
+
+        return if (!fieldTable.containsKey(qualifiedOwnerPath)) {
+            // Create a new set of functions
+            fieldTable[qualifiedOwnerPath] = mutableListOf(field)
+
+            field.ownerTypeInfo = ownerTypeInfo
+
+            true
+        } else if (fieldTable[qualifiedOwnerPath]!!.any { it == field }) false
+        else {
+            fieldTable[qualifiedOwnerPath]!! += field
+
+            field.ownerTypeInfo = ownerTypeInfo
+
+            true
+        }
+    }
 
     fun registerFunction(fn: Fn, packageLevel: Boolean): Boolean {
         val qualifiedOwnerPath = fn.qualifiedOwnerPath

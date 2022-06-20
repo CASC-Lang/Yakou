@@ -46,6 +46,20 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindConstDeclaration(const: Item.Const) {
         bindExpression(const.expression)
+
+        const.typeInfo = const.type?.let(::bindType) ?: const.expression.finalType
+
+        val field = Field.fromConst(
+            currentPackagePath,
+            currentClassPath,
+            const,
+            Opcodes.ACC_STATIC
+        )
+
+        if (!table.registerField(field, topLevel)) {
+            // Failed to register function
+            reportConstAlreadyDefined(field, const)
+        } else const.fieldInstance = field
     }
 
     private fun bindFunctionDeclaration(function: Item.Function) {
@@ -101,6 +115,22 @@ class Binder(private val compilationUnit: CompilationUnit) {
             else -> TypeInfo.Primitive(PrimitiveType.F64)
         }
         numberLiteral.finalType = numberLiteral.originalType
+    }
+
+    private fun reportConstAlreadyDefined(field: Field, const: Item.Const) {
+        val span = const.span
+        val coloredConstLiteral =
+            if (compilationUnit.preference.enableColor) Ansi.colorize(field.toString(), Attribute.CYAN_TEXT())
+            else field.toString()
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(span, compilationUnit.maxLineCount),
+                "Constant $coloredConstLiteral is already defined at `${field.qualifiedOwnerPath}`"
+            )
+            .label(span, "Already defined")
+            .color(Attribute.RED_TEXT())
+            .build().build()
     }
 
     private fun reportFunctionAlreadyDefined(fn: Fn, function: Item.Function) {
