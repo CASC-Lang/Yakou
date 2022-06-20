@@ -32,7 +32,6 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindItemDeclaration(item: Item) {
         when (item) {
-            is Item.Function -> bindFunctionDeclaration(item)
             is Item.Package -> {
                 val previousPackagePath = currentPackagePath
                 currentPackagePath = currentPackagePath.append(item.identifier)
@@ -43,7 +42,13 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
                 currentPackagePath = previousPackagePath
             }
+            is Item.Const -> bindConstDeclaration(item)
+            is Item.Function -> bindFunctionDeclaration(item)
         }
+    }
+
+    private fun bindConstDeclaration(const: Item.Const) {
+        TODO()
     }
 
     private fun bindFunctionDeclaration(function: Item.Function) {

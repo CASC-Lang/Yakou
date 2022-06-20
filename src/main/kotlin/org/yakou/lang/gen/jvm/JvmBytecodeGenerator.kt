@@ -43,13 +43,18 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
     private fun genItem(item: Item) {
         when (item) {
-            is Item.Function -> genFunction(item)
             is Item.Package -> {
                 if (item.items != null)
                     for (innerItem in item.items)
                         genItem(innerItem)
             }
+            is Item.Const -> genConst(item)
+            is Item.Function -> genFunction(item)
         }
+    }
+
+    private fun genConst(const: Item.Const) {
+        TODO()
     }
 
     private fun genFunction(function: Item.Function) {

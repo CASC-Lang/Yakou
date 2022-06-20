@@ -24,7 +24,7 @@ data class Fn(
                 function.modifiers.sum(*additionalAccessFlags),
                 packagePath,
                 classPath.ifBlank { "PackageYk" },
-                function.name.literal,
+                function.identifier.literal,
                 function.parameters.map(Parameter::typeInfo),
                 function.returnTypeInfo
             )

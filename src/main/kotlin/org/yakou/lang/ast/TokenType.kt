@@ -11,16 +11,18 @@ sealed class TokenType(open val literal: String?) {
             Identifier -> "<Identifier>"
             Keyword -> "<Keyword>" // TODO: Necessary?
             NumberLiteral -> "<Number Literal>" // TODO: Necessary
+            Synthetic -> "<Synthetic>"
         }
         return if (preference.enableColor) Ansi.colorize(tokenLiteral, *attribute)
         else tokenLiteral
     }
 
-    object Identifier: TokenType(null)
-    object Keyword: TokenType(null)
-    object NumberLiteral: TokenType(null)
+    object Identifier : TokenType(null)
+    object Keyword : TokenType(null)
+    object NumberLiteral : TokenType(null)
+    object Synthetic : TokenType(null)
 
-    sealed class SizedTokenType(override val literal: String): TokenType(literal) {
+    sealed class SizedTokenType(override val literal: String) : TokenType(literal) {
         fun size(): Int =
             literal.length
     }

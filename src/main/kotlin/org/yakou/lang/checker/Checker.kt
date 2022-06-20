@@ -21,13 +21,18 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
     private fun checkItem(item: Item) {
         when (item) {
-            is Item.Function -> checkFunction(item)
             is Item.Package -> {
                 if (item.items != null)
                     for (innerItem in item.items)
                         checkItem(innerItem)
             }
+            is Item.Const -> checkConst(item)
+            is Item.Function -> checkFunction(item)
         }
+    }
+
+    private fun checkConst(const: Item.Const) {
+        TODO()
     }
 
     private fun checkFunction(function: Item.Function) {

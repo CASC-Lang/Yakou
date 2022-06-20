@@ -29,6 +29,7 @@ open class Token(open val literal: String, val type: TokenType, val span: Span) 
 
     class NumberLiteralToken(
         val integerLiteral: String?,
+        val dot: Token?,
         val floatLiteral: String?,
         val typeAnnotation: String?,
         val integerLiteralSpan: Span?,

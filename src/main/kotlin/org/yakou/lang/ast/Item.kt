@@ -13,10 +13,30 @@ sealed class Item {
         val closeBrace: Token?
     ) : Item()
 
+    data class Const(
+        val modifiers: Modifiers,
+        val const: Token,
+        val identifier: Token,
+        val colon: Token?,
+        val type: Type?,
+        val equal: Token,
+        val expression: Expression,
+    ) : Item() {
+        val span: Span by lazy {
+            var finalSpan =
+                if (!modifiers.isEmpty()) modifiers.modifierMap.toList().first().second
+                else const.span
+
+            finalSpan = finalSpan.expand(expression.span)
+
+            finalSpan
+        }
+    }
+
     data class Function(
         val modifiers: Modifiers,
         val fn: Token,
-        val name: Token,
+        val identifier: Token,
         val openParenthesis: Token,
         val parameters: List<Parameter>,
         val closeParenthesis: Token,

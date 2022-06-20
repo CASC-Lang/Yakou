@@ -64,12 +64,42 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 Item.Package(pkg, identifier, openBrace, innerItems, closeBrace)
             }
             optExpectKeyword(Keyword.FN) -> parseFunction(modifiers)
+            optExpectKeyword(Keyword.CONST) -> parseConst(modifiers)
             else -> {
                 reportUnexpectedToken(next()!!, Keyword.PKG, Keyword.CLASS, Keyword.IMPL, Keyword.FN)
 
                 null
             }
         }
+    }
+
+    private fun parseConst(modifiers: Modifiers): Item.Const {
+        val const = next()!! // Should be asserted when called
+        val identifier = expect(TokenType.Identifier)
+        val colon: Token?
+        val type: Type?
+
+        if (optExpectType(TokenType.Colon)) {
+            // Specified constant field's type
+            colon = next()!!
+            type = parseType()
+        } else {
+            colon = null
+            type = null
+        }
+
+        val equal = expect(TokenType.Equal)
+        val expression = parseExpression()
+
+        return Item.Const(
+            modifiers,
+            const,
+            identifier,
+            colon,
+            type,
+            equal,
+            expression
+        )
     }
 
     private fun parseFunction(modifiers: Modifiers): Item.Function {
@@ -138,7 +168,23 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseExpression(): Expression {
-        TODO()
+        return parseLiteralExpression()
+    }
+
+    private fun parseLiteralExpression(): Expression = when {
+        optExpectType(TokenType.NumberLiteral) -> {
+            val numberToken = next()!! as Token.NumberLiteralToken
+            val integer = numberToken.integerLiteral?.let { Token(it, TokenType.Synthetic, numberToken.integerLiteralSpan!!) }
+            val float = numberToken.floatLiteral?.let { Token(it, TokenType.Synthetic, numberToken.floatLiteralSpan!!) }
+            val type = numberToken.typeAnnotation?.let { Type.TypePath(Path.SimplePath(listOf(Token(it, TokenType.Identifier, numberToken.typeAnnotationSpan!!)))) }
+
+            Expression.NumberLiteral(integer, numberToken.dot, float, type, numberToken.span)
+        }
+        else -> {
+            reportUnexpectedToken(next()!!)
+
+            Expression.Undefined
+        }
     }
 
     private fun parseParameters(): List<Parameter> {
@@ -211,7 +257,10 @@ class Parser(private val compilationUnit: CompilationUnit) {
                                 else "pub"
 
                             compilationUnit.reportBuilder
-                                .warning(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Redundant `$pubLiteral` access modifier")
+                                .warning(
+                                    SpanHelper.expandView(span, compilationUnit.maxLineCount),
+                                    "Redundant `$pubLiteral` access modifier"
+                                )
                                 .label(span, "Access modifier is `$pubLiteral` by default")
                                 .color(Attribute.CYAN_TEXT())
                                 .build().build()
@@ -296,11 +345,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
         pos += count
     }
 
-    private fun next(): Token? {
-        pos++
-        return peek(-1)
-    }
-
+    private fun next(): Token? =
+        if (pos < tokens.size) {
+            pos++
+            peek(-1)
+        } else tokens.lastOrNull()
     private fun reportModifierDuplication(firstSpan: Span, duplicatedSpan: Span) {
         compilationUnit.reportBuilder
             .error(
@@ -312,8 +361,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
             .build()
             .label(duplicatedSpan, "Duplicated here")
             .color(Attribute.RED_TEXT())
-            .build()
-            .build()
+            .build().build()
     }
 
     private fun reportIllegalModifiersInPlace(modifiers: Modifiers) {
@@ -327,6 +375,19 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 .color(Attribute.RED_TEXT())
                 .build().build()
         }
+    }
+
+    private fun reportUnexpectedToken(originalToken: Token) {
+        val originalTokenLiteral = originalToken.colorizeTokenType(compilationUnit.preference, Attribute.RED_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(originalToken.span, compilationUnit.maxLineCount),
+                "Unexpected token $originalTokenLiteral"
+            )
+            .label(originalToken.span, "Unexpected token here")
+            .color(Attribute.RED_TEXT())
+            .build().build()
     }
 
     private fun reportUnexpectedToken(originalToken: Token?, syntheticToken: Token): Token {

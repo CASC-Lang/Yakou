@@ -41,6 +41,11 @@ class Lexer(private val compilationUnit: CompilationUnit) {
 
                 // Float Literal lexing
                 if (currentLine[pos] == '.') {
+                    val dot = Token(
+                        currentLine.substring(pos..pos),
+                        TokenType.Dot,
+                        Span.singleLine(line + 1, pos, ++pos)
+                    )
                     val (floatLiteral, floatLiteralSpan) = lexFloatLiteral()
                     val (typeAnnotation, typeAnnotationSpan) =
                         if (!currentLine[pos].isWhitespace()) lexLiteralTypeAnnotation()
@@ -50,6 +55,7 @@ class Lexer(private val compilationUnit: CompilationUnit) {
 
                     tokens += Token.NumberLiteralToken(
                         null,
+                        dot,
                         floatLiteral,
                         typeAnnotation,
                         null,
@@ -92,8 +98,13 @@ class Lexer(private val compilationUnit: CompilationUnit) {
 
     private fun lexNumberLiteral() {
         val (integerLiteral, integerLiteralSpan) = lexIntegerLiteral()
+        val dot = if (currentLine[pos] == '.') Token(
+            currentLine.substring(pos..pos),
+            TokenType.Dot,
+            Span.singleLine(line + 1, pos, ++pos)
+        ) else null
         val (floatLiteral, floatLiteralSpan) =
-            if (currentLine[pos] == '.') lexFloatLiteral()
+            if (currentLine[pos].isDigit()) lexFloatLiteral()
             else null to null
         val (typeAnnotation, typeAnnotationSpan) =
             if (!currentLine[pos].isWhitespace()) lexLiteralTypeAnnotation()
@@ -103,6 +114,7 @@ class Lexer(private val compilationUnit: CompilationUnit) {
 
         tokens += Token.NumberLiteralToken(
             integerLiteral,
+            dot,
             floatLiteral,
             typeAnnotation,
             integerLiteralSpan,
@@ -112,21 +124,13 @@ class Lexer(private val compilationUnit: CompilationUnit) {
         )
     }
 
-    private fun lexIntegerLiteral(): Pair<String, Span> {
-        return lexSegment(Char::isDigit)
-    }
+    private fun lexIntegerLiteral(): Pair<String, Span> =
+        lexSegment(Char::isDigit)
 
     // lexFloatLiteral returns float literal that does not contains dot,
     // but span still does.
-    private fun lexFloatLiteral(): Pair<String, Span> {
-        val hasDot = if (currentLine[pos] == '.') {
-            pos++
-            true
-        } else false
-        val (floatLiteral, span) = lexSegment(Char::isDigit)
-
-        return (if (hasDot) ".$floatLiteral" else floatLiteral) to span
-    }
+    private fun lexFloatLiteral(): Pair<String, Span> =
+        lexSegment(Char::isDigit)
 
     private fun lexLiteralTypeAnnotation(): Pair<String, Span> {
         return lexSegment { !it.isWhitespace() }

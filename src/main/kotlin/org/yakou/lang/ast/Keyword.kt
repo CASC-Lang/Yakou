@@ -8,7 +8,7 @@ enum class Keyword(val literal: String) {
     MUT("mut"),
     CLASS("class"),
     IMPL("impl"),
-    COMP("comp"),
+    CONST("const"),
     FN("fn"),
     SELF("self");
 
