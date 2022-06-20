@@ -3,10 +3,7 @@ package org.yakou.lang.bind
 import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
 import org.objectweb.asm.Opcodes
-import org.yakou.lang.ast.Item
-import org.yakou.lang.ast.Path
-import org.yakou.lang.ast.Type
-import org.yakou.lang.ast.YkFile
+import org.yakou.lang.ast.*
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
 
@@ -48,18 +45,18 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindConstDeclaration(const: Item.Const) {
-        TODO()
+        bindExpression(const.expression)
     }
 
     private fun bindFunctionDeclaration(function: Item.Function) {
         for (parameter in function.parameters) {
-            val typeInfo = findType(parameter.type)
+            val typeInfo = bindType(parameter.type)
 
             parameter.typeInfo = typeInfo
         }
 
         function.returnTypeInfo =
-            if (function.returnType != null) findType(function.returnType)
+            if (function.returnType != null) bindType(function.returnType)
             else TypeInfo.Primitive.UNIT_TYPE_INFO
 
         val fn = Fn.fromFunction(
@@ -73,6 +70,37 @@ class Binder(private val compilationUnit: CompilationUnit) {
             // Failed to register function
             reportFunctionAlreadyDefined(fn, function)
         } else function.functionInstance = fn
+    }
+
+    private fun bindStatement(statement: Statement) {
+        TODO()
+    }
+
+    private fun bindExpression(expression: Expression) {
+        when (expression) {
+            is Expression.NumberLiteral -> bindNumberLiteral(expression)
+            Expression.Undefined -> TODO("UNREACHABLE")
+        }
+    }
+
+    private fun bindNumberLiteral(numberLiteral: Expression.NumberLiteral) {
+        var value = .0
+
+        numberLiteral.integerPart?.let {
+            value += it.literal.toInt()
+        }
+
+        numberLiteral.floatPart?.let {
+            value += it.literal.toInt()
+        }
+
+        numberLiteral.value = value
+        numberLiteral.originalType = when {
+            numberLiteral.specifiedType != null -> bindType(numberLiteral.specifiedType)
+            numberLiteral.dot == null && numberLiteral.floatPart == null -> TypeInfo.Primitive(PrimitiveType.I32)
+            else -> TypeInfo.Primitive(PrimitiveType.F64)
+        }
+        numberLiteral.finalType = numberLiteral.originalType
     }
 
     private fun reportFunctionAlreadyDefined(fn: Fn, function: Item.Function) {
@@ -91,7 +119,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             .build().build()
     }
 
-    private fun findType(type: Type): TypeInfo {
+    private fun bindType(type: Type): TypeInfo {
         val typeInfo = table.findType(type)
 
         return if (typeInfo == null) {

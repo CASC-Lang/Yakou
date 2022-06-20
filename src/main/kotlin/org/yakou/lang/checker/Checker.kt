@@ -1,9 +1,13 @@
 package org.yakou.lang.checker
 
+import chaos.unity.nenggao.Span
+import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
+import org.yakou.lang.ast.Expression
 import org.yakou.lang.ast.Item
 import org.yakou.lang.ast.Modifier
 import org.yakou.lang.ast.YkFile
+import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
@@ -32,20 +36,83 @@ class Checker(private val compilationUnit: CompilationUnit) {
     }
 
     private fun checkConst(const: Item.Const) {
-        TODO()
+        // Check constant has illegal modifiers
+        if (const.modifiers.hasModifier(Modifier.Mut)) {
+            reportIllegalMut(const.modifiers[Modifier.Mut]!!, "Constant cannot be mutable")
+        }
+        // Check expression
+        checkExpression(const.expression)
     }
 
     private fun checkFunction(function: Item.Function) {
         // Check top-level function has illegal modifiers
         if (function.functionInstance.ownerTypeInfo is TypeInfo.PackageClass && function.modifiers.hasModifier(Modifier.Mut)) {
-            val mutLiteral = colorize("mut", compilationUnit, Attribute.RED_TEXT())
-            val span = function.modifiers[Modifier.Mut]!!
-
-            compilationUnit.reportBuilder
-                .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Illegal modifier `$mutLiteral`")
-                .label(span, "Top-level function cannot be mutable")
-                .color(Attribute.RED_TEXT())
-                .build().build()
+            reportIllegalMut(function.modifiers[Modifier.Mut]!!, "Top-level function cannot be mutable")
         }
+    }
+
+    private fun checkExpression(expression: Expression) {
+        when (expression) {
+            is Expression.NumberLiteral -> checkNumberLiteral(expression)
+            Expression.Undefined -> TODO("UNREACHABLE")
+        }
+    }
+
+    private fun checkNumberLiteral(numberLiteral: Expression.NumberLiteral) {
+        val isIntegerValue = numberLiteral.value.toInt().toDouble() != numberLiteral.value
+
+        if (numberLiteral.dot != null && numberLiteral.floatPart != null) {
+            if (isIntegerValue) {
+                // Number literal represents a float number but specified with an integer type
+                val specifiedTypeLiteral =
+                    if (compilationUnit.preference.enableColor) Ansi.colorize(
+                        numberLiteral.specifiedType!!.standardizeType(),
+                        Attribute.RED_TEXT()
+                    )
+                    else numberLiteral.specifiedType!!.standardizeType()
+
+                compilationUnit.reportBuilder
+                    .error(
+                        SpanHelper.expandView(numberLiteral.span, compilationUnit.maxLineCount),
+                        "Illegal type suffix `$specifiedTypeLiteral` for float number literal"
+                    )
+                    .label(numberLiteral.floatPart.span, "Float number literal here")
+                    .color(Attribute.CYAN_TEXT())
+                    .build()
+                    .label(numberLiteral.specifiedType.span, "Illegal type suffix here")
+                    .color(Attribute.RED_TEXT())
+                    .build().build()
+            } else if (numberLiteral.originalType is TypeInfo.Primitive && (numberLiteral.originalType as TypeInfo.Primitive).type == PrimitiveType.F64) {
+                // Redundant type suffix `f64` for float number literal
+                val specifiedTypeLiteral =
+                    if (compilationUnit.preference.enableColor) Ansi.colorize(
+                        numberLiteral.specifiedType!!.standardizeType(),
+                        Attribute.CYAN_TEXT()
+                    )
+                    else numberLiteral.specifiedType!!.standardizeType()
+
+                compilationUnit.reportBuilder
+                    .warning(
+                        SpanHelper.expandView(numberLiteral.span, compilationUnit.maxLineCount),
+                        "Redundant type suffix `$specifiedTypeLiteral` for float number literal"
+                    )
+                    .label(numberLiteral.floatPart.span, "Float number literal here")
+                    .color(Attribute.CYAN_TEXT())
+                    .build()
+                    .label(numberLiteral.specifiedType.span, "Redundant type suffix here")
+                    .color(Attribute.YELLOW_TEXT())
+                    .build().build()
+            }
+        }
+    }
+
+    private fun reportIllegalMut(span: Span, labelMessage: String) {
+        val mutLiteral = colorize("mut", compilationUnit, Attribute.RED_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Illegal modifier `$mutLiteral`")
+            .label(span, labelMessage)
+            .color(Attribute.RED_TEXT())
+            .build().build()
     }
 }

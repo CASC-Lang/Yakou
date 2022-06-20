@@ -1,6 +1,6 @@
 pkg chaos {
     pkg unity {
-        const a = 1.1i32
+        const a = 1.1f64
 
         fn main(arg: [java::lang::Integer]) {
 
