@@ -33,7 +33,7 @@ data class Field(
             const.typeInfo
         )
     }
-
+    val descriptor: String = type.descriptor
     lateinit var ownerTypeInfo: TypeInfo.Class
 
     val qualifiedOwnerPath: String by lazy {

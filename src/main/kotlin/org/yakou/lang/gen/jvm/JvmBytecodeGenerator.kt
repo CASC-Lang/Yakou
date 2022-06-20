@@ -54,7 +54,16 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genConst(const: Item.Const) {
-        TODO()
+        val classWriter = getClassWriter(const.fieldInstance.ownerTypeInfo)
+        val fieldVisitor = classWriter.visitField(
+            const.fieldInstance.access,
+            const.fieldInstance.name,
+            const.fieldInstance.descriptor,
+            null,
+            null
+        )
+
+        fieldVisitor.visitEnd()
     }
 
     private fun genFunction(function: Item.Function) {
