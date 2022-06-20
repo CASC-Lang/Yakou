@@ -97,7 +97,12 @@ class Table {
                 try {
                     val clazz = Class.forName(typeName.replace("::", "."))
 
-                    return@run TypeInfo.fromClass(clazz)
+                    // After assignment, we can determine the class actually exists in current JVM session, thus we
+                    // cache it and return it
+                    val typeInfo = TypeInfo.fromClass(clazz)
+                    typeTable[typeName] = typeInfo
+
+                    return@run typeInfo
                 } catch (e: Exception) {
                     e.printStackTrace()
                 } catch (e: Error) {
