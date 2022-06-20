@@ -66,6 +66,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         val classWriter = getClassWriter(const.fieldInstance.ownerTypeInfo)
         // Declare static field based on value
         if (const.expression is Expression.NumberLiteral) {
+            // Value is inlinable, thus we use ConstantValue attribute in this case
             val fieldVisitor = classWriter.visitField(
                 const.fieldInstance.access,
                 const.fieldInstance.name,
