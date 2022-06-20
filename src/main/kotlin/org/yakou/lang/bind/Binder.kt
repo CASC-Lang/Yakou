@@ -109,12 +109,18 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
 
         numberLiteral.value = value
-        numberLiteral.originalType = when {
+        numberLiteral.originalType =
+            if (numberLiteral.dot == null && numberLiteral.floatPart == null) TypeInfo.Primitive(PrimitiveType.I32)
+            else TypeInfo.Primitive(PrimitiveType.F64)
+        numberLiteral.finalType = when {
             numberLiteral.specifiedType != null -> bindType(numberLiteral.specifiedType)
             numberLiteral.dot == null && numberLiteral.floatPart == null -> TypeInfo.Primitive(PrimitiveType.I32)
             else -> TypeInfo.Primitive(PrimitiveType.F64)
         }
-        numberLiteral.finalType = numberLiteral.originalType
+
+        numberLiteral.specifiedTypeInfo = numberLiteral.specifiedType?.let {
+            bindType(it) as TypeInfo.Primitive
+        }
     }
 
     private fun reportConstAlreadyDefined(field: Field, const: Item.Const) {

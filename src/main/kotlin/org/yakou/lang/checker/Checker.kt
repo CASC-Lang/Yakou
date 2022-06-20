@@ -61,15 +61,15 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkNumberLiteral(numberLiteral: Expression.NumberLiteral) {
         val isIntegerValue = numberLiteral.value.toInt().toDouble() != numberLiteral.value
 
-        if (numberLiteral.dot != null && numberLiteral.floatPart != null) {
+        if (numberLiteral.dot != null && numberLiteral.floatPart != null && numberLiteral.specifiedType != null) {
             if (isIntegerValue) {
                 // Number literal represents a float number but specified with an integer type
                 val specifiedTypeLiteral =
                     if (compilationUnit.preference.enableColor) Ansi.colorize(
-                        numberLiteral.specifiedType!!.standardizeType(),
+                        numberLiteral.specifiedType.standardizeType(),
                         Attribute.RED_TEXT()
                     )
-                    else numberLiteral.specifiedType!!.standardizeType()
+                    else numberLiteral.specifiedType.standardizeType()
 
                 compilationUnit.reportBuilder
                     .error(
@@ -86,10 +86,10 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 // Redundant type suffix `f64` for float number literal
                 val specifiedTypeLiteral =
                     if (compilationUnit.preference.enableColor) Ansi.colorize(
-                        numberLiteral.specifiedType!!.standardizeType(),
+                        numberLiteral.specifiedType.standardizeType(),
                         Attribute.CYAN_TEXT()
                     )
-                    else numberLiteral.specifiedType!!.standardizeType()
+                    else numberLiteral.specifiedType.standardizeType()
 
                 compilationUnit.reportBuilder
                     .warning(

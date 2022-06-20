@@ -17,6 +17,7 @@ sealed class Expression {
         override val span: Span
     ) : Expression() {
         var value by Delegates.notNull<Double>()
+        var specifiedTypeInfo: TypeInfo.Primitive? = null
     }
 
     object Undefined : Expression() {

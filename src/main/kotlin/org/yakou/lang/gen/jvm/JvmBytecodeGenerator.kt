@@ -6,6 +6,7 @@ import org.objectweb.asm.Opcodes
 import org.yakou.lang.ast.Expression
 import org.yakou.lang.ast.Item
 import org.yakou.lang.ast.YkFile
+import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.compilation.CompilationSession
 import org.yakou.lang.compilation.CompilationUnit
@@ -67,16 +68,30 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         // Declare static field based on value
         if (const.expression is Expression.NumberLiteral) {
             // Value is inlinable, thus we use ConstantValue attribute in this case
+            var finalValue: Number = const.expression.value
+
+            if (const.expression.specifiedTypeInfo != null && const.expression.originalType != const.expression.finalType) {
+                // Cast to correct type
+                finalValue = when (const.expression.specifiedTypeInfo!!.type) {
+                    PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> finalValue.toInt()
+                    PrimitiveType.I64 -> finalValue.toLong()
+                    PrimitiveType.F32 -> finalValue.toFloat()
+                    PrimitiveType.F64 -> finalValue.toDouble()
+                    else -> TODO("UNREACHABLE")
+                }
+            }
+
             val fieldVisitor = classWriter.visitField(
                 const.fieldInstance.access,
                 const.fieldInstance.name,
                 const.fieldInstance.descriptor,
                 null,
-                const.expression.value
+                finalValue
             )
 
             fieldVisitor.visitEnd()
         } else {
+            // Value is not inlinable, thus we assign it on class loaded (in method <clinit>)
             val fieldVisitor = classWriter.visitField(
                 const.fieldInstance.access,
                 const.fieldInstance.name,
