@@ -1,6 +1,7 @@
 package org.yakou.lang.bind
 
 import org.yakou.lang.ast.Type
+import java.util.*
 
 /**
  * Table class stores type infos and function infos in Yakou standard type format.
@@ -11,61 +12,30 @@ import org.yakou.lang.ast.Type
 class Table {
     private val typeTable: MutableMap<String, TypeInfo> = hashMapOf()
 
-    /**
-     * fnTable stores class' / package's standardized path as key and list of its member functions
-     */
-    private val fieldTable: MutableMap<String, MutableList<Field>> = hashMapOf()
-    private val fnTable: MutableMap<String, MutableList<Fn>> = hashMapOf()
+    private val classMemberTable: MutableMap<String, EnumMap<ClassMember.MemberType, MutableList<ClassMember>>> = hashMapOf()
 
-    fun registerField(field: Field, packageLevel: Boolean): Boolean {
-        val qualifiedOwnerPath = field.qualifiedOwnerPath
+    fun registerClassMember(classMember: ClassMember, packageLevel: Boolean): Boolean {
+        val qualifiedOwnerPath = classMember.qualifiedOwnerPath
         val ownerTypeInfo = typeTable.getOrPut(qualifiedOwnerPath) {
             if (packageLevel) {
-                TypeInfo.PackageClass(field.packagePath)
+                TypeInfo.PackageClass(classMember.packagePath)
             } else {
                 TODO()
             }
         } as TypeInfo.Class
 
-        return if (!fieldTable.containsKey(qualifiedOwnerPath)) {
+        return if (!classMemberTable.containsKey(qualifiedOwnerPath)) {
             // Create a new set of functions
-            fieldTable[qualifiedOwnerPath] = mutableListOf(field)
+            classMemberTable[qualifiedOwnerPath]!![classMember.memberType] = mutableListOf(classMember)
 
-            field.ownerTypeInfo = ownerTypeInfo
+            classMember.ownerTypeInfo = ownerTypeInfo
 
             true
-        } else if (fieldTable[qualifiedOwnerPath]!!.any { it == field }) false
+        } else if (classMemberTable[qualifiedOwnerPath]?.get(classMember.memberType)!!.any { it == classMember }) false
         else {
-            fieldTable[qualifiedOwnerPath]!! += field
+            classMemberTable[qualifiedOwnerPath]!![classMember.memberType]!! += classMember
 
-            field.ownerTypeInfo = ownerTypeInfo
-
-            true
-        }
-    }
-
-    fun registerFunction(fn: Fn, packageLevel: Boolean): Boolean {
-        val qualifiedOwnerPath = fn.qualifiedOwnerPath
-        val ownerTypeInfo = typeTable.getOrPut(qualifiedOwnerPath) {
-            if (packageLevel) {
-                TypeInfo.PackageClass(fn.packagePath)
-            } else {
-                TODO()
-            }
-        } as TypeInfo.Class
-
-        return if (!fnTable.containsKey(qualifiedOwnerPath)) {
-            // Create a new set of functions
-            fnTable[qualifiedOwnerPath] = mutableListOf(fn)
-
-            fn.ownerTypeInfo = ownerTypeInfo
-
-            true
-        } else if (fnTable[qualifiedOwnerPath]!!.any { it == fn }) false
-        else {
-            fnTable[qualifiedOwnerPath]!! += fn
-
-            fn.ownerTypeInfo = ownerTypeInfo
+            classMember.ownerTypeInfo = ownerTypeInfo
 
             true
         }

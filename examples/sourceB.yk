@@ -1,5 +1,5 @@
 pkg chaos {
-    static a = 1
+    const a: i32 = 1
 
     fn test(kek: str) {
 

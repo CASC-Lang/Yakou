@@ -1,8 +1,7 @@
 package org.yakou.lang.ast
 
 import chaos.unity.nenggao.Span
-import org.yakou.lang.bind.Field
-import org.yakou.lang.bind.Fn
+import org.yakou.lang.bind.ClassMember
 import org.yakou.lang.bind.TypeInfo
 
 sealed class Item {
@@ -45,7 +44,7 @@ sealed class Item {
             finalSpan
         }
         lateinit var typeInfo: TypeInfo
-        lateinit var fieldInstance: Field
+        lateinit var fieldInstance: ClassMember.Field
     }
 
     data class StaticField(
@@ -67,7 +66,7 @@ sealed class Item {
             finalSpan
         }
         lateinit var typeInfo: TypeInfo
-        lateinit var fieldInstance: Field
+        lateinit var fieldInstance: ClassMember.Field
     }
 
     data class Class(
@@ -118,6 +117,6 @@ sealed class Item {
             finalSpan
         }
         lateinit var returnTypeInfo: TypeInfo
-        lateinit var functionInstance: Fn
+        lateinit var functionInstance: ClassMember.Fn
     }
 }

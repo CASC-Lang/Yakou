@@ -63,9 +63,10 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
                 Item.Package(pkg, identifier, openBrace, innerItems, closeBrace)
             }
-            optExpectKeyword(Keyword.FN) -> parseFunction(modifiers)
             optExpectKeyword(Keyword.CONST) -> parseConst(modifiers)
             optExpectKeyword(Keyword.STATIC) -> parseStaticField(modifiers)
+            optExpectKeyword(Keyword.CLASS) -> parseClass(modifiers)
+            optExpectKeyword(Keyword.FN) -> parseFunction(modifiers)
             else -> {
                 reportUnexpectedToken(next()!!, Keyword.PKG, Keyword.CLASS, Keyword.IMPL, Keyword.FN)
 
@@ -121,6 +122,10 @@ class Parser(private val compilationUnit: CompilationUnit) {
             equal,
             expression
         )
+    }
+
+    private fun parseClass(modifiers: Modifiers): Item.Class {
+        TODO()
     }
 
     private fun parseFunction(modifiers: Modifiers): Item.Function {

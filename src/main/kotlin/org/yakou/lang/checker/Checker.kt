@@ -32,6 +32,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             }
             is Item.Const -> checkConst(item)
             is Item.StaticField -> checkStaticField(item)
+            is Item.Class -> checkClass(item)
             is Item.Function -> checkFunction(item)
         }
     }
@@ -107,6 +108,10 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 .color(Attribute.CYAN_TEXT())
                 .build().build()
         }
+    }
+
+    private fun checkClass(function: Item.Class) {
+
     }
 
     private fun checkFunction(function: Item.Function) {

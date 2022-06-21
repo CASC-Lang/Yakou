@@ -60,6 +60,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             }
             is Item.Const -> genConst(item)
             is Item.StaticField -> genStaticField(item)
+            is Item.Class -> genClass(item)
             is Item.Function -> genFunction(item)
         }
     }
@@ -116,6 +117,10 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             staticField.fieldInstance.name,
             staticField.fieldInstance.descriptor
         )
+    }
+
+    private fun genClass(clazz: Item.Class) {
+        TODO()
     }
 
     private fun genFunction(function: Item.Function) {

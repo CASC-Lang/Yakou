@@ -41,6 +41,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             }
             is Item.Const -> bindConstDeclaration(item)
             is Item.StaticField -> bindStaticFieldDeclaration(item)
+            is Item.Class -> bindClassDeclaration(item)
             is Item.Function -> bindFunctionDeclaration(item)
         }
     }
@@ -51,14 +52,14 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         const.typeInfo = bindType(const.type)
 
-        val field = Field.fromConst(
+        val field = ClassMember.Field.fromConst(
             currentPackagePath,
             currentClassPath,
             const,
             Opcodes.ACC_STATIC
         )
 
-        if (!table.registerField(field, topLevel)) {
+        if (!table.registerClassMember(field, topLevel)) {
             // Failed to register function
             reportConstAlreadyDefined(field, const)
         } else const.fieldInstance = field
@@ -69,17 +70,21 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         staticField.typeInfo = staticField.type?.let(::bindType) ?: staticField.expression.finalType
 
-        val field = Field.fromField(
+        val field = ClassMember.Field.fromField(
             currentPackagePath,
             currentClassPath,
             staticField,
             Opcodes.ACC_STATIC
         )
 
-        if (!table.registerField(field, topLevel)) {
+        if (!table.registerClassMember(field, topLevel)) {
             // Failed to register function
             reportConstAlreadyDefined(field, staticField)
         } else staticField.fieldInstance = field
+    }
+
+    private fun bindClassDeclaration(clazz: Item.Class) {
+
     }
 
     private fun bindFunctionDeclaration(function: Item.Function) {
@@ -93,14 +98,14 @@ class Binder(private val compilationUnit: CompilationUnit) {
             if (function.returnType != null) bindType(function.returnType)
             else TypeInfo.Primitive.UNIT_TYPE_INFO
 
-        val fn = Fn.fromFunction(
+        val fn = ClassMember.Fn.fromFunction(
             currentPackagePath,
             currentClassPath,
             function,
             *(if (topLevel) PACKAGE_LEVEL_FUNCTION_ADDITIONAL_FLAGS else intArrayOf())
         )
 
-        if (!table.registerFunction(fn, topLevel)) {
+        if (!table.registerClassMember(fn, topLevel)) {
             // Failed to register function
             reportFunctionAlreadyDefined(fn, function)
         } else function.functionInstance = fn
@@ -143,7 +148,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun reportConstAlreadyDefined(field: Field, const: Item.Const) {
+    private fun reportConstAlreadyDefined(field: ClassMember.Field, const: Item.Const) {
         val span = const.span
         val coloredConstLiteral =
             if (compilationUnit.preference.enableColor) Ansi.colorize(field.constToString(), Attribute.CYAN_TEXT())
@@ -159,7 +164,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             .build().build()
     }
 
-    private fun reportConstAlreadyDefined(field: Field, staticField: Item.StaticField) {
+    private fun reportConstAlreadyDefined(field: ClassMember.Field, staticField: Item.StaticField) {
         val span = staticField.span
         val coloredStaticFieldLiteral =
             if (compilationUnit.preference.enableColor) Ansi.colorize(field.staticFieldToString(), Attribute.CYAN_TEXT())
@@ -175,7 +180,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             .build().build()
     }
 
-    private fun reportFunctionAlreadyDefined(fn: Fn, function: Item.Function) {
+    private fun reportFunctionAlreadyDefined(fn: ClassMember.Fn, function: Item.Function) {
         val span = function.fn.span.expand(function.span)
         val coloredFnLiteral =
             if (compilationUnit.preference.enableColor) Ansi.colorize(fn.toString(), Attribute.CYAN_TEXT())
