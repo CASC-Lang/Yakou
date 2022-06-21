@@ -10,9 +10,8 @@ import java.util.*
  * - [pkgA::pkgB::class] (Array type)
  */
 class Table {
-    private val typeTable: MutableMap<String, TypeInfo> = hashMapOf()
-
     private val classMemberTable: MutableMap<String, EnumMap<ClassMember.MemberType, MutableList<ClassMember>>> = hashMapOf()
+    private val typeTable: MutableMap<String, TypeInfo> = hashMapOf()
 
     fun registerClassMember(classMember: ClassMember, packageLevel: Boolean): Boolean {
         val qualifiedOwnerPath = classMember.qualifiedOwnerPath
