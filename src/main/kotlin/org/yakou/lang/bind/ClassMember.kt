@@ -175,5 +175,9 @@ sealed class ClassMember(val memberType: MemberType) {
     enum class MemberType {
         FIELD,
         FUNCTION;
+
+        companion object {
+            val values = values()
+        }
     }
 }

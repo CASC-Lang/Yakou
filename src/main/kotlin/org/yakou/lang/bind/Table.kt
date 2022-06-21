@@ -26,7 +26,15 @@ class Table {
 
         return if (!classMemberTable.containsKey(qualifiedOwnerPath)) {
             // Create a new set of functions
-            classMemberTable[qualifiedOwnerPath]!![classMember.memberType] = mutableListOf(classMember)
+            classMemberTable[qualifiedOwnerPath] = EnumMap(ClassMember.MemberType::class.java)
+
+            for (type in ClassMember.MemberType.values) {
+                if (type == classMember.memberType) {
+                    classMemberTable[qualifiedOwnerPath]!![type] = mutableListOf(classMember)
+                } else {
+                    classMemberTable[qualifiedOwnerPath]!![type] = mutableListOf()
+                }
+            }
 
             classMember.ownerTypeInfo = ownerTypeInfo
 
