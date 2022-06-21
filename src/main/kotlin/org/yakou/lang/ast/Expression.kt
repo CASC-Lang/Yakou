@@ -9,13 +9,15 @@ sealed class Expression {
     lateinit var originalType: TypeInfo
     lateinit var finalType: TypeInfo
 
+    sealed class LiteralExpression : Expression()
+
     class NumberLiteral(
         val integerPart: Token?,
         val dot: Token?,
         val floatPart: Token?,
         val specifiedType: Type?,
         override val span: Span
-    ) : Expression() {
+    ) : LiteralExpression() {
         var value by Delegates.notNull<Double>()
         var specifiedTypeInfo: TypeInfo.Primitive? = null
     }

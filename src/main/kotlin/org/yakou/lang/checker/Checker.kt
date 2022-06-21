@@ -76,7 +76,9 @@ class Checker(private val compilationUnit: CompilationUnit) {
         // Check expression
         checkExpression(staticField.expression)
         // Check if it's applicable to convert static field into constant
-        if (staticField.expression.finalType is TypeInfo.Primitive && !staticField.modifiers.hasModifier(Modifier.Mut)) {
+        if (staticField.expression.finalType is TypeInfo.Primitive &&
+            staticField.expression is Expression.LiteralExpression &&
+            !staticField.modifiers.hasModifier(Modifier.Mut)) {
             val staticLiteral =
                 if (compilationUnit.preference.enableColor) Ansi.colorize(
                     "static",
