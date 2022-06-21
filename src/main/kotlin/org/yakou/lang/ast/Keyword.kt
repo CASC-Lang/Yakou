@@ -9,6 +9,7 @@ enum class Keyword(val literal: String) {
     CLASS("class"),
     IMPL("impl"),
     CONST("const"),
+    STATIC("static"),
     FN("fn"),
     SELF("self");
 
