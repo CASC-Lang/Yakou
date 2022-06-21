@@ -31,6 +31,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
                         checkItem(innerItem)
             }
             is Item.Const -> checkConst(item)
+            is Item.StaticField -> checkStaticField(item)
             is Item.Function -> checkFunction(item)
         }
     }
@@ -42,6 +43,11 @@ class Checker(private val compilationUnit: CompilationUnit) {
         }
         // Check expression
         checkExpression(const.expression)
+    }
+
+    private fun checkStaticField(staticField: Item.StaticField) {
+        // Check expression
+        checkExpression(staticField.expression)
     }
 
     private fun checkFunction(function: Item.Function) {

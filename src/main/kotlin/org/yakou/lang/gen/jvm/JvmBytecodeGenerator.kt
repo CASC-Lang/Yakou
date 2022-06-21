@@ -59,6 +59,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                         genItem(innerItem)
             }
             is Item.Const -> genConst(item)
+            is Item.StaticField -> genStaticField(item)
             is Item.Function -> genFunction(item)
         }
     }
@@ -90,29 +91,31 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             )
 
             fieldVisitor.visitEnd()
-        } else {
-            // Value is not inlinable, thus we assign it on class loaded (in method <clinit>)
-            val fieldVisitor = classWriter.visitField(
-                const.fieldInstance.access,
-                const.fieldInstance.name,
-                const.fieldInstance.descriptor,
-                null,
-                null
-            )
-
-            fieldVisitor.visitEnd()
-
-            // Assign value to constant field in <clinit> method
-            val methodVisitor = getStaticBlockWriter(const.fieldInstance.ownerTypeInfo)
-
-            genExpression(methodVisitor, const.expression)
-            methodVisitor.visitFieldInsn(
-                Opcodes.PUTSTATIC,
-                const.fieldInstance.qualifiedOwnerPath,
-                const.fieldInstance.name,
-                const.fieldInstance.descriptor
-            )
         }
+    }
+
+    private fun genStaticField(staticField: Item.StaticField) {
+        val classWriter = getClassWriter(staticField.fieldInstance.ownerTypeInfo)
+        val fieldVisitor = classWriter.visitField(
+            staticField.fieldInstance.access,
+            staticField.fieldInstance.name,
+            staticField.fieldInstance.descriptor,
+            null,
+            null
+        )
+
+        fieldVisitor.visitEnd()
+
+        // Assign value to constant field in <clinit> method
+        val methodVisitor = getStaticBlockWriter(staticField.fieldInstance.ownerTypeInfo)
+
+        genExpression(methodVisitor, staticField.expression)
+        methodVisitor.visitFieldInsn(
+            Opcodes.PUTSTATIC,
+            staticField.fieldInstance.qualifiedOwnerPath,
+            staticField.fieldInstance.name,
+            staticField.fieldInstance.descriptor
+        )
     }
 
     private fun genFunction(function: Item.Function) {

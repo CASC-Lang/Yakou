@@ -65,6 +65,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
             }
             optExpectKeyword(Keyword.FN) -> parseFunction(modifiers)
             optExpectKeyword(Keyword.CONST) -> parseConst(modifiers)
+            optExpectKeyword(Keyword.STATIC) -> parseStaticField(modifiers)
             else -> {
                 reportUnexpectedToken(next()!!, Keyword.PKG, Keyword.CLASS, Keyword.IMPL, Keyword.FN)
 
@@ -94,6 +95,35 @@ class Parser(private val compilationUnit: CompilationUnit) {
         return Item.Const(
             modifiers,
             const,
+            identifier,
+            colon,
+            type,
+            equal,
+            expression
+        )
+    }
+
+    private fun parseStaticField(modifiers: Modifiers): Item.StaticField {
+        val static = next()!! // Should be asserted when called
+        val identifier = expect(TokenType.Identifier)
+        val colon: Token?
+        val type: Type?
+
+        if (optExpectType(TokenType.Colon)) {
+            // Specified constant field's type
+            colon = next()!!
+            type = parseType()
+        } else {
+            colon = null
+            type = null
+        }
+
+        val equal = expect(TokenType.Equal)
+        val expression = parseExpression()
+
+        return Item.StaticField(
+            modifiers,
+            static,
             identifier,
             colon,
             type,

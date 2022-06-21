@@ -40,9 +40,11 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 currentPackagePath = previousPackagePath
             }
             is Item.Const -> bindConstDeclaration(item)
+            is Item.StaticField -> bindStaticFieldDeclaration(item)
             is Item.Function -> bindFunctionDeclaration(item)
         }
     }
+
 
     private fun bindConstDeclaration(const: Item.Const) {
         bindExpression(const.expression)
@@ -60,6 +62,24 @@ class Binder(private val compilationUnit: CompilationUnit) {
             // Failed to register function
             reportConstAlreadyDefined(field, const)
         } else const.fieldInstance = field
+    }
+
+    private fun bindStaticFieldDeclaration(staticField: Item.StaticField) {
+        bindExpression(staticField.expression)
+
+        staticField.typeInfo = staticField.type?.let(::bindType) ?: staticField.expression.finalType
+
+        val field = Field.fromField(
+            currentPackagePath,
+            currentClassPath,
+            staticField,
+            Opcodes.ACC_STATIC
+        )
+
+        if (!table.registerField(field, topLevel)) {
+            // Failed to register function
+            reportConstAlreadyDefined(field, staticField)
+        } else staticField.fieldInstance = field
     }
 
     private fun bindFunctionDeclaration(function: Item.Function) {
@@ -126,13 +146,29 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun reportConstAlreadyDefined(field: Field, const: Item.Const) {
         val span = const.span
         val coloredConstLiteral =
-            if (compilationUnit.preference.enableColor) Ansi.colorize(field.toString(), Attribute.CYAN_TEXT())
-            else field.toString()
+            if (compilationUnit.preference.enableColor) Ansi.colorize(field.constToString(), Attribute.CYAN_TEXT())
+            else field.constToString()
 
         compilationUnit.reportBuilder
             .error(
                 SpanHelper.expandView(span, compilationUnit.maxLineCount),
                 "Constant $coloredConstLiteral is already defined at `${field.qualifiedOwnerPath}`"
+            )
+            .label(span, "Already defined")
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportConstAlreadyDefined(field: Field, staticField: Item.StaticField) {
+        val span = staticField.span
+        val coloredStaticFieldLiteral =
+            if (compilationUnit.preference.enableColor) Ansi.colorize(field.staticFieldToString(), Attribute.CYAN_TEXT())
+            else field.staticFieldToString()
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(span, compilationUnit.maxLineCount),
+                "Static field $coloredStaticFieldLiteral is already defined at `${field.qualifiedOwnerPath}`"
             )
             .label(span, "Already defined")
             .color(Attribute.RED_TEXT())

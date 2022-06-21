@@ -1,4 +1,6 @@
 pkg chaos {
+    static a = 1
+
     fn test(kek: str) {
 
     }

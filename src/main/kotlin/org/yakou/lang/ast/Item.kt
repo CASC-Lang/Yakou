@@ -21,12 +21,34 @@ sealed class Item {
         val colon: Token?,
         val type: Type?,
         val equal: Token,
-        val expression: Expression,
+        val expression: Expression
     ) : Item() {
         val span: Span by lazy {
             var finalSpan =
                 if (!modifiers.isEmpty()) modifiers.modifierMap.toList().first().second
                 else const.span
+
+            finalSpan = finalSpan.expand(expression.span)
+
+            finalSpan
+        }
+        lateinit var typeInfo: TypeInfo
+        lateinit var fieldInstance: Field
+    }
+
+    data class StaticField(
+        val modifiers: Modifiers,
+        val static: Token,
+        val identifier: Token,
+        val colon: Token?,
+        val type: Type?,
+        val equal: Token,
+        val expression: Expression
+    ) : Item() {
+        val span: Span by lazy {
+            var finalSpan =
+                if (!modifiers.isEmpty()) modifiers.modifierMap.toList().first().second
+                else static.span
 
             finalSpan = finalSpan.expand(expression.span)
 

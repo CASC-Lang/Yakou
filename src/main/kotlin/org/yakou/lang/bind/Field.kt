@@ -32,7 +32,21 @@ data class Field(
             const.identifier.literal,
             const.typeInfo
         )
+
+        fun fromField(
+            packageSimplePath: Path.SimplePath,
+            classSimplePath: Path.SimplePath,
+            staticField: Item.StaticField,
+            vararg additionalAccessFlags: Int
+        ): Field = Field(
+            staticField.modifiers.sum(*additionalAccessFlags),
+            packageSimplePath.toString(),
+            classSimplePath.toString().ifBlank { "PackageYk" },
+            staticField.identifier.literal,
+            staticField.typeInfo
+        )
     }
+
     val descriptor: String = type.descriptor
     lateinit var ownerTypeInfo: TypeInfo.Class
 
@@ -40,8 +54,17 @@ data class Field(
         (if (packagePath.isBlank()) "" else "$packagePath::") + classPath
     }
 
+    fun constToString(): String =
+        "const ${toString()}"
+
+    fun staticFieldToString(): String =
+        "static ${toString()}"
+
+    fun fieldToString(): String =
+        toString()
+
     override fun toString(): String =
-        "const $name: $type"
+        "$name: $type"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

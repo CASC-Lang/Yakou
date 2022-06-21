@@ -2,7 +2,7 @@ pkg chaos {
     pkg unity {
         const a = 1i8
 
-        fn main(arg: [java::lang::Integer]) {
+        fn main(arg: [java::lang::String]) {
 
         }
     }
