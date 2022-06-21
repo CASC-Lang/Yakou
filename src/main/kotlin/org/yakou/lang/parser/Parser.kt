@@ -98,18 +98,8 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun parseStaticField(modifiers: Modifiers): Item.StaticField {
         val static = next()!! // Should be asserted when called
         val identifier = expect(TokenType.Identifier)
-        val colon: Token?
-        val type: Type?
-
-        if (optExpectType(TokenType.Colon)) {
-            // Specified constant field's type
-            colon = next()!!
-            type = parseType()
-        } else {
-            colon = null
-            type = null
-        }
-
+        val colon = expect(TokenType.Colon)
+        val type = parseType()
         val equal = expect(TokenType.Equal)
         val expression = parseExpression()
 
@@ -125,7 +115,64 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseClass(modifiers: Modifiers): Item.Class {
-        TODO()
+        val `class` = next()!! // Should be asserted when called
+        val name = expect(TokenType.Identifier)
+        val openBrace: Token?
+        val classItems: List<ClassItem>?
+        val closeBrace: Token?
+
+        if (optExpectType(TokenType.OpenBrace)) {
+            openBrace = next()!!
+            classItems = parseClassItems()
+            closeBrace = expect(TokenType.CloseBrace)
+        } else {
+            openBrace = null
+            classItems = null
+            closeBrace = null
+        }
+
+        return Item.Class(modifiers, `class`, name, openBrace, classItems, closeBrace)
+    }
+
+    private fun parseClassItems(): List<ClassItem> {
+        val classItems = mutableListOf<ClassItem>()
+
+        while (pos < tokens.size && !optExpectType(TokenType.CloseBrace))
+            parseClassItem()?.let(classItems::add)
+
+        return classItems
+    }
+
+    private fun parseClassItem(): ClassItem? {
+        val modifiers = parseModifiers()
+
+        return when {
+            optExpectType(TokenType.Identifier) -> parseField(modifiers)
+            else -> {
+                reportUnexpectedToken(next()!!, TokenType.Identifier)
+
+                null
+            }
+        }
+    }
+
+    private fun parseField(modifiers: Modifiers): ClassItem.Field {
+        val name = expect(TokenType.Identifier)
+        val colon = expect(TokenType.Colon)
+        val explicitType = parseType()
+
+        val equal: Token?
+        val expression: Expression?
+
+        if (optExpectType(TokenType.Equal)) {
+            equal = next()!!
+            expression = parseExpression()
+        } else {
+            equal = null
+            expression = null
+        }
+
+        return ClassItem.Field(modifiers, name, colon, explicitType, equal, expression)
     }
 
     private fun parseFunction(modifiers: Modifiers): Item.Function {

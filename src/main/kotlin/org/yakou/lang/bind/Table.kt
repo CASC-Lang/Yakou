@@ -10,18 +10,13 @@ import java.util.*
  * - [pkgA::pkgB::class] (Array type)
  */
 class Table {
-    private val classMemberTable: MutableMap<String, EnumMap<ClassMember.MemberType, MutableList<ClassMember>>> = hashMapOf()
     private val typeTable: MutableMap<String, TypeInfo> = hashMapOf()
+    private val classMemberTable: MutableMap<String, EnumMap<ClassMember.MemberType, MutableList<ClassMember>>> =
+        hashMapOf()
 
-    fun registerClassMember(classMember: ClassMember, packageLevel: Boolean): Boolean {
+    fun registerClassMember(classMember: ClassMember): Boolean {
         val qualifiedOwnerPath = classMember.qualifiedOwnerPath
-        val ownerTypeInfo = typeTable.getOrPut(qualifiedOwnerPath) {
-            if (packageLevel) {
-                TypeInfo.PackageClass(classMember.packagePath)
-            } else {
-                TODO()
-            }
-        } as TypeInfo.Class
+        val ownerTypeInfo = typeTable[qualifiedOwnerPath]!! as TypeInfo.Class
 
         return if (!classMemberTable.containsKey(qualifiedOwnerPath)) {
             // Create a new set of functions
@@ -43,6 +38,36 @@ class Table {
             classMemberTable[qualifiedOwnerPath]!![classMember.memberType]!! += classMember
 
             classMember.ownerTypeInfo = ownerTypeInfo
+
+            true
+        }
+    }
+
+    fun registerPackageClass(packagePath: String) {
+        val qualifiedClassPath =
+            if (packagePath.isBlank()) "PackageYk"
+            else "$packagePath::PackageYk"
+
+        if (!typeTable.containsKey(packagePath)) {
+            typeTable[qualifiedClassPath] = TypeInfo.PackageClass(
+                packagePath
+            )
+        }
+    }
+
+    fun registerClassType(access: Int, packagePath: String, classPath: String): Boolean {
+        val qualifiedClassPath =
+            if (packagePath.isBlank()) classPath
+            else "$packagePath::$classPath"
+
+        return if (typeTable.containsKey(qualifiedClassPath)) false
+        else {
+            typeTable[qualifiedClassPath] = TypeInfo.Class(
+                access,
+                qualifiedClassPath,
+                TypeInfo.fromClass(Any::class.java) as TypeInfo.Class,
+                listOf()
+            )
 
             true
         }

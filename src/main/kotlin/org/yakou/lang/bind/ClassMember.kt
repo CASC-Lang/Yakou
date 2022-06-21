@@ -1,5 +1,7 @@
 package org.yakou.lang.bind
 
+import org.objectweb.asm.Opcodes
+import org.yakou.lang.ast.ClassItem
 import org.yakou.lang.ast.Item
 import org.yakou.lang.ast.Parameter
 import org.yakou.lang.ast.Path
@@ -47,14 +49,25 @@ sealed class ClassMember(val memberType: MemberType) {
             fun fromField(
                 packageSimplePath: Path.SimplePath,
                 classSimplePath: Path.SimplePath,
-                staticField: Item.StaticField,
-                vararg additionalAccessFlags: Int
+                staticField: Item.StaticField
             ): Field = Field(
-                staticField.modifiers.sum(*additionalAccessFlags),
+                staticField.modifiers.sum(Opcodes.ACC_STATIC),
                 packageSimplePath.toString(),
                 classSimplePath.toString().ifBlank { "PackageYk" },
                 staticField.identifier.literal,
                 staticField.typeInfo
+            )
+
+            fun fromField(
+                packageSimplePath: Path.SimplePath,
+                classSimplePath: Path.SimplePath,
+                field: ClassItem.Field
+            ): Field = Field(
+                field.modifiers.sum(),
+                packageSimplePath.toString(),
+                classSimplePath.toString().ifBlank { "PackageYk" },
+                field.identifier.literal,
+                field.typeInfo
             )
         }
 

@@ -3,6 +3,7 @@ package org.yakou.lang.gen.jvm
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
+import org.yakou.lang.ast.ClassItem
 import org.yakou.lang.ast.Expression
 import org.yakou.lang.ast.Item
 import org.yakou.lang.ast.YkFile
@@ -118,7 +119,28 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genClass(clazz: Item.Class) {
-        TODO()
+        if (clazz.classItems != null)
+            for (classItem in clazz.classItems)
+                genClassItem(classItem)
+    }
+
+    private fun genClassItem(classItem: ClassItem) {
+        when (classItem) {
+            is ClassItem.Field -> genField(classItem)
+        }
+    }
+
+    private fun genField(field: ClassItem.Field) {
+        val classWriter = getClassWriter(field.fieldInstance.ownerTypeInfo)
+        val fieldWriter = classWriter.visitField(
+            field.fieldInstance.access,
+            field.fieldInstance.name,
+            field.fieldInstance.descriptor,
+            null,
+            null
+        )
+
+        fieldWriter.visitEnd()
     }
 
     private fun genFunction(function: Item.Function) {

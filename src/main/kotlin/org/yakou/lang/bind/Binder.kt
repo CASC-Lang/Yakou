@@ -33,6 +33,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 val previousPackagePath = currentPackagePath
                 currentPackagePath = currentPackagePath.append(item.identifier)
 
+                table.registerPackageClass(currentPackagePath.toString())
+
                 if (item.items != null)
                     for (innerItem in item.items)
                         bindItemDeclaration(innerItem)
@@ -59,7 +61,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             Opcodes.ACC_STATIC
         )
 
-        if (!table.registerClassMember(field, topLevel)) {
+        if (!table.registerClassMember(field)) {
             // Failed to register function
             reportConstAlreadyDefined(field, const)
         } else const.fieldInstance = field
@@ -68,23 +70,59 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun bindStaticFieldDeclaration(staticField: Item.StaticField) {
         bindExpression(staticField.expression)
 
-        staticField.typeInfo = staticField.type?.let(::bindType) ?: staticField.expression.finalType
+        staticField.typeInfo = bindType(staticField.explicitType)
 
         val field = ClassMember.Field.fromField(
             currentPackagePath,
             currentClassPath,
-            staticField,
-            Opcodes.ACC_STATIC
+            staticField
         )
 
-        if (!table.registerClassMember(field, topLevel)) {
+        if (!table.registerClassMember(field)) {
             // Failed to register function
-            reportConstAlreadyDefined(field, staticField)
+            reportStaticFieldAlreadyDefined(field, staticField)
         } else staticField.fieldInstance = field
     }
 
     private fun bindClassDeclaration(clazz: Item.Class) {
+        val previousClassPath = currentClassPath
+        currentClassPath = currentClassPath.append(clazz.identifier)
 
+        if (!table.registerClassType(clazz.modifiers.sum(), currentPackagePath.toString(), currentClassPath.toString())) {
+            // Failed to register class type
+            reportClassAlreadyDefined(clazz)
+            return
+        }
+
+        if (clazz.classItems != null)
+            for (classItem in clazz.classItems)
+                bindClassItemDeclaration(classItem)
+
+        currentClassPath = previousClassPath
+    }
+
+    private fun bindClassItemDeclaration(classItem: ClassItem) {
+        when (classItem) {
+            is ClassItem.Field -> bindFieldDeclaration(classItem)
+        }
+    }
+
+    private fun bindFieldDeclaration(field: ClassItem.Field) {
+        if (field.expression != null)
+            bindExpression(field.expression)
+
+        field.typeInfo = bindType(field.explicitType)
+
+        val fieldInstance = ClassMember.Field.fromField(
+            currentPackagePath,
+            currentClassPath,
+            field
+        )
+
+        if (!table.registerClassMember(fieldInstance)) {
+            // Failed to register function
+            reportFieldAlreadyDefined(fieldInstance, field)
+        } else field.fieldInstance = fieldInstance
     }
 
     private fun bindFunctionDeclaration(function: Item.Function) {
@@ -105,7 +143,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             *(if (topLevel) PACKAGE_LEVEL_FUNCTION_ADDITIONAL_FLAGS else intArrayOf())
         )
 
-        if (!table.registerClassMember(fn, topLevel)) {
+        if (!table.registerClassMember(fn)) {
             // Failed to register function
             reportFunctionAlreadyDefined(fn, function)
         } else function.functionInstance = fn
@@ -164,16 +202,57 @@ class Binder(private val compilationUnit: CompilationUnit) {
             .build().build()
     }
 
-    private fun reportConstAlreadyDefined(field: ClassMember.Field, staticField: Item.StaticField) {
+    private fun reportStaticFieldAlreadyDefined(field: ClassMember.Field, staticField: Item.StaticField) {
         val span = staticField.span
         val coloredStaticFieldLiteral =
-            if (compilationUnit.preference.enableColor) Ansi.colorize(field.staticFieldToString(), Attribute.CYAN_TEXT())
+            if (compilationUnit.preference.enableColor) Ansi.colorize(
+                field.staticFieldToString(),
+                Attribute.CYAN_TEXT()
+            )
             else field.staticFieldToString()
 
         compilationUnit.reportBuilder
             .error(
                 SpanHelper.expandView(span, compilationUnit.maxLineCount),
                 "Static field $coloredStaticFieldLiteral is already defined at `${field.qualifiedOwnerPath}`"
+            )
+            .label(span, "Already defined")
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportClassAlreadyDefined(clazz: Item.Class) {
+        val span = clazz.span
+        val coloredPackageLiteral =
+            if (compilationUnit.preference.enableColor) Ansi.colorize(currentPackagePath.toString(), Attribute.CYAN_TEXT())
+            else currentPackagePath.toString()
+        val coloredClassLiteral =
+            if (compilationUnit.preference.enableColor) Ansi.colorize(currentClassPath.toString(), Attribute.CYAN_TEXT())
+            else currentClassPath.toString()
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(span, compilationUnit.maxLineCount),
+                "Class $coloredClassLiteral is already defined at `$coloredPackageLiteral`"
+            )
+            .label(span, "Already defined")
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportFieldAlreadyDefined(fieldInstance: ClassMember.Field, field: ClassItem.Field) {
+        val span = field.span
+        val coloredStaticFieldLiteral =
+            if (compilationUnit.preference.enableColor) Ansi.colorize(
+                fieldInstance.staticFieldToString(),
+                Attribute.CYAN_TEXT()
+            )
+            else fieldInstance.staticFieldToString()
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(span, compilationUnit.maxLineCount),
+                "Static field $coloredStaticFieldLiteral is already defined at `${fieldInstance.qualifiedOwnerPath}`"
             )
             .label(span, "Already defined")
             .color(Attribute.RED_TEXT())

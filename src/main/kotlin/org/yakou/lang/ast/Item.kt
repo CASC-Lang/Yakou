@@ -51,8 +51,8 @@ sealed class Item {
         val modifiers: Modifiers,
         val static: Token,
         val identifier: Token,
-        val colon: Token?,
-        val type: Type?,
+        val colon: Token,
+        val explicitType: Type,
         val equal: Token,
         val expression: Expression
     ) : Item() {
@@ -70,10 +70,11 @@ sealed class Item {
     }
 
     data class Class(
+        val modifiers: Modifiers,
         val `class`: Token,
         val identifier: Token,
         val openBrace: Token?,
-        val items: List<Item>?,
+        val classItems: List<ClassItem>?,
         val closeBrace: Token?
     ) : Item() {
         override val span: Span by lazy {

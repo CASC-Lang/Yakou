@@ -3,10 +3,7 @@ package org.yakou.lang.checker
 import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
-import org.yakou.lang.ast.Expression
-import org.yakou.lang.ast.Item
-import org.yakou.lang.ast.Modifier
-import org.yakou.lang.ast.YkFile
+import org.yakou.lang.ast.*
 import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.compilation.CompilationUnit
@@ -76,6 +73,8 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkStaticField(staticField: Item.StaticField) {
         // Check expression
         checkExpression(staticField.expression)
+        // Check if expression is not castable to explicit type
+        if (staticField.expression.finalType is TypeInfo.Primitive)
         // Check if it's applicable to convert static field into constant
         if (staticField.expression.finalType is TypeInfo.Primitive &&
             staticField.expression is Expression.LiteralExpression &&
@@ -111,6 +110,18 @@ class Checker(private val compilationUnit: CompilationUnit) {
     }
 
     private fun checkClass(function: Item.Class) {
+        if (function.classItems != null)
+            for (classItem in function.classItems)
+                checkClassItem(classItem)
+    }
+
+    private fun checkClassItem(classItem: ClassItem) {
+        when (classItem) {
+            is ClassItem.Field -> checkField(classItem)
+        }
+    }
+
+    private fun checkField(field: ClassItem.Field) {
 
     }
 
