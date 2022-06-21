@@ -49,7 +49,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun bindConstDeclaration(const: Item.Const) {
         bindExpression(const.expression)
 
-        const.typeInfo = const.type?.let(::bindType) ?: const.expression.finalType
+        const.typeInfo = bindType(const.type)
 
         val field = Field.fromConst(
             currentPackagePath,

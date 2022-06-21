@@ -43,6 +43,33 @@ class Checker(private val compilationUnit: CompilationUnit) {
         }
         // Check expression
         checkExpression(const.expression)
+        // Check expression's type explicitly matches constant's explicit type
+        if (const.typeInfo != const.expression.finalType) {
+            val explicitTypeLiteral =
+                if (compilationUnit.preference.enableColor) Ansi.colorize(
+                    const.typeInfo.toString(),
+                    Attribute.CYAN_TEXT()
+                )
+                else const.typeInfo.toString()
+            val expressionTypeLiteral =
+                if (compilationUnit.preference.enableColor) Ansi.colorize(
+                    const.expression.finalType.toString(),
+                    Attribute.RED_TEXT()
+                )
+                else const.expression.finalType.toString()
+
+            compilationUnit.reportBuilder
+                .error(
+                    SpanHelper.expandView(const.span, compilationUnit.maxLineCount),
+                    "Cannot implicitly cast constant's expression into `$explicitTypeLiteral`"
+                )
+                .label(const.type.span, "Expression type should explicitly be `$explicitTypeLiteral`")
+                .color(Attribute.CYAN_TEXT())
+                .build()
+                .label(const.expression.span, "Expression here has type `$expressionTypeLiteral`")
+                .color(Attribute.RED_TEXT())
+                .build().build()
+        }
     }
 
     private fun checkStaticField(staticField: Item.StaticField) {

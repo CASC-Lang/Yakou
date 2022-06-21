@@ -18,8 +18,8 @@ sealed class Item {
         val modifiers: Modifiers,
         val const: Token,
         val identifier: Token,
-        val colon: Token?,
-        val type: Type?,
+        val colon: Token,
+        val type: Type,
         val equal: Token,
         val expression: Expression
     ) : Item() {

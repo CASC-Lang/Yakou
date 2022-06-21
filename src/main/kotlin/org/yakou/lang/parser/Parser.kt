@@ -77,17 +77,8 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun parseConst(modifiers: Modifiers): Item.Const {
         val const = next()!! // Should be asserted when called
         val identifier = expect(TokenType.Identifier)
-        val colon: Token?
-        val type: Type?
-
-        if (optExpectType(TokenType.Colon)) {
-            // Specified constant field's type
-            colon = next()!!
-            type = parseType()
-        } else {
-            colon = null
-            type = null
-        }
+        val colon = expect(TokenType.Colon)
+        val type = parseType()
 
         val equal = expect(TokenType.Equal)
         val expression = parseExpression()
