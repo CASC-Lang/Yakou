@@ -61,12 +61,12 @@ class Checker(private val compilationUnit: CompilationUnit) {
             compilationUnit.reportBuilder
                 .error(
                     SpanHelper.expandView(const.span, compilationUnit.maxLineCount),
-                    "Cannot implicitly cast constant's expression into `$explicitTypeLiteral`"
+                    "Cannot implicitly cast constant's expression"
                 )
                 .label(const.type.span, "Expression type should explicitly be `$explicitTypeLiteral`")
                 .color(Attribute.CYAN_TEXT())
                 .build()
-                .label(const.expression.span, "Expression here has type `$expressionTypeLiteral`")
+                .label(const.expression.span, "Expression has type `$expressionTypeLiteral`")
                 .color(Attribute.RED_TEXT())
                 .build().build()
         }
@@ -75,6 +75,36 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkStaticField(staticField: Item.StaticField) {
         // Check expression
         checkExpression(staticField.expression)
+        // Check if it's applicable to convert static field into constant
+        if (staticField.expression.finalType is TypeInfo.Primitive && !staticField.modifiers.hasModifier(Modifier.Mut)) {
+            val staticLiteral =
+                if (compilationUnit.preference.enableColor) Ansi.colorize(
+                    "static",
+                    Attribute.CYAN_TEXT()
+                )
+                else "static"
+            val constLiteral =
+                if (compilationUnit.preference.enableColor) Ansi.colorize(
+                    "const",
+                    Attribute.CYAN_TEXT()
+                )
+                else "const"
+            val expressionTypeLiteral =
+                if (compilationUnit.preference.enableColor) Ansi.colorize(
+                    staticField.expression.finalType.toString(),
+                    Attribute.GREEN_TEXT()
+                )
+                else staticField.expression.finalType.toString()
+
+            compilationUnit.reportBuilder
+                .warning(SpanHelper.expandView(staticField.span, compilationUnit.maxLineCount), "Static field is sufficient to convert into constant")
+                .label(staticField.static.span, "Consider replace `$staticLiteral` with `$constLiteral`")
+                .color(Attribute.YELLOW_TEXT())
+                .build()
+                .label(staticField.expression.span, "Expression has primitive type `$expressionTypeLiteral`")
+                .color(Attribute.CYAN_TEXT())
+                .build().build()
+        }
     }
 
     private fun checkFunction(function: Item.Function) {

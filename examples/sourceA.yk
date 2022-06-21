@@ -1,6 +1,6 @@
 pkg chaos {
     pkg unity {
-        const a = 1i8
+        const a: i16 = 1i16
 
         fn main(arg: [java::lang::String]) {
 
