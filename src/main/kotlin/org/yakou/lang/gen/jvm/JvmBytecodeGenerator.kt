@@ -83,15 +83,13 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 }
             }
 
-            val fieldVisitor = classWriter.visitField(
+            classWriter.visitField(
                 const.fieldInstance.access,
                 const.fieldInstance.name,
                 const.fieldInstance.descriptor,
                 null,
                 finalValue
-            )
-
-            fieldVisitor.visitEnd()
+            ).visitEnd()
         }
     }
 
