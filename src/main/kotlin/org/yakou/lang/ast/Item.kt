@@ -6,13 +6,25 @@ import org.yakou.lang.bind.Fn
 import org.yakou.lang.bind.TypeInfo
 
 sealed class Item {
+    abstract val span: Span
+
     data class Package(
         val pkg: Token,
         val identifier: Token,
         val openBrace: Token?,
         val items: List<Item>?,
         val closeBrace: Token?
-    ) : Item()
+    ) : Item() {
+        override val span: Span by lazy {
+            var finalSpan = pkg.span
+
+            finalSpan =
+                if (closeBrace != null) finalSpan.expand(closeBrace.span)
+                else finalSpan.expand(identifier.span)
+
+            finalSpan
+        }
+    }
 
     data class Const(
         val modifiers: Modifiers,
@@ -23,7 +35,7 @@ sealed class Item {
         val equal: Token,
         val expression: Expression
     ) : Item() {
-        val span: Span by lazy {
+        override val span: Span by lazy {
             var finalSpan =
                 if (!modifiers.isEmpty()) modifiers.modifierMap.toList().first().second
                 else const.span
@@ -45,7 +57,7 @@ sealed class Item {
         val equal: Token,
         val expression: Expression
     ) : Item() {
-        val span: Span by lazy {
+        override val span: Span by lazy {
             var finalSpan =
                 if (!modifiers.isEmpty()) modifiers.modifierMap.toList().first().second
                 else static.span
@@ -56,6 +68,24 @@ sealed class Item {
         }
         lateinit var typeInfo: TypeInfo
         lateinit var fieldInstance: Field
+    }
+
+    data class Class(
+        val `class`: Token,
+        val identifier: Token,
+        val openBrace: Token?,
+        val items: List<Item>?,
+        val closeBrace: Token?
+    ) : Item() {
+        override val span: Span by lazy {
+            var finalSpan = `class`.span
+
+            finalSpan =
+                if (closeBrace != null) finalSpan.expand(closeBrace.span)
+                else finalSpan.expand(identifier.span)
+
+            finalSpan
+        }
     }
 
     data class Function(
@@ -69,7 +99,7 @@ sealed class Item {
         val returnType: Type?,
         val body: FunctionBody?,
     ) : Item() {
-        val span: Span by lazy {
+        override val span: Span by lazy {
             var finalSpan =
                 if (!modifiers.isEmpty()) modifiers.modifierMap.toList().first().second
                 else fn.span
