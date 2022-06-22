@@ -3,7 +3,7 @@ pkg chaos {
         const a: i16 = 1i16
 
         class Kek {
-            pub mut a: i32
+            mut a: i32
         }
 
         fn main(arg: [java::lang::String]) {
@@ -11,3 +11,6 @@ pkg chaos {
         }
     }
 }
+
+
+

@@ -50,8 +50,6 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
 
     private fun bindConstDeclaration(const: Item.Const) {
-        bindExpression(const.expression)
-
         const.typeInfo = bindType(const.type)
 
         val field = ClassMember.Field.fromConst(
@@ -68,8 +66,6 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindStaticFieldDeclaration(staticField: Item.StaticField) {
-        bindExpression(staticField.expression)
-
         staticField.typeInfo = bindType(staticField.explicitType)
 
         val field = ClassMember.Field.fromField(
@@ -88,7 +84,12 @@ class Binder(private val compilationUnit: CompilationUnit) {
         val previousClassPath = currentClassPath
         currentClassPath = currentClassPath.append(clazz.identifier)
 
-        if (!table.registerClassType(clazz.modifiers.sum(), currentPackagePath.toString(), currentClassPath.toString())) {
+        if (!table.registerClassType(
+                clazz.modifiers.sum(),
+                currentPackagePath.toString(),
+                currentClassPath.toString()
+            )
+        ) {
             // Failed to register class type
             reportClassAlreadyDefined(clazz)
             return
@@ -149,8 +150,68 @@ class Binder(private val compilationUnit: CompilationUnit) {
         } else function.functionInstance = fn
     }
 
+
+    private fun bindSecondary() {
+        bindYkFile(compilationUnit.ykFile!!)
+    }
+
+    private fun bindYkFilePost(ykFile: YkFile) {
+        for (item in ykFile.items)
+            bindItem(item)
+    }
+
+    private fun bindItem(item: Item) {
+        when (item) {
+            is Item.Package -> {
+                if (item.items != null)
+                    for (innerItem in item.items)
+                        bindItem(innerItem)
+            }
+            is Item.Const -> bindConst(item)
+            is Item.StaticField -> bindStaticField(item)
+            is Item.Class -> bindClass(item)
+            is Item.Function -> bindFunction(item)
+        }
+    }
+
+    private fun bindConst(const: Item.Const) {
+        bindExpression(const.expression)
+    }
+
+    private fun bindStaticField(staticField: Item.StaticField) {
+        bindExpression(staticField.expression)
+    }
+
+    private fun bindClass(clazz: Item.Class) {
+        if (clazz.classItems != null)
+            for (clazzItem in clazz.classItems)
+                bindClassItem(clazzItem)
+    }
+
+    private fun bindClassItem(classItem: ClassItem) {
+        when (classItem) {
+            is ClassItem.Field -> bindField(classItem)
+        }
+    }
+
+    private fun bindField(field: ClassItem.Field) {
+        if (field.expression != null)
+            bindExpression(field.expression)
+    }
+
+    private fun bindFunction(function: Item.Function) {
+        when (function.body) {
+            is FunctionBody.BlockExpression -> {
+                for (statement in function.body.statements)
+                    bindStatement(statement)
+            }
+            is FunctionBody.SingleExpression -> bindExpression(function.body.expression)
+            null -> return
+        }
+    }
+
     private fun bindStatement(statement: Statement) {
-        TODO()
+
     }
 
     private fun bindExpression(expression: Expression) {
@@ -224,10 +285,16 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun reportClassAlreadyDefined(clazz: Item.Class) {
         val span = clazz.span
         val coloredPackageLiteral =
-            if (compilationUnit.preference.enableColor) Ansi.colorize(currentPackagePath.toString(), Attribute.CYAN_TEXT())
+            if (compilationUnit.preference.enableColor) Ansi.colorize(
+                currentPackagePath.toString(),
+                Attribute.CYAN_TEXT()
+            )
             else currentPackagePath.toString()
         val coloredClassLiteral =
-            if (compilationUnit.preference.enableColor) Ansi.colorize(currentClassPath.toString(), Attribute.CYAN_TEXT())
+            if (compilationUnit.preference.enableColor) Ansi.colorize(
+                currentClassPath.toString(),
+                Attribute.CYAN_TEXT()
+            )
             else currentClassPath.toString()
 
         compilationUnit.reportBuilder
