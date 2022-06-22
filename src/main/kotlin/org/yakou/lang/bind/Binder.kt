@@ -151,8 +151,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
 
-    private fun bindSecondary() {
-        bindYkFile(compilationUnit.ykFile!!)
+    fun bindSecondary() {
+        bindYkFilePost(compilationUnit.ykFile!!)
     }
 
     private fun bindYkFilePost(ykFile: YkFile) {
