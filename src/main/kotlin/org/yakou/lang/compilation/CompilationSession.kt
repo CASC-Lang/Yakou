@@ -76,7 +76,9 @@ class CompilationSession(val preference: AbstractPreference) {
 
         // PHASE III: TYPE BINDING
         unitProcessResult["type binding"] = measureTime {
-            compilationUnits.all(CompilationUnit::bind)
+            val declarationBinding = compilationUnits.all(CompilationUnit::bind)
+
+            declarationBinding && compilationUnits.all(CompilationUnit::postBind)
         }
 
         if (!unitProcessResult["type binding"]!!.first)
@@ -119,7 +121,9 @@ class CompilationSession(val preference: AbstractPreference) {
             return
 
         // PHASE III: TYPE BINDING
-        unitProcessResult["type binding"] = measureTime(compilationUnit::bind)
+        unitProcessResult["type binding"] = measureTime {
+            compilationUnit.bind() && compilationUnit.postBind()
+        }
 
         if (!unitProcessResult["type binding"]!!.first)
             return
