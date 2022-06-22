@@ -21,6 +21,7 @@ class CompilationUnit(val sourceFile: File, val session: CompilationSession) {
         .relativePath(preference.sourceFile!!.toPath())
     var tokens: List<Token>? = null
     var ykFile: YkFile? = null
+    private lateinit var binder: Binder
 
     fun lex(): Boolean {
         tokens = Lexer(this).lex()
@@ -33,7 +34,13 @@ class CompilationUnit(val sourceFile: File, val session: CompilationSession) {
     }
 
     fun bind(): Boolean {
-        Binder(this).bind()
+        binder = Binder(this)
+        binder.bind()
+        return dumpReportStatus()
+    }
+
+    fun postBind(): Boolean {
+        binder.bindSecondary()
         return dumpReportStatus()
     }
 
