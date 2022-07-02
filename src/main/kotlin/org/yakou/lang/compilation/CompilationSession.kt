@@ -92,15 +92,7 @@ class CompilationSession(val preference: AbstractPreference) {
         if (!unitProcessResult["semantic checking"]!!.first)
             return
 
-        // PHASE IV: CODE OPTIMIZATION
-        unitProcessResult["code optimization"] = measureTime {
-            compilationUnits.all(CompilationUnit::optimize)
-        }
-
-        if (!unitProcessResult["code optimization"]!!.first)
-            return
-
-        // PHASE V: CODE GENERATION
+        // PHASE IV: CODE GENERATION
         unitProcessResult["code generation"] = measureTime {
             val generator = JvmBytecodeGenerator(this)
 
@@ -142,13 +134,7 @@ class CompilationSession(val preference: AbstractPreference) {
         if (!unitProcessResult["semantic checking"]!!.first)
             return
 
-        // PHASE IV: SEMANTIC CHECKING
-        unitProcessResult["code optimization"] = measureTime(compilationUnit::optimize)
-
-        if (!unitProcessResult["code optimization"]!!.first)
-            return
-
-        // PHASE V: CODE GENERATION
+        // PHASE IV: CODE GENERATION
         unitProcessResult["code generation"] = measureTime {
             val generator = JvmBytecodeGenerator(this)
             generator.gen(compilationUnit)

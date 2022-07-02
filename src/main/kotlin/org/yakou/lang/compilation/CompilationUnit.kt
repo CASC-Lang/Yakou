@@ -9,7 +9,6 @@ import org.yakou.lang.ast.YkFile
 import org.yakou.lang.bind.Binder
 import org.yakou.lang.checker.Checker
 import org.yakou.lang.lexer.Lexer
-import org.yakou.lang.optimize.Optimizer
 import org.yakou.lang.parser.Parser
 import java.io.File
 
@@ -47,11 +46,6 @@ class CompilationUnit(val sourceFile: File, val session: CompilationSession) {
 
     fun check(): Boolean {
         Checker(this).check()
-        return dumpReportStatus()
-    }
-
-    fun optimize(): Boolean {
-        Optimizer(this).optimize()
         return dumpReportStatus()
     }
 
