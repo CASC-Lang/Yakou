@@ -135,8 +135,14 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkExpression(expression: Expression) {
         when (expression) {
             is Expression.NumberLiteral -> checkNumberLiteral(expression)
+            is Expression.BinaryExpression -> checkBinaryExpression(expression)
             Expression.Undefined -> TODO("UNREACHABLE")
         }
+    }
+
+    private fun checkBinaryExpression(binaryExpression: Expression.BinaryExpression) {
+        checkExpression(binaryExpression.leftExpression)
+        checkExpression(binaryExpression.rightExpression)
     }
 
     private fun checkNumberLiteral(numberLiteral: Expression.NumberLiteral) {

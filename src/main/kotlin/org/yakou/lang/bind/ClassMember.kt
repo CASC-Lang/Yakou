@@ -21,7 +21,8 @@ sealed class ClassMember(val memberType: MemberType) {
         override val packagePath: String,
         override val classPath: String,
         override val name: String,
-        val type: TypeInfo
+        val type: TypeInfo,
+        val isConst: Boolean,
     ) : ClassMember(MemberType.FIELD) {
         companion object {
             fun fromField(field: java.lang.reflect.Field): Field =
@@ -30,7 +31,8 @@ sealed class ClassMember(val memberType: MemberType) {
                     field.declaringClass.packageName.replace(".", "::"),
                     field.declaringClass.typeName.split('.').last().replace("$", "::"),
                     field.name,
-                    TypeInfo.fromClass(field.type)
+                    TypeInfo.fromClass(field.type),
+                    false
                 )
 
             fun fromConst(
@@ -43,7 +45,8 @@ sealed class ClassMember(val memberType: MemberType) {
                 packageSimplePath.toString(),
                 classSimplePath.toString().ifBlank { "PackageYk" },
                 const.identifier.literal,
-                const.typeInfo
+                const.typeInfo,
+                true
             )
 
             fun fromField(
@@ -55,7 +58,8 @@ sealed class ClassMember(val memberType: MemberType) {
                 packageSimplePath.toString(),
                 classSimplePath.toString().ifBlank { "PackageYk" },
                 staticField.identifier.literal,
-                staticField.typeInfo
+                staticField.typeInfo,
+                false
             )
 
             fun fromField(
@@ -67,7 +71,8 @@ sealed class ClassMember(val memberType: MemberType) {
                 packageSimplePath.toString(),
                 classSimplePath.toString().ifBlank { "PackageYk" },
                 field.identifier.literal,
-                field.typeInfo
+                field.typeInfo,
+                false
             )
         }
 

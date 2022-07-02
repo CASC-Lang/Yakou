@@ -1,21 +1,27 @@
 package org.yakou.lang.bind
 
-enum class PrimitiveType(val typeLiteral: String, val jvmClazz: Class<*>, val descriptor: String) {
-    Unit("unit", Void.TYPE, "V"),
-    Bool("bool", java.lang.Boolean.TYPE, "Z"),
-    Char("char", Character.TYPE, "C"),
-    I8("i8", java.lang.Byte.TYPE, "B"),
-    I16("i16", java.lang.Short.TYPE, "S"),
-    I32("i32", Integer.TYPE, "I"),
-    I64("i64", java.lang.Long.TYPE, "J"),
-    F32("f32", java.lang.Float.TYPE, "F"),
-    F64("f64", java.lang.Double.TYPE, "D"),
-    Str("str", java.lang.String::class.java, "Ljava/lang/String;"),
+enum class PrimitiveType(
+    val typeLiteral: String,
+    val jvmClazz: Class<*>,
+    val wrappedJvmClazz: Class<*>,
+    val descriptor: String,
+    val precedence: Int
+) {
+    Unit("unit", Void.TYPE, Void::class.java, "V", -1),
+    Bool("bool", java.lang.Boolean.TYPE, java.lang.Boolean::class.java, "Z", 0),
+    Char("char", Character.TYPE, Character::class.java, "C", 1),
+    I8("i8", java.lang.Byte.TYPE, java.lang.Byte::class.java, "B", 2),
+    I16("i16", java.lang.Short.TYPE, java.lang.Short::class.java, "S", 2),
+    I32("i32", Integer.TYPE, Integer::class.java, "I", 2),
+    I64("i64", java.lang.Long.TYPE, java.lang.Long::class.java, "J", 3),
+    F32("f32", java.lang.Float.TYPE, java.lang.Float::class.java, "F", 4),
+    F64("f64", java.lang.Double.TYPE, java.lang.Double::class.java, "D", 5),
+    Str("str", java.lang.String::class.java, java.lang.String::class.java, "Ljava/lang/String;", -1),
     ;
 
     companion object {
         private val values: Array<PrimitiveType> = values()
-        private val primitiveTypes: Array<PrimitiveType> = arrayOf(Unit, Bool, Char, I8, I16, I32, I64, F32, F64)
+        val primitiveTypes: Array<PrimitiveType> = arrayOf(Unit, Bool, Char, I8, I16, I32, I64, F32, F64)
         private val numberTypes: Array<PrimitiveType> = arrayOf(I8, I16, I32, I64, F32, F64)
         private val integerTypes: Array<PrimitiveType> = arrayOf(I8, I16, I32, I64)
         private val floatTypes: Array<PrimitiveType> = arrayOf(F32, F64)
@@ -36,7 +42,7 @@ enum class PrimitiveType(val typeLiteral: String, val jvmClazz: Class<*>, val de
             floatTypes.any { it.typeLiteral == typeLiteral }
 
         fun fromClass(clazz: Class<*>): TypeInfo? = when {
-            clazz.isPrimitive -> TypeInfo.Primitive(primitiveTypes.find { it.jvmClazz == clazz }!!)
+            clazz.isPrimitive -> TypeInfo.Primitive(primitiveTypes.find { it.jvmClazz == clazz || it.wrappedJvmClazz == clazz }!!)
             clazz.typeName == "java.lang.String" -> TypeInfo.Primitive(Str)
             else -> null
         }

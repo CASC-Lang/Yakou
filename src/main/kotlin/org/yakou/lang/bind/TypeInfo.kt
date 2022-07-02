@@ -22,9 +22,34 @@ sealed class TypeInfo {
     abstract val internalName: String?
     abstract val descriptor: String
 
+    infix fun promote(otherTypeInfo: TypeInfo): Primitive? {
+        val leftPrimitiveType =
+            PrimitiveType.primitiveTypes.find { it.jvmClazz.descriptorString() == descriptor || it.wrappedJvmClazz.descriptorString() == descriptor }
+        val rightPrimitiveType =
+            PrimitiveType.primitiveTypes.find { it.jvmClazz.descriptorString() == otherTypeInfo.descriptor || it.wrappedJvmClazz.descriptorString() == otherTypeInfo.descriptor }
+
+        if (leftPrimitiveType == null || rightPrimitiveType == null)
+            return null
+
+        if (leftPrimitiveType.precedence == -1 || rightPrimitiveType.precedence == -1)
+            return null
+
+        return if (leftPrimitiveType.precedence > rightPrimitiveType.precedence) Primitive(leftPrimitiveType)
+        else if (leftPrimitiveType.precedence < rightPrimitiveType.precedence) Primitive(rightPrimitiveType)
+        else Primitive(leftPrimitiveType)
+    }
+
     class Primitive(val type: PrimitiveType) : TypeInfo() {
         companion object {
             val UNIT_TYPE_INFO = Primitive(PrimitiveType.Unit)
+        }
+
+        val addOpcode: Int = when (type) {
+            PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.IADD
+            PrimitiveType.I64 -> Opcodes.LADD
+            PrimitiveType.F32 -> Opcodes.FADD
+            PrimitiveType.F64 -> Opcodes.DADD
+            else -> -1
         }
 
         override val internalName: String? = when (type) {
@@ -54,7 +79,12 @@ sealed class TypeInfo {
 
     class PackageClass(
         standardPackagePath: String
-    ) : Class(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL, "$standardPackagePath::PackageYk", fromClass(Any::class.java) as Class, listOf())
+    ) : Class(
+        Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL,
+        "$standardPackagePath::PackageYk",
+        fromClass(Any::class.java) as Class,
+        listOf()
+    )
 
     open class Class(
         val access: Int,

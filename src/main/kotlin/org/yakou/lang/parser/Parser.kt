@@ -241,7 +241,29 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseExpression(): Expression {
-        return parseLiteralExpression()
+        return parseAddictiveExpression()
+    }
+
+    private fun parseAddictiveExpression(): Expression {
+        val leftExpression = parseMultiplicativeExpression()
+
+        return if (optExpectType(TokenType.Plus) || optExpectType(TokenType.Minus)) {
+            val operator = next()!!
+            val rightExpression = parseExpression()
+
+            Expression.BinaryExpression(leftExpression, operator, rightExpression)
+        } else leftExpression
+    }
+
+    private fun parseMultiplicativeExpression(): Expression {
+        val leftExpression = parseLiteralExpression()
+
+        return if (optExpectType(TokenType.Star) || optExpectType(TokenType.Slash)) {
+            val operator = next()!!
+            val rightExpression = parseExpression()
+
+            Expression.BinaryExpression(leftExpression, operator, rightExpression)
+        } else leftExpression
     }
 
     private fun parseLiteralExpression(): Expression = when {

@@ -217,7 +217,62 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun bindExpression(expression: Expression) {
         when (expression) {
             is Expression.NumberLiteral -> bindNumberLiteral(expression)
+            is Expression.BinaryExpression -> bindBinaryExpression(expression)
             Expression.Undefined -> TODO("UNREACHABLE")
+        }
+    }
+
+    private fun bindBinaryExpression(binaryExpression: Expression.BinaryExpression) {
+        bindExpression(binaryExpression.leftExpression)
+        bindExpression(binaryExpression.rightExpression)
+
+        when (binaryExpression.operator.type) {
+            TokenType.Plus, TokenType.Minus, TokenType.Star, TokenType.Slash -> {
+                val leftType = binaryExpression.leftExpression.finalType
+                val rightType = binaryExpression.rightExpression.finalType
+                val promotedType = leftType promote rightType
+
+                if (promotedType == null) {
+                    val coloredOperator =
+                        if (compilationUnit.preference.enableColor) Ansi.colorize(
+                            binaryExpression.operator.literal,
+                            Attribute.CYAN_TEXT()
+                        )
+                        else binaryExpression.operator.literal
+                    val coloredLeftTypeLiteral =
+                        if (compilationUnit.preference.enableColor) Ansi.colorize(
+                            leftType.toString(),
+                            Attribute.CYAN_TEXT()
+                        )
+                        else leftType.toString()
+                    val coloredRightTypeLiteral =
+                        if (compilationUnit.preference.enableColor) Ansi.colorize(
+                            rightType.toString(),
+                            Attribute.CYAN_TEXT()
+                        )
+                        else rightType.toString()
+
+                    compilationUnit.reportBuilder
+                        .error(
+                            SpanHelper.expandView(binaryExpression.span, compilationUnit.maxLineCount),
+                            "Unable to apply `$coloredOperator` on `$coloredLeftTypeLiteral` and `$coloredRightTypeLiteral`"
+                        )
+                        .label(binaryExpression.leftExpression.span, "Left expression has type `$coloredLeftTypeLiteral`")
+                        .color(Attribute.CYAN_TEXT())
+                        .build()
+                        .label(binaryExpression.operator.span, "Inapplicable operator `$coloredOperator`")
+                        .color(Attribute.RED_TEXT())
+                        .build()
+                        .label(binaryExpression.rightExpression.span, "Right expression has type `$coloredRightTypeLiteral`")
+                        .color(Attribute.CYAN_TEXT())
+                        .build()
+                        .build()
+                } else {
+                    binaryExpression.originalType = promotedType
+                    binaryExpression.finalType = promotedType
+                }
+            }
+            else -> {}
         }
     }
 

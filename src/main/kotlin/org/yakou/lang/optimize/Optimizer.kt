@@ -73,8 +73,14 @@ class Optimizer(private val compilationUnit: CompilationUnit) {
     private fun optimizeExpression(expression: Expression) {
         when (expression) {
             is Expression.NumberLiteral -> optimizeNumberLiteral(expression)
+            is Expression.BinaryExpression -> optimizeBinaryExpression(expression)
             Expression.Undefined -> {} // Cannot be optimized
         }
+    }
+
+    private fun optimizeBinaryExpression(binaryExpression: Expression.BinaryExpression) {
+        optimizeExpression(binaryExpression.leftExpression)
+        optimizeExpression(binaryExpression.rightExpression)
     }
 
     private fun optimizeNumberLiteral(numberLiteral: Expression.NumberLiteral) {

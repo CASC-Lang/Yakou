@@ -3,10 +3,7 @@ package org.yakou.lang.gen.jvm
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
-import org.yakou.lang.ast.ClassItem
-import org.yakou.lang.ast.Expression
-import org.yakou.lang.ast.Item
-import org.yakou.lang.ast.YkFile
+import org.yakou.lang.ast.*
 import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.compilation.CompilationSession
@@ -165,14 +162,39 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private fun genExpression(methodVisitor: MethodVisitor, expression: Expression) {
         when (expression) {
             is Expression.NumberLiteral -> genNumberLiteral(methodVisitor, expression)
+            is Expression.BinaryExpression -> genBinaryExpression(methodVisitor, expression)
             Expression.Undefined -> TODO("UNREACHABLE")
         }
 
         // TODO: Generate casting if Expression#originalType does not match Expression#finalType
     }
 
+    private fun genBinaryExpression(methodVisitor: MethodVisitor, binaryExpression: Expression.BinaryExpression) {
+        genExpression(methodVisitor, binaryExpression.leftExpression)
+        genExpression(methodVisitor, binaryExpression.rightExpression)
+
+        if (binaryExpression.finalType is TypeInfo.Primitive) {
+            when (binaryExpression.operator.type) {
+                TokenType.Plus -> {
+                    methodVisitor.visitInsn((binaryExpression.finalType as TypeInfo.Primitive).addOpcode)
+                }
+                else -> {}
+            }
+        }
+    }
+
     private fun genNumberLiteral(methodVisitor: MethodVisitor, numberLiteral: Expression.NumberLiteral) {
-        methodVisitor.visitLdcInsn(numberLiteral.value)
+        var finalValue: Number = numberLiteral.value
+
+        finalValue = when ((numberLiteral.finalType as TypeInfo.Primitive).type) {
+            PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> finalValue.toInt()
+            PrimitiveType.I64 -> finalValue.toLong()
+            PrimitiveType.F32 -> finalValue.toFloat()
+            PrimitiveType.F64 -> finalValue.toDouble()
+            else -> TODO("UNREACHABLE")
+        }
+
+        methodVisitor.visitLdcInsn(finalValue)
     }
 
     private fun getStaticBlockWriter(clazz: TypeInfo.Class): MethodVisitor =

@@ -43,6 +43,9 @@ class Table {
         }
     }
 
+    fun findClassMember(qualifiedOwnerPath: String, memberType: ClassMember.MemberType, memberName: String): ClassMember? =
+        classMemberTable[qualifiedOwnerPath]?.get(memberType)?.find { it.name == memberName }
+
     fun registerPackageClass(packagePath: String) {
         val qualifiedClassPath =
             if (packagePath.isBlank()) "PackageYk"

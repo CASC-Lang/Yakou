@@ -9,6 +9,16 @@ sealed class Expression {
     lateinit var originalType: TypeInfo
     lateinit var finalType: TypeInfo
 
+    class BinaryExpression(
+        val leftExpression: Expression,
+        val operator: Token,
+        val rightExpression: Expression,
+    ) : Expression() {
+        override val span: Span by lazy {
+            leftExpression.span.expand(rightExpression.span)
+        }
+    }
+
     sealed class LiteralExpression : Expression()
 
     class NumberLiteral(
