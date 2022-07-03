@@ -39,6 +39,11 @@ sealed class TypeInfo {
         else Primitive(leftPrimitiveType)
     }
 
+    fun asPrimitive(): Primitive? =
+        PrimitiveType.primitiveTypes
+            .find { it.jvmClazz.descriptorString() == descriptor || it.wrappedJvmClazz.descriptorString() == descriptor }
+            ?.let(::Primitive)
+
     class Primitive(val type: PrimitiveType) : TypeInfo() {
         companion object {
             val UNIT_TYPE_INFO = Primitive(PrimitiveType.Unit)
@@ -70,6 +75,22 @@ sealed class TypeInfo {
             PrimitiveType.I64 -> Opcodes.LDIV
             PrimitiveType.F32 -> Opcodes.FDIV
             PrimitiveType.F64 -> Opcodes.DDIV
+            else -> -1
+        }
+
+        val ushrOpcode: Int =  when (type) {
+            PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.IUSHR
+            PrimitiveType.I64 -> Opcodes.LUSHR
+            else -> -1
+        }
+        val shrOpcode: Int =  when (type) {
+            PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.ISHR
+            PrimitiveType.I64 -> Opcodes.LSHR
+            else -> -1
+        }
+        val shlOpcode: Int =  when (type) {
+            PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.ISHL
+            PrimitiveType.I64 -> Opcodes.LSHL
             else -> -1
         }
 

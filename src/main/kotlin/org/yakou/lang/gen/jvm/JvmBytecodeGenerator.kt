@@ -3,7 +3,10 @@ package org.yakou.lang.gen.jvm
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
-import org.yakou.lang.ast.*
+import org.yakou.lang.ast.ClassItem
+import org.yakou.lang.ast.Expression
+import org.yakou.lang.ast.Item
+import org.yakou.lang.ast.YkFile
 import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.compilation.CompilationSession
@@ -165,11 +168,14 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         if (binaryExpression.finalType is TypeInfo.Primitive) {
             val primitiveType = binaryExpression.finalType as TypeInfo.Primitive
 
-            when (binaryExpression.operator.type) {
-                TokenType.Plus -> methodVisitor.visitInsn(primitiveType.addOpcode)
-                TokenType.Minus -> methodVisitor.visitInsn(primitiveType.subOpcode)
-                TokenType.Star -> methodVisitor.visitInsn(primitiveType.mulOpcode)
-                TokenType.Slash -> methodVisitor.visitInsn(primitiveType.divOpcode)
+            when (binaryExpression.operation) {
+                Expression.BinaryExpression.BinaryOperation.Addition -> methodVisitor.visitInsn(primitiveType.addOpcode)
+                Expression.BinaryExpression.BinaryOperation.Subtraction -> methodVisitor.visitInsn(primitiveType.subOpcode)
+                Expression.BinaryExpression.BinaryOperation.Multiplication -> methodVisitor.visitInsn(primitiveType.mulOpcode)
+                Expression.BinaryExpression.BinaryOperation.Division -> methodVisitor.visitInsn(primitiveType.divOpcode)
+                Expression.BinaryExpression.BinaryOperation.UnsignedRightShift -> methodVisitor.visitInsn(primitiveType.ushrOpcode)
+                Expression.BinaryExpression.BinaryOperation.RightShift -> methodVisitor.visitInsn(primitiveType.shrOpcode)
+                Expression.BinaryExpression.BinaryOperation.LeftShift -> methodVisitor.visitInsn(primitiveType.shlOpcode)
                 else -> {}
             }
         }

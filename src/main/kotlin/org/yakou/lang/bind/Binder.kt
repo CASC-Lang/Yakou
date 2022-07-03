@@ -1,5 +1,6 @@
 package org.yakou.lang.bind
 
+import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
 import org.objectweb.asm.Opcodes
@@ -226,8 +227,11 @@ class Binder(private val compilationUnit: CompilationUnit) {
         bindExpression(binaryExpression.leftExpression)
         bindExpression(binaryExpression.rightExpression)
 
-        when (binaryExpression.operator.type) {
-            TokenType.Plus, TokenType.Minus, TokenType.Star, TokenType.Slash -> {
+        when (binaryExpression.operation) {
+            Expression.BinaryExpression.BinaryOperation.Addition,
+            Expression.BinaryExpression.BinaryOperation.Subtraction,
+            Expression.BinaryExpression.BinaryOperation.Multiplication,
+            Expression.BinaryExpression.BinaryOperation.Division -> {
                 val leftType = binaryExpression.leftExpression.finalType
                 val rightType = binaryExpression.rightExpression.finalType
                 val promotedType = leftType promote rightType
@@ -235,10 +239,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 if (promotedType == null) {
                     val coloredOperator =
                         if (compilationUnit.preference.enableColor) Ansi.colorize(
-                            binaryExpression.operator.literal,
+                            binaryExpression.operator.joinToString { it.literal },
                             Attribute.CYAN_TEXT()
                         )
-                        else binaryExpression.operator.literal
+                        else binaryExpression.operator.joinToString { it.literal }
                     val coloredLeftTypeLiteral =
                         if (compilationUnit.preference.enableColor) Ansi.colorize(
                             leftType.toString(),
@@ -251,26 +255,113 @@ class Binder(private val compilationUnit: CompilationUnit) {
                             Attribute.CYAN_TEXT()
                         )
                         else rightType.toString()
+                    val operatorSpan = binaryExpression.operator.map(Token::span).reduce(Span::expand)
 
                     compilationUnit.reportBuilder
                         .error(
                             SpanHelper.expandView(binaryExpression.span, compilationUnit.maxLineCount),
                             "Unable to apply `$coloredOperator` on `$coloredLeftTypeLiteral` and `$coloredRightTypeLiteral`"
                         )
-                        .label(binaryExpression.leftExpression.span, "Left expression has type `$coloredLeftTypeLiteral`")
+                        .label(
+                            binaryExpression.leftExpression.span,
+                            "Left expression has type `$coloredLeftTypeLiteral`"
+                        )
                         .color(Attribute.CYAN_TEXT())
                         .build()
-                        .label(binaryExpression.operator.span, "Inapplicable operator `$coloredOperator`")
+                        .label(operatorSpan, "Inapplicable operator `$coloredOperator`")
                         .color(Attribute.RED_TEXT())
                         .build()
-                        .label(binaryExpression.rightExpression.span, "Right expression has type `$coloredRightTypeLiteral`")
+                        .label(
+                            binaryExpression.rightExpression.span,
+                            "Right expression has type `$coloredRightTypeLiteral`"
+                        )
+                        .color(Attribute.CYAN_TEXT())
+                        .build().build()
+
+                    return
+                }
+
+                binaryExpression.originalType = promotedType
+                binaryExpression.finalType = promotedType
+            }
+            Expression.BinaryExpression.BinaryOperation.UnsignedRightShift,
+            Expression.BinaryExpression.BinaryOperation.RightShift,
+            Expression.BinaryExpression.BinaryOperation.LeftShift -> {
+                val leftType = binaryExpression.leftExpression.finalType.asPrimitive()
+                val rightType = binaryExpression.rightExpression.finalType.asPrimitive()
+
+                if (leftType == null || !PrimitiveType.isIntegerType(leftType.type)) {
+                    val coloredOperator =
+                        if (compilationUnit.preference.enableColor) Ansi.colorize(
+                            binaryExpression.operator.joinToString { it.literal },
+                            Attribute.CYAN_TEXT()
+                        )
+                        else binaryExpression.operator.joinToString { it.literal }
+                    val coloredLeftTypeLiteral =
+                        if (compilationUnit.preference.enableColor) Ansi.colorize(
+                            binaryExpression.leftExpression.finalType.toString(),
+                            Attribute.CYAN_TEXT()
+                        )
+                        else binaryExpression.leftExpression.finalType.toString()
+
+                    compilationUnit.reportBuilder
+                        .error(
+                            SpanHelper.expandView(binaryExpression.span, compilationUnit.maxLineCount),
+                            "Unable to shift type `$coloredLeftTypeLiteral` with `$coloredOperator`"
+                        )
+                        .label(
+                            binaryExpression.leftExpression.span,
+                            "Expression has non-integer type `$coloredLeftTypeLiteral`"
+                        )
                         .color(Attribute.CYAN_TEXT())
                         .build()
-                        .build()
-                } else {
-                    binaryExpression.originalType = promotedType
-                    binaryExpression.finalType = promotedType
+                        .label(
+                            binaryExpression.operator.map(Token::span).reduce(Span::expand),
+                            "Inapplicable operator `$coloredOperator`"
+                        )
+                        .color(Attribute.RED_TEXT())
+                        .build().build()
+
+                    return
                 }
+
+                if (rightType == null || rightType.type != PrimitiveType.I32) {
+                    val coloredOperator =
+                        if (compilationUnit.preference.enableColor) Ansi.colorize(
+                            binaryExpression.operator.joinToString { it.literal },
+                            Attribute.CYAN_TEXT()
+                        )
+                        else binaryExpression.operator.joinToString { it.literal }
+                    val coloredRightTypeLiteral =
+                        if (compilationUnit.preference.enableColor) Ansi.colorize(
+                            binaryExpression.rightExpression.finalType.toString(),
+                            Attribute.CYAN_TEXT()
+                        )
+                        else binaryExpression.rightExpression.finalType.toString()
+
+                    compilationUnit.reportBuilder
+                        .error(
+                            SpanHelper.expandView(binaryExpression.span, compilationUnit.maxLineCount),
+                            "Unable to shift type `$coloredRightTypeLiteral` with `$coloredOperator`"
+                        )
+                        .label(
+                            binaryExpression.rightExpression.span,
+                            "Expression has non-i32 type `$coloredRightTypeLiteral`"
+                        )
+                        .color(Attribute.CYAN_TEXT())
+                        .build()
+                        .label(
+                            binaryExpression.operator.map(Token::span).reduce(Span::expand),
+                            "Inapplicable operator `$coloredOperator`"
+                        )
+                        .color(Attribute.RED_TEXT())
+                        .build().build()
+
+                    return
+                }
+
+                binaryExpression.originalType = leftType
+                binaryExpression.finalType = leftType
             }
             else -> {}
         }

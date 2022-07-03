@@ -29,17 +29,29 @@ enum class PrimitiveType(
         fun isPrimitiveType(typeLiteral: String): Boolean =
             values.any { it.typeLiteral == typeLiteral }
 
+        fun isPrimitiveType(primitiveType: PrimitiveType): Boolean =
+            values.any { it == primitiveType }
+
         fun findPrimitiveType(typeLiteral: String): PrimitiveType? =
             values.find { it.typeLiteral == typeLiteral }
 
         fun isNumberType(typeLiteral: String): Boolean =
             numberTypes.any { it.typeLiteral == typeLiteral }
 
+        fun isNumberType(primitiveType: PrimitiveType): Boolean =
+            numberTypes.any { it == primitiveType }
+
         fun isIntegerType(typeLiteral: String): Boolean =
             integerTypes.any { it.typeLiteral == typeLiteral }
 
+        fun isIntegerType(primitiveType: PrimitiveType): Boolean =
+            integerTypes.any { it == primitiveType }
+
         fun isFloatType(typeLiteral: String): Boolean =
             floatTypes.any { it.typeLiteral == typeLiteral }
+
+        fun isFloatType(primitiveType: PrimitiveType): Boolean =
+            floatTypes.any { it == primitiveType }
 
         fun fromClass(clazz: Class<*>): TypeInfo? = when {
             clazz.isPrimitive -> TypeInfo.Primitive(primitiveTypes.find { it.jvmClazz == clazz || it.wrappedJvmClazz == clazz }!!)

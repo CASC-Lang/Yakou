@@ -1,6 +1,5 @@
 package org.yakou.lang.optimizer
 
-import chaos.unity.nenggao.Span
 import org.yakou.lang.ast.*
 import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.compilation.CompilationUnit
@@ -92,11 +91,28 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                 val optimizedRightExpression = optimizeExpression(expression.rightExpression)
 
                 if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral) {
-                    when (expression.operator.type) {
-                        TokenType.Plus -> syntheticNumberLiteral(optimizedLeftExpression.value + optimizedRightExpression.value)
-                        TokenType.Minus -> syntheticNumberLiteral(optimizedLeftExpression.value - optimizedRightExpression.value)
-                        TokenType.Star -> syntheticNumberLiteral(optimizedLeftExpression.value * optimizedRightExpression.value)
-                        TokenType.Slash -> syntheticNumberLiteral(optimizedLeftExpression.value / optimizedRightExpression.value)
+                    when (expression.operation) {
+                        Expression.BinaryExpression.BinaryOperation.Addition -> {
+                            syntheticNumberLiteral(optimizedLeftExpression.value + optimizedRightExpression.value)
+                        }
+                        Expression.BinaryExpression.BinaryOperation.Subtraction -> {
+                            syntheticNumberLiteral(optimizedLeftExpression.value - optimizedRightExpression.value)
+                        }
+                        Expression.BinaryExpression.BinaryOperation.Multiplication -> {
+                            syntheticNumberLiteral(optimizedLeftExpression.value * optimizedRightExpression.value)
+                        }
+                        Expression.BinaryExpression.BinaryOperation.Division -> {
+                            syntheticNumberLiteral(optimizedLeftExpression.value / optimizedRightExpression.value)
+                        }
+                        Expression.BinaryExpression.BinaryOperation.UnsignedRightShift -> {
+                            syntheticNumberLiteral((optimizedLeftExpression.value.toLong() ushr optimizedRightExpression.value.toInt()).toDouble())
+                        }
+                        Expression.BinaryExpression.BinaryOperation.RightShift -> {
+                            syntheticNumberLiteral((optimizedLeftExpression.value.toLong() shr optimizedRightExpression.value.toInt()).toDouble())
+                        }
+                        Expression.BinaryExpression.BinaryOperation.LeftShift -> {
+                            syntheticNumberLiteral((optimizedLeftExpression.value.toLong() shl optimizedRightExpression.value.toInt()).toDouble())
+                        }
                         else -> {
                             expression.leftExpression = optimizedLeftExpression
                             expression.rightExpression = optimizedRightExpression

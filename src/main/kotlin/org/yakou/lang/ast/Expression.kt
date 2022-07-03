@@ -27,7 +27,11 @@ sealed class Expression {
             Modulo,
             LeftShift,
             RightShift,
-            UnsignedRightShift,
+            UnsignedRightShift
+            ;
+
+            fun isShiftOperation(): Boolean =
+                this.ordinal in 5..7
         }
     }
 
