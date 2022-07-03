@@ -180,10 +180,6 @@ class Lexer(private val compilationUnit: CompilationUnit) {
                 else -> charToken(TokenType.Ampersand)
             }
             '>' -> when (peek(1)) {
-                '>' -> when (peek(2)) {
-                    '>' -> stringToken(TokenType.TripleGreater)
-                    else -> stringToken(TokenType.DoubleGreater)
-                }
                 '=' -> stringToken(TokenType.GreaterEqual)
                 else -> charToken(TokenType.Greater)
             }
