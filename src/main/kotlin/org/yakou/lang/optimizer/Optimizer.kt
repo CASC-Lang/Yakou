@@ -1,5 +1,6 @@
 package org.yakou.lang.optimizer
 
+import chaos.unity.nenggao.Span
 import org.yakou.lang.ast.*
 import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.compilation.CompilationUnit
@@ -72,38 +73,46 @@ class Optimizer(val compilationUnit: CompilationUnit) {
 
     }
 
-    private fun optimizeExpression(expression: Expression): Expression = when (expression) {
-        is Expression.BinaryExpression -> {
-            val optimizedLeftExpression = optimizeExpression(expression.leftExpression)
-            val optimizedRightExpression = optimizeExpression(expression.rightExpression)
+    private fun optimizeExpression(expression: Expression): Expression {
+        fun syntheticNumberLiteral(value: Double): Expression.NumberLiteral {
+            val syntheticNumberLiteral =
+                Expression.NumberLiteral(null, null, null, null, expression.span)
 
-            if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral) {
-                when (expression.operator.type) {
-                    TokenType.Plus -> {
-                        val syntheticNumberLiteral = Expression.NumberLiteral(null, null, null, null, expression.span)
+            syntheticNumberLiteral.value = value
+            syntheticNumberLiteral.specifiedTypeInfo = expression.finalType as TypeInfo.Primitive
+            syntheticNumberLiteral.originalType = expression.originalType
+            syntheticNumberLiteral.finalType = expression.finalType
 
-                        syntheticNumberLiteral.value = optimizedLeftExpression.value + optimizedRightExpression.value
-                        syntheticNumberLiteral.specifiedTypeInfo = expression.finalType as TypeInfo.Primitive
-                        syntheticNumberLiteral.originalType = expression.originalType
-                        syntheticNumberLiteral.finalType = expression.finalType
-
-                        syntheticNumberLiteral
-                    }
-                    else -> {
-                        expression.leftExpression = optimizedLeftExpression
-                        expression.rightExpression = optimizedRightExpression
-
-                        expression
-                    }
-                }
-            } else {
-                expression.leftExpression = optimizedLeftExpression
-                expression.rightExpression = optimizedRightExpression
-
-                expression
-            }
+            return syntheticNumberLiteral
         }
-        is Expression.NumberLiteral -> expression
-        Expression.Undefined -> expression
+
+        return when (expression) {
+            is Expression.BinaryExpression -> {
+                val optimizedLeftExpression = optimizeExpression(expression.leftExpression)
+                val optimizedRightExpression = optimizeExpression(expression.rightExpression)
+
+                if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral) {
+                    when (expression.operator.type) {
+                        TokenType.Plus -> syntheticNumberLiteral(optimizedLeftExpression.value + optimizedRightExpression.value)
+                        TokenType.Minus -> syntheticNumberLiteral(optimizedLeftExpression.value - optimizedRightExpression.value)
+                        TokenType.Star -> syntheticNumberLiteral(optimizedLeftExpression.value * optimizedRightExpression.value)
+                        TokenType.Slash -> syntheticNumberLiteral(optimizedLeftExpression.value / optimizedRightExpression.value)
+                        else -> {
+                            expression.leftExpression = optimizedLeftExpression
+                            expression.rightExpression = optimizedRightExpression
+
+                            expression
+                        }
+                    }
+                } else {
+                    expression.leftExpression = optimizedLeftExpression
+                    expression.rightExpression = optimizedRightExpression
+
+                    expression
+                }
+            }
+            is Expression.NumberLiteral -> expression
+            Expression.Undefined -> expression
+        }
     }
 }

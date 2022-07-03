@@ -51,6 +51,27 @@ sealed class TypeInfo {
             PrimitiveType.F64 -> Opcodes.DADD
             else -> -1
         }
+        val subOpcode: Int = when (type) {
+            PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.ISUB
+            PrimitiveType.I64 -> Opcodes.LSUB
+            PrimitiveType.F32 -> Opcodes.FSUB
+            PrimitiveType.F64 -> Opcodes.DSUB
+            else -> -1
+        }
+        val mulOpcode: Int = when (type) {
+            PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.IMUL
+            PrimitiveType.I64 -> Opcodes.LMUL
+            PrimitiveType.F32 -> Opcodes.FMUL
+            PrimitiveType.F64 -> Opcodes.DMUL
+            else -> -1
+        }
+        val divOpcode: Int = when (type) {
+            PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.IDIV
+            PrimitiveType.I64 -> Opcodes.LDIV
+            PrimitiveType.F32 -> Opcodes.FDIV
+            PrimitiveType.F64 -> Opcodes.DDIV
+            else -> -1
+        }
 
         override val internalName: String? = when (type) {
             PrimitiveType.Str -> "java/lang/String"

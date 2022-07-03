@@ -175,10 +175,13 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         genExpression(methodVisitor, binaryExpression.rightExpression)
 
         if (binaryExpression.finalType is TypeInfo.Primitive) {
+            val primitiveType = binaryExpression.finalType as TypeInfo.Primitive
+
             when (binaryExpression.operator.type) {
-                TokenType.Plus -> {
-                    methodVisitor.visitInsn((binaryExpression.finalType as TypeInfo.Primitive).addOpcode)
-                }
+                TokenType.Plus -> methodVisitor.visitInsn(primitiveType.addOpcode)
+                TokenType.Minus -> methodVisitor.visitInsn(primitiveType.subOpcode)
+                TokenType.Star -> methodVisitor.visitInsn(primitiveType.mulOpcode)
+                TokenType.Slash -> methodVisitor.visitInsn(primitiveType.divOpcode)
                 else -> {}
             }
         }

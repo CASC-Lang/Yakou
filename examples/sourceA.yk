@@ -2,7 +2,7 @@ pkg chaos {
     pkg unity {
         const a: i16 = 1i16
 
-        static b: i32 = 1 + 1
+        static b: i32 = 1 + 2 * 5
 
         class Kek {
             mut a: i32
