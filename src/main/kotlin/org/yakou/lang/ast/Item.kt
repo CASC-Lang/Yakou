@@ -32,7 +32,7 @@ sealed class Item {
         val colon: Token,
         val type: Type,
         val equal: Token,
-        val expression: Expression
+        var expression: Expression
     ) : Item() {
         override val span: Span by lazy {
             var finalSpan =

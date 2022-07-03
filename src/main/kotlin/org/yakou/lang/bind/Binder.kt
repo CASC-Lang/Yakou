@@ -110,7 +110,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindFieldDeclaration(field: ClassItem.Field) {
         if (field.expression != null)
-            bindExpression(field.expression)
+            bindExpression(field.expression!!)
 
         field.typeInfo = bindType(field.explicitType)
 
@@ -196,7 +196,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindField(field: ClassItem.Field) {
         if (field.expression != null)
-            bindExpression(field.expression)
+            bindExpression(field.expression!!)
     }
 
     private fun bindFunction(function: Item.Function) {

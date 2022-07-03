@@ -68,11 +68,12 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         // Declare static field based on value
         if (const.expression is Expression.NumberLiteral) {
             // Value is inlinable, thus we use ConstantValue attribute in this case
-            var finalValue: Number = const.expression.value
+            val expression = const.expression as Expression.NumberLiteral
+            var finalValue: Number = expression.value
 
-            if (const.expression.specifiedTypeInfo != null && const.expression.originalType != const.expression.finalType) {
+            if (expression.specifiedTypeInfo != null && const.expression.originalType != const.expression.finalType) {
                 // Cast to correct type
-                finalValue = when (const.expression.specifiedTypeInfo!!.type) {
+                finalValue = when (expression.specifiedTypeInfo!!.type) {
                     PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> finalValue.toInt()
                     PrimitiveType.I64 -> finalValue.toLong()
                     PrimitiveType.F32 -> finalValue.toFloat()

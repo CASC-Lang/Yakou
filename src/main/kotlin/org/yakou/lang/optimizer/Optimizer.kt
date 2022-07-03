@@ -1,6 +1,5 @@
-package optimizer
+package org.yakou.lang.optimizer
 
-import chaos.unity.nenggao.Span
 import org.yakou.lang.ast.*
 import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.compilation.CompilationUnit
@@ -18,10 +17,14 @@ class Optimizer(val compilationUnit: CompilationUnit) {
     private fun optimizeItem(item: Item) {
         when (item) {
             is Item.Class -> optimizeClass(item)
-            is Item.Const -> TODO()
-            is Item.Function -> TODO()
-            is Item.Package -> TODO()
-            is Item.StaticField -> TODO()
+            is Item.Const -> optimizeConst(item)
+            is Item.Function -> optimizeFunction(item)
+            is Item.Package -> {
+                if (item.items != null)
+                    for (innerItem in item.items)
+                        optimizeItem(innerItem)
+            }
+            is Item.StaticField -> optimizeStaticField(item)
         }
     }
 
@@ -40,6 +43,35 @@ class Optimizer(val compilationUnit: CompilationUnit) {
         }
     }
 
+    private fun optimizeConst(const: Item.Const) {
+        const.expression = optimizeExpression(const.expression)
+    }
+
+    private fun optimizeFunction(function: Item.Function) {
+        if (function.body != null)
+            optimizeFunctionBody(function.body)
+    }
+
+    private fun optimizeFunctionBody(functionBody: FunctionBody) {
+        when (functionBody) {
+            is FunctionBody.BlockExpression -> {
+                for (statement in functionBody.statements)
+                    optimizeStatement(statement)
+            }
+            is FunctionBody.SingleExpression -> {
+                functionBody.expression = optimizeExpression(functionBody.expression)
+            }
+        }
+    }
+
+    private fun optimizeStaticField(staticField: Item.StaticField) {
+        staticField.expression = optimizeExpression(staticField.expression)
+    }
+
+    private fun optimizeStatement(statement: Statement) {
+
+    }
+
     private fun optimizeExpression(expression: Expression): Expression = when (expression) {
         is Expression.BinaryExpression -> {
             val optimizedLeftExpression = optimizeExpression(expression.leftExpression)
@@ -52,6 +84,8 @@ class Optimizer(val compilationUnit: CompilationUnit) {
 
                         syntheticNumberLiteral.value = optimizedLeftExpression.value + optimizedRightExpression.value
                         syntheticNumberLiteral.specifiedTypeInfo = expression.finalType as TypeInfo.Primitive
+                        syntheticNumberLiteral.originalType = expression.originalType
+                        syntheticNumberLiteral.finalType = expression.finalType
 
                         syntheticNumberLiteral
                     }
