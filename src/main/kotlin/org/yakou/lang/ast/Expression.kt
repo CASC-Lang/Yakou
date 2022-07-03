@@ -11,11 +11,23 @@ sealed class Expression {
 
     class BinaryExpression(
         var leftExpression: Expression,
-        val operator: Token,
+        val operator: List<Token>,
         var rightExpression: Expression,
+        val operation: BinaryOperation
     ) : Expression() {
         override val span: Span by lazy {
             leftExpression.span.expand(rightExpression.span)
+        }
+
+        enum class BinaryOperation {
+            Addition,
+            Subtraction,
+            Multiplication,
+            Division,
+            Modulo,
+            LeftShift,
+            RightShift,
+            UnsignedRightShift,
         }
     }
 

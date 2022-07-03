@@ -241,37 +241,116 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseExpression(): Expression {
-        return parseAddictiveExpression()
+        return parseShiftingExpression()
+    }
+
+    private fun parseShiftingExpression(): Expression {
+        val leftExpression = parseAddictiveExpression()
+
+        return if (optExpectRepeatType(TokenType.Greater, 3)) {
+            val operator = listOf(next()!!, next()!!, next()!!)
+            val rightExpression = parseExpression()
+
+            Expression.BinaryExpression(
+                leftExpression,
+                operator,
+                rightExpression,
+                Expression.BinaryExpression.BinaryOperation.UnsignedRightShift
+            )
+        } else if (optExpectRepeatType(TokenType.Greater, 2)) {
+            val operator = listOf(next()!!, next()!!)
+            val rightExpression = parseExpression()
+
+            Expression.BinaryExpression(
+                leftExpression,
+                operator,
+                rightExpression,
+                Expression.BinaryExpression.BinaryOperation.RightShift
+            )
+        } else if (optExpectRepeatType(TokenType.Lesser, 2)) {
+            val operator = listOf(next()!!, next()!!)
+            val rightExpression = parseExpression()
+
+            Expression.BinaryExpression(
+                leftExpression,
+                operator,
+                rightExpression,
+                Expression.BinaryExpression.BinaryOperation.LeftShift
+            )
+        } else leftExpression
     }
 
     private fun parseAddictiveExpression(): Expression {
         val leftExpression = parseMultiplicativeExpression()
 
-        return if (optExpectType(TokenType.Plus) || optExpectType(TokenType.Minus)) {
+        return if (optExpectType(TokenType.Plus)) {
             val operator = next()!!
             val rightExpression = parseExpression()
 
-            Expression.BinaryExpression(leftExpression, operator, rightExpression)
+            Expression.BinaryExpression(
+                leftExpression,
+                listOf(operator),
+                rightExpression,
+                Expression.BinaryExpression.BinaryOperation.Addition
+            )
+        } else if (optExpectType(TokenType.Minus)) {
+            val operator = next()!!
+            val rightExpression = parseExpression()
+
+            Expression.BinaryExpression(
+                leftExpression,
+                listOf(operator),
+                rightExpression,
+                Expression.BinaryExpression.BinaryOperation.Subtraction
+            )
         } else leftExpression
     }
 
     private fun parseMultiplicativeExpression(): Expression {
         val leftExpression = parseLiteralExpression()
 
-        return if (optExpectType(TokenType.Star) || optExpectType(TokenType.Slash)) {
+        return if (optExpectType(TokenType.Star)) {
             val operator = next()!!
             val rightExpression = parseExpression()
 
-            Expression.BinaryExpression(leftExpression, operator, rightExpression)
+            Expression.BinaryExpression(
+                leftExpression,
+                listOf(operator),
+                rightExpression,
+                Expression.BinaryExpression.BinaryOperation.Multiplication
+            )
+        } else if (optExpectType(TokenType.Slash)) {
+            val operator = next()!!
+            val rightExpression = parseExpression()
+
+            Expression.BinaryExpression(
+                leftExpression,
+                listOf(operator),
+                rightExpression,
+                Expression.BinaryExpression.BinaryOperation.Division
+            )
         } else leftExpression
     }
 
     private fun parseLiteralExpression(): Expression = when {
         optExpectType(TokenType.NumberLiteral) -> {
             val numberToken = next()!! as Token.NumberLiteralToken
-            val integer = numberToken.integerLiteral?.let { Token(it, TokenType.Synthetic, numberToken.integerLiteralSpan!!) }
+            val integer =
+                numberToken.integerLiteral?.let { Token(it, TokenType.Synthetic, numberToken.integerLiteralSpan!!) }
             val float = numberToken.floatLiteral?.let { Token(it, TokenType.Synthetic, numberToken.floatLiteralSpan!!) }
-            val type = numberToken.typeAnnotation?.let { Type.TypePath(Path.SimplePath(listOf(Token(it, TokenType.Identifier, numberToken.typeAnnotationSpan!!)))) }
+            val type = numberToken.typeAnnotation?.let {
+                Type.TypePath(
+                    Path.SimplePath(
+                        listOf(
+                            Token(
+                                it,
+                                TokenType.Identifier,
+                                numberToken.typeAnnotationSpan!!
+                            )
+                        )
+                    )
+                )
+            }
 
             Expression.NumberLiteral(integer, numberToken.dot, float, type, numberToken.span)
         }
@@ -433,6 +512,19 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun optExpectType(type: TokenType, offset: Int = 0): Boolean =
         peek(offset)?.isType(type) == true
 
+    private fun optExpectRepeatType(type: TokenType, repeat: Int, offset: Int = 0): Boolean {
+        var pass = true
+
+        for (i in 0 until repeat) {
+            if (!optExpectType(type, offset + i)) {
+                pass = false
+                break
+            }
+        }
+
+        return pass
+    }
+
     private fun peek(offset: Int = 0): Token? =
         tokens.getOrNull(pos + offset)
 
@@ -445,6 +537,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
             pos++
             peek(-1)
         } else tokens.lastOrNull()
+
     private fun reportModifierDuplication(firstSpan: Span, duplicatedSpan: Span) {
         compilationUnit.reportBuilder
             .error(
