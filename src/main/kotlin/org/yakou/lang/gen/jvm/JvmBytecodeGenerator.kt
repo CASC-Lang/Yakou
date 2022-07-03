@@ -69,25 +69,13 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         if (const.expression is Expression.NumberLiteral) {
             // Value is inlinable, thus we use ConstantValue attribute in this case
             val expression = const.expression as Expression.NumberLiteral
-            var finalValue: Number = expression.value
-
-            if (expression.specifiedTypeInfo != null && const.expression.originalType != const.expression.finalType) {
-                // Cast to correct type
-                finalValue = when (expression.specifiedTypeInfo!!.type) {
-                    PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> finalValue.toInt()
-                    PrimitiveType.I64 -> finalValue.toLong()
-                    PrimitiveType.F32 -> finalValue.toFloat()
-                    PrimitiveType.F64 -> finalValue.toDouble()
-                    else -> TODO("UNREACHABLE")
-                }
-            }
 
             classWriter.visitField(
                 const.fieldInstance.access,
                 const.fieldInstance.name,
                 const.fieldInstance.descriptor,
                 null,
-                finalValue
+                castNumber(expression.value, (expression.finalType as TypeInfo.Primitive).type)
             ).visitEnd()
         }
     }
