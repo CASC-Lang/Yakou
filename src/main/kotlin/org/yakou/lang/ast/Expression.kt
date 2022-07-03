@@ -10,9 +10,9 @@ sealed class Expression {
     lateinit var finalType: TypeInfo
 
     class BinaryExpression(
-        val leftExpression: Expression,
+        var leftExpression: Expression,
         val operator: Token,
-        val rightExpression: Expression,
+        var rightExpression: Expression,
     ) : Expression() {
         override val span: Span by lazy {
             leftExpression.span.expand(rightExpression.span)

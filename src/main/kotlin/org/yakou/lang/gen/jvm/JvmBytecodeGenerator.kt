@@ -184,17 +184,12 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genNumberLiteral(methodVisitor: MethodVisitor, numberLiteral: Expression.NumberLiteral) {
-        var finalValue: Number = numberLiteral.value
-
-        finalValue = when ((numberLiteral.finalType as TypeInfo.Primitive).type) {
-            PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> finalValue.toInt()
-            PrimitiveType.I64 -> finalValue.toLong()
-            PrimitiveType.F32 -> finalValue.toFloat()
-            PrimitiveType.F64 -> finalValue.toDouble()
-            else -> TODO("UNREACHABLE")
-        }
-
-        methodVisitor.visitLdcInsn(finalValue)
+        methodVisitor.visitLdcInsn(
+            castNumber(
+                numberLiteral.value,
+                (numberLiteral.finalType as TypeInfo.Primitive).type
+            )
+        )
     }
 
     private fun getStaticBlockWriter(clazz: TypeInfo.Class): MethodVisitor =
@@ -232,4 +227,14 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
             classWriter
         }
+
+    private fun castNumber(originalNumber: Number, actualType: PrimitiveType): Number {
+        return when (actualType) {
+            PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> originalNumber.toInt()
+            PrimitiveType.I64 -> originalNumber.toLong()
+            PrimitiveType.F32 -> originalNumber.toFloat()
+            PrimitiveType.F64 -> originalNumber.toDouble()
+            else -> TODO("UNREACHABLE")
+        }
+    }
 }

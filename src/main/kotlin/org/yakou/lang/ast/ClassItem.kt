@@ -11,7 +11,7 @@ sealed class ClassItem {
         val colon: Token,
         val explicitType: Type,
         val equal: Token?,
-        val expression: Expression?
+        var expression: Expression?
     ) : ClassItem() {
         val span: Span by lazy {
             var finalSpan =
@@ -19,7 +19,7 @@ sealed class ClassItem {
                 else identifier.span
 
             finalSpan =
-                if (equal != null && expression != null) finalSpan.expand(expression.span)
+                if (equal != null && expression != null) finalSpan.expand(expression!!.span)
                 else finalSpan.expand(explicitType.span)
 
             finalSpan
