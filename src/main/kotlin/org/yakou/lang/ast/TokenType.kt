@@ -46,7 +46,6 @@ sealed class TokenType(open val literal: String?) {
     object Greater : SizedTokenType(">")
     object GreaterEqual : SizedTokenType(">=")
     object Lesser : SizedTokenType("<")
-    object DoubleLesser : SizedTokenType("<<")
     object LesserEqual : SizedTokenType("<=")
     object Pipe : SizedTokenType("|")
     object DoublePipe : SizedTokenType("||")

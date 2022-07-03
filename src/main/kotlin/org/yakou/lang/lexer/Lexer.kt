@@ -184,7 +184,6 @@ class Lexer(private val compilationUnit: CompilationUnit) {
                 else -> charToken(TokenType.Greater)
             }
             '<' -> when (peek(1)) {
-                '<' -> stringToken(TokenType.DoubleLesser)
                 '=' -> stringToken(TokenType.LesserEqual)
                 else -> charToken(TokenType.Lesser)
             }
