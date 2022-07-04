@@ -2,4 +2,4 @@
 
 This package contains all abstract syntax tree components for Yakou Programming Language.
 
-All members should be immutable by default.
+Most class members should be immutable by default, except some expressions that can be optimized.
