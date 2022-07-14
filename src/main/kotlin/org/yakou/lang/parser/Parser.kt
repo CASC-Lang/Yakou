@@ -236,8 +236,34 @@ class Parser(private val compilationUnit: CompilationUnit) {
         return statements
     }
 
-    private fun parseStatement(): Statement {
-        TODO()
+    private fun parseStatement(): Statement = when {
+        optExpectKeyword(Keyword.LET) -> {
+            val let = next()!!
+            val mut =
+                if (optExpectKeyword(Keyword.MUT)) next()!!
+                else null
+            val name = expect(TokenType.Identifier)
+            val colon: Token?
+            val specifiedType: Path.SimplePath?
+
+            if (optExpectType(TokenType.Colon)) {
+                colon = next()!!
+                specifiedType = parseSimplePath()
+            } else {
+                colon = null
+                specifiedType = null
+            }
+
+            val equal = expect(TokenType.Equal)
+            val expression = parseExpression()
+
+            Statement.VariableDeclaration(let, mut, name, colon, specifiedType, equal, expression)
+        }
+        else -> {
+            val expression = parseExpression()
+
+            Statement.ExpressionStatement(expression)
+        }
     }
 
     private fun parseExpression(): Expression {
