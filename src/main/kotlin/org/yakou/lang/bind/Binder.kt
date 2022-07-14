@@ -206,6 +206,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
         val functionScope = Scope(table)
 
         // Add function parameters as variables
+        if (function.self != null) {
+            functionScope.addVariable(function.self, function.functionInstance.ownerTypeInfo)
+        }
+
         for (parameter in function.parameters)
             functionScope.addVariable(parameter.name, parameter.typeInfo)
 

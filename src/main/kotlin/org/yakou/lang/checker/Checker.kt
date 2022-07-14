@@ -132,7 +132,9 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 reportIllegalMut(function.modifiers[Modifier.Mut]!!, "Top-level function cannot be mutable")
             }
             if (function.self != null) {
-                reportIllegalSelf(function.self.span.expand(function.selfComma?.span), "Top-level function cannot be non-static")
+                val coloredSelf = colorize("self", compilationUnit, Attribute.CYAN_TEXT())
+
+                reportIllegalSelf(function.self.span.expand(function.selfComma?.span), "Top-level function cannot access owner class from value-parameter `$coloredSelf`")
             }
         }
     }
@@ -212,7 +214,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
         val selfLiteral = colorize("self", compilationUnit, Attribute.RED_TEXT())
 
         compilationUnit.reportBuilder
-            .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Illegal modifier `$selfLiteral`")
+            .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Illegal value-parameter `$selfLiteral`")
             .label(span, labelMessage)
             .color(Attribute.RED_TEXT())
             .build().build()
