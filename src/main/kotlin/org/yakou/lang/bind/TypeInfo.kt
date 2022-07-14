@@ -21,6 +21,9 @@ sealed class TypeInfo {
 
     abstract val internalName: String?
     abstract val descriptor: String
+    abstract val storeOpcode: Int
+    abstract val loadOpcode: Int
+    abstract val returnOpcode: Int
 
     infix fun promote(otherTypeInfo: TypeInfo): Primitive? {
         val leftPrimitiveType =
@@ -93,6 +96,30 @@ sealed class TypeInfo {
             PrimitiveType.I64 -> Opcodes.LSHL
             else -> -1
         }
+        override val storeOpcode: Int = when (type) {
+            PrimitiveType.Bool, PrimitiveType.Char, PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.ISTORE
+            PrimitiveType.I64 -> Opcodes.LSTORE
+            PrimitiveType.F32 -> Opcodes.FSTORE
+            PrimitiveType.F64 -> Opcodes.DSTORE
+            PrimitiveType.Str -> Opcodes.ASTORE
+            else -> -1
+        }
+        override val loadOpcode: Int = when (type) {
+            PrimitiveType.Bool, PrimitiveType.Char, PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.ILOAD
+            PrimitiveType.I64 -> Opcodes.LLOAD
+            PrimitiveType.F32 -> Opcodes.FLOAD
+            PrimitiveType.F64 -> Opcodes.DLOAD
+            PrimitiveType.Str -> Opcodes.ALOAD
+            else -> -1
+        }
+        override val returnOpcode: Int = when (type) {
+            PrimitiveType.Bool, PrimitiveType.Char, PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.IRETURN
+            PrimitiveType.I64 -> Opcodes.LRETURN
+            PrimitiveType.F32 -> Opcodes.FRETURN
+            PrimitiveType.F64 -> Opcodes.DRETURN
+            PrimitiveType.Str -> Opcodes.ARETURN
+            else -> -1
+        }
 
         override val internalName: String? = when (type) {
             PrimitiveType.Str -> "java/lang/String"
@@ -136,6 +163,9 @@ sealed class TypeInfo {
     ) : TypeInfo() {
         final override val internalName: String = standardTypePath.replace("::", "/")
         final override val descriptor: String = "L$internalName;"
+        override val storeOpcode: Int = Opcodes.ASTORE
+        override val loadOpcode: Int = Opcodes.ALOAD
+        override val returnOpcode: Int = Opcodes.ARETURN
 
         override fun toString(): String =
             standardTypePath
@@ -167,6 +197,9 @@ sealed class TypeInfo {
 
             innerType
         }
+        override val storeOpcode: Int = Opcodes.ASTORE
+        override val loadOpcode: Int = Opcodes.ALOAD
+        override val returnOpcode: Int = Opcodes.ARETURN
 
         override fun toString(): String =
             "[$innerType]"

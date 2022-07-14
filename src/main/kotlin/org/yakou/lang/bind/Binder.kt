@@ -227,7 +227,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindStatement(statement: Statement) {
         when (statement) {
-            is Statement.VariableDeclaration -> {}
+            is Statement.VariableDeclaration -> bindVariableDeclaration(statement)
             is Statement.ExpressionStatement -> bindExpression(statement.expression)
         }
     }

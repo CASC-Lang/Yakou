@@ -69,7 +69,14 @@ class Optimizer(val compilationUnit: CompilationUnit) {
     }
 
     private fun optimizeStatement(statement: Statement) {
-
+        when (statement) {
+            is Statement.VariableDeclaration -> {
+                statement.expression = optimizeExpression(statement.expression)
+            }
+            is Statement.ExpressionStatement -> {
+                statement.expression = optimizeExpression(statement.expression)
+            }
+        }
     }
 
     private fun optimizeExpression(expression: Expression): Expression {

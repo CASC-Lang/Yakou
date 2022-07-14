@@ -13,7 +13,7 @@ sealed class Statement {
         val colon: Token?,
         val specifiedType: Path.SimplePath?,
         val equal: Token,
-        val expression: Expression,
+        var expression: Expression,
     ) : Statement() {
         override val span: Span by lazy {
             let.span.expand(expression.span)
@@ -22,7 +22,7 @@ sealed class Statement {
         var index by Delegates.notNull<Int>()
     }
 
-    class ExpressionStatement(val expression: Expression): Statement() {
+    class ExpressionStatement(var expression: Expression): Statement() {
         override val span: Span = expression.span
     }
 }

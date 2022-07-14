@@ -3,10 +3,7 @@ package org.yakou.lang.gen.jvm
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
-import org.yakou.lang.ast.ClassItem
-import org.yakou.lang.ast.Expression
-import org.yakou.lang.ast.Item
-import org.yakou.lang.ast.YkFile
+import org.yakou.lang.ast.*
 import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.compilation.CompilationSession
@@ -144,11 +141,41 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
         methodVisitor.visitCode()
 
-        // TODO: Implement instructions
+        if (function.body != null)
+            genFunctionBody(methodVisitor, function.body)
 
-        methodVisitor.visitInsn(Opcodes.RETURN) // TODO: Remove hard code
         methodVisitor.visitMaxs(-1, -1)
         methodVisitor.visitEnd()
+    }
+
+    private fun genFunctionBody(methodVisitor: MethodVisitor, functionBody: FunctionBody) {
+        when (functionBody) {
+            is FunctionBody.BlockExpression -> {
+                for (statement in functionBody.statements) {
+                    genStatement(methodVisitor, statement)
+                }
+
+                methodVisitor.visitInsn(Opcodes.RETURN) // TODO: Remove hard code
+            }
+            is FunctionBody.SingleExpression -> {
+                genExpression(methodVisitor, functionBody.expression)
+
+                methodVisitor.visitInsn(functionBody.expression.finalType.returnOpcode)
+            }
+        }
+    }
+
+    private fun genStatement(methodVisitor: MethodVisitor, statement: Statement) {
+        when (statement) {
+            is Statement.VariableDeclaration -> genVariableDeclaration(methodVisitor, statement)
+            is Statement.ExpressionStatement -> genExpression(methodVisitor, statement.expression)
+        }
+    }
+
+    private fun genVariableDeclaration(methodVisitor: MethodVisitor, variableDeclaration: Statement.VariableDeclaration) {
+        genExpression(methodVisitor, variableDeclaration.expression)
+
+        methodVisitor.visitVarInsn(variableDeclaration.expression.finalType.storeOpcode, variableDeclaration.index)
     }
 
     private fun genExpression(methodVisitor: MethodVisitor, expression: Expression) {
