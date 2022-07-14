@@ -1,7 +1,17 @@
 package org.yakou.lang.bind
 
+import org.yakou.lang.ast.Token
+
 class Scope(private val table: Table) {
-    val variables: VariableList = VariableList()
+    private val variables: VariableList = VariableList()
+
+    fun addVariable(nameToken: Token, typeInfo: TypeInfo) {
+        val variable = Variable(nameToken)
+
+        variable.typeInfo = typeInfo
+
+        variables.add(variable)
+    }
 
     class VariableList : HashSet<Variable>() {
         var currentIndex: Int = 0

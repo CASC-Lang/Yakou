@@ -17,6 +17,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private var currentPackagePath: Path.SimplePath = Path.SimplePath(listOf())
     private var currentClassPath: Path.SimplePath = Path.SimplePath(listOf())
+    private var currentScope: Scope? = null
     private var topLevel: Boolean = true
 
     fun bind() {
@@ -201,6 +202,16 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindFunction(function: Item.Function) {
+        // Initialize scope
+        val functionScope = Scope(table)
+
+        // Add function parameters as variables
+        for (parameter in function.parameters)
+            functionScope.addVariable(parameter.name, parameter.typeInfo)
+
+        // Bind scope
+        currentScope = functionScope
+
         when (function.body) {
             is FunctionBody.BlockExpression -> {
                 for (statement in function.body.statements)
@@ -209,6 +220,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
             is FunctionBody.SingleExpression -> bindExpression(function.body.expression)
             null -> return
         }
+
+        // Unbind scope
+        currentScope = null
     }
 
     private fun bindStatement(statement: Statement) {

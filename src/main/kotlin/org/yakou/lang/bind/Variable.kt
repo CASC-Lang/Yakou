@@ -3,10 +3,10 @@ package org.yakou.lang.bind
 import org.yakou.lang.ast.Token
 
 class Variable(val nameToken: Token, val name: String = nameToken.literal) {
-    lateinit var variableType: TypeInfo
+    lateinit var typeInfo: TypeInfo
 
     fun size(): Int =
-        variableType.asPrimitive()?.let {
+        typeInfo.asPrimitive()?.let {
             if (it.type == PrimitiveType.I64 || it.type == PrimitiveType.F64) 2
             else 1
         } ?: 1
