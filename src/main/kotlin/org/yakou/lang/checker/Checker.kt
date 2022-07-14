@@ -127,8 +127,13 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
     private fun checkFunction(function: Item.Function) {
         // Check top-level function has illegal modifiers
-        if (function.functionInstance.ownerTypeInfo is TypeInfo.PackageClass && function.modifiers.hasModifier(Modifier.Mut)) {
-            reportIllegalMut(function.modifiers[Modifier.Mut]!!, "Top-level function cannot be mutable")
+        if (function.functionInstance.ownerTypeInfo is TypeInfo.PackageClass) {
+            if (function.modifiers.hasModifier(Modifier.Mut)) {
+                reportIllegalMut(function.modifiers[Modifier.Mut]!!, "Top-level function cannot be mutable")
+            }
+            if (function.self != null) {
+                reportIllegalSelf(function.self.span.expand(function.selfComma?.span), "Top-level function cannot be non-static")
+            }
         }
     }
 
@@ -198,6 +203,16 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
         compilationUnit.reportBuilder
             .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Illegal modifier `$mutLiteral`")
+            .label(span, labelMessage)
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportIllegalSelf(span: Span, labelMessage: String) {
+        val selfLiteral = colorize("self", compilationUnit, Attribute.RED_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Illegal modifier `$selfLiteral`")
             .label(span, labelMessage)
             .color(Attribute.RED_TEXT())
             .build().build()
