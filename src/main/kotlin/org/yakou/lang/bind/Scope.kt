@@ -5,12 +5,15 @@ import org.yakou.lang.ast.Token
 class Scope(private val table: Table) {
     private val variables: VariableList = VariableList()
 
-    fun addVariable(nameToken: Token, typeInfo: TypeInfo) {
+    fun addVariable(nameToken: Token, typeInfo: TypeInfo): Int {
         val variable = Variable(nameToken)
+        val index = variables.currentIndex
 
         variable.typeInfo = typeInfo
 
         variables.add(variable)
+
+        return index
     }
 
     class VariableList : HashSet<Variable>() {

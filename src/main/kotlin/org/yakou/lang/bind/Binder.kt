@@ -226,7 +226,18 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindStatement(statement: Statement) {
+        when (statement) {
+            is Statement.VariableDeclaration -> {}
+            is Statement.ExpressionStatement -> bindExpression(statement.expression)
+        }
+    }
 
+    private fun bindVariableDeclaration(variableDeclaration: Statement.VariableDeclaration) {
+        bindExpression(variableDeclaration.expression)
+
+        // Check expression type can be cast into specified type
+
+        variableDeclaration.index = currentScope?.addVariable(variableDeclaration.name, variableDeclaration.expression.finalType) ?: -1
     }
 
     private fun bindExpression(expression: Expression) {

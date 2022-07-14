@@ -2,6 +2,6 @@ pkg chaos {
     const a: i32 = 1
 
     fn test(kek: str) {
-
+        let a = 1
     }
 }

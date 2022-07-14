@@ -1,6 +1,7 @@
 package org.yakou.lang.ast
 
 import chaos.unity.nenggao.Span
+import kotlin.properties.Delegates
 
 sealed class Statement {
     abstract val span: Span
@@ -17,6 +18,8 @@ sealed class Statement {
         override val span: Span by lazy {
             let.span.expand(expression.span)
         }
+
+        var index by Delegates.notNull<Int>()
     }
 
     class ExpressionStatement(val expression: Expression): Statement() {
