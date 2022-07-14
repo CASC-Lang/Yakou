@@ -93,6 +93,8 @@ sealed class Item {
         val fn: Token,
         val identifier: Token,
         val openParenthesis: Token,
+        val self: Token?,
+        val selfComma: Token?,
         val parameters: List<Parameter>,
         val closeParenthesis: Token,
         val arrow: Token?,

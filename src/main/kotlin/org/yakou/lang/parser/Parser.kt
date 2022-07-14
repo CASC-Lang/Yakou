@@ -179,6 +179,17 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val fn = next()!! // Should be asserted when called
         val name = expect(TokenType.Identifier)
         val openParenthesis = expect(TokenType.OpenParenthesis)
+        val self: Token?
+        val selfComma: Token?
+
+        if (optExpectKeyword(Keyword.SELF)) {
+            self = next()!!
+            selfComma = expect(TokenType.Comma)
+        } else {
+            self = null
+            selfComma = null
+        }
+
         val parameters = parseParameters()
         val closeParenthesis = expect(TokenType.CloseParenthesis)
         val arrow: Token?
@@ -200,6 +211,8 @@ class Parser(private val compilationUnit: CompilationUnit) {
             fn,
             name,
             openParenthesis,
+            self,
+            selfComma,
             parameters,
             closeParenthesis,
             arrow,
