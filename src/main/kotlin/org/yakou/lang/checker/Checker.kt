@@ -120,6 +120,39 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 )
             }
         }
+
+        if (function.body != null)
+            checkFunctionBody(function.body)
+    }
+
+    private fun checkFunctionBody(functionBody: FunctionBody) {
+        when (functionBody) {
+            is FunctionBody.BlockExpression -> {
+                for (statement in functionBody.statements)
+                    checkStatement(statement)
+            }
+            is FunctionBody.SingleExpression -> checkExpression(functionBody.expression)
+        }
+    }
+
+    private fun checkStatement(statement: Statement) {
+        when (statement) {
+            is Statement.VariableDeclaration -> checkVariableDeclaration(statement)
+            is Statement.ExpressionStatement -> checkExpression(statement.expression)
+        }
+    }
+
+    private fun checkVariableDeclaration(variableDeclaration: Statement.VariableDeclaration) {
+        if (variableDeclaration.name.literal == "_") {
+            when (variableDeclaration.expression) {
+                is Expression.NumberLiteral -> {
+                    // No effect variable declaration
+                    reportIgnoredVariableHasNoEffect(variableDeclaration.name.span, variableDeclaration.expression.span)
+                }
+                is Expression.BinaryExpression -> TODO()
+                Expression.Undefined -> TODO("UNREACHABLE")
+            }
+        }
     }
 
     private fun checkExpression(expression: Expression) {
@@ -173,6 +206,20 @@ class Checker(private val compilationUnit: CompilationUnit) {
                     .build().build()
             }
         }
+    }
+
+    private fun reportIgnoredVariableHasNoEffect(variableSpan: Span, expressionSpan: Span) {
+        compilationUnit.reportBuilder
+            .warning(
+                SpanHelper.expandView(variableSpan.expand(expressionSpan), compilationUnit.maxLineCount),
+                "Expression of ignored variable has no side effect"
+            )
+            .label(variableSpan, "Variable ignored here")
+            .color(Attribute.CYAN_TEXT())
+            .build()
+            .label(expressionSpan, "Expression has no side effect")
+            .color(Attribute.YELLOW_TEXT())
+            .build().build()
     }
 
     private fun reportIllegalMut(span: Span, labelMessage: String) {
