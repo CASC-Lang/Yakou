@@ -19,6 +19,7 @@ sealed class Statement {
             let.span.expand(expression.span)
         }
 
+        var ignore: Boolean = false
         var index by Delegates.notNull<Int>()
     }
 

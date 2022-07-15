@@ -211,7 +211,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
 
         for (parameter in function.parameters)
-            functionScope.addVariable(parameter.name, parameter.typeInfo)
+            functionScope.addValueParameter(parameter.name, parameter.typeInfo)
 
         // Bind scope
         currentScope = functionScope
@@ -224,6 +224,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
             is FunctionBody.SingleExpression -> bindExpression(function.body.expression)
             null -> return
         }
+
+        checkVariableUnused(currentScope!!)
 
         // Unbind scope
         currentScope = null
@@ -241,7 +243,11 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         // Check expression type can be cast into specified type
 
-        if (currentScope != null) {
+        if (variableDeclaration.name.literal == "_") {
+            // Ignore variable declaration (discard lhs expression result)
+            // TODO: Warning about this?
+            variableDeclaration.ignore = true
+        } else if (currentScope != null) {
             val index = currentScope!!.currentVariableIndex()
 
             if (currentScope!!.addVariable(variableDeclaration.name, variableDeclaration.expression.finalType)) {
@@ -486,6 +492,28 @@ class Binder(private val compilationUnit: CompilationUnit) {
             )
             .label(span, "Already defined")
             .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun checkVariableUnused(scope: Scope) {
+        for (variable in scope.variables) {
+            if (!variable.isUsed) {
+                reportVariableUnused(variable)
+            }
+        }
+    }
+
+    private fun reportVariableUnused(variable: Variable) {
+        val variableType = if (variable is Variable.ValueParameter) "Value-parameter" else "Variable"
+        val coloredVariableName= colorize(variable.name, compilationUnit, Attribute.CYAN_TEXT())
+
+        compilationUnit.reportBuilder
+            .warning(
+                SpanHelper.expandView(variable.nameToken.span, compilationUnit.maxLineCount),
+                "$variableType `$coloredVariableName` is never used"
+            )
+            .label(variable.nameToken.span, "Unused ${variableType.lowercase()} here")
+            .color(Attribute.YELLOW_TEXT())
             .build().build()
     }
 

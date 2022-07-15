@@ -1,7 +1,6 @@
 package org.yakou.lang.parser
 
 import chaos.unity.nenggao.Span
-import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
 import org.yakou.lang.ast.*
 import org.yakou.lang.compilation.CompilationUnit
@@ -669,12 +668,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val originalTokenLiteral = originalToken.colorizeTokenType(compilationUnit.preference, Attribute.RED_TEXT())
         val acceptableTokenLiteral = arrayOf(acceptableKeyword, *additionalKeyword)
             .joinToString(prefix = "Expected ") {
-                "`${
-                    (if (compilationUnit.preference.enableColor) Ansi.colorize(
-                        it.literal,
-                        Attribute.CYAN_TEXT()
-                    ) else it.literal)
-                }`"
+                "`${colorize(it.literal, compilationUnit, Attribute.CYAN_TEXT())}`"
             }
 
         compilationUnit.reportBuilder

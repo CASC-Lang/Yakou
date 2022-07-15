@@ -2,8 +2,13 @@ package org.yakou.lang.bind
 
 import org.yakou.lang.ast.Token
 
-class Variable(val nameToken: Token, val name: String = nameToken.literal) {
+open class Variable(val nameToken: Token, val name: String = nameToken.literal) {
+    var isUsed: Boolean = false
     var typeInfo: TypeInfo = TypeInfo.Primitive.UNIT_TYPE_INFO
+
+    fun markUsed() {
+        isUsed = true
+    }
 
     fun size(): Int =
         typeInfo.asPrimitive()?.let {
@@ -25,4 +30,6 @@ class Variable(val nameToken: Token, val name: String = nameToken.literal) {
     override fun hashCode(): Int {
         return name.hashCode()
     }
+
+    class ValueParameter(nameToken: Token): Variable(nameToken)
 }

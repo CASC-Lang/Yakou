@@ -172,10 +172,34 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         }
     }
 
-    private fun genVariableDeclaration(methodVisitor: MethodVisitor, variableDeclaration: Statement.VariableDeclaration) {
+    private fun genVariableDeclaration(
+        methodVisitor: MethodVisitor,
+        variableDeclaration: Statement.VariableDeclaration
+    ) {
         genExpression(methodVisitor, variableDeclaration.expression)
 
-        methodVisitor.visitVarInsn(variableDeclaration.expression.finalType.storeOpcode, variableDeclaration.index)
+        if (!variableDeclaration.ignore) {
+            methodVisitor.visitVarInsn(variableDeclaration.expression.finalType.storeOpcode, variableDeclaration.index)
+        } else {
+            // Discard return value if need
+            when (val type = variableDeclaration.expression.finalType) {
+                is TypeInfo.Primitive -> {
+                    if (type.type != PrimitiveType.Unit) {
+                        when (type.type) {
+                            PrimitiveType.I64, PrimitiveType.F64 -> {
+                                methodVisitor.visitInsn(Opcodes.POP2)
+                            }
+                            else -> {
+                                methodVisitor.visitInsn(Opcodes.POP)
+                            }
+                        }
+                    }
+                }
+                else -> {
+                    methodVisitor.visitInsn(Opcodes.POP)
+                }
+            }
+        }
     }
 
     private fun genExpression(methodVisitor: MethodVisitor, expression: Expression) {
