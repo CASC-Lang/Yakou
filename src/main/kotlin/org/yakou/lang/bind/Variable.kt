@@ -3,7 +3,7 @@ package org.yakou.lang.bind
 import org.yakou.lang.ast.Token
 
 class Variable(val nameToken: Token, val name: String = nameToken.literal) {
-    lateinit var typeInfo: TypeInfo
+    var typeInfo: TypeInfo = TypeInfo.Primitive.UNIT_TYPE_INFO
 
     fun size(): Int =
         typeInfo.asPrimitive()?.let {

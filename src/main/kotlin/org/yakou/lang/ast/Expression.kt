@@ -6,8 +6,8 @@ import kotlin.properties.Delegates
 
 sealed class Expression {
     abstract val span: Span
-    lateinit var originalType: TypeInfo
-    lateinit var finalType: TypeInfo
+    var originalType: TypeInfo = TypeInfo.Primitive.UNIT_TYPE_INFO
+    var finalType: TypeInfo = TypeInfo.Primitive.UNIT_TYPE_INFO
 
     class BinaryExpression(
         var leftExpression: Expression,
