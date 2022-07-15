@@ -1,7 +1,6 @@
 package org.yakou.lang.checker
 
 import chaos.unity.nenggao.Span
-import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
 import org.yakou.lang.ast.*
 import org.yakou.lang.bind.PrimitiveType
@@ -43,18 +42,9 @@ class Checker(private val compilationUnit: CompilationUnit) {
         checkExpression(const.expression)
         // Check expression's type explicitly matches constant's explicit type
         if (const.typeInfo != const.expression.finalType) {
-            val explicitTypeLiteral =
-                if (compilationUnit.preference.enableColor) Ansi.colorize(
-                    const.typeInfo.toString(),
-                    Attribute.CYAN_TEXT()
-                )
-                else const.typeInfo.toString()
+            val explicitTypeLiteral = colorize(const.typeInfo.toString(), compilationUnit, Attribute.CYAN_TEXT())
             val expressionTypeLiteral =
-                if (compilationUnit.preference.enableColor) Ansi.colorize(
-                    const.expression.finalType.toString(),
-                    Attribute.RED_TEXT()
-                )
-                else const.expression.finalType.toString()
+                colorize(const.expression.finalType.toString(), compilationUnit, Attribute.RED_TEXT())
 
             compilationUnit.reportBuilder
                 .error(
@@ -76,37 +66,27 @@ class Checker(private val compilationUnit: CompilationUnit) {
         // Check if expression is not castable to explicit type
         if (staticField.expression.finalType is TypeInfo.Primitive)
         // Check if it's applicable to convert static field into constant
-        if (staticField.expression.finalType is TypeInfo.Primitive &&
-            staticField.expression is Expression.LiteralExpression &&
-            !staticField.modifiers.hasModifier(Modifier.Mut)) {
-            val staticLiteral =
-                if (compilationUnit.preference.enableColor) Ansi.colorize(
-                    "static",
-                    Attribute.CYAN_TEXT()
-                )
-                else "static"
-            val constLiteral =
-                if (compilationUnit.preference.enableColor) Ansi.colorize(
-                    "const",
-                    Attribute.CYAN_TEXT()
-                )
-                else "const"
-            val expressionTypeLiteral =
-                if (compilationUnit.preference.enableColor) Ansi.colorize(
-                    staticField.expression.finalType.toString(),
-                    Attribute.GREEN_TEXT()
-                )
-                else staticField.expression.finalType.toString()
+            if (staticField.expression.finalType is TypeInfo.Primitive &&
+                staticField.expression is Expression.LiteralExpression &&
+                !staticField.modifiers.hasModifier(Modifier.Mut)
+            ) {
+                val staticLiteral = colorize("static", compilationUnit, Attribute.CYAN_TEXT())
+                val constLiteral = colorize("const", compilationUnit, Attribute.CYAN_TEXT())
+                val expressionTypeLiteral =
+                    colorize(staticField.expression.finalType.toString(), compilationUnit, Attribute.GREEN_TEXT())
 
-            compilationUnit.reportBuilder
-                .warning(SpanHelper.expandView(staticField.span, compilationUnit.maxLineCount), "Static field is sufficient to convert into constant")
-                .label(staticField.static.span, "Consider replace `$staticLiteral` with `$constLiteral`")
-                .color(Attribute.YELLOW_TEXT())
-                .build()
-                .label(staticField.expression.span, "Expression has primitive type `$expressionTypeLiteral`")
-                .color(Attribute.CYAN_TEXT())
-                .build().build()
-        }
+                compilationUnit.reportBuilder
+                    .warning(
+                        SpanHelper.expandView(staticField.span, compilationUnit.maxLineCount),
+                        "Static field is sufficient to convert into constant"
+                    )
+                    .label(staticField.static.span, "Consider replace `$staticLiteral` with `$constLiteral`")
+                    .color(Attribute.YELLOW_TEXT())
+                    .build()
+                    .label(staticField.expression.span, "Expression has primitive type `$expressionTypeLiteral`")
+                    .color(Attribute.CYAN_TEXT())
+                    .build().build()
+            }
     }
 
     private fun checkClass(function: Item.Class) {
@@ -134,7 +114,10 @@ class Checker(private val compilationUnit: CompilationUnit) {
             if (function.self != null) {
                 val coloredSelf = colorize("self", compilationUnit, Attribute.CYAN_TEXT())
 
-                reportIllegalSelf(function.self.span.expand(function.selfComma?.span), "Top-level function cannot access owner class from value-parameter `$coloredSelf`")
+                reportIllegalSelf(
+                    function.self.span.expand(function.selfComma?.span),
+                    "Top-level function cannot access owner class from value-parameter `$coloredSelf`"
+                )
             }
         }
     }
@@ -159,11 +142,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             if (isIntegerValue) {
                 // Number literal represents a float number but specified with an integer type
                 val specifiedTypeLiteral =
-                    if (compilationUnit.preference.enableColor) Ansi.colorize(
-                        numberLiteral.specifiedType.standardizeType(),
-                        Attribute.RED_TEXT()
-                    )
-                    else numberLiteral.specifiedType.standardizeType()
+                    colorize(numberLiteral.specifiedType.standardizeType(), compilationUnit, Attribute.RED_TEXT())
 
                 compilationUnit.reportBuilder
                     .error(
@@ -179,11 +158,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             } else if (numberLiteral.originalType is TypeInfo.Primitive && (numberLiteral.originalType as TypeInfo.Primitive).type == PrimitiveType.F64) {
                 // Redundant type suffix `f64` for float number literal
                 val specifiedTypeLiteral =
-                    if (compilationUnit.preference.enableColor) Ansi.colorize(
-                        numberLiteral.specifiedType.standardizeType(),
-                        Attribute.CYAN_TEXT()
-                    )
-                    else numberLiteral.specifiedType.standardizeType()
+                    colorize(numberLiteral.specifiedType.standardizeType(), compilationUnit, Attribute.CYAN_TEXT())
 
                 compilationUnit.reportBuilder
                     .warning(
