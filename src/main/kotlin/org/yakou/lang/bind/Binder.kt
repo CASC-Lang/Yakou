@@ -7,6 +7,7 @@ import org.objectweb.asm.Opcodes
 import org.yakou.lang.ast.*
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
+import org.yakou.lang.util.colorize
 
 class Binder(private val compilationUnit: CompilationUnit) {
     companion object {
@@ -241,7 +242,17 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         // Check expression type can be cast into specified type
 
-        variableDeclaration.index = currentScope?.addVariable(variableDeclaration.name, variableDeclaration.expression.finalType) ?: -1
+        if (currentScope != null) {
+            val index = currentScope!!.currentVariableIndex()
+
+            if (currentScope!!.addVariable(variableDeclaration.name, variableDeclaration.expression.finalType)) {
+                variableDeclaration.index = index
+            } else {
+                val originalVariable = currentScope!!.getVariable(variableDeclaration.name.literal)!!
+
+                reportVariableAlreadyDeclared(originalVariable, variableDeclaration.name.span)
+            }
+        }
     }
 
     private fun bindExpression(expression: Expression) {
@@ -503,9 +514,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun reportFunctionAlreadyDefined(fn: ClassMember.Fn, function: Item.Function) {
         val span = function.fn.span.expand(function.span)
-        val coloredFnLiteral =
-            if (compilationUnit.preference.enableColor) Ansi.colorize(fn.toString(), Attribute.CYAN_TEXT())
-            else fn.toString()
+        val coloredFnLiteral = colorize(fn.toString(), compilationUnit, Attribute.CYAN_TEXT())
 
         compilationUnit.reportBuilder
             .error(
@@ -513,6 +522,23 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 "Function $coloredFnLiteral is already defined at `${fn.qualifiedOwnerPath}`"
             )
             .label(span, "Already defined")
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportVariableAlreadyDeclared(originalVariable: Variable, duplicatedSpan: Span) {
+        val originalSpan = originalVariable.nameToken.span
+        val coloredVariableName = colorize(originalVariable.name, compilationUnit, Attribute.CYAN_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(originalSpan.expand(duplicatedSpan), compilationUnit.maxLineCount),
+                "Variable `$coloredVariableName` is already declared"
+            )
+            .label(originalSpan, "Variable `$coloredVariableName` was declared here first")
+            .color(Attribute.CYAN_TEXT())
+            .build()
+            .label(duplicatedSpan, "Variable redeclared here")
             .color(Attribute.RED_TEXT())
             .build().build()
     }

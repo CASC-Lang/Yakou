@@ -1,7 +1,7 @@
 pkg chaos {
     const a: i32 = 1
 
-    fn test(self, kek: str) {
-        let a = 1
+    fn test(kek: str) {
+        let a = 9.1 >> 2
     }
 }
