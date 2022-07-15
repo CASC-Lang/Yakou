@@ -366,18 +366,16 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 }
 
                 if (rightType == null || rightType.type != PrimitiveType.I32) {
-                    val coloredOperator =
-                        if (compilationUnit.preference.enableColor) Ansi.colorize(
-                            binaryExpression.operator.joinToString { it.literal },
-                            Attribute.CYAN_TEXT()
-                        )
-                        else binaryExpression.operator.joinToString { it.literal }
-                    val coloredRightTypeLiteral =
-                        if (compilationUnit.preference.enableColor) Ansi.colorize(
-                            binaryExpression.rightExpression.finalType.toString(),
-                            Attribute.CYAN_TEXT()
-                        )
-                        else binaryExpression.rightExpression.finalType.toString()
+                    val coloredOperator = colorize(
+                        binaryExpression.operator.joinToString(separator = "", transform = Token::literal),
+                        compilationUnit,
+                        Attribute.CYAN_TEXT()
+                    )
+                    val coloredRightTypeLiteral = colorize(
+                        binaryExpression.rightExpression.finalType.toString(),
+                        compilationUnit,
+                        Attribute.CYAN_TEXT()
+                    )
 
                     compilationUnit.reportBuilder
                         .error(
