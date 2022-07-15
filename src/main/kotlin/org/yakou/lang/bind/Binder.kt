@@ -1,7 +1,6 @@
 package org.yakou.lang.bind
 
 import chaos.unity.nenggao.Span
-import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
 import org.objectweb.asm.Opcodes
 import org.yakou.lang.ast.*
@@ -277,24 +276,13 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 val promotedType = leftType promote rightType
 
                 if (promotedType == null) {
-                    val coloredOperator =
-                        if (compilationUnit.preference.enableColor) Ansi.colorize(
-                            binaryExpression.operator.joinToString { it.literal },
-                            Attribute.CYAN_TEXT()
-                        )
-                        else binaryExpression.operator.joinToString { it.literal }
-                    val coloredLeftTypeLiteral =
-                        if (compilationUnit.preference.enableColor) Ansi.colorize(
-                            leftType.toString(),
-                            Attribute.CYAN_TEXT()
-                        )
-                        else leftType.toString()
-                    val coloredRightTypeLiteral =
-                        if (compilationUnit.preference.enableColor) Ansi.colorize(
-                            rightType.toString(),
-                            Attribute.CYAN_TEXT()
-                        )
-                        else rightType.toString()
+                    val coloredOperator = colorize(
+                        binaryExpression.operator.joinToString(transform = Token::literal),
+                        compilationUnit,
+                        Attribute.CYAN_TEXT()
+                    )
+                    val coloredLeftTypeLiteral = colorize(leftType.toString(), compilationUnit, Attribute.CYAN_TEXT())
+                    val coloredRightTypeLiteral = colorize(rightType.toString(), compilationUnit, Attribute.CYAN_TEXT())
                     val operatorSpan = binaryExpression.operator.map(Token::span).reduce(Span::expand)
 
                     compilationUnit.reportBuilder
@@ -431,9 +419,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun reportConstAlreadyDefined(field: ClassMember.Field, const: Item.Const) {
         val span = const.span
-        val coloredConstLiteral =
-            if (compilationUnit.preference.enableColor) Ansi.colorize(field.constToString(), Attribute.CYAN_TEXT())
-            else field.constToString()
+        val coloredConstLiteral = colorize(field.constToString(), compilationUnit, Attribute.CYAN_TEXT())
 
         compilationUnit.reportBuilder
             .error(
@@ -447,12 +433,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun reportStaticFieldAlreadyDefined(field: ClassMember.Field, staticField: Item.StaticField) {
         val span = staticField.span
-        val coloredStaticFieldLiteral =
-            if (compilationUnit.preference.enableColor) Ansi.colorize(
-                field.staticFieldToString(),
-                Attribute.CYAN_TEXT()
-            )
-            else field.staticFieldToString()
+        val coloredStaticFieldLiteral = colorize(field.staticFieldToString(), compilationUnit, Attribute.CYAN_TEXT())
 
         compilationUnit.reportBuilder
             .error(
@@ -466,18 +447,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun reportClassAlreadyDefined(clazz: Item.Class) {
         val span = clazz.span
-        val coloredPackageLiteral =
-            if (compilationUnit.preference.enableColor) Ansi.colorize(
-                currentPackagePath.toString(),
-                Attribute.CYAN_TEXT()
-            )
-            else currentPackagePath.toString()
-        val coloredClassLiteral =
-            if (compilationUnit.preference.enableColor) Ansi.colorize(
-                currentClassPath.toString(),
-                Attribute.CYAN_TEXT()
-            )
-            else currentClassPath.toString()
+        val coloredPackageLiteral = colorize(currentPackagePath.toString(), compilationUnit, Attribute.CYAN_TEXT())
+        val coloredClassLiteral = colorize(currentClassPath.toString(), compilationUnit, Attribute.CYAN_TEXT())
 
         compilationUnit.reportBuilder
             .error(
@@ -492,11 +463,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun reportFieldAlreadyDefined(fieldInstance: ClassMember.Field, field: ClassItem.Field) {
         val span = field.span
         val coloredStaticFieldLiteral =
-            if (compilationUnit.preference.enableColor) Ansi.colorize(
-                fieldInstance.staticFieldToString(),
-                Attribute.CYAN_TEXT()
-            )
-            else fieldInstance.staticFieldToString()
+            colorize(fieldInstance.staticFieldToString(), compilationUnit, Attribute.CYAN_TEXT())
 
         compilationUnit.reportBuilder
             .error(
@@ -546,9 +513,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             // Unknown type
             val span = type.span
             val typeName = type.standardizeType()
-            val colorizedTypeName =
-                if (compilationUnit.preference.enableColor) Ansi.colorize(typeName, Attribute.RED_TEXT())
-                else typeName
+            val colorizedTypeName = colorize(typeName, compilationUnit, Attribute.RED_TEXT())
 
             compilationUnit.reportBuilder
                 .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Unknown type $colorizedTypeName")
