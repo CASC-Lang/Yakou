@@ -6,6 +6,7 @@ import com.diogonunes.jcolor.Attribute
 import org.yakou.lang.ast.*
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
+import org.yakou.lang.util.colorize
 
 class Parser(private val compilationUnit: CompilationUnit) {
     private val tokens: List<Token> = compilationUnit.tokens ?: listOf()
@@ -465,9 +466,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                             reportModifierDuplication(modifiers[Modifier.Pub]!!, span)
                         } else {
                             // Warning about modifiers contains `pub` access modifier by default (it's hidden though)
-                            val pubLiteral =
-                                if (compilationUnit.preference.enableColor) Ansi.colorize("pub", Attribute.CYAN_TEXT())
-                                else "pub"
+                            val pubLiteral = colorize("pub", compilationUnit, Attribute.CYAN_TEXT())
 
                             compilationUnit.reportBuilder
                                 .warning(
