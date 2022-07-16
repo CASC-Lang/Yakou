@@ -7,7 +7,7 @@ import org.yakou.lang.ast.Parameter
 import org.yakou.lang.ast.Path
 import java.lang.reflect.Method
 
-sealed class ClassMember(val memberType: MemberType) {
+sealed class ClassMember(val memberType: MemberType): Symbol() {
     abstract val access: Int
     abstract val packagePath: String
     abstract val classPath: String
@@ -21,7 +21,7 @@ sealed class ClassMember(val memberType: MemberType) {
         override val packagePath: String,
         override val classPath: String,
         override val name: String,
-        val type: TypeInfo,
+        override val typeInfo: TypeInfo,
         val isConst: Boolean,
     ) : ClassMember(MemberType.FIELD) {
         companion object {
@@ -76,7 +76,7 @@ sealed class ClassMember(val memberType: MemberType) {
             )
         }
 
-        val descriptor: String = type.descriptor
+        val descriptor: String = typeInfo.descriptor
         override lateinit var ownerTypeInfo: TypeInfo.Class
 
         override val qualifiedOwnerPath: String by lazy {
@@ -93,7 +93,7 @@ sealed class ClassMember(val memberType: MemberType) {
             toString()
 
         override fun toString(): String =
-            "$name: $type"
+            "$name: $typeInfo"
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -152,6 +152,7 @@ sealed class ClassMember(val memberType: MemberType) {
 
         val descriptor: String =
             "(${parameterTypeInfos.map(TypeInfo::descriptor).joinToString(separator = "")})${returnTypeInfo.descriptor}"
+        override val typeInfo: TypeInfo = returnTypeInfo
         override lateinit var ownerTypeInfo: TypeInfo.Class
 
         override val qualifiedOwnerPath: String by lazy {

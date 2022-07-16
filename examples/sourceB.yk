@@ -2,7 +2,6 @@ pkg chaos {
     const a: i32 = 1
 
     fn test(kek: str) {
-        let _ = 1.0
-        let b = 1
+        let b = a
     }
 }

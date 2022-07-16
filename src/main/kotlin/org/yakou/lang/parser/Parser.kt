@@ -382,6 +382,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseLiteralExpression(): Expression = when {
+        optExpectType(TokenType.Identifier) -> Expression.Identifier(next()!!)
         optExpectType(TokenType.NumberLiteral) -> {
             val numberToken = next()!! as Token.NumberLiteralToken
             val integer =

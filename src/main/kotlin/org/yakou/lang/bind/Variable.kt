@@ -2,14 +2,22 @@ package org.yakou.lang.bind
 
 import org.yakou.lang.ast.Token
 
-open class Variable(val nameToken: Token, val index: Int, val name: String = nameToken.literal) {
+open class Variable(val nameToken: Token, val index: Int, val name: String = nameToken.literal): Symbol() {
     var propagatable: Boolean = false // Constant folding usage
     var referencedCount: Int = 0 // Constant folding usage
     var isUsed: Boolean = false
-    var typeInfo: TypeInfo = TypeInfo.Primitive.UNIT_TYPE_INFO
+    override var typeInfo: TypeInfo = TypeInfo.Primitive.UNIT_TYPE_INFO
 
     fun markUsed() {
         isUsed = true
+    }
+
+    fun reference() {
+        referencedCount++
+    }
+
+    fun dereference() {
+        referencedCount--
     }
 
     fun size(): Int =

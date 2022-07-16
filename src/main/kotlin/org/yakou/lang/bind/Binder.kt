@@ -165,9 +165,14 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun bindItem(item: Item) {
         when (item) {
             is Item.Package -> {
+                val previousPackagePath = currentPackagePath
+                currentPackagePath = currentPackagePath.append(item.identifier)
+
                 if (item.items != null)
                     for (innerItem in item.items)
                         bindItem(innerItem)
+
+                currentPackagePath = previousPackagePath
             }
             is Item.Const -> bindConst(item)
             is Item.StaticField -> bindStaticField(item)
@@ -185,9 +190,14 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindClass(clazz: Item.Class) {
+        val previousClassPath = currentClassPath
+        currentClassPath = currentClassPath.append(clazz.identifier)
+
         if (clazz.classItems != null)
             for (clazzItem in clazz.classItems)
                 bindClassItem(clazzItem)
+
+        currentClassPath = previousClassPath
     }
 
     private fun bindClassItem(classItem: ClassItem) {
@@ -398,7 +408,20 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindIdentifier(identifier: Expression.Identifier) {
-        TODO()
+        val resolver = Resolver(currentScope!!)
+        val resolvedSymbol = resolver.resolveIdentifier(currentPackagePath, currentClassPath, identifier.identifier.literal)
+
+        if (resolvedSymbol != null) {
+            identifier.originalType = resolvedSymbol.typeInfo
+            identifier.finalType = resolvedSymbol.typeInfo
+
+            if (resolvedSymbol is Variable) {
+                resolvedSymbol.markUsed()
+                resolvedSymbol.reference()
+            }
+        } else {
+            TODO("Report error")
+        }
     }
 
     private fun bindNumberLiteral(numberLiteral: Expression.NumberLiteral) {

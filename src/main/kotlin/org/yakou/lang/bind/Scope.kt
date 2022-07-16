@@ -2,7 +2,7 @@ package org.yakou.lang.bind
 
 import org.yakou.lang.ast.Token
 
-class Scope(private val table: Table) {
+class Scope(internal val table: Table) {
     val variables: VariableList = VariableList()
 
     fun currentVariableIndex(): Int =
