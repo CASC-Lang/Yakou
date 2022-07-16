@@ -80,7 +80,13 @@ sealed class TypeInfo {
             PrimitiveType.F64 -> Opcodes.DDIV
             else -> -1
         }
-
+        val remOpcode: Int = when (type) {
+            PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.IREM
+            PrimitiveType.I64 -> Opcodes.LREM
+            PrimitiveType.F32 -> Opcodes.FREM
+            PrimitiveType.F64 -> Opcodes.DREM
+            else -> -1
+        }
         val ushrOpcode: Int =  when (type) {
             PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.IUSHR
             PrimitiveType.I64 -> Opcodes.LUSHR

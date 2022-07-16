@@ -224,10 +224,10 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 Expression.BinaryExpression.BinaryOperation.Subtraction -> methodVisitor.visitInsn(primitiveType.subOpcode)
                 Expression.BinaryExpression.BinaryOperation.Multiplication -> methodVisitor.visitInsn(primitiveType.mulOpcode)
                 Expression.BinaryExpression.BinaryOperation.Division -> methodVisitor.visitInsn(primitiveType.divOpcode)
+                Expression.BinaryExpression.BinaryOperation.Modulo -> methodVisitor.visitInsn(primitiveType.remOpcode)
                 Expression.BinaryExpression.BinaryOperation.UnsignedRightShift -> methodVisitor.visitInsn(primitiveType.ushrOpcode)
                 Expression.BinaryExpression.BinaryOperation.RightShift -> methodVisitor.visitInsn(primitiveType.shrOpcode)
                 Expression.BinaryExpression.BinaryOperation.LeftShift -> methodVisitor.visitInsn(primitiveType.shlOpcode)
-                else -> {}
             }
         }
     }

@@ -368,6 +368,16 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 rightExpression,
                 Expression.BinaryExpression.BinaryOperation.Division
             )
+        } else if (optExpectType(TokenType.Percentage)) {
+            val operator = next()!!
+            val rightExpression = parseExpression()
+
+            Expression.BinaryExpression(
+                leftExpression,
+                listOf(operator),
+                rightExpression,
+                Expression.BinaryExpression.BinaryOperation.Modulo
+            )
         } else leftExpression
     }
 

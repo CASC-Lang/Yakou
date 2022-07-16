@@ -275,7 +275,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
             Expression.BinaryExpression.BinaryOperation.Addition,
             Expression.BinaryExpression.BinaryOperation.Subtraction,
             Expression.BinaryExpression.BinaryOperation.Multiplication,
-            Expression.BinaryExpression.BinaryOperation.Division -> {
+            Expression.BinaryExpression.BinaryOperation.Division,
+            Expression.BinaryExpression.BinaryOperation.Modulo-> {
                 val leftType = binaryExpression.leftExpression.finalType
                 val rightType = binaryExpression.rightExpression.finalType
                 val promotedType = leftType promote rightType

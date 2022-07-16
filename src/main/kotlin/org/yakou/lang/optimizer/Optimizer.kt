@@ -116,6 +116,9 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                         Expression.BinaryExpression.BinaryOperation.Division -> {
                             syntheticNumberLiteral(optimizedLeftExpression.value / optimizedRightExpression.value)
                         }
+                        Expression.BinaryExpression.BinaryOperation.Modulo -> {
+                            syntheticNumberLiteral(optimizedLeftExpression.value % optimizedRightExpression.value)
+                        }
                         Expression.BinaryExpression.BinaryOperation.UnsignedRightShift -> {
                             syntheticNumberLiteral((optimizedLeftExpression.value.toLong() ushr optimizedRightExpression.value.toInt()).toDouble())
                         }
