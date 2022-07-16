@@ -215,6 +215,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 "Expression of ignored variable has no side effect"
             )
             .label(variableSpan, "Variable ignored here")
+            .hint("It's safe to remove this variable declaration")
             .color(Attribute.CYAN_TEXT())
             .build()
             .label(expressionSpan, "Expression has no side effect")
