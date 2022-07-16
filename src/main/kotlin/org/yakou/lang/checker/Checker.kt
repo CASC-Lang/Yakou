@@ -145,11 +145,12 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkVariableDeclaration(variableDeclaration: Statement.VariableDeclaration) {
         if (variableDeclaration.name.literal == "_") {
             when (variableDeclaration.expression) {
+                is Expression.BinaryExpression -> {}
+                is Expression.Identifier -> {}
                 is Expression.NumberLiteral -> {
                     // No effect variable declaration
                     reportIgnoredVariableHasNoEffect(variableDeclaration.name.span, variableDeclaration.expression.span)
                 }
-                is Expression.BinaryExpression -> TODO()
                 Expression.Undefined -> TODO("UNREACHABLE")
             }
         }
@@ -157,8 +158,9 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
     private fun checkExpression(expression: Expression) {
         when (expression) {
-            is Expression.NumberLiteral -> checkNumberLiteral(expression)
             is Expression.BinaryExpression -> checkBinaryExpression(expression)
+            is Expression.Identifier -> TODO()
+            is Expression.NumberLiteral -> checkNumberLiteral(expression)
             Expression.Undefined -> TODO("UNREACHABLE")
         }
     }

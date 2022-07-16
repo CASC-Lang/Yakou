@@ -261,8 +261,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindExpression(expression: Expression) {
         when (expression) {
-            is Expression.NumberLiteral -> bindNumberLiteral(expression)
             is Expression.BinaryExpression -> bindBinaryExpression(expression)
+            is Expression.Identifier -> bindIdentifier(expression)
+            is Expression.NumberLiteral -> bindNumberLiteral(expression)
             Expression.Undefined -> TODO("UNREACHABLE")
         }
     }
@@ -393,8 +394,11 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 binaryExpression.originalType = leftType
                 binaryExpression.finalType = leftType
             }
-            else -> {}
         }
+    }
+
+    private fun bindIdentifier(identifier: Expression.Identifier) {
+        TODO()
     }
 
     private fun bindNumberLiteral(numberLiteral: Expression.NumberLiteral) {

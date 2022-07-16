@@ -142,6 +142,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                     expression
                 }
             }
+            is Expression.Identifier -> TODO()
             is Expression.NumberLiteral -> expression
             Expression.Undefined -> expression
         }

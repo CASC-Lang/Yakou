@@ -35,6 +35,12 @@ sealed class Expression {
         }
     }
 
+    class Identifier(
+        val identifier: Token
+    ) : Expression() {
+        override val span: Span = identifier.span
+    }
+
     sealed class LiteralExpression : Expression()
 
     class NumberLiteral(
