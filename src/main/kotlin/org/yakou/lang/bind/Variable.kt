@@ -2,7 +2,9 @@ package org.yakou.lang.bind
 
 import org.yakou.lang.ast.Token
 
-open class Variable(val nameToken: Token, val name: String = nameToken.literal) {
+open class Variable(val nameToken: Token, val index: Int, val name: String = nameToken.literal) {
+    var propagatable: Boolean = false // Constant folding usage
+    var referencedCount: Int = 0 // Constant folding usage
     var isUsed: Boolean = false
     var typeInfo: TypeInfo = TypeInfo.Primitive.UNIT_TYPE_INFO
 
@@ -31,5 +33,5 @@ open class Variable(val nameToken: Token, val name: String = nameToken.literal) 
         return name.hashCode()
     }
 
-    class ValueParameter(nameToken: Token): Variable(nameToken)
+    class ValueParameter(nameToken: Token, index: Int): Variable(nameToken, index)
 }

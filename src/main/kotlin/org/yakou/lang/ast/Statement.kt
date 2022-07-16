@@ -1,7 +1,7 @@
 package org.yakou.lang.ast
 
 import chaos.unity.nenggao.Span
-import kotlin.properties.Delegates
+import org.yakou.lang.bind.Variable
 
 sealed class Statement {
     abstract val span: Span
@@ -19,8 +19,8 @@ sealed class Statement {
             let.span.expand(expression.span)
         }
 
-        var ignore: Boolean = false
-        var index by Delegates.notNull<Int>()
+        lateinit var variableInstance: Variable
+        var ignore: Boolean = name.literal == "_"
     }
 
     class ExpressionStatement(var expression: Expression): Statement() {

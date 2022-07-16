@@ -243,15 +243,14 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         // Check expression type can be cast into specified type
 
-        if (variableDeclaration.name.literal == "_") {
+        if (variableDeclaration.ignore) {
             // Ignore variable declaration (discard lhs expression result)
             // TODO: Warning about this?
-            variableDeclaration.ignore = true
         } else if (currentScope != null) {
-            val index = currentScope!!.currentVariableIndex()
+            val variable = currentScope!!.addVariable(variableDeclaration.name, variableDeclaration.expression.finalType)
 
-            if (currentScope!!.addVariable(variableDeclaration.name, variableDeclaration.expression.finalType)) {
-                variableDeclaration.index = index
+            if (variable != null) {
+                variableDeclaration.variableInstance = variable
             } else {
                 val originalVariable = currentScope!!.getVariable(variableDeclaration.name.literal)!!
 

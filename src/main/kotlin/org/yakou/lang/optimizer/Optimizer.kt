@@ -72,6 +72,11 @@ class Optimizer(val compilationUnit: CompilationUnit) {
         when (statement) {
             is Statement.VariableDeclaration -> {
                 statement.expression = optimizeExpression(statement.expression)
+
+                if (statement.expression is Expression.LiteralExpression) {
+                    // can be propagated to other expressions
+                    statement.variableInstance.propagatable = true
+                }
             }
             is Statement.ExpressionStatement -> {
                 statement.expression = optimizeExpression(statement.expression)
