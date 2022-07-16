@@ -176,10 +176,16 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         methodVisitor: MethodVisitor,
         variableDeclaration: Statement.VariableDeclaration
     ) {
+        if (variableDeclaration.variableInstance.propagatable && variableDeclaration.variableInstance.referencedCount == 0)
+            return
+
         genExpression(methodVisitor, variableDeclaration.expression)
 
         if (!variableDeclaration.ignore) {
-            methodVisitor.visitVarInsn(variableDeclaration.expression.finalType.storeOpcode, variableDeclaration.variableInstance.index)
+            methodVisitor.visitVarInsn(
+                variableDeclaration.expression.finalType.storeOpcode,
+                variableDeclaration.variableInstance.index
+            )
         } else {
             // Discard return value if need
             when (val type = variableDeclaration.expression.finalType) {
