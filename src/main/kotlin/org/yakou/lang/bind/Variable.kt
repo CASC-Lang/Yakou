@@ -1,10 +1,13 @@
 package org.yakou.lang.bind
 
+import org.yakou.lang.ast.Expression
 import org.yakou.lang.ast.Token
 
 open class Variable(val nameToken: Token, val index: Int, val name: String = nameToken.literal): Symbol() {
     var propagatable: Boolean = false // Constant folding usage
     var referencedCount: Int = 0 // Constant folding usage
+    lateinit var propagateExpression: Expression
+
     var isUsed: Boolean = false
     override var typeInfo: TypeInfo = TypeInfo.Primitive.UNIT_TYPE_INFO
 

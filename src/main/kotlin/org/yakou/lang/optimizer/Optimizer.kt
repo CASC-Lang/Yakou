@@ -2,6 +2,7 @@ package org.yakou.lang.optimizer
 
 import org.yakou.lang.ast.*
 import org.yakou.lang.bind.TypeInfo
+import org.yakou.lang.bind.Variable
 import org.yakou.lang.compilation.CompilationUnit
 
 class Optimizer(val compilationUnit: CompilationUnit) {
@@ -76,6 +77,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                 if (statement.expression is Expression.LiteralExpression) {
                     // can be propagated to other expressions
                     statement.variableInstance.propagatable = true
+                    statement.variableInstance.propagateExpression = statement.expression
                 }
             }
             is Statement.ExpressionStatement -> {
@@ -128,12 +130,6 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                         Expression.BinaryExpression.BinaryOperation.LeftShift -> {
                             syntheticNumberLiteral((optimizedLeftExpression.value.toLong() shl optimizedRightExpression.value.toInt()).toDouble())
                         }
-                        else -> {
-                            expression.leftExpression = optimizedLeftExpression
-                            expression.rightExpression = optimizedRightExpression
-
-                            expression
-                        }
                     }
                 } else {
                     expression.leftExpression = optimizedLeftExpression
@@ -142,7 +138,17 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                     expression
                 }
             }
-            is Expression.Identifier -> TODO()
+            is Expression.Identifier -> {
+                if (expression.symbolInstance is Variable) {
+                    val variable = expression.symbolInstance as Variable
+
+                    if (variable.propagatable) {
+                        variable.dereference()
+
+                        variable.propagateExpression
+                    } else expression
+                } else expression
+            }
             is Expression.NumberLiteral -> expression
             Expression.Undefined -> expression
         }

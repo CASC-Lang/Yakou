@@ -211,7 +211,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private fun genExpression(methodVisitor: MethodVisitor, expression: Expression) {
         when (expression) {
             is Expression.BinaryExpression -> genBinaryExpression(methodVisitor, expression)
-            is Expression.Identifier -> TODO()
+            is Expression.Identifier -> genIdentifier(methodVisitor, expression)
             is Expression.NumberLiteral -> genNumberLiteral(methodVisitor, expression)
             Expression.Undefined -> TODO("UNREACHABLE")
         }
@@ -237,6 +237,10 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 Expression.BinaryExpression.BinaryOperation.LeftShift -> methodVisitor.visitInsn(primitiveType.shlOpcode)
             }
         }
+    }
+
+    private fun genIdentifier(methodVisitor: MethodVisitor, identifier: Expression.Identifier) {
+
     }
 
     private fun genNumberLiteral(methodVisitor: MethodVisitor, numberLiteral: Expression.NumberLiteral) {

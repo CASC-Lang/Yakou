@@ -412,6 +412,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         val resolvedSymbol = resolver.resolveIdentifier(currentPackagePath, currentClassPath, identifier.identifier.literal)
 
         if (resolvedSymbol != null) {
+            identifier.symbolInstance = resolvedSymbol
             identifier.originalType = resolvedSymbol.typeInfo
             identifier.finalType = resolvedSymbol.typeInfo
 

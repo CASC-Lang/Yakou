@@ -1,7 +1,9 @@
 package org.yakou.lang.ast
 
 import chaos.unity.nenggao.Span
+import org.yakou.lang.bind.Symbol
 import org.yakou.lang.bind.TypeInfo
+import org.yakou.lang.bind.Variable
 import kotlin.properties.Delegates
 
 sealed class Expression {
@@ -39,6 +41,8 @@ sealed class Expression {
         val identifier: Token
     ) : Expression() {
         override val span: Span = identifier.span
+
+        lateinit var symbolInstance: Symbol
     }
 
     sealed class LiteralExpression : Expression()
