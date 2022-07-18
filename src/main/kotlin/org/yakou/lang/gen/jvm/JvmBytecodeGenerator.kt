@@ -4,8 +4,10 @@ import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.yakou.lang.ast.*
+import org.yakou.lang.bind.ClassMember
 import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.bind.TypeInfo
+import org.yakou.lang.bind.Variable
 import org.yakou.lang.compilation.CompilationSession
 import org.yakou.lang.compilation.CompilationUnit
 import java.io.File
@@ -240,7 +242,17 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genIdentifier(methodVisitor: MethodVisitor, identifier: Expression.Identifier) {
+        val symbolInstance = identifier.symbolInstance
 
+        when (symbolInstance) {
+            is Variable -> {
+                methodVisitor.visitVarInsn(identifier.finalType.loadOpcode, symbolInstance.index)
+            }
+            is ClassMember.Field -> {
+
+            }
+            else -> TODO("UNREACHABLE")
+        }
     }
 
     private fun genNumberLiteral(methodVisitor: MethodVisitor, numberLiteral: Expression.NumberLiteral) {
