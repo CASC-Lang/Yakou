@@ -156,8 +156,6 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 for (statement in functionBody.statements) {
                     genStatement(methodVisitor, statement)
                 }
-
-                methodVisitor.visitInsn(Opcodes.RETURN) // TODO: Remove hard code
             }
             is FunctionBody.SingleExpression -> {
                 genExpression(methodVisitor, functionBody.expression)
@@ -170,6 +168,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private fun genStatement(methodVisitor: MethodVisitor, statement: Statement) {
         when (statement) {
             is Statement.VariableDeclaration -> genVariableDeclaration(methodVisitor, statement)
+            is Statement.Return -> genReturn(methodVisitor, statement)
             is Statement.ExpressionStatement -> genExpression(methodVisitor, statement.expression)
         }
     }
@@ -210,6 +209,12 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         }
     }
 
+    private fun genReturn(methodVisitor: MethodVisitor, `return`: Statement.Return) {
+        genExpression(methodVisitor, `return`.expression)
+
+        methodVisitor.visitInsn(`return`.expression.finalType.returnOpcode)
+    }
+
     private fun genExpression(methodVisitor: MethodVisitor, expression: Expression) {
         when (expression) {
             is Expression.BinaryExpression -> genBinaryExpression(methodVisitor, expression)
@@ -246,7 +251,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
         when (symbolInstance) {
             is Variable -> {
-                methodVisitor.visitVarInsn(identifier.finalType.loadOpcode, symbolInstance.index)
+                methodVisitor.visitVarInsn(symbolInstance.typeInfo.loadOpcode, symbolInstance.index)
             }
             is ClassMember.Field -> {
 

@@ -1,8 +1,9 @@
 pkg chaos {
     const a: i32 = 1
 
-    fn test(kek: str) {
+    fn test(kek: str) -> i32 {
         let a = 1
         let b = a
+        return b
     }
 }

@@ -17,6 +17,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private var currentPackagePath: Path.SimplePath = Path.SimplePath(listOf())
     private var currentClassPath: Path.SimplePath = Path.SimplePath(listOf())
+    private var currentFunctionInstance: ClassMember.Fn? = null
     private var currentScope: Scope? = null
     private var topLevel: Boolean = true
 
@@ -212,6 +213,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindFunction(function: Item.Function) {
+        currentFunctionInstance = function.functionInstance
+
         // Initialize scope
         val functionScope = Scope(table)
 
@@ -239,11 +242,13 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         // Unbind scope
         currentScope = null
+        currentFunctionInstance = null
     }
 
     private fun bindStatement(statement: Statement) {
         when (statement) {
             is Statement.VariableDeclaration -> bindVariableDeclaration(statement)
+            is Statement.Return -> bindReturn(statement)
             is Statement.ExpressionStatement -> bindExpression(statement.expression)
         }
     }
@@ -251,12 +256,14 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun bindVariableDeclaration(variableDeclaration: Statement.VariableDeclaration) {
         bindExpression(variableDeclaration.expression)
 
-        // Check expression type can be cast into specified type
+        // TODO: Check expression type can be cast into specified type
 
         if (variableDeclaration.ignore) {
             // Ignore variable declaration (discard lhs expression result)
-            // TODO: Warning about this?
-        } else if (currentScope != null) {
+            return
+        }
+
+        if (currentScope != null) {
             val variable = currentScope!!.addVariable(variableDeclaration.name, variableDeclaration.expression.finalType)
 
             if (variable != null) {
@@ -267,6 +274,12 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 reportVariableAlreadyDeclared(originalVariable, variableDeclaration.name.span)
             }
         }
+    }
+
+    private fun bindReturn(`return`: Statement.Return) {
+        bindExpression(`return`.expression)
+
+        // TODO: Check expression type can be cast into function's return type
     }
 
     private fun bindExpression(expression: Expression) {

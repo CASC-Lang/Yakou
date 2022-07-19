@@ -12,7 +12,8 @@ enum class Keyword(val literal: String) {
     STATIC("static"),
     FN("fn"),
     SELF("self"),
-    LET("let");
+    LET("let"),
+    RETURN("return");
 
     companion object {
         val keywords: Array<Keyword> = values()

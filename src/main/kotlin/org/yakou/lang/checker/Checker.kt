@@ -138,6 +138,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkStatement(statement: Statement) {
         when (statement) {
             is Statement.VariableDeclaration -> checkVariableDeclaration(statement)
+            is Statement.Return -> checkReturn(statement)
             is Statement.ExpressionStatement -> checkExpression(statement.expression)
         }
     }
@@ -156,10 +157,14 @@ class Checker(private val compilationUnit: CompilationUnit) {
         }
     }
 
+    private fun checkReturn(`return`: Statement.Return) {
+        checkExpression(`return`.expression)
+    }
+
     private fun checkExpression(expression: Expression) {
         when (expression) {
             is Expression.BinaryExpression -> checkBinaryExpression(expression)
-            is Expression.Identifier -> TODO()
+            is Expression.Identifier -> checkIdentifier(expression)
             is Expression.NumberLiteral -> checkNumberLiteral(expression)
             Expression.Undefined -> TODO("UNREACHABLE")
         }
@@ -168,6 +173,10 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkBinaryExpression(binaryExpression: Expression.BinaryExpression) {
         checkExpression(binaryExpression.leftExpression)
         checkExpression(binaryExpression.rightExpression)
+    }
+
+    private fun checkIdentifier(identifier: Expression.Identifier) {
+        // ??
     }
 
     private fun checkNumberLiteral(numberLiteral: Expression.NumberLiteral) {

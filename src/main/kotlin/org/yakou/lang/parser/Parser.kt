@@ -272,6 +272,12 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
             Statement.VariableDeclaration(let, mut, name, colon, specifiedType, equal, expression)
         }
+        optExpectKeyword(Keyword.RETURN) -> {
+            val `return` = next()!!
+            val expression = parseExpression()
+
+            Statement.Return(`return`, expression)
+        }
         else -> {
             val expression = parseExpression()
 

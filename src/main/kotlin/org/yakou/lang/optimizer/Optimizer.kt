@@ -71,22 +71,36 @@ class Optimizer(val compilationUnit: CompilationUnit) {
 
     private fun optimizeStatement(statement: Statement) {
         when (statement) {
-            is Statement.VariableDeclaration -> {
-                statement.expression = optimizeExpression(statement.expression)
-
-                if (statement.expression is Expression.LiteralExpression) {
-                    // can be propagated to other expressions
-                    statement.variableInstance.propagatable = true
-                    statement.variableInstance.propagateExpression = statement.expression
-                }
-            }
+            is Statement.VariableDeclaration -> optimizeVariableDeclaration(statement)
+            is Statement.Return -> optimizeReturn(statement)
             is Statement.ExpressionStatement -> {
                 statement.expression = optimizeExpression(statement.expression)
             }
         }
     }
 
-    private fun optimizeExpression(expression: Expression): Expression {
+    private fun optimizeVariableDeclaration(statement: Statement.VariableDeclaration) {
+        statement.expression = optimizeExpression(statement.expression)
+
+        if (statement.expression is Expression.LiteralExpression) {
+            // can be propagated to other expressions
+            statement.variableInstance.propagatable = true
+            statement.variableInstance.propagateExpression = statement.expression
+        }
+    }
+
+    private fun optimizeReturn(statement: Statement.Return) {
+        statement.expression = optimizeExpression(statement.expression)
+    }
+
+    private fun optimizeExpression(expression: Expression): Expression = when (expression) {
+        is Expression.BinaryExpression -> optimizeBinaryExpression(expression)
+        is Expression.Identifier -> optimizeIdentifier(expression)
+        is Expression.NumberLiteral -> expression
+        Expression.Undefined -> expression
+    }
+
+    private fun optimizeBinaryExpression(expression: Expression.BinaryExpression): Expression {
         fun syntheticNumberLiteral(value: Double): Expression.NumberLiteral {
             val syntheticNumberLiteral =
                 Expression.NumberLiteral(null, null, null, null, expression.span)
@@ -99,58 +113,52 @@ class Optimizer(val compilationUnit: CompilationUnit) {
             return syntheticNumberLiteral
         }
 
-        return when (expression) {
-            is Expression.BinaryExpression -> {
-                val optimizedLeftExpression = optimizeExpression(expression.leftExpression)
-                val optimizedRightExpression = optimizeExpression(expression.rightExpression)
+        val optimizedLeftExpression = optimizeExpression(expression.leftExpression)
+        val optimizedRightExpression = optimizeExpression(expression.rightExpression)
 
-                if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral) {
-                    when (expression.operation) {
-                        Expression.BinaryExpression.BinaryOperation.Addition -> {
-                            syntheticNumberLiteral(optimizedLeftExpression.value + optimizedRightExpression.value)
-                        }
-                        Expression.BinaryExpression.BinaryOperation.Subtraction -> {
-                            syntheticNumberLiteral(optimizedLeftExpression.value - optimizedRightExpression.value)
-                        }
-                        Expression.BinaryExpression.BinaryOperation.Multiplication -> {
-                            syntheticNumberLiteral(optimizedLeftExpression.value * optimizedRightExpression.value)
-                        }
-                        Expression.BinaryExpression.BinaryOperation.Division -> {
-                            syntheticNumberLiteral(optimizedLeftExpression.value / optimizedRightExpression.value)
-                        }
-                        Expression.BinaryExpression.BinaryOperation.Modulo -> {
-                            syntheticNumberLiteral(optimizedLeftExpression.value % optimizedRightExpression.value)
-                        }
-                        Expression.BinaryExpression.BinaryOperation.UnsignedRightShift -> {
-                            syntheticNumberLiteral((optimizedLeftExpression.value.toLong() ushr optimizedRightExpression.value.toInt()).toDouble())
-                        }
-                        Expression.BinaryExpression.BinaryOperation.RightShift -> {
-                            syntheticNumberLiteral((optimizedLeftExpression.value.toLong() shr optimizedRightExpression.value.toInt()).toDouble())
-                        }
-                        Expression.BinaryExpression.BinaryOperation.LeftShift -> {
-                            syntheticNumberLiteral((optimizedLeftExpression.value.toLong() shl optimizedRightExpression.value.toInt()).toDouble())
-                        }
-                    }
-                } else {
-                    expression.leftExpression = optimizedLeftExpression
-                    expression.rightExpression = optimizedRightExpression
-
-                    expression
+        return if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral) {
+            when (expression.operation) {
+                Expression.BinaryExpression.BinaryOperation.Addition -> {
+                    syntheticNumberLiteral(optimizedLeftExpression.value + optimizedRightExpression.value)
+                }
+                Expression.BinaryExpression.BinaryOperation.Subtraction -> {
+                    syntheticNumberLiteral(optimizedLeftExpression.value - optimizedRightExpression.value)
+                }
+                Expression.BinaryExpression.BinaryOperation.Multiplication -> {
+                    syntheticNumberLiteral(optimizedLeftExpression.value * optimizedRightExpression.value)
+                }
+                Expression.BinaryExpression.BinaryOperation.Division -> {
+                    syntheticNumberLiteral(optimizedLeftExpression.value / optimizedRightExpression.value)
+                }
+                Expression.BinaryExpression.BinaryOperation.Modulo -> {
+                    syntheticNumberLiteral(optimizedLeftExpression.value % optimizedRightExpression.value)
+                }
+                Expression.BinaryExpression.BinaryOperation.UnsignedRightShift -> {
+                    syntheticNumberLiteral((optimizedLeftExpression.value.toLong() ushr optimizedRightExpression.value.toInt()).toDouble())
+                }
+                Expression.BinaryExpression.BinaryOperation.RightShift -> {
+                    syntheticNumberLiteral((optimizedLeftExpression.value.toLong() shr optimizedRightExpression.value.toInt()).toDouble())
+                }
+                Expression.BinaryExpression.BinaryOperation.LeftShift -> {
+                    syntheticNumberLiteral((optimizedLeftExpression.value.toLong() shl optimizedRightExpression.value.toInt()).toDouble())
                 }
             }
-            is Expression.Identifier -> {
-                if (expression.symbolInstance is Variable) {
-                    val variable = expression.symbolInstance as Variable
+        } else {
+            expression.leftExpression = optimizedLeftExpression
+            expression.rightExpression = optimizedRightExpression
 
-                    if (variable.propagatable) {
-                        variable.dereference()
-
-                        variable.propagateExpression
-                    } else expression
-                } else expression
-            }
-            is Expression.NumberLiteral -> expression
-            Expression.Undefined -> expression
+            expression
         }
     }
+
+    private fun optimizeIdentifier(expression: Expression.Identifier): Expression =
+        if (expression.symbolInstance is Variable) {
+            val variable = expression.symbolInstance as Variable
+
+            if (variable.propagatable) {
+                variable.dereference()
+
+                variable.propagateExpression
+            } else expression
+        } else expression
 }
