@@ -158,7 +158,9 @@ class Checker(private val compilationUnit: CompilationUnit) {
     }
 
     private fun checkReturn(`return`: Statement.Return) {
-        checkExpression(`return`.expression)
+        if (`return`.expression != null) {
+            checkExpression(`return`.expression!!)
+        }
     }
 
     private fun checkExpression(expression: Expression) {

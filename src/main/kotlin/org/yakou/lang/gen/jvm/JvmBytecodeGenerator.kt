@@ -220,9 +220,11 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genReturn(methodVisitor: MethodVisitor, `return`: Statement.Return) {
-        genExpression(methodVisitor, `return`.expression)
+        if (`return`.expression != null) {
+            genExpression(methodVisitor, `return`.expression!!)
+        }
 
-        methodVisitor.visitInsn(`return`.expression.finalType.returnOpcode)
+        methodVisitor.visitInsn(`return`.expression?.finalType?.returnOpcode ?: Opcodes.RETURN)
     }
 
     private fun genExpression(methodVisitor: MethodVisitor, expression: Expression) {

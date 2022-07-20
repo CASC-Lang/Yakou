@@ -90,7 +90,9 @@ class Optimizer(val compilationUnit: CompilationUnit) {
     }
 
     private fun optimizeReturn(statement: Statement.Return) {
-        statement.expression = optimizeExpression(statement.expression)
+        if (statement.expression != null) {
+            statement.expression = optimizeExpression(statement.expression!!)
+        }
     }
 
     private fun optimizeExpression(expression: Expression): Expression = when (expression) {
