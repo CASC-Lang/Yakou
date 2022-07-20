@@ -1,6 +1,7 @@
 package org.yakou.lang.optimizer
 
 import org.yakou.lang.ast.*
+import org.yakou.lang.bind.ClassMember
 import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.bind.Variable
 import org.yakou.lang.compilation.CompilationUnit
@@ -152,14 +153,27 @@ class Optimizer(val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun optimizeIdentifier(expression: Expression.Identifier): Expression =
-        if (expression.symbolInstance is Variable) {
-            val variable = expression.symbolInstance as Variable
+    private fun optimizeIdentifier(expression: Expression.Identifier): Expression {
+        val symbolInstance = expression.symbolInstance
 
-            if (variable.propagatable) {
-                variable.dereference()
+        return if (symbolInstance is Variable) {
+            if (symbolInstance.propagatable) {
+                symbolInstance.dereference()
 
-                variable.propagateExpression
+                symbolInstance.propagateExpression
+            } else expression
+        } else if (symbolInstance is ClassMember.Field) {
+            // Propagate expression when applicable
+
+            if (symbolInstance.isConst) {
+                // Inline value without side effect
+                symbolInstance.propagateExpression!!
+            } else if (symbolInstance.isStatic) {
+                // Inline when conditions met
+                if (symbolInstance.propagateExpression is Expression.LiteralExpression) {
+                    symbolInstance.propagateExpression
+                } else expression
             } else expression
         } else expression
+    }
 }

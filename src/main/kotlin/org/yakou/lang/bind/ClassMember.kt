@@ -1,10 +1,7 @@
 package org.yakou.lang.bind
 
 import org.objectweb.asm.Opcodes
-import org.yakou.lang.ast.ClassItem
-import org.yakou.lang.ast.Item
-import org.yakou.lang.ast.Parameter
-import org.yakou.lang.ast.Path
+import org.yakou.lang.ast.*
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
@@ -25,6 +22,7 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
         override val typeInfo: TypeInfo,
         val isStatic: Boolean,
         val isConst: Boolean,
+        val propagateExpression: Expression? = null
     ) : ClassMember(MemberType.FIELD) {
         companion object {
             fun fromField(field: java.lang.reflect.Field): Field =
@@ -50,7 +48,8 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
                 const.identifier.literal,
                 const.typeInfo,
                 isStatic = true,
-                isConst = true
+                isConst = true,
+                const.expression
             )
 
             fun fromField(
@@ -64,7 +63,8 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
                 staticField.identifier.literal,
                 staticField.typeInfo,
                 isStatic = true,
-                isConst = false
+                isConst = false,
+                staticField.expression
             )
 
             fun fromField(
@@ -78,7 +78,8 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
                 field.identifier.literal,
                 field.typeInfo,
                 isStatic = false,
-                isConst = false
+                isConst = false,
+                field.expression
             )
         }
 
