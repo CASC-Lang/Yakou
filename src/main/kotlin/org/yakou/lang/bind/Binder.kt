@@ -277,7 +277,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindReturn(`return`: Statement.Return) {
-        bindExpression(`return`.expression)
+        if (`return`.expression != null) {
+            bindExpression(`return`.expression!!)
+        }
 
         // TODO: Check expression type can be cast into function's return type
     }
