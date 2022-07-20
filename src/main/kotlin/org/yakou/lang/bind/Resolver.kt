@@ -12,7 +12,9 @@ class Resolver(private val scope: Scope) {
     }
 
     private fun resolveOwnerClassField(currentPackagePath: Path.SimplePath, currentClassPath: Path.SimplePath, name: String): Symbol? {
-        return scope.table.findClassMember(qualifyPath(currentPackagePath, currentClassPath), ClassMember.MemberType.FIELD, name)
+        val field = scope.table.findClassMember(qualifyPath(currentPackagePath, currentClassPath), ClassMember.MemberType.FIELD, name)
+
+        return if (field is ClassMember.Field && field.isStatic) field else null
     }
 
     private fun qualifyPath(packagePath: Path.SimplePath, classPath: Path.SimplePath): String {
