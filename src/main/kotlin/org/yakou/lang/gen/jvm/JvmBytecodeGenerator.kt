@@ -265,7 +265,21 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 methodVisitor.visitVarInsn(symbolInstance.typeInfo.loadOpcode, symbolInstance.index)
             }
             is ClassMember.Field -> {
-
+                if (symbolInstance.isStatic) {
+                    methodVisitor.visitFieldInsn(
+                        Opcodes.GETSTATIC,
+                        symbolInstance.ownerTypeInfo.internalName,
+                        symbolInstance.name,
+                        symbolInstance.descriptor
+                    )
+                } else {
+                    methodVisitor.visitFieldInsn(
+                        Opcodes.GETFIELD,
+                        symbolInstance.ownerTypeInfo.internalName,
+                        symbolInstance.name,
+                        symbolInstance.descriptor
+                    )
+                }
             }
             else -> TODO("UNREACHABLE")
         }

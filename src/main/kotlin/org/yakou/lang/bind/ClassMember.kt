@@ -6,6 +6,7 @@ import org.yakou.lang.ast.Item
 import org.yakou.lang.ast.Parameter
 import org.yakou.lang.ast.Path
 import java.lang.reflect.Method
+import java.lang.reflect.Modifier
 
 sealed class ClassMember(val memberType: MemberType): Symbol() {
     abstract val access: Int
@@ -22,6 +23,7 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
         override val classPath: String,
         override val name: String,
         override val typeInfo: TypeInfo,
+        val isStatic: Boolean,
         val isConst: Boolean,
     ) : ClassMember(MemberType.FIELD) {
         companion object {
@@ -32,6 +34,7 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
                     field.declaringClass.typeName.split('.').last().replace("$", "::"),
                     field.name,
                     TypeInfo.fromClass(field.type),
+                    Modifier.isStatic(field.modifiers),
                     false
                 )
 
@@ -46,7 +49,8 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
                 classSimplePath.toString().ifBlank { "PackageYk" },
                 const.identifier.literal,
                 const.typeInfo,
-                true
+                isStatic = true,
+                isConst = true
             )
 
             fun fromField(
@@ -59,7 +63,8 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
                 classSimplePath.toString().ifBlank { "PackageYk" },
                 staticField.identifier.literal,
                 staticField.typeInfo,
-                false
+                isStatic = true,
+                isConst = false
             )
 
             fun fromField(
@@ -72,7 +77,8 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
                 classSimplePath.toString().ifBlank { "PackageYk" },
                 field.identifier.literal,
                 field.typeInfo,
-                false
+                isStatic = false,
+                isConst = false
             )
         }
 
