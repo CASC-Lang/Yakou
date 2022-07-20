@@ -23,9 +23,9 @@ sealed class Statement {
         var ignore: Boolean = name.literal == "_"
     }
 
-    class Return(val `return`: Token, var expression: Expression?): Statement() {
+    class Return(val `return`: Token, var expression: Expression): Statement() {
         override val span: Span by lazy {
-            `return`.span.expand(expression?.span)
+            `return`.span.expand(expression.span)
         }
     }
 

@@ -119,12 +119,12 @@ sealed class TypeInfo {
             else -> -1
         }
         override val returnOpcode: Int = when (type) {
+            PrimitiveType.Unit -> Opcodes.RETURN
             PrimitiveType.Bool, PrimitiveType.Char, PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.IRETURN
             PrimitiveType.I64 -> Opcodes.LRETURN
             PrimitiveType.F32 -> Opcodes.FRETURN
             PrimitiveType.F64 -> Opcodes.DRETURN
             PrimitiveType.Str -> Opcodes.ARETURN
-            else -> -1
         }
 
         override val internalName: String? = when (type) {

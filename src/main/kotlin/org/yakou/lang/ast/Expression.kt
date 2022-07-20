@@ -58,6 +58,11 @@ sealed class Expression {
         var specifiedTypeInfo: TypeInfo.Primitive? = null
     }
 
+    // Empty expression represents an empty optional expression, which is useful in several cases, e.g. return statement
+    class Empty(override val span: Span) : Expression()
+
+    // Undefined expression represents an unparseable expression, indicates unable to find an existing grammar rule set
+    // for single expression
     object Undefined : Expression() {
         override val span: Span = TODO("Undefined expression does not have span")
     }

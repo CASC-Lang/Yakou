@@ -90,15 +90,14 @@ class Optimizer(val compilationUnit: CompilationUnit) {
     }
 
     private fun optimizeReturn(statement: Statement.Return) {
-        if (statement.expression != null) {
-            statement.expression = optimizeExpression(statement.expression!!)
-        }
+        statement.expression = optimizeExpression(statement.expression)
     }
 
     private fun optimizeExpression(expression: Expression): Expression = when (expression) {
         is Expression.BinaryExpression -> optimizeBinaryExpression(expression)
         is Expression.Identifier -> optimizeIdentifier(expression)
         is Expression.NumberLiteral -> expression
+        is Expression.Empty -> expression
         Expression.Undefined -> expression
     }
 

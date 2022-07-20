@@ -11,6 +11,8 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private val tokens: List<Token> = compilationUnit.tokens ?: listOf()
     private var pos: Int = 0
 
+    private var optionalExpression: Boolean = false
+
     fun parse(): YkFile {
         val items = parseItems()
 
@@ -274,7 +276,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         }
         optExpectKeyword(Keyword.RETURN) -> {
             val `return` = next()!!
-            val expression = parseExpression()
+            val expression = parseExpression(true)
 
             Statement.Return(`return`, expression)
         }
@@ -285,8 +287,12 @@ class Parser(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun parseExpression(): Expression {
-        return parseShiftingExpression()
+    private fun parseExpression(optional: Boolean = false): Expression {
+        optionalExpression = optional
+        val expression = parseShiftingExpression()
+        optionalExpression = true
+
+        return expression
     }
 
     private fun parseShiftingExpression(): Expression {
@@ -411,9 +417,13 @@ class Parser(private val compilationUnit: CompilationUnit) {
             Expression.NumberLiteral(integer, numberToken.dot, float, type, numberToken.span)
         }
         else -> {
-            reportUnexpectedToken(next()!!)
+            if (optionalExpression) {
+                Expression.Empty(peek(-1)!!.span)
+            } else {
+                reportUnexpectedToken(next()!!)
 
-            Expression.Undefined
+                Expression.Undefined
+            }
         }
     }
 

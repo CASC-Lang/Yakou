@@ -220,11 +220,9 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genReturn(methodVisitor: MethodVisitor, `return`: Statement.Return) {
-        if (`return`.expression != null) {
-            genExpression(methodVisitor, `return`.expression!!)
-        }
+        genExpression(methodVisitor, `return`.expression)
 
-        methodVisitor.visitInsn(`return`.expression?.finalType?.returnOpcode ?: Opcodes.RETURN)
+        methodVisitor.visitInsn(`return`.expression.finalType.returnOpcode)
     }
 
     private fun genExpression(methodVisitor: MethodVisitor, expression: Expression) {
@@ -232,6 +230,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             is Expression.BinaryExpression -> genBinaryExpression(methodVisitor, expression)
             is Expression.Identifier -> genIdentifier(methodVisitor, expression)
             is Expression.NumberLiteral -> genNumberLiteral(methodVisitor, expression)
+            is Expression.Empty -> {}
             Expression.Undefined -> TODO("UNREACHABLE")
         }
 

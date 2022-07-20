@@ -152,15 +152,14 @@ class Checker(private val compilationUnit: CompilationUnit) {
                     // No effect variable declaration
                     reportIgnoredVariableHasNoEffect(variableDeclaration.name.span, variableDeclaration.expression.span)
                 }
+                is Expression.Empty -> {}
                 Expression.Undefined -> TODO("UNREACHABLE")
             }
         }
     }
 
     private fun checkReturn(`return`: Statement.Return) {
-        if (`return`.expression != null) {
-            checkExpression(`return`.expression!!)
-        }
+        checkExpression(`return`.expression)
     }
 
     private fun checkExpression(expression: Expression) {
@@ -168,6 +167,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             is Expression.BinaryExpression -> checkBinaryExpression(expression)
             is Expression.Identifier -> checkIdentifier(expression)
             is Expression.NumberLiteral -> checkNumberLiteral(expression)
+            is Expression.Empty -> {}
             Expression.Undefined -> TODO("UNREACHABLE")
         }
     }

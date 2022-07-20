@@ -9,7 +9,7 @@ pkg chaos {
         }
 
         fn main(arg: [str]) {
-
+            return
         }
     }
 }

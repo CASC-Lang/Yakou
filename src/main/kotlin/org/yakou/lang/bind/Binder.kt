@@ -277,9 +277,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindReturn(`return`: Statement.Return) {
-        if (`return`.expression != null) {
-            bindExpression(`return`.expression!!)
-        }
+        bindExpression(`return`.expression)
 
         // TODO: Check expression type can be cast into function's return type
     }
@@ -289,6 +287,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             is Expression.BinaryExpression -> bindBinaryExpression(expression)
             is Expression.Identifier -> bindIdentifier(expression)
             is Expression.NumberLiteral -> bindNumberLiteral(expression)
+            is Expression.Empty -> {}
             Expression.Undefined -> TODO("UNREACHABLE")
         }
     }
