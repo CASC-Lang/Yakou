@@ -8,7 +8,7 @@ pkg chaos {
             mut a: i32
         }
 
-        fn main(arg: [java::lang::String]) {
+        fn main(arg: [str]) {
 
         }
     }

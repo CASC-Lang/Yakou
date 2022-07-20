@@ -146,6 +146,16 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         if (function.body != null)
             genFunctionBody(methodVisitor, function.body)
 
+        // Attempt to automatically generate return statement if:
+        // 1. Last statement is not return statement
+        // 2. Function returns unit
+        if (function.functionInstance.returnTypeInfo == TypeInfo.Primitive.UNIT_TYPE_INFO &&
+            function.body is FunctionBody.BlockExpression &&
+            function.body.statements.lastOrNull() !is Statement.Return
+        ) {
+            methodVisitor.visitInsn(Opcodes.RETURN)
+        }
+
         methodVisitor.visitMaxs(-1, -1)
         methodVisitor.visitEnd()
     }
