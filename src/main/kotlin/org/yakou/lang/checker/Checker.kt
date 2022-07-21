@@ -66,8 +66,8 @@ class Checker(private val compilationUnit: CompilationUnit) {
         // Check expression
         checkExpression(staticField.expression)
         // Check if expression is not castable to explicit type
-        if (staticField.expression.finalType is TypeInfo.Primitive)
-        // Check if it's applicable to convert static field into constant
+        if (staticField.expression.finalType is TypeInfo.Primitive) {
+            // Check if it's applicable to convert static field into constant
             if (staticField.expression.finalType is TypeInfo.Primitive &&
                 staticField.expression is Expression.LiteralExpression &&
                 !staticField.modifiers.hasModifier(Modifier.Mut)
@@ -89,6 +89,17 @@ class Checker(private val compilationUnit: CompilationUnit) {
                     .color(Attribute.CYAN_TEXT())
                     .build().build()
             }
+        }
+
+        if (!(staticField.expression.originalType canImplicitCast staticField.typeInfo)) {
+            reportUnableToImplicitlyCast(
+                staticField.span,
+                staticField.expression.span,
+                staticField.expression.originalType.toString(),
+                staticField.explicitType.span,
+                staticField.typeInfo.toString()
+            )
+        }
     }
 
     private fun checkClass(function: Item.Class) {
