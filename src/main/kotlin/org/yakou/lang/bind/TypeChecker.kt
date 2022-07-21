@@ -2,21 +2,8 @@ package org.yakou.lang.bind
 
 // Yakou permits no implicit type conversion, only lower-bound implicit type conversion is allowed by default
 object TypeChecker {
-    fun canImplicitCast(from: TypeInfo, to: TypeInfo): BoundResult {
-        if (from::class != to::class) {
-            return BoundResult.FAIL
-        }
-
-        if (from is TypeInfo.Primitive && to is TypeInfo.Primitive) {
-            return if (from.type == to.type) BoundResult.SAME else BoundResult.FAIL
-        }
-
-        if (from is TypeInfo.Array && to is TypeInfo.Array) {
-            return if (from.innerType == to.innerType) BoundResult.SAME else BoundResult.FAIL
-        }
-
-        return BoundResult.FAIL
-    }
+    fun canImplicitCast(from: TypeInfo, to: TypeInfo): BoundResult =
+        if (from == to) BoundResult.SAME else BoundResult.FAIL
 
     fun canExplicitCast(from: TypeInfo, to: TypeInfo): BoundResult {
         if (from is TypeInfo.Primitive && to is TypeInfo.Primitive) {
