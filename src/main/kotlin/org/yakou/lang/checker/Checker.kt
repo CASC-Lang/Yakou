@@ -16,7 +16,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
         checkYkFile(compilationUnit.ykFile!!)
     }
 
-    fun checkYkFile(ykFile: YkFile) {
+    private fun checkYkFile(ykFile: YkFile) {
         for (item in ykFile.items)
             checkItem(item)
     }
@@ -104,7 +104,19 @@ class Checker(private val compilationUnit: CompilationUnit) {
     }
 
     private fun checkField(field: ClassItem.Field) {
+        if (field.expression != null) {
+            checkExpression(field.expression!!)
 
+            if (!(field.expression!!.originalType canImplicitCast field.typeInfo)) {
+                reportUnableToImplicitlyCast(
+                    field.span,
+                    field.expression!!.span,
+                    field.expression!!.originalType.toString(),
+                    field.explicitType.span,
+                    field.typeInfo.toString()
+                )
+            }
+        }
     }
 
     private fun checkFunction(function: Item.Function) {
@@ -347,10 +359,10 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 SpanHelper.expandView(commonSpan, compilationUnit.maxLineCount),
                 "Unable to implicitly cast `$fromType` into `$toType`"
             )
-            .label(toTypeSpan, "Expected: `$toType`")
+            .label(toTypeSpan, "Expected `$toType`")
             .color(Attribute.CYAN_TEXT())
             .build()
-            .label(fromTypeSpan, "Got: `$fromType`")
+            .label(fromTypeSpan, "Got `$fromType`")
             .color(Attribute.RED_TEXT())
             .build().build()
     }
