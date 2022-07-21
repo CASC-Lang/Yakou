@@ -2,7 +2,7 @@ package org.yakou.lang.bind
 
 import org.yakou.lang.ast.Path
 
-class Resolver(private val scope: Scope) {
+class SymbolResolver(private val scope: Scope) {
     fun resolveIdentifier(currentPackagePath: Path.SimplePath, currentClassPath: Path.SimplePath, name: String): Symbol? {
         return resolveLocalVariable(currentPackagePath, currentClassPath, name)
     }

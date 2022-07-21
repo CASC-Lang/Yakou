@@ -422,7 +422,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindIdentifier(identifier: Expression.Identifier) {
-        val resolver = Resolver(currentScope!!)
+        val resolver = SymbolResolver(currentScope!!)
         val resolvedSymbol = resolver.resolveIdentifier(currentPackagePath, currentClassPath, identifier.identifier.literal)
 
         if (resolvedSymbol != null) {
