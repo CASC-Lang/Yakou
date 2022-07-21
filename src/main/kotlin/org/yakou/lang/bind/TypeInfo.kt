@@ -167,6 +167,7 @@ sealed class TypeInfo {
         val superClassType: Class?,
         val interfaceTypes: List<Class>
     ) : TypeInfo() {
+        val canonicalName: String = standardTypePath.replace("::", ".")
         final override val internalName: String = standardTypePath.replace("::", "/")
         final override val descriptor: String = "L$internalName;"
         override val storeOpcode: Int = Opcodes.ASTORE

@@ -20,17 +20,15 @@ enum class PrimitiveType(
     ;
 
     companion object {
-        private val values: Array<PrimitiveType> = values()
+        val values: Array<PrimitiveType> = values()
         val primitiveTypes: Array<PrimitiveType> = arrayOf(Unit, Bool, Char, I8, I16, I32, I64, F32, F64)
-        private val numberTypes: Array<PrimitiveType> = arrayOf(I8, I16, I32, I64, F32, F64)
-        private val integerTypes: Array<PrimitiveType> = arrayOf(I8, I16, I32, I64)
-        private val floatTypes: Array<PrimitiveType> = arrayOf(F32, F64)
+        val convertableTypes: Array<PrimitiveType> = arrayOf(Bool, Char, I8, I16, I32, I64, F32, F64)
+        val numberTypes: Array<PrimitiveType> = arrayOf(I8, I16, I32, I64, F32, F64)
+        val integerTypes: Array<PrimitiveType> = arrayOf(I8, I16, I32, I64)
+        val floatTypes: Array<PrimitiveType> = arrayOf(F32, F64)
 
         fun isPrimitiveType(typeLiteral: String): Boolean =
             values.any { it.typeLiteral == typeLiteral }
-
-        fun isPrimitiveType(primitiveType: PrimitiveType): Boolean =
-            values.any { it == primitiveType }
 
         fun findPrimitiveType(typeLiteral: String): PrimitiveType? =
             values.find { it.typeLiteral == typeLiteral }
@@ -38,20 +36,11 @@ enum class PrimitiveType(
         fun isNumberType(typeLiteral: String): Boolean =
             numberTypes.any { it.typeLiteral == typeLiteral }
 
-        fun isNumberType(primitiveType: PrimitiveType): Boolean =
-            numberTypes.any { it == primitiveType }
-
         fun isIntegerType(typeLiteral: String): Boolean =
             integerTypes.any { it.typeLiteral == typeLiteral }
 
-        fun isIntegerType(primitiveType: PrimitiveType): Boolean =
-            integerTypes.any { it == primitiveType }
-
         fun isFloatType(typeLiteral: String): Boolean =
             floatTypes.any { it.typeLiteral == typeLiteral }
-
-        fun isFloatType(primitiveType: PrimitiveType): Boolean =
-            floatTypes.any { it == primitiveType }
 
         fun fromClass(clazz: Class<*>): TypeInfo? = when {
             clazz.isPrimitive -> TypeInfo.Primitive(primitiveTypes.find { it.jvmClazz == clazz || it.wrappedJvmClazz == clazz }!!)
@@ -59,4 +48,19 @@ enum class PrimitiveType(
             else -> null
         }
     }
+
+    fun isPrimitiveType(): Boolean =
+        primitiveTypes.any { it == this }
+
+    fun convertable(): Boolean =
+        convertableTypes.any { it == this }
+
+    fun isNumberType(): Boolean =
+        numberTypes.any { it == this }
+
+    fun isIntegerType(): Boolean =
+        integerTypes.any { it == this }
+
+    fun isFloatType(): Boolean =
+        floatTypes.any { it == this }
 }
