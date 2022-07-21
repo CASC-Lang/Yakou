@@ -53,12 +53,22 @@ class Checker(private val compilationUnit: CompilationUnit) {
                     SpanHelper.expandView(const.span, compilationUnit.maxLineCount),
                     "Cannot implicitly cast constant's expression"
                 )
-                .label(const.type.span, "Expression type should explicitly be `$explicitTypeLiteral`")
+                .label(const.explicitType.span, "Expression type should explicitly be `$explicitTypeLiteral`")
                 .color(Attribute.CYAN_TEXT())
                 .build()
                 .label(const.expression.span, "Expression has type `$expressionTypeLiteral`")
                 .color(Attribute.RED_TEXT())
                 .build().build()
+        }
+
+        if (!(const.expression.originalType canImplicitCast const.typeInfo)) {
+            reportUnableToImplicitlyCast(
+                const.span,
+                const.expression.span,
+                const.expression.originalType.toString(),
+                const.explicitType.span,
+                const.typeInfo.toString()
+            )
         }
     }
 

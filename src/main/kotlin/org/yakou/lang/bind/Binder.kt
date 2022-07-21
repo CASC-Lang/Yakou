@@ -53,7 +53,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
 
     private fun bindConstDeclaration(const: Item.Const) {
-        const.typeInfo = bindType(const.type)
+        const.typeInfo = bindType(const.explicitType)
 
         val field = ClassMember.Field.fromConst(
             currentPackagePath,

@@ -30,7 +30,7 @@ sealed class Item {
         val const: Token,
         val identifier: Token,
         val colon: Token,
-        val type: Type,
+        val explicitType: Type,
         val equal: Token,
         var expression: Expression
     ) : Item() {
