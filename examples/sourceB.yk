@@ -3,6 +3,8 @@ pkg chaos {
     static b: i32 = 1
 
     fn test(kek: str) -> i32 {
-        return b
+
+
+
     }
 }

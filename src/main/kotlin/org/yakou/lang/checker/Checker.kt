@@ -123,6 +123,25 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
         if (function.body != null)
             checkFunctionBody(function.body)
+
+        checkControlFlow(function)
+    }
+
+    private fun checkControlFlow(function: Item.Function) {
+        if (function.functionInstance.returnTypeInfo != TypeInfo.Primitive.UNIT_TYPE_INFO) {
+            // Expected last statement should be return statement
+            when (val body = function.body) {
+                is FunctionBody.BlockExpression -> {
+                    if (body.statements.lastOrNull() !is Statement.Return) {
+                        reportMissingReturn(function, body.closeBrace, function.returnTypeInfo)
+                    }
+                }
+                is FunctionBody.SingleExpression -> {
+
+                }
+                else -> {}
+            }
+        }
     }
 
     private fun checkFunctionBody(functionBody: FunctionBody) {
@@ -252,6 +271,28 @@ class Checker(private val compilationUnit: CompilationUnit) {
         compilationUnit.reportBuilder
             .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Illegal value-parameter `$selfLiteral`")
             .label(span, labelMessage)
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportMissingReturn(
+        function: Item.Function,
+        closeBrace: Token,
+        returnTypeInfo: TypeInfo
+    ) {
+        val functionString = colorize(function.functionInstance.toString(), compilationUnit, Attribute.CYAN_TEXT())
+        val returnLiteral = colorize("return", compilationUnit, Attribute.CYAN_TEXT())
+        val returnType = colorize(returnTypeInfo.toString(), compilationUnit, Attribute.CYAN_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(function.span, compilationUnit.maxLineCount),
+                "Missing `$returnLiteral` statement at the end of function `$functionString`"
+            )
+            .label(function.returnType!!.span, "Function needs to return `$returnType`")
+            .color(Attribute.CYAN_TEXT())
+            .build()
+            .label(closeBrace.span, "Missing `$returnLiteral` statement at the end of function")
             .color(Attribute.RED_TEXT())
             .build().build()
     }
