@@ -451,17 +451,21 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
 
         numberLiteral.value = value
-        numberLiteral.originalType =
-            if (numberLiteral.dot == null && numberLiteral.floatPart == null) TypeInfo.Primitive(PrimitiveType.I32)
-            else TypeInfo.Primitive(PrimitiveType.F64)
-        numberLiteral.finalType = when {
-            numberLiteral.specifiedType != null -> bindType(numberLiteral.specifiedType)
-            numberLiteral.dot == null && numberLiteral.floatPart == null -> TypeInfo.Primitive(PrimitiveType.I32)
-            else -> TypeInfo.Primitive(PrimitiveType.F64)
-        }
 
-        numberLiteral.specifiedTypeInfo = numberLiteral.specifiedType?.let {
-            bindType(it) as TypeInfo.Primitive
+        if (numberLiteral.specifiedType != null) {
+            val specifiedType = bindType(numberLiteral.specifiedType) as TypeInfo.Primitive
+
+            numberLiteral.specifiedTypeInfo = specifiedType
+            numberLiteral.originalType = specifiedType
+            numberLiteral.finalType = specifiedType
+        } else {
+            numberLiteral.originalType =
+                if (numberLiteral.dot == null && numberLiteral.floatPart == null) TypeInfo.Primitive(PrimitiveType.I32)
+                else TypeInfo.Primitive(PrimitiveType.F64)
+            numberLiteral.finalType = when {
+                numberLiteral.dot == null && numberLiteral.floatPart == null -> TypeInfo.Primitive(PrimitiveType.I32)
+                else -> TypeInfo.Primitive(PrimitiveType.F64)
+            }
         }
     }
 
