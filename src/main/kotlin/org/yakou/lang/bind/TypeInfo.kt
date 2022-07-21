@@ -42,6 +42,9 @@ sealed class TypeInfo {
         else Primitive(leftPrimitiveType)
     }
 
+    infix fun canImplicitCast(otherTypeInfo: TypeInfo): Boolean =
+        TypeChecker.canImplicitCast(this, otherTypeInfo) == TypeChecker.BoundResult.SAME
+
     fun asPrimitive(): Primitive? =
         PrimitiveType.primitiveTypes
             .find { it.jvmClazz.descriptorString() == descriptor || it.wrappedJvmClazz.descriptorString() == descriptor }

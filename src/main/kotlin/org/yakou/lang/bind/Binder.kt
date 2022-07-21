@@ -349,7 +349,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 val leftType = binaryExpression.leftExpression.finalType.asPrimitive()
                 val rightType = binaryExpression.rightExpression.finalType.asPrimitive()
 
-                if (leftType == null || !PrimitiveType.isIntegerType(leftType.type)) {
+                if (leftType == null || !leftType.type.isIntegerType()) {
                     val coloredOperator = colorize(
                         binaryExpression.operator.joinToString(separator = "", transform = Token::literal),
                         compilationUnit,

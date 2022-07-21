@@ -10,6 +10,8 @@ import org.yakou.lang.util.SpanHelper
 import org.yakou.lang.util.colorize
 
 class Checker(private val compilationUnit: CompilationUnit) {
+    private var currentFunction: Item.Function? = null
+
     fun check() {
         checkYkFile(compilationUnit.ykFile!!)
     }
@@ -106,6 +108,8 @@ class Checker(private val compilationUnit: CompilationUnit) {
     }
 
     private fun checkFunction(function: Item.Function) {
+        currentFunction = function
+
         // Check top-level function has illegal modifiers
         if (function.functionInstance.ownerTypeInfo is TypeInfo.PackageClass) {
             if (function.modifiers.hasModifier(Modifier.Mut)) {
@@ -125,6 +129,8 @@ class Checker(private val compilationUnit: CompilationUnit) {
             checkFunctionBody(function.body)
 
         checkControlFlow(function)
+
+        currentFunction = null
     }
 
     private fun checkControlFlow(function: Item.Function) {
@@ -179,6 +185,16 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
     private fun checkReturn(`return`: Statement.Return) {
         checkExpression(`return`.expression)
+
+        if (!(`return`.expression.originalType canImplicitCast currentFunction!!.returnTypeInfo)) {
+            reportUnableToImplicitlyCast(
+                currentFunction!!.span,
+                `return`.expression.span,
+                `return`.expression.originalType.toString(),
+                currentFunction!!.returnType?.span ?: currentFunction!!.identifier.span,
+                currentFunction!!.functionInstance.returnTypeInfo.toString()
+            )
+        }
     }
 
     private fun checkExpression(expression: Expression) {
@@ -312,6 +328,29 @@ class Checker(private val compilationUnit: CompilationUnit) {
             .color(Attribute.CYAN_TEXT())
             .build()
             .label(closeBrace.span, "Missing `$returnLiteral` statement at the end of function")
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportUnableToImplicitlyCast(
+        commonSpan: Span,
+        fromTypeSpan: Span,
+        fromTypeLiteral: String,
+        toTypeSpan: Span,
+        toTypeLiteral: String
+    ) {
+        val fromType = colorize(fromTypeLiteral, compilationUnit, Attribute.RED_TEXT())
+        val toType = colorize(toTypeLiteral, compilationUnit, Attribute.CYAN_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(commonSpan, compilationUnit.maxLineCount),
+                "Unable to implicitly cast `$fromType` into `$toType`"
+            )
+            .label(toTypeSpan, "Expected: `$toType`")
+            .color(Attribute.CYAN_TEXT())
+            .build()
+            .label(fromTypeSpan, "Got: `$fromType`")
             .color(Attribute.RED_TEXT())
             .build().build()
     }
