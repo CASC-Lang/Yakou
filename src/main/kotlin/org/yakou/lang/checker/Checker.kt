@@ -201,6 +201,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
     }
 
     private fun checkNumberLiteral(numberLiteral: Expression.NumberLiteral) {
+        val originalType = numberLiteral.originalType
         val isIntegerValue = numberLiteral.value.toInt().toDouble() != numberLiteral.value
 
         if (numberLiteral.dot != null && numberLiteral.floatPart != null && numberLiteral.specifiedType != null) {
@@ -220,22 +221,40 @@ class Checker(private val compilationUnit: CompilationUnit) {
                     .label(numberLiteral.specifiedType.span, "Illegal type suffix here")
                     .color(Attribute.RED_TEXT())
                     .build().build()
-            } else if (numberLiteral.originalType is TypeInfo.Primitive && (numberLiteral.originalType as TypeInfo.Primitive).type == PrimitiveType.F64) {
-                // Redundant type suffix `f64` for float number literal
-                val specifiedTypeLiteral =
-                    colorize(numberLiteral.specifiedType.standardizeType(), compilationUnit, Attribute.CYAN_TEXT())
+            } else if (originalType is TypeInfo.Primitive) {
+                if (numberLiteral.specifiedTypeInfo?.type == PrimitiveType.F64 && originalType.type == PrimitiveType.F64) {
+                    // Redundant type suffix `f64` for float number literal
+                    val specifiedTypeLiteral =
+                        colorize(numberLiteral.specifiedType.standardizeType(), compilationUnit, Attribute.CYAN_TEXT())
 
-                compilationUnit.reportBuilder
-                    .warning(
-                        SpanHelper.expandView(numberLiteral.span, compilationUnit.maxLineCount),
-                        "Redundant type suffix `$specifiedTypeLiteral` for float number literal"
-                    )
-                    .label(numberLiteral.floatPart.span, "Float number literal here")
-                    .color(Attribute.CYAN_TEXT())
-                    .build()
-                    .label(numberLiteral.specifiedType.span, "Redundant type suffix here")
-                    .color(Attribute.YELLOW_TEXT())
-                    .build().build()
+                    compilationUnit.reportBuilder
+                        .warning(
+                            SpanHelper.expandView(numberLiteral.span, compilationUnit.maxLineCount),
+                            "Redundant type suffix `$specifiedTypeLiteral` for float number literal"
+                        )
+                        .label(numberLiteral.floatPart.span, "Float number literal here")
+                        .color(Attribute.CYAN_TEXT())
+                        .build()
+                        .label(numberLiteral.specifiedType.span, "Redundant type suffix here")
+                        .color(Attribute.YELLOW_TEXT())
+                        .build().build()
+                } else if (numberLiteral.specifiedTypeInfo?.type == PrimitiveType.I32 && originalType.type == PrimitiveType.I32) {
+                    // Redundant type suffix `i32` for integer number literal
+                    val specifiedTypeLiteral =
+                        colorize(numberLiteral.specifiedType.standardizeType(), compilationUnit, Attribute.CYAN_TEXT())
+
+                    compilationUnit.reportBuilder
+                        .warning(
+                            SpanHelper.expandView(numberLiteral.span, compilationUnit.maxLineCount),
+                            "Redundant type suffix `$specifiedTypeLiteral` for integer number literal"
+                        )
+                        .label(numberLiteral.floatPart.span, "Integer number literal here")
+                        .color(Attribute.CYAN_TEXT())
+                        .build()
+                        .label(numberLiteral.specifiedType.span, "Redundant type suffix here")
+                        .color(Attribute.YELLOW_TEXT())
+                        .build().build()
+                }
             }
         }
     }
