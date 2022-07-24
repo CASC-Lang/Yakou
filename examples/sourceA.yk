@@ -2,10 +2,10 @@ pkg chaos {
     pkg unity {
         const a: i16 = 1i16
 
-        static b: i32 = 2 << 5
+        const b: i32 = 2 << 5
 
         class Kek {
-            mut a: i32
+            mut a: i32 = 1
         }
 
         fn main(arg: [str]) {
