@@ -256,7 +256,13 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
     private fun checkAs(`as`: Expression.As) {
         if (!`as`.originalType.canExplicitCast(table, `as`.finalType)) {
-            // TODO: Report
+            reportUnableToExplicitlyCast(
+                `as`.span,
+                `as`.expression.span,
+                `as`.originalType.toString(),
+                `as`.type.span,
+                `as`.finalType.toString()
+            )
         }
     }
 
@@ -402,6 +408,29 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 "Unable to implicitly cast `$fromType` into `$toType`"
             )
             .label(toTypeSpan, "Expected `$toType`")
+            .color(Attribute.CYAN_TEXT())
+            .build()
+            .label(fromTypeSpan, "Got `$fromType`")
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportUnableToExplicitlyCast(
+        commonSpan: Span,
+        fromTypeSpan: Span,
+        fromTypeLiteral: String,
+        toTypeSpan: Span,
+        toTypeLiteral: String
+    ) {
+        val fromType = colorize(fromTypeLiteral, compilationUnit, Attribute.RED_TEXT())
+        val toType = colorize(toTypeLiteral, compilationUnit, Attribute.CYAN_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(commonSpan, compilationUnit.maxLineCount),
+                "Unable to explicitly cast `$fromType` into `$toType`"
+            )
+            .label(toTypeSpan, "Cast into `$toType` is impossible")
             .color(Attribute.CYAN_TEXT())
             .build()
             .label(fromTypeSpan, "Got `$fromType`")

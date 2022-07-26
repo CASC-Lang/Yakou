@@ -296,112 +296,126 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseAsExpression(): Expression {
-        val leftExpression = parseShiftingExpression()
+        var leftExpression = parseShiftingExpression()
 
-        return if (optExpectKeyword(Keyword.AS)) {
+        while (optExpectKeyword(Keyword.AS)) {
             val `as` = next()!!
             val type = parseType()
 
-            return Expression.As(leftExpression, `as`, type)
-        } else leftExpression
+            leftExpression = Expression.As(leftExpression, `as`, type)
+        }
+
+        return leftExpression
     }
 
     private fun parseShiftingExpression(): Expression {
-        val leftExpression = parseAddictiveExpression()
+        var leftExpression = parseAddictiveExpression()
 
-        return if (optExpectRepeatType(TokenType.Greater, 3)) {
-            val operator = listOf(next()!!, next()!!, next()!!)
-            val rightExpression = parseExpression()
+        while (true) {
+            if (optExpectRepeatType(TokenType.Greater, 3)) {
+                val operator = listOf(next()!!, next()!!, next()!!)
+                val rightExpression = parseExpression()
 
-            Expression.BinaryExpression(
-                leftExpression,
-                operator,
-                rightExpression,
-                Expression.BinaryExpression.BinaryOperation.UnsignedRightShift
-            )
-        } else if (optExpectRepeatType(TokenType.Greater, 2)) {
-            val operator = listOf(next()!!, next()!!)
-            val rightExpression = parseExpression()
+                leftExpression = Expression.BinaryExpression(
+                    leftExpression,
+                    operator,
+                    rightExpression,
+                    Expression.BinaryExpression.BinaryOperation.UnsignedRightShift
+                )
+            } else if (optExpectRepeatType(TokenType.Greater, 2)) {
+                val operator = listOf(next()!!, next()!!)
+                val rightExpression = parseExpression()
 
-            Expression.BinaryExpression(
-                leftExpression,
-                operator,
-                rightExpression,
-                Expression.BinaryExpression.BinaryOperation.RightShift
-            )
-        } else if (optExpectRepeatType(TokenType.Lesser, 2)) {
-            val operator = listOf(next()!!, next()!!)
-            val rightExpression = parseExpression()
+                leftExpression = Expression.BinaryExpression(
+                    leftExpression,
+                    operator,
+                    rightExpression,
+                    Expression.BinaryExpression.BinaryOperation.RightShift
+                )
+            } else if (optExpectRepeatType(TokenType.Lesser, 2)) {
+                val operator = listOf(next()!!, next()!!)
+                val rightExpression = parseExpression()
 
-            Expression.BinaryExpression(
-                leftExpression,
-                operator,
-                rightExpression,
-                Expression.BinaryExpression.BinaryOperation.LeftShift
-            )
-        } else leftExpression
+                leftExpression = Expression.BinaryExpression(
+                    leftExpression,
+                    operator,
+                    rightExpression,
+                    Expression.BinaryExpression.BinaryOperation.LeftShift
+                )
+            } else break
+        }
+
+        return leftExpression
     }
 
     private fun parseAddictiveExpression(): Expression {
-        val leftExpression = parseMultiplicativeExpression()
+        var leftExpression = parseMultiplicativeExpression()
 
-        return if (optExpectType(TokenType.Plus)) {
-            val operator = next()!!
-            val rightExpression = parseExpression()
+        while (true) {
+            if (optExpectType(TokenType.Plus)) {
+                val operator = next()!!
+                val rightExpression = parseExpression()
 
-            Expression.BinaryExpression(
-                leftExpression,
-                listOf(operator),
-                rightExpression,
-                Expression.BinaryExpression.BinaryOperation.Addition
-            )
-        } else if (optExpectType(TokenType.Minus)) {
-            val operator = next()!!
-            val rightExpression = parseExpression()
+                leftExpression =Expression.BinaryExpression(
+                    leftExpression,
+                    listOf(operator),
+                    rightExpression,
+                    Expression.BinaryExpression.BinaryOperation.Addition
+                )
+            } else if (optExpectType(TokenType.Minus)) {
+                val operator = next()!!
+                val rightExpression = parseExpression()
 
-            Expression.BinaryExpression(
-                leftExpression,
-                listOf(operator),
-                rightExpression,
-                Expression.BinaryExpression.BinaryOperation.Subtraction
-            )
-        } else leftExpression
+                leftExpression =Expression.BinaryExpression(
+                    leftExpression,
+                    listOf(operator),
+                    rightExpression,
+                    Expression.BinaryExpression.BinaryOperation.Subtraction
+                )
+            } else break
+        }
+
+        return leftExpression
     }
 
     private fun parseMultiplicativeExpression(): Expression {
-        val leftExpression = parseLiteralExpression()
+        var leftExpression = parseLiteralExpression()
 
-        return if (optExpectType(TokenType.Star)) {
-            val operator = next()!!
-            val rightExpression = parseExpression()
+        while (true) {
+            if (optExpectType(TokenType.Star)) {
+                val operator = next()!!
+                val rightExpression = parseExpression()
 
-            Expression.BinaryExpression(
-                leftExpression,
-                listOf(operator),
-                rightExpression,
-                Expression.BinaryExpression.BinaryOperation.Multiplication
-            )
-        } else if (optExpectType(TokenType.Slash)) {
-            val operator = next()!!
-            val rightExpression = parseExpression()
+                leftExpression = Expression.BinaryExpression(
+                    leftExpression,
+                    listOf(operator),
+                    rightExpression,
+                    Expression.BinaryExpression.BinaryOperation.Multiplication
+                )
+            } else if (optExpectType(TokenType.Slash)) {
+                val operator = next()!!
+                val rightExpression = parseExpression()
 
-            Expression.BinaryExpression(
-                leftExpression,
-                listOf(operator),
-                rightExpression,
-                Expression.BinaryExpression.BinaryOperation.Division
-            )
-        } else if (optExpectType(TokenType.Percentage)) {
-            val operator = next()!!
-            val rightExpression = parseExpression()
+                leftExpression = Expression.BinaryExpression(
+                    leftExpression,
+                    listOf(operator),
+                    rightExpression,
+                    Expression.BinaryExpression.BinaryOperation.Division
+                )
+            } else if (optExpectType(TokenType.Percentage)) {
+                val operator = next()!!
+                val rightExpression = parseExpression()
 
-            Expression.BinaryExpression(
-                leftExpression,
-                listOf(operator),
-                rightExpression,
-                Expression.BinaryExpression.BinaryOperation.Modulo
-            )
-        } else leftExpression
+                leftExpression = Expression.BinaryExpression(
+                    leftExpression,
+                    listOf(operator),
+                    rightExpression,
+                    Expression.BinaryExpression.BinaryOperation.Modulo
+                )
+            } else break
+        }
+
+        return leftExpression
     }
 
     private fun parseLiteralExpression(): Expression = when {
