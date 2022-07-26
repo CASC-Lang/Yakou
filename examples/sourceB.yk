@@ -1,6 +1,6 @@
 pkg chaos {
     const a: i32 = 1
-    static b: i32 = 1
+    inline static b: i32 = 1
 
     fn test(kek: str) -> i32 {
         let a = 1

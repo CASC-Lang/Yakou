@@ -14,6 +14,8 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
     abstract val qualifiedOwnerPath: String
     abstract var ownerTypeInfo: TypeInfo.Class
 
+    abstract val inline: Boolean
+
     data class Field(
         override val access: Int,
         override val packagePath: String,
@@ -22,7 +24,8 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
         override val typeInfo: TypeInfo,
         val isStatic: Boolean,
         val isConst: Boolean,
-        val propagateExpression: Expression? = null
+        override val inline: Boolean,
+        val propagateExpression: Expression? = null,
     ) : ClassMember(MemberType.FIELD) {
         companion object {
             fun fromField(field: java.lang.reflect.Field): Field =
@@ -33,7 +36,8 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
                     field.name,
                     TypeInfo.fromClass(field.type),
                     Modifier.isStatic(field.modifiers),
-                    false
+                    isConst = false,
+                    inline = false
                 )
 
             fun fromConst(
@@ -49,6 +53,7 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
                 const.typeInfo,
                 isStatic = true,
                 isConst = true,
+                const.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline),
                 const.expression
             )
 
@@ -64,6 +69,7 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
                 staticField.typeInfo,
                 isStatic = true,
                 isConst = false,
+                staticField.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline),
                 staticField.expression
             )
 
@@ -79,6 +85,7 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
                 field.typeInfo,
                 isStatic = false,
                 isConst = false,
+                field.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline),
                 field.expression
             )
         }
@@ -129,7 +136,8 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
         override val classPath: String,
         override val name: String,
         val parameterTypeInfos: List<TypeInfo>,
-        val returnTypeInfo: TypeInfo
+        val returnTypeInfo: TypeInfo,
+        override val inline: Boolean,
     ) : ClassMember(MemberType.FUNCTION) {
         companion object {
             fun fromMethod(method: Method): Fn =
@@ -139,7 +147,8 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
                     method.declaringClass.typeName.split('.').last().replace("$", "::"),
                     method.name,
                     method.parameters.map { TypeInfo.fromClass(it.type) },
-                    TypeInfo.fromClass(method.returnType)
+                    TypeInfo.fromClass(method.returnType),
+                    false
                 )
 
             fun fromFunction(
@@ -153,7 +162,8 @@ sealed class ClassMember(val memberType: MemberType): Symbol() {
                 classSimplePath.toString().ifBlank { "PackageYk" },
                 function.identifier.literal,
                 function.parameters.map(Parameter::typeInfo),
-                function.returnTypeInfo
+                function.returnTypeInfo,
+                function.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline)
             )
         }
 
