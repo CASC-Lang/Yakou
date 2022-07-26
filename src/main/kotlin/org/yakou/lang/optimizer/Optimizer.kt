@@ -97,6 +97,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
     private fun optimizeExpression(expression: Expression): Expression = when (expression) {
         is Expression.BinaryExpression -> optimizeBinaryExpression(expression)
         is Expression.Identifier -> optimizeIdentifier(expression)
+        is Expression.As -> optimizeAs(expression)
         is Expression.NumberLiteral -> expression
         is Expression.Empty -> expression
         Expression.Undefined -> expression
@@ -175,5 +176,9 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                 } else expression
             } else expression
         } else expression
+    }
+
+    private fun optimizeAs(expression: Expression.As): Expression {
+        return expression // TODO: Optimize?
     }
 }

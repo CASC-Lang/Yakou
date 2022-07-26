@@ -45,6 +45,16 @@ sealed class Expression {
         lateinit var symbolInstance: Symbol
     }
 
+    class As(
+        val expression: Expression,
+        val `as`: Token,
+        val type: Type
+    ) : Expression() {
+        override val span: Span by lazy {
+            expression.span.expand(type.span)
+        }
+    }
+
     sealed class LiteralExpression : Expression()
 
     class NumberLiteral(

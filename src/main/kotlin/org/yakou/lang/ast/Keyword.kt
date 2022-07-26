@@ -14,6 +14,7 @@ enum class Keyword(val literal: String) {
     FN("fn"),
     SELF("self"),
     LET("let"),
+    AS("as"),
     RETURN("return");
 
     companion object {

@@ -210,14 +210,12 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkVariableDeclaration(variableDeclaration: Statement.VariableDeclaration) {
         if (variableDeclaration.name.literal == "_") {
             when (variableDeclaration.expression) {
-                is Expression.BinaryExpression -> {}
-                is Expression.Identifier -> {}
                 is Expression.NumberLiteral -> {
                     // No effect variable declaration
                     reportIgnoredVariableHasNoEffect(variableDeclaration.name.span, variableDeclaration.expression.span)
                 }
-                is Expression.Empty -> {}
                 Expression.Undefined -> TODO("UNREACHABLE")
+                else -> {}
             }
         }
     }
@@ -240,6 +238,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
         when (expression) {
             is Expression.BinaryExpression -> checkBinaryExpression(expression)
             is Expression.Identifier -> checkIdentifier(expression)
+            is Expression.As -> checkAs(expression)
             is Expression.NumberLiteral -> checkNumberLiteral(expression)
             is Expression.Empty -> {}
             Expression.Undefined -> TODO("UNREACHABLE")
@@ -253,6 +252,12 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
     private fun checkIdentifier(identifier: Expression.Identifier) {
         // ??
+    }
+
+    private fun checkAs(`as`: Expression.As) {
+        if (!`as`.originalType.canExplicitCast(table, `as`.finalType)) {
+            // TODO: Report
+        }
     }
 
     private fun checkNumberLiteral(numberLiteral: Expression.NumberLiteral) {

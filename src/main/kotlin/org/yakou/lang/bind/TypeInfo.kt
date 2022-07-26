@@ -42,8 +42,14 @@ sealed class TypeInfo {
         else Primitive(leftPrimitiveType)
     }
 
-    fun canImplicitCast(table: Table, otherTypeInfo: TypeInfo): Boolean =
-        TypeChecker.canImplicitCast(table, this, otherTypeInfo) == TypeChecker.BoundResult.SAME
+    fun canImplicitCast(table: Table, otherTypeInfo: TypeInfo): Boolean {
+        val boundResult = TypeChecker.canImplicitCast(table, this, otherTypeInfo)
+
+        return boundResult == TypeChecker.BoundResult.SAME || boundResult == TypeChecker.BoundResult.SUBCLASS
+    }
+
+    fun canExplicitCast(table: Table, otherTypeInfo: TypeInfo): Boolean =
+        TypeChecker.canExplicitCast(table, this, otherTypeInfo) != TypeChecker.BoundResult.FAIL
 
     fun asPrimitive(): Primitive? =
         PrimitiveType.primitiveTypes

@@ -289,10 +289,21 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
     private fun parseExpression(optional: Boolean = false): Expression {
         optionalExpression = optional
-        val expression = parseShiftingExpression()
+        val expression = parseAsExpression()
         optionalExpression = true
 
         return expression
+    }
+
+    private fun parseAsExpression(): Expression {
+        val leftExpression = parseShiftingExpression()
+
+        return if (optExpectKeyword(Keyword.AS)) {
+            val `as` = next()!!
+            val type = parseType()
+
+            return Expression.As(leftExpression, `as`, type)
+        } else leftExpression
     }
 
     private fun parseShiftingExpression(): Expression {
