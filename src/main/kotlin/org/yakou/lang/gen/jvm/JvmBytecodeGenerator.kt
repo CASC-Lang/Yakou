@@ -287,7 +287,25 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genAs(methodVisitor: MethodVisitor, `as`: Expression.As) {
-        // TODO: Gen
+        genExpression(methodVisitor, `as`.expression)
+
+        val originalType = `as`.originalType
+        val finalType = `as`.finalType
+
+        if (originalType is TypeInfo.Primitive && finalType is TypeInfo.Class) {
+            // Box
+            val wrappedClazz = originalType.type.wrappedJvmClazz
+
+            methodVisitor.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                wrappedClazz.typeName,
+                "valueOf",
+                "(${originalType.descriptor})${wrappedClazz.descriptorString()}",
+                false
+            )
+        } else if (originalType is TypeInfo.Primitive && finalType is TypeInfo.Primitive) {
+
+        }
     }
 
     private fun genNumberLiteral(methodVisitor: MethodVisitor, numberLiteral: Expression.NumberLiteral) {
@@ -334,6 +352,43 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
             classWriter
         }
+
+    private fun getCastOpcode(from: PrimitiveType, to: PrimitiveType): Int = when (from) {
+        PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> {
+            when (to) {
+                PrimitiveType.I64 -> Opcodes.I2L
+                PrimitiveType.F32 -> Opcodes.I2F
+                PrimitiveType.F64 -> Opcodes.I2D
+                else -> -1
+            }
+        }
+        PrimitiveType.I64 -> {
+            when (to) {
+                PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.L2I
+                PrimitiveType.F32 -> Opcodes.L2F
+                PrimitiveType.F64 -> Opcodes.L2D
+                else -> -1
+            }
+        }
+        PrimitiveType.F32 -> {
+            when (to) {
+                PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.F2I
+                PrimitiveType.I64 -> Opcodes.F2L
+                PrimitiveType.F64 -> Opcodes.F2D
+                else -> -1
+            }
+        }
+        PrimitiveType.F64 -> {
+            when (to) {
+                PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.D2I
+                PrimitiveType.I64 -> Opcodes.D2L
+                PrimitiveType.F32 -> Opcodes.D2F
+                else -> -1
+            }
+        }
+        else -> -1
+    }
+
 
     private fun castNumber(originalNumber: Number, actualType: PrimitiveType): Number {
         return when (actualType) {
