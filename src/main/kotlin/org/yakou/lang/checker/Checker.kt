@@ -5,6 +5,7 @@ import com.diogonunes.jcolor.Attribute
 import org.yakou.lang.ast.*
 import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.bind.Table
+import org.yakou.lang.bind.TypeChecker
 import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
@@ -255,14 +256,17 @@ class Checker(private val compilationUnit: CompilationUnit) {
     }
 
     private fun checkAs(`as`: Expression.As) {
-        if (!`as`.originalType.canExplicitCast(table, `as`.finalType)) {
-            reportUnableToExplicitlyCast(
-                `as`.span,
-                `as`.expression.span,
-                `as`.originalType.toString(),
-                `as`.type.span,
-                `as`.finalType.toString()
-            )
+        when (TypeChecker.canExplicitCast(table, `as`.originalType, `as`.finalType)) {
+            TypeChecker.BoundResult.FAIL, TypeChecker.BoundResult.IMPOSSIBLE -> {
+                reportUnableToExplicitlyCast(
+                    `as`.span,
+                    `as`.expression.span,
+                    `as`.originalType.toString(),
+                    `as`.type.span,
+                    `as`.finalType.toString()
+                )
+            }
+            else -> {}
         }
     }
 
