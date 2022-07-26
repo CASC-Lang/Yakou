@@ -112,10 +112,14 @@ class Checker(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun checkClass(function: Item.Class) {
-        if (function.classItems != null)
-            for (classItem in function.classItems)
+    private fun checkClass(clazz: Item.Class) {
+        if (clazz.classItems != null)
+            for (classItem in clazz.classItems)
                 checkClassItem(classItem)
+
+        if (clazz.modifiers.hasModifier(Modifier.Inline)) {
+            reportIllegalInline(clazz.modifiers[Modifier.Inline]!!, "Class cannot be inlined")
+        }
     }
 
     private fun checkClassItem(classItem: ClassItem) {
@@ -320,6 +324,16 @@ class Checker(private val compilationUnit: CompilationUnit) {
             .build()
             .label(expressionSpan, "Expression has no side effect")
             .color(Attribute.YELLOW_TEXT())
+            .build().build()
+    }
+
+    private fun reportIllegalInline(span: Span, labelMessage: String) {
+        val inlineLiteral = colorize("inline", compilationUnit, Attribute.RED_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Illegal modifier `$inlineLiteral`")
+            .label(span, labelMessage)
+            .color(Attribute.RED_TEXT())
             .build().build()
     }
 

@@ -523,6 +523,15 @@ class Parser(private val compilationUnit: CompilationUnit) {
                         reportModifierDuplication(modifiers[Modifier.Prot]!!, span)
                     }
                 }
+                optExpectKeyword(Keyword.INLINE) -> {
+                    // `inline`
+                    val span = next()!!.span
+
+                    if (!modifiers.set(Modifier.Inline, span)) {
+                        // Duplication
+                        reportModifierDuplication(modifiers[Modifier.Inline]!!, span)
+                    }
+                }
                 optExpectKeyword(Keyword.MUT) -> {
                     // `mut`
                     val span = next()!!.span
