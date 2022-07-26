@@ -42,8 +42,8 @@ sealed class TypeInfo {
         else Primitive(leftPrimitiveType)
     }
 
-    infix fun canImplicitCast(otherTypeInfo: TypeInfo): Boolean =
-        TypeChecker.canImplicitCast(this, otherTypeInfo) == TypeChecker.BoundResult.SAME
+    fun canImplicitCast(table: Table, otherTypeInfo: TypeInfo): Boolean =
+        TypeChecker.canImplicitCast(table, this, otherTypeInfo) == TypeChecker.BoundResult.SAME
 
     fun asPrimitive(): Primitive? =
         PrimitiveType.primitiveTypes

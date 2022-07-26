@@ -4,12 +4,14 @@ import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Attribute
 import org.yakou.lang.ast.*
 import org.yakou.lang.bind.PrimitiveType
+import org.yakou.lang.bind.Table
 import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
 import org.yakou.lang.util.colorize
 
 class Checker(private val compilationUnit: CompilationUnit) {
+    private val table: Table = compilationUnit.session.table
     private var currentFunction: Item.Function? = null
 
     fun check() {
@@ -61,7 +63,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 .build().build()
         }
 
-        if (!(const.expression.originalType canImplicitCast const.typeInfo)) {
+        if (!(const.expression.originalType.canImplicitCast(table, const.typeInfo))) {
             reportUnableToImplicitlyCast(
                 const.span,
                 const.expression.span,
@@ -101,7 +103,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             }
         }
 
-        if (!(staticField.expression.originalType canImplicitCast staticField.typeInfo)) {
+        if (!(staticField.expression.originalType.canImplicitCast(table, staticField.typeInfo))) {
             reportUnableToImplicitlyCast(
                 staticField.span,
                 staticField.expression.span,
@@ -132,7 +134,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
         if (field.expression != null) {
             checkExpression(field.expression!!)
 
-            if (!(field.expression!!.originalType canImplicitCast field.typeInfo)) {
+            if (!(field.expression!!.originalType.canImplicitCast(table, field.typeInfo))) {
                 reportUnableToImplicitlyCast(
                     field.span,
                     field.expression!!.span,
@@ -223,7 +225,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkReturn(`return`: Statement.Return) {
         checkExpression(`return`.expression)
 
-        if (!(`return`.expression.originalType canImplicitCast currentFunction!!.returnTypeInfo)) {
+        if (!(`return`.expression.originalType.canImplicitCast(table, currentFunction!!.returnTypeInfo))) {
             reportUnableToImplicitlyCast(
                 currentFunction!!.span,
                 `return`.expression.span,
