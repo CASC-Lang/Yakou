@@ -1,5 +1,6 @@
 package org.yakou.lang.optimizer
 
+import chaos.unity.nenggao.Span
 import org.yakou.lang.ast.*
 import org.yakou.lang.bind.ClassMember
 import org.yakou.lang.bind.TypeInfo
@@ -104,46 +105,66 @@ class Optimizer(val compilationUnit: CompilationUnit) {
     }
 
     private fun optimizeBinaryExpression(expression: Expression.BinaryExpression): Expression {
-        fun syntheticNumberLiteral(value: Double): Expression.NumberLiteral {
-            val syntheticNumberLiteral =
-                Expression.NumberLiteral(null, null, null, null, expression.span)
-
-            syntheticNumberLiteral.value = value
-            syntheticNumberLiteral.specifiedTypeInfo = expression.finalType as TypeInfo.Primitive
-            syntheticNumberLiteral.originalType = expression.originalType
-            syntheticNumberLiteral.finalType = expression.finalType
-
-            return syntheticNumberLiteral
-        }
-
         val optimizedLeftExpression = optimizeExpression(expression.leftExpression)
         val optimizedRightExpression = optimizeExpression(expression.rightExpression)
 
         return if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral) {
             when (expression.operation) {
                 Expression.BinaryExpression.BinaryOperation.Addition -> {
-                    syntheticNumberLiteral(optimizedLeftExpression.value + optimizedRightExpression.value)
+                    syntheticNumberLiteral(
+                        optimizedLeftExpression.value + optimizedRightExpression.value,
+                        expression.span,
+                        expression.finalType
+                    )
                 }
                 Expression.BinaryExpression.BinaryOperation.Subtraction -> {
-                    syntheticNumberLiteral(optimizedLeftExpression.value - optimizedRightExpression.value)
+                    syntheticNumberLiteral(
+                        optimizedLeftExpression.value - optimizedRightExpression.value,
+                        expression.span,
+                        expression.finalType
+                    )
                 }
                 Expression.BinaryExpression.BinaryOperation.Multiplication -> {
-                    syntheticNumberLiteral(optimizedLeftExpression.value * optimizedRightExpression.value)
+                    syntheticNumberLiteral(
+                        optimizedLeftExpression.value * optimizedRightExpression.value,
+                        expression.span,
+                        expression.finalType
+                    )
                 }
                 Expression.BinaryExpression.BinaryOperation.Division -> {
-                    syntheticNumberLiteral(optimizedLeftExpression.value / optimizedRightExpression.value)
+                    syntheticNumberLiteral(
+                        optimizedLeftExpression.value / optimizedRightExpression.value,
+                        expression.span,
+                        expression.finalType
+                    )
                 }
                 Expression.BinaryExpression.BinaryOperation.Modulo -> {
-                    syntheticNumberLiteral(optimizedLeftExpression.value % optimizedRightExpression.value)
+                    syntheticNumberLiteral(
+                        optimizedLeftExpression.value % optimizedRightExpression.value,
+                        expression.span,
+                        expression.finalType
+                    )
                 }
                 Expression.BinaryExpression.BinaryOperation.UnsignedRightShift -> {
-                    syntheticNumberLiteral((optimizedLeftExpression.value.toLong() ushr optimizedRightExpression.value.toInt()).toDouble())
+                    syntheticNumberLiteral(
+                        (optimizedLeftExpression.value.toLong() ushr optimizedRightExpression.value.toInt()).toDouble(),
+                        expression.span,
+                        expression.finalType
+                    )
                 }
                 Expression.BinaryExpression.BinaryOperation.RightShift -> {
-                    syntheticNumberLiteral((optimizedLeftExpression.value.toLong() shr optimizedRightExpression.value.toInt()).toDouble())
+                    syntheticNumberLiteral(
+                        (optimizedLeftExpression.value.toLong() shr optimizedRightExpression.value.toInt()).toDouble(),
+                        expression.span,
+                        expression.finalType
+                    )
                 }
                 Expression.BinaryExpression.BinaryOperation.LeftShift -> {
-                    syntheticNumberLiteral((optimizedLeftExpression.value.toLong() shl optimizedRightExpression.value.toInt()).toDouble())
+                    syntheticNumberLiteral(
+                        (optimizedLeftExpression.value.toLong() shl optimizedRightExpression.value.toInt()).toDouble(),
+                        expression.span,
+                        expression.finalType
+                    )
                 }
             }
         } else {
@@ -179,6 +200,33 @@ class Optimizer(val compilationUnit: CompilationUnit) {
     }
 
     private fun optimizeAs(expression: Expression.As): Expression {
+        expression.expression = optimizeExpression(expression.expression)
+
+        val innerExpression = expression.expression
+
+        if (innerExpression is Expression.LiteralExpression && expression.finalType !is TypeInfo.Class) {
+            // Do not optimize boxing process!
+            return when (innerExpression) {
+                is Expression.NumberLiteral -> syntheticNumberLiteral(
+                    innerExpression.value,
+                    expression.span,
+                    expression.finalType
+                )
+            }
+        }
+
         return expression // TODO: Optimize?
+    }
+
+    private fun syntheticNumberLiteral(value: Double, span: Span, finalType: TypeInfo): Expression.NumberLiteral {
+        val syntheticNumberLiteral =
+            Expression.NumberLiteral(null, null, null, null, span)
+
+        syntheticNumberLiteral.value = value
+        syntheticNumberLiteral.specifiedTypeInfo = finalType as TypeInfo.Primitive
+        syntheticNumberLiteral.originalType = finalType
+        syntheticNumberLiteral.finalType = finalType
+
+        return syntheticNumberLiteral
     }
 }

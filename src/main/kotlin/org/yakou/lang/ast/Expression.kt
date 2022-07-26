@@ -46,7 +46,7 @@ sealed class Expression {
     }
 
     class As(
-        val expression: Expression,
+        var expression: Expression,
         val `as`: Token,
         val type: Type
     ) : Expression() {
