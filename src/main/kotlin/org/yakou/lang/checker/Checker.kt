@@ -63,7 +63,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 .build().build()
         }
 
-        if (!(const.expression.originalType.canImplicitCast(table, const.typeInfo))) {
+        if (!(const.expression.finalType.canImplicitCast(table, const.typeInfo))) {
             reportUnableToImplicitlyCast(
                 const.span,
                 const.expression.span,
@@ -103,7 +103,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             }
         }
 
-        if (!(staticField.expression.originalType.canImplicitCast(table, staticField.typeInfo))) {
+        if (!(staticField.expression.finalType.canImplicitCast(table, staticField.typeInfo))) {
             reportUnableToImplicitlyCast(
                 staticField.span,
                 staticField.expression.span,
@@ -134,7 +134,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
         if (field.expression != null) {
             checkExpression(field.expression!!)
 
-            if (!(field.expression!!.originalType.canImplicitCast(table, field.typeInfo))) {
+            if (!(field.expression!!.finalType.canImplicitCast(table, field.typeInfo))) {
                 reportUnableToImplicitlyCast(
                     field.span,
                     field.expression!!.span,
@@ -223,7 +223,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkReturn(`return`: Statement.Return) {
         checkExpression(`return`.expression)
 
-        if (!(`return`.expression.originalType.canImplicitCast(table, currentFunction!!.returnTypeInfo))) {
+        if (!(`return`.expression.finalType.canImplicitCast(table, currentFunction!!.returnTypeInfo))) {
             reportUnableToImplicitlyCast(
                 currentFunction!!.span,
                 `return`.expression.span,
