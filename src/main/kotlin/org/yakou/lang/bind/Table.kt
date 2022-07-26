@@ -83,18 +83,20 @@ class Table {
             return TypeInfo.Primitive(it)
         }
 
-        if (typeName.startsWith("[")) {
-            // Array type
-            val arrayTypeInfo = asTypeInfo(type)
-
-            // Check if base type is type path, and validate if type path exists
-            return when ((arrayTypeInfo as TypeInfo.Array).baseType) {
-                is TypeInfo.Primitive, is TypeInfo.Class -> arrayTypeInfo
-                is TypeInfo.Array -> null // Unreachable
+        return when (val typeInfo = asTypeInfo(type)) {
+            is TypeInfo.Array -> {
+                when (typeInfo.baseType) {
+                    is TypeInfo.Primitive, is TypeInfo.Class -> typeInfo
+                    is TypeInfo.Array -> null // Unreachable
+                }
             }
-        }
+            is TypeInfo.Class -> {
+                typeTable[typeName] = typeInfo
 
-        return typeTable[typeName]
+                typeInfo
+            }
+            else -> typeTable[typeName]
+        }
     }
 
     private fun asTypeInfo(type: Type): TypeInfo? = when (type) {
