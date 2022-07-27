@@ -1,6 +1,7 @@
 package org.yakou.lang.gen.jvm
 
 import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.yakou.lang.ast.*
@@ -15,6 +16,8 @@ import java.io.File
 class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private val classWriters: HashMap<TypeInfo.Class, ClassWriter> = hashMapOf()
     private val staticBlockWriters: HashMap<TypeInfo.Class, MethodVisitor> = hashMapOf()
+
+    private var currentLineLabel: Label? = null
 
     fun gen(compilationUnit: CompilationUnit) {
         genYkFile(compilationUnit.ykFile!!)
@@ -198,6 +201,10 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genStatement(methodVisitor: MethodVisitor, statement: Statement) {
+        currentLineLabel = Label()
+
+        methodVisitor.visitLineNumber(statement.span.startPosition.line, currentLineLabel)
+
         when (statement) {
             is Statement.VariableDeclaration -> genVariableDeclaration(methodVisitor, statement)
             is Statement.Return -> genReturn(methodVisitor, statement)
