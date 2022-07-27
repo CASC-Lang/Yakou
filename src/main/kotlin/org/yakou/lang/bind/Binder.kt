@@ -220,7 +220,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         // Add function parameters as variables
         if (function.self != null) {
-            functionScope.addVariable(function.self, function.functionInstance.ownerTypeInfo)
+            functionScope.addVariable(function.self, function.self, function.functionInstance.ownerTypeInfo)
         }
 
         for (parameter in function.parameters)
@@ -264,7 +264,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
 
         if (currentScope != null) {
-            val variable = currentScope!!.addVariable(variableDeclaration.name, variableDeclaration.expression.finalType)
+            val variable = currentScope!!.addVariable(variableDeclaration.mut, variableDeclaration.name, variableDeclaration.expression.finalType)
 
             if (variable != null) {
                 variableDeclaration.variableInstance = variable

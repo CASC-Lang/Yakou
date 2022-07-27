@@ -3,7 +3,8 @@ package org.yakou.lang.bind
 import org.yakou.lang.ast.Expression
 import org.yakou.lang.ast.Token
 
-open class Variable(val nameToken: Token, val index: Int, val name: String = nameToken.literal): Symbol() {
+open class Variable(val mutToken: Token?, val nameToken: Token, val index: Int, val name: String = nameToken.literal): Symbol() {
+    override val mutable: Boolean = mutToken != null
     var propagatable: Boolean = false // Constant folding usage
     var referencedCount: Int = 0 // Constant folding usage
     lateinit var propagateExpression: Expression
@@ -44,5 +45,5 @@ open class Variable(val nameToken: Token, val index: Int, val name: String = nam
         return name.hashCode()
     }
 
-    class ValueParameter(nameToken: Token, index: Int): Variable(nameToken, index)
+    class ValueParameter(nameToken: Token, index: Int): Variable(nameToken, nameToken, index)
 }

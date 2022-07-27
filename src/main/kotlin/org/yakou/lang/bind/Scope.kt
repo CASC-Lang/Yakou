@@ -17,8 +17,8 @@ class Scope(internal val table: Table) {
         variables.add(valueParameter)
     }
 
-    fun addVariable(nameToken: Token, typeInfo: TypeInfo): Variable? {
-        val variable = Variable(nameToken, currentVariableIndex())
+    fun addVariable(mutToken: Token?, nameToken: Token, typeInfo: TypeInfo): Variable? {
+        val variable = Variable(mutToken, nameToken, currentVariableIndex())
 
         variable.typeInfo = typeInfo
 
