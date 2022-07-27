@@ -5,7 +5,9 @@ import org.yakou.lang.ast.*
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
-sealed class ClassMember(val memberType: MemberType): Symbol() {
+sealed class ClassMember(val memberType: MemberType) : Symbol() {
+    override val mutable: Boolean get() = !Modifier.isFinal(access)
+
     abstract val access: Int
     abstract val packagePath: String
     abstract val classPath: String

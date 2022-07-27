@@ -67,23 +67,45 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
     private fun genConst(const: Item.Const) {
         val classWriter = getClassWriter(const.fieldInstance.ownerTypeInfo)
-        // Declare static field based on value
-        if (const.expression is Expression.NumberLiteral) {
-            // Value is inlinable, thus we use ConstantValue attribute in this case
-            val expression = const.expression as Expression.NumberLiteral
+        val expression = const.expression
 
-            classWriter.visitField(
-                const.fieldInstance.access,
-                const.fieldInstance.name,
-                const.fieldInstance.descriptor,
-                null,
-                castNumber(expression.value, (expression.finalType as TypeInfo.Primitive).type)
-            ).visitEnd()
+        // Declare static field based on value
+        if (expression is Expression.LiteralExpression) {
+            // Value is inlinable, thus we use ConstantValue attribute in this case
+            when (expression) {
+                is Expression.NumberLiteral -> {
+                    classWriter.visitField(
+                        const.fieldInstance.access,
+                        const.fieldInstance.name,
+                        const.fieldInstance.descriptor,
+                        null,
+                        castNumber(expression.value, (expression.finalType as TypeInfo.Primitive).type)
+                    ).visitEnd()
+                }
+            }
         }
     }
 
     private fun genStaticField(staticField: Item.StaticField) {
         val classWriter = getClassWriter(staticField.fieldInstance.ownerTypeInfo)
+        val expression = staticField.expression
+
+        if (!staticField.fieldInstance.mutable && expression is Expression.LiteralExpression) {
+            // Value is inlinable, thus we use ConstantValue attribute in this case
+            when (expression) {
+                is Expression.NumberLiteral -> {
+                    classWriter.visitField(
+                        staticField.fieldInstance.access,
+                        staticField.fieldInstance.name,
+                        staticField.fieldInstance.descriptor,
+                        null,
+                        castNumber(expression.value, (expression.finalType as TypeInfo.Primitive).type)
+                    ).visitEnd()
+                }
+            }
+            return
+        }
+
         val fieldVisitor = classWriter.visitField(
             staticField.fieldInstance.access,
             staticField.fieldInstance.name,
