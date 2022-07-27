@@ -281,9 +281,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genIdentifier(methodVisitor: MethodVisitor, identifier: Expression.Identifier) {
-        val symbolInstance = identifier.symbolInstance
-
-        when (symbolInstance) {
+        when (val symbolInstance = identifier.symbolInstance) {
             is Variable -> {
                 methodVisitor.visitVarInsn(symbolInstance.typeInfo.loadOpcode, symbolInstance.index)
             }
