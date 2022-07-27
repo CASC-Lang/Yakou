@@ -325,8 +325,21 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 "(${originalType.descriptor})${wrappedClazz.descriptorString()}",
                 false
             )
-        } else if (originalType is TypeInfo.Primitive && finalType is TypeInfo.Primitive) {
+        } else if (originalType is TypeInfo.Class && finalType is TypeInfo.Primitive) {
+            // Unbox
+            val wrappedClazz = finalType.type.wrappedJvmClazz
 
+            methodVisitor.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                wrappedClazz.typeName,
+                "${finalType.type.originalName}Value",
+                "()${finalType.descriptor}",
+                false
+            )
+        } else if (originalType is TypeInfo.Primitive && finalType is TypeInfo.Primitive) {
+            methodVisitor.visitInsn(getCastOpcode(originalType.type, finalType.type))
+        } else if (originalType is TypeInfo.Class && finalType is TypeInfo.Class) {
+            methodVisitor.visitTypeInsn(Opcodes.CHECKCAST, finalType.internalName)
         }
     }
 

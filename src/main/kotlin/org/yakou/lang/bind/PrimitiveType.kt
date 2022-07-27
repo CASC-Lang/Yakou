@@ -2,21 +2,22 @@ package org.yakou.lang.bind
 
 enum class PrimitiveType(
     val typeLiteral: String,
+    val originalName: String,
     val jvmClazz: Class<*>,
     val wrappedJvmClazz: Class<*>,
     val descriptor: String,
     val precedence: Int
 ) {
-    Unit("unit", Void.TYPE, Void::class.java, "V", -1),
-    Bool("bool", java.lang.Boolean.TYPE, java.lang.Boolean::class.java, "Z", 0),
-    Char("char", Character.TYPE, Character::class.java, "C", 1),
-    I8("i8", java.lang.Byte.TYPE, java.lang.Byte::class.java, "B", 2),
-    I16("i16", java.lang.Short.TYPE, java.lang.Short::class.java, "S", 2),
-    I32("i32", Integer.TYPE, Integer::class.java, "I", 2),
-    I64("i64", java.lang.Long.TYPE, java.lang.Long::class.java, "J", 3),
-    F32("f32", java.lang.Float.TYPE, java.lang.Float::class.java, "F", 4),
-    F64("f64", java.lang.Double.TYPE, java.lang.Double::class.java, "D", 5),
-    Str("str", java.lang.String::class.java, java.lang.String::class.java, "Ljava/lang/String;", -1),
+    Unit("unit", "void", Void.TYPE, Void::class.java, "V", -1),
+    Bool("bool", "boolean", java.lang.Boolean.TYPE, java.lang.Boolean::class.java, "Z", 0),
+    Char("char", "char", Character.TYPE, Character::class.java, "C", 1),
+    I8("i8", "byte", java.lang.Byte.TYPE, java.lang.Byte::class.java, "B", 2),
+    I16("i16", "short", java.lang.Short.TYPE, java.lang.Short::class.java, "S", 2),
+    I32("i32", "int", Integer.TYPE, Integer::class.java, "I", 2),
+    I64("i64", "long", java.lang.Long.TYPE, java.lang.Long::class.java, "J", 3),
+    F32("f32", "float", java.lang.Float.TYPE, java.lang.Float::class.java, "F", 4),
+    F64("f64", "double", java.lang.Double.TYPE, java.lang.Double::class.java, "D", 5),
+    Str("str", "String", java.lang.String::class.java, java.lang.String::class.java, "Ljava/lang/String;", -1),
     ;
 
     companion object {

@@ -1,9 +1,7 @@
 pkg chaos {
-    const a: i32 = 1i32
-
     pkg unity {
-        fn test() -> java::lang::Integer {
-            return 1.0 as i32 as java::lang::Integer
+        fn test() -> i32 {
+            return 1 as java::lang::Integer as i32
         }
     }
 }
