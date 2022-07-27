@@ -184,13 +184,13 @@ class Optimizer(val compilationUnit: CompilationUnit) {
 
                 symbolInstance.propagateExpression
             } else expression
-        } else if (symbolInstance is ClassMember.Field && symbolInstance.inline) {
+        } else if (symbolInstance is ClassMember.Field) {
             // Propagate expression when applicable
 
             if (symbolInstance.isConst) {
                 // Inline value without side effect
                 symbolInstance.propagateExpression!!
-            } else if (symbolInstance.isStatic) {
+            } else if (symbolInstance.isStatic && symbolInstance.inline) {
                 // Inline when conditions met
                 if (symbolInstance.propagateExpression is Expression.LiteralExpression) {
                     symbolInstance.propagateExpression
