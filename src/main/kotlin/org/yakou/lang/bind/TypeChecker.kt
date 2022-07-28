@@ -1,16 +1,15 @@
 package org.yakou.lang.bind
 
-import java.util.*
 import kotlin.collections.LinkedHashSet
 
 // Yakou permits no implicit type conversion, only lower-bound implicit type conversion is allowed by default
 object TypeChecker {
-    fun canImplicitCast(table: Table, from: TypeInfo, to: TypeInfo): BoundResult =
+    fun canImplicitCast(from: TypeInfo, to: TypeInfo): BoundResult =
         if (from == to) BoundResult.SAME
-        else if (from is TypeInfo.Class && to is TypeInfo.Class) isSubClass(table, from, to)
+        else if (from is TypeInfo.Class && to is TypeInfo.Class) isSubClass(from, to)
         else BoundResult.FAIL
 
-    fun canExplicitCast(table: Table, from: TypeInfo, to: TypeInfo): BoundResult {
+    fun canExplicitCast(from: TypeInfo, to: TypeInfo): BoundResult {
         if (from is TypeInfo.Primitive && to is TypeInfo.Primitive) {
             return if (from.type.convertable() && to.type.convertable()) {
                 if (from.type == to.type) BoundResult.SAME else BoundResult.CAST
@@ -28,13 +27,13 @@ object TypeChecker {
         }
 
         if (from is TypeInfo.Class && to is TypeInfo.Class) {
-            return isSubClass(table, from, to)
+            return isSubClass(from, to)
         }
 
         return BoundResult.FAIL
     }
 
-    private fun isSubClass(table: Table, from: TypeInfo.Class, to: TypeInfo.Class): BoundResult {
+    private fun isSubClass(from: TypeInfo.Class, to: TypeInfo.Class): BoundResult {
         if (from == to)
             return BoundResult.SAME
 

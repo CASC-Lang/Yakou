@@ -256,7 +256,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
     }
 
     private fun checkAs(`as`: Expression.As) {
-        when (TypeChecker.canExplicitCast(table, `as`.originalType, `as`.finalType)) {
+        when (TypeChecker.canExplicitCast(`as`.originalType, `as`.finalType)) {
             TypeChecker.BoundResult.FAIL, TypeChecker.BoundResult.IMPOSSIBLE -> {
                 reportUnableToExplicitlyCast(
                     `as`.span,
