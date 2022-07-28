@@ -1,6 +1,7 @@
 package org.yakou.lang.bind
 
 import java.util.*
+import kotlin.collections.LinkedHashSet
 
 // Yakou permits no implicit type conversion, only lower-bound implicit type conversion is allowed by default
 object TypeChecker {
@@ -37,10 +38,10 @@ object TypeChecker {
         if (from == to)
             return BoundResult.SAME
 
-        val castingQueue = classAsQueue(from)
+        val castingIterator = classAsQueue(from).iterator()
 
-        while (castingQueue.isNotEmpty()) {
-            val currentClass = castingQueue.pop()
+        while (castingIterator.hasNext()) {
+            val currentClass = castingIterator.next()
 
             if (currentClass == from)
                 return BoundResult.SUBCLASS
@@ -50,8 +51,8 @@ object TypeChecker {
     }
 
     // Construct inheritance tree from clazz into linked list
-    private fun classAsQueue(clazz: TypeInfo.Class): LinkedList<TypeInfo.Class> {
-        val queue = LinkedList<TypeInfo.Class>()
+    private fun classAsQueue(clazz: TypeInfo.Class): LinkedHashSet<TypeInfo.Class> {
+        val queue = LinkedHashSet<TypeInfo.Class>()
 
         appendToQueue(queue, clazz)
         queue.add(TypeInfo.Class.OBJECT_TYPE_INFO)
@@ -59,11 +60,11 @@ object TypeChecker {
         return queue
     }
 
-    private fun appendToQueue(queue: LinkedList<TypeInfo.Class>, clazz: TypeInfo.Class) {
+    private fun appendToQueue(queue: LinkedHashSet<TypeInfo.Class>, clazz: TypeInfo.Class) {
         if (clazz == TypeInfo.Class.OBJECT_TYPE_INFO)
             return
 
-        queue.push(clazz)
+        queue.add(clazz)
 
         for (trait in clazz.interfaceTypes) {
             appendToQueue(queue, trait)
