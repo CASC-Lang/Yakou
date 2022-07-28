@@ -1,7 +1,7 @@
 pkg chaos {
     pkg unity {
-        fn test() -> i32 {
-            return 1 as java::lang::Integer as i32
+        fn test() -> java::lang::Object {
+            return 1 as java::lang::Integer as java::lang::Number as java::lang::Integer
         }
     }
 }

@@ -1,5 +1,7 @@
 package org.yakou.lang.bind
 
+import java.util.*
+
 // Yakou permits no implicit type conversion, only lower-bound implicit type conversion is allowed by default
 object TypeChecker {
     fun canImplicitCast(table: Table, from: TypeInfo, to: TypeInfo): BoundResult =
@@ -32,17 +34,43 @@ object TypeChecker {
     }
 
     private fun isSubClass(table: Table, from: TypeInfo.Class, to: TypeInfo.Class): BoundResult {
-        var currentSuperClass: TypeInfo.Class? = from
+        if (from == to)
+            return BoundResult.SAME
 
-        while (currentSuperClass != null) {
-            if (currentSuperClass == to) {
-                return if (currentSuperClass == from) BoundResult.SAME else BoundResult.SUBCLASS
-            }
+        val castingQueue = classAsQueue(from)
 
-            currentSuperClass = currentSuperClass.superClassType
+        while (castingQueue.isNotEmpty()) {
+            val currentClass = castingQueue.pop()
+
+            if (currentClass == from)
+                return BoundResult.SUBCLASS
         }
 
         return BoundResult.IMPOSSIBLE
+    }
+
+    // Construct inheritance tree from clazz into linked list
+    private fun classAsQueue(clazz: TypeInfo.Class): LinkedList<TypeInfo.Class> {
+        val queue = LinkedList<TypeInfo.Class>()
+
+        appendToQueue(queue, clazz)
+        queue.add(TypeInfo.Class.OBJECT_TYPE_INFO)
+
+        return queue
+    }
+
+    private fun appendToQueue(queue: LinkedList<TypeInfo.Class>, clazz: TypeInfo.Class) {
+        if (clazz == TypeInfo.Class.OBJECT_TYPE_INFO)
+            return
+
+        queue.push(clazz)
+
+        for (trait in clazz.interfaceTypes) {
+            appendToQueue(queue, trait)
+        }
+
+        if (clazz.superClassType != null)
+            appendToQueue(queue, clazz.superClassType)
     }
 
     // Used for representing different behaviour of casting

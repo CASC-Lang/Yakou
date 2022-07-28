@@ -176,6 +176,10 @@ sealed class TypeInfo {
         val superClassType: Class?,
         val interfaceTypes: List<Class>
     ) : TypeInfo() {
+        companion object {
+            val OBJECT_TYPE_INFO: Class = fromClass(Any::class.java) as Class
+        }
+
         val canonicalName: String = standardTypePath.replace("::", ".")
         final override val internalName: String = standardTypePath.replace("::", "/")
         final override val descriptor: String = "L$internalName;"
