@@ -6,8 +6,6 @@ import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
 sealed class ClassMember(val memberType: MemberType) : Symbol() {
-    override val mutable: Boolean get() = !Modifier.isFinal(access)
-
     abstract val access: Int
     abstract val packagePath: String
     abstract val classPath: String
@@ -17,6 +15,8 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
     abstract var ownerTypeInfo: TypeInfo.Class
 
     abstract val inline: Boolean
+
+    abstract override val mutable: Boolean
 
     data class Field(
         override val access: Int,
@@ -94,6 +94,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
 
         val descriptor: String = typeInfo.descriptor
         override lateinit var ownerTypeInfo: TypeInfo.Class
+        override val mutable: Boolean = !Modifier.isFinal(access)
 
         override val qualifiedOwnerPath: String by lazy {
             (if (packagePath.isBlank()) "" else "$packagePath::") + classPath
@@ -173,6 +174,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
             "(${parameterTypeInfos.map(TypeInfo::descriptor).joinToString(separator = "")})${returnTypeInfo.descriptor}"
         override val typeInfo: TypeInfo = returnTypeInfo
         override lateinit var ownerTypeInfo: TypeInfo.Class
+        override val mutable: Boolean = !Modifier.isFinal(access)
 
         override val qualifiedOwnerPath: String by lazy {
             (if (packagePath.isBlank()) "" else "$packagePath::") + classPath
