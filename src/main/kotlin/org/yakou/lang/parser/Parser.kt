@@ -379,7 +379,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseMultiplicativeExpression(): Expression {
-        var leftExpression = parseLiteralExpression()
+        var leftExpression = parseConjunctionExpression()
 
         while (true) {
             if (optExpectType(TokenType.Star)) {
@@ -413,6 +413,42 @@ class Parser(private val compilationUnit: CompilationUnit) {
                     Expression.BinaryExpression.BinaryOperation.Modulo
                 )
             } else break
+        }
+
+        return leftExpression
+    }
+
+    private fun parseConjunctionExpression(): Expression {
+        var leftExpression = parseDisjunctionExpression()
+
+        while (optExpectType(TokenType.DoubleAmpersand)) {
+            val operator = next()!!
+            val rightExpression = parseDisjunctionExpression()
+
+            leftExpression = Expression.BinaryExpression(
+                leftExpression,
+                listOf(operator),
+                rightExpression,
+                Expression.BinaryExpression.BinaryOperation.LogicalAnd
+            )
+        }
+
+        return leftExpression
+    }
+
+    private fun parseDisjunctionExpression(): Expression {
+        var leftExpression = parseLiteralExpression()
+
+        while (optExpectType(TokenType.DoublePipe)) {
+            val operator = next()!!
+            val rightExpression = parseDisjunctionExpression()
+
+            leftExpression = Expression.BinaryExpression(
+                leftExpression,
+                listOf(operator),
+                rightExpression,
+                Expression.BinaryExpression.BinaryOperation.LogicalOr
+            )
         }
 
         return leftExpression

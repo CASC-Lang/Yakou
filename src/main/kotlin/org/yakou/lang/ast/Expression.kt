@@ -29,7 +29,9 @@ sealed class Expression {
             Modulo,
             LeftShift,
             RightShift,
-            UnsignedRightShift
+            UnsignedRightShift,
+            LogicalOr,
+            LogicalAnd
             ;
 
             fun isShiftOperation(): Boolean =
