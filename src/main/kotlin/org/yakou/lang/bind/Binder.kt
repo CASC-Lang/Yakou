@@ -44,6 +44,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
                 currentPackagePath = previousPackagePath
             }
+
             is Item.Const -> bindConstDeclaration(item)
             is Item.StaticField -> bindStaticFieldDeclaration(item)
             is Item.Class -> bindClassDeclaration(item)
@@ -175,6 +176,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
                 currentPackagePath = previousPackagePath
             }
+
             is Item.Const -> bindConst(item)
             is Item.StaticField -> bindStaticField(item)
             is Item.Class -> bindClass(item)
@@ -234,6 +236,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 for (statement in function.body.statements)
                     bindStatement(statement)
             }
+
             is FunctionBody.SingleExpression -> bindExpression(function.body.expression)
             null -> return
         }
@@ -264,7 +267,11 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
 
         if (currentScope != null) {
-            val variable = currentScope!!.addVariable(variableDeclaration.mut, variableDeclaration.name, variableDeclaration.expression.finalType)
+            val variable = currentScope!!.addVariable(
+                variableDeclaration.mut,
+                variableDeclaration.name,
+                variableDeclaration.expression.finalType
+            )
 
             if (variable != null) {
                 variableDeclaration.variableInstance = variable
@@ -302,7 +309,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             Expression.BinaryExpression.BinaryOperation.Subtraction,
             Expression.BinaryExpression.BinaryOperation.Multiplication,
             Expression.BinaryExpression.BinaryOperation.Division,
-            Expression.BinaryExpression.BinaryOperation.Modulo-> {
+            Expression.BinaryExpression.BinaryOperation.Modulo -> {
                 val leftType = binaryExpression.leftExpression.finalType
                 val rightType = binaryExpression.rightExpression.finalType
                 val promotedType = leftType promote rightType
@@ -344,6 +351,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 binaryExpression.originalType = promotedType
                 binaryExpression.finalType = promotedType
             }
+
             Expression.BinaryExpression.BinaryOperation.UnsignedRightShift,
             Expression.BinaryExpression.BinaryOperation.RightShift,
             Expression.BinaryExpression.BinaryOperation.LeftShift -> {
@@ -419,12 +427,59 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 binaryExpression.originalType = leftType
                 binaryExpression.finalType = leftType
             }
+
+            Expression.BinaryExpression.BinaryOperation.LogicalAnd,
+            Expression.BinaryExpression.BinaryOperation.LogicalOr -> {
+                val leftType = binaryExpression.leftExpression.finalType
+                val rightType = binaryExpression.rightExpression.finalType
+
+                if (leftType.asPrimitive()?.type != PrimitiveType.Bool ||
+                    rightType.asPrimitive()?.type != PrimitiveType.Bool) {
+                    val coloredOperator = colorize(
+                        binaryExpression.operator.joinToString(transform = Token::literal),
+                        compilationUnit,
+                        Attribute.CYAN_TEXT()
+                    )
+                    val coloredLeftTypeLiteral = colorize(leftType.toString(), compilationUnit, Attribute.CYAN_TEXT())
+                    val coloredRightTypeLiteral = colorize(rightType.toString(), compilationUnit, Attribute.CYAN_TEXT())
+                    val coloredBoolLiteral = colorize("bool", compilationUnit, Attribute.CYAN_TEXT())
+                    val operatorSpan = binaryExpression.operator.map(Token::span).reduce(Span::expand)
+
+                    compilationUnit.reportBuilder
+                        .error(
+                            SpanHelper.expandView(binaryExpression.span, compilationUnit.maxLineCount),
+                            "Unable to apply `$coloredOperator` on `$coloredLeftTypeLiteral` and `$coloredRightTypeLiteral`"
+                        )
+                        .label(
+                            binaryExpression.leftExpression.span,
+                            "Left expression has type `$coloredLeftTypeLiteral`"
+                        )
+                        .color(Attribute.CYAN_TEXT())
+                        .build()
+                        .label(operatorSpan, "Inapplicable operator `$coloredOperator`")
+                        .color(Attribute.RED_TEXT())
+                        .hint("Only type `$coloredBoolLiteral` is applicable")
+                        .build()
+                        .label(
+                            binaryExpression.rightExpression.span,
+                            "Right expression has type `$coloredRightTypeLiteral`"
+                        )
+                        .color(Attribute.CYAN_TEXT())
+                        .build().build()
+
+                    return
+                }
+
+                binaryExpression.originalType = leftType
+                binaryExpression.finalType = leftType
+            }
         }
     }
 
     private fun bindIdentifier(identifier: Expression.Identifier) {
         val resolver = SymbolResolver(currentScope!!)
-        val resolvedSymbol = resolver.resolveIdentifier(currentPackagePath, currentClassPath, identifier.identifier.literal)
+        val resolvedSymbol =
+            resolver.resolveIdentifier(currentPackagePath, currentClassPath, identifier.identifier.literal)
 
         if (resolvedSymbol != null) {
             identifier.symbolInstance = resolvedSymbol
@@ -559,7 +614,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun reportVariableUnused(variable: Variable) {
         val variableType = if (variable is Variable.ValueParameter) "Value-parameter" else "Variable"
-        val coloredVariableName= colorize(variable.name, compilationUnit, Attribute.CYAN_TEXT())
+        val coloredVariableName = colorize(variable.name, compilationUnit, Attribute.CYAN_TEXT())
 
         compilationUnit.reportBuilder
             .warning(
