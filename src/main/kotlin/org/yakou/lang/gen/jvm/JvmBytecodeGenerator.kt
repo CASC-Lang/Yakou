@@ -61,6 +61,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                     for (innerItem in item.items)
                         genItem(innerItem)
             }
+
             is Item.Const -> genConst(item)
             is Item.StaticField -> genStaticField(item)
             is Item.Class -> genClass(item)
@@ -75,17 +76,19 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         // Declare static field based on value
         if (expression is Expression.LiteralExpression) {
             // Value is inlinable, thus we use ConstantValue attribute in this case
-            when (expression) {
-                is Expression.NumberLiteral -> {
-                    classWriter.visitField(
-                        const.fieldInstance.access,
-                        const.fieldInstance.name,
-                        const.fieldInstance.descriptor,
-                        null,
-                        castNumber(expression.value, (expression.finalType as TypeInfo.Primitive).type)
-                    ).visitEnd()
+            classWriter.visitField(
+                const.fieldInstance.access,
+                const.fieldInstance.name,
+                const.fieldInstance.descriptor,
+                null,
+                when (expression) {
+                    is Expression.BoolLiteral -> expression.value
+                    is Expression.NumberLiteral -> castNumber(
+                        expression.value,
+                        (expression.finalType as TypeInfo.Primitive).type
+                    )
                 }
-            }
+            ).visitEnd()
         }
     }
 
@@ -95,17 +98,19 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
         if (!staticField.fieldInstance.mutable && expression is Expression.LiteralExpression) {
             // Value is inlinable, thus we use ConstantValue attribute in this case
-            when (expression) {
-                is Expression.NumberLiteral -> {
-                    classWriter.visitField(
-                        staticField.fieldInstance.access,
-                        staticField.fieldInstance.name,
-                        staticField.fieldInstance.descriptor,
-                        null,
-                        castNumber(expression.value, (expression.finalType as TypeInfo.Primitive).type)
-                    ).visitEnd()
+            classWriter.visitField(
+                staticField.fieldInstance.access,
+                staticField.fieldInstance.name,
+                staticField.fieldInstance.descriptor,
+                null,
+                when (expression) {
+                    is Expression.BoolLiteral -> expression.value
+                    is Expression.NumberLiteral -> castNumber(
+                        expression.value,
+                        (expression.finalType as TypeInfo.Primitive).type
+                    )
                 }
-            }
+            ).visitEnd()
             return
         }
 
@@ -192,6 +197,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                     genStatement(methodVisitor, statement)
                 }
             }
+
             is FunctionBody.SingleExpression -> {
                 genExpression(methodVisitor, functionBody.expression)
 
@@ -235,12 +241,14 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                             PrimitiveType.I64, PrimitiveType.F64 -> {
                                 methodVisitor.visitInsn(Opcodes.POP2)
                             }
+
                             else -> {
                                 methodVisitor.visitInsn(Opcodes.POP)
                             }
                         }
                     }
                 }
+
                 else -> {
                     methodVisitor.visitInsn(Opcodes.POP)
                 }
@@ -259,6 +267,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             is Expression.BinaryExpression -> genBinaryExpression(methodVisitor, expression)
             is Expression.Identifier -> genIdentifier(methodVisitor, expression)
             is Expression.As -> genAs(methodVisitor, expression)
+            is Expression.BoolLiteral -> genBoolLiteral(methodVisitor, expression)
             is Expression.NumberLiteral -> genNumberLiteral(methodVisitor, expression)
             is Expression.Empty -> {}
             Expression.Undefined -> TODO("UNREACHABLE")
@@ -309,6 +318,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                     )
                 }
             }
+
             else -> TODO("UNREACHABLE")
         }
     }
@@ -346,6 +356,10 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         } else if (originalType is TypeInfo.Class && finalType is TypeInfo.Class) {
             methodVisitor.visitTypeInsn(Opcodes.CHECKCAST, finalType.internalName)
         }
+    }
+
+    private fun genBoolLiteral(methodVisitor: MethodVisitor, boolLiteral: Expression.BoolLiteral) {
+        methodVisitor.visitLdcInsn(if (boolLiteral.value) 1 else 0)
     }
 
     private fun genNumberLiteral(methodVisitor: MethodVisitor, numberLiteral: Expression.NumberLiteral) {
@@ -402,6 +416,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 else -> -1
             }
         }
+
         PrimitiveType.I64 -> {
             when (to) {
                 PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.L2I
@@ -410,6 +425,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 else -> -1
             }
         }
+
         PrimitiveType.F32 -> {
             when (to) {
                 PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.F2I
@@ -418,6 +434,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 else -> -1
             }
         }
+
         PrimitiveType.F64 -> {
             when (to) {
                 PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.D2I
@@ -426,6 +443,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 else -> -1
             }
         }
+
         else -> -1
     }
 
