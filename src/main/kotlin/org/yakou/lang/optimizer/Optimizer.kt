@@ -27,6 +27,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                     for (innerItem in item.items)
                         optimizeItem(innerItem)
             }
+
             is Item.StaticField -> optimizeStaticField(item)
         }
     }
@@ -61,6 +62,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                 for (statement in functionBody.statements)
                     optimizeStatement(statement)
             }
+
             is FunctionBody.SingleExpression -> {
                 functionBody.expression = optimizeExpression(functionBody.expression)
             }
@@ -99,6 +101,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
         is Expression.BinaryExpression -> optimizeBinaryExpression(expression)
         is Expression.Identifier -> optimizeIdentifier(expression)
         is Expression.As -> optimizeAs(expression)
+        is Expression.BoolLiteral -> expression
         is Expression.NumberLiteral -> expression
         is Expression.Empty -> expression
         Expression.Undefined -> expression
@@ -117,6 +120,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                         expression.finalType
                     )
                 }
+
                 Expression.BinaryExpression.BinaryOperation.Subtraction -> {
                     syntheticNumberLiteral(
                         optimizedLeftExpression.value - optimizedRightExpression.value,
@@ -124,6 +128,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                         expression.finalType
                     )
                 }
+
                 Expression.BinaryExpression.BinaryOperation.Multiplication -> {
                     syntheticNumberLiteral(
                         optimizedLeftExpression.value * optimizedRightExpression.value,
@@ -131,6 +136,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                         expression.finalType
                     )
                 }
+
                 Expression.BinaryExpression.BinaryOperation.Division -> {
                     syntheticNumberLiteral(
                         optimizedLeftExpression.value / optimizedRightExpression.value,
@@ -138,6 +144,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                         expression.finalType
                     )
                 }
+
                 Expression.BinaryExpression.BinaryOperation.Modulo -> {
                     syntheticNumberLiteral(
                         optimizedLeftExpression.value % optimizedRightExpression.value,
@@ -145,6 +152,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                         expression.finalType
                     )
                 }
+
                 Expression.BinaryExpression.BinaryOperation.UnsignedRightShift -> {
                     syntheticNumberLiteral(
                         (optimizedLeftExpression.value.toLong() ushr optimizedRightExpression.value.toInt()).toDouble(),
@@ -152,6 +160,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                         expression.finalType
                     )
                 }
+
                 Expression.BinaryExpression.BinaryOperation.RightShift -> {
                     syntheticNumberLiteral(
                         (optimizedLeftExpression.value.toLong() shr optimizedRightExpression.value.toInt()).toDouble(),
@@ -159,12 +168,41 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                         expression.finalType
                     )
                 }
+
                 Expression.BinaryExpression.BinaryOperation.LeftShift -> {
                     syntheticNumberLiteral(
                         (optimizedLeftExpression.value.toLong() shl optimizedRightExpression.value.toInt()).toDouble(),
                         expression.span,
                         expression.finalType
                     )
+                }
+
+                else -> {
+                    expression.leftExpression = optimizedLeftExpression
+                    expression.rightExpression = optimizedRightExpression
+
+                    expression
+                }
+            }
+        } else if (optimizedLeftExpression is Expression.BoolLiteral && optimizedRightExpression is Expression.BoolLiteral) {
+            when (expression.operation) {
+                Expression.BinaryExpression.BinaryOperation.LogicalOr -> {
+                    syntheticBoolLiteral(
+                        optimizedLeftExpression.value || optimizedRightExpression.value,
+                        expression.span
+                    )
+                }
+                Expression.BinaryExpression.BinaryOperation.LogicalAnd -> {
+                    syntheticBoolLiteral(
+                        optimizedLeftExpression.value && optimizedRightExpression.value,
+                        expression.span
+                    )
+                }
+                else -> {
+                    expression.leftExpression = optimizedLeftExpression
+                    expression.rightExpression = optimizedRightExpression
+
+                    expression
                 }
             }
         } else {
@@ -206,9 +244,10 @@ class Optimizer(val compilationUnit: CompilationUnit) {
 
         val innerExpression = expression.expression
 
-        if (innerExpression is Expression.LiteralExpression && expression.finalType !is TypeInfo.Class) {
+        if (innerExpression is Expression.LiteralExpression && expression.finalType is TypeInfo.Primitive) {
             // Do not optimize boxing process!
             return when (innerExpression) {
+                is Expression.BoolLiteral -> syntheticBoolLiteral(innerExpression.value, expression.span)
                 is Expression.NumberLiteral -> syntheticNumberLiteral(
                     innerExpression.value,
                     expression.span,
@@ -218,6 +257,14 @@ class Optimizer(val compilationUnit: CompilationUnit) {
         }
 
         return expression // TODO: Optimize?
+    }
+
+    private fun syntheticBoolLiteral(value: Boolean, span: Span): Expression.BoolLiteral {
+        val syntheticBoolLiteral = Expression.BoolLiteral(null, span)
+
+        syntheticBoolLiteral.value = value
+
+        return syntheticBoolLiteral
     }
 
     private fun syntheticNumberLiteral(value: Double, span: Span, finalType: TypeInfo): Expression.NumberLiteral {

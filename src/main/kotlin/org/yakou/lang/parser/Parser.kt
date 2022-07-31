@@ -65,6 +65,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
                 Item.Package(pkg, identifier, openBrace, innerItems, closeBrace)
             }
+
             optExpectKeyword(Keyword.CONST) -> parseConst(modifiers)
             optExpectKeyword(Keyword.STATIC) -> parseStaticField(modifiers)
             optExpectKeyword(Keyword.CLASS) -> parseClass(modifiers)
@@ -231,6 +232,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
             FunctionBody.SingleExpression(equal, expression)
         }
+
         optExpectType(TokenType.OpenBrace) -> {
             // Block expression
             val openBrace = next()!!
@@ -239,6 +241,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
             FunctionBody.BlockExpression(openBrace, statements, closeBrace)
         }
+
         else -> null // Empty function body
     }
 
@@ -274,12 +277,14 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
             Statement.VariableDeclaration(let, mut, name, colon, specifiedType, equal, expression)
         }
+
         optExpectKeyword(Keyword.RETURN) -> {
             val `return` = next()!!
             val expression = parseExpression(true)
 
             Statement.Return(`return`, expression)
         }
+
         else -> {
             val expression = parseExpression()
 
@@ -356,7 +361,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 val operator = next()!!
                 val rightExpression = parseMultiplicativeExpression()
 
-                leftExpression =Expression.BinaryExpression(
+                leftExpression = Expression.BinaryExpression(
                     leftExpression,
                     listOf(operator),
                     rightExpression,
@@ -366,7 +371,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 val operator = next()!!
                 val rightExpression = parseMultiplicativeExpression()
 
-                leftExpression =Expression.BinaryExpression(
+                leftExpression = Expression.BinaryExpression(
                     leftExpression,
                     listOf(operator),
                     rightExpression,
@@ -456,6 +461,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
     private fun parseLiteralExpression(): Expression = when {
         optExpectType(TokenType.Identifier) -> Expression.Identifier(next()!!)
+        optExpectKeyword(Keyword.TRUE) || optExpectKeyword(Keyword.FALSE) -> {
+            val boolLiteral = next()!!
+
+            Expression.BoolLiteral(boolLiteral, boolLiteral.span)
+        }
         optExpectType(TokenType.NumberLiteral) -> {
             val numberToken = next()!! as Token.NumberLiteralToken
             val integer =
@@ -477,6 +487,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
             Expression.NumberLiteral(integer, numberToken.dot, float, type, numberToken.span)
         }
+
         else -> {
             if (optionalExpression) {
                 Expression.Empty(peek(-1)!!.span)
@@ -518,6 +529,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
             Type.Array(openBracket, type, closeBracket)
         }
+
         else -> {
             // Path type
             val simplePath = parseSimplePath()
@@ -566,6 +578,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                         }
                     }
                 }
+
                 optExpectKeyword(Keyword.PRIV) -> {
                     // `priv`
                     val span = next()!!.span
@@ -575,6 +588,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                         reportModifierDuplication(modifiers[Modifier.Priv]!!, span)
                     }
                 }
+
                 optExpectKeyword(Keyword.PROT) -> {
                     // `prot`
                     val span = next()!!.span
@@ -584,6 +598,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                         reportModifierDuplication(modifiers[Modifier.Prot]!!, span)
                     }
                 }
+
                 optExpectKeyword(Keyword.INLINE) -> {
                     // `inline`
                     val span = next()!!.span
@@ -593,6 +608,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                         reportModifierDuplication(modifiers[Modifier.Inline]!!, span)
                     }
                 }
+
                 optExpectKeyword(Keyword.MUT) -> {
                     // `mut`
                     val span = next()!!.span
@@ -602,6 +618,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                         reportModifierDuplication(modifiers[Modifier.Mut]!!, span)
                     }
                 }
+
                 else -> break // Not a modifier
             }
         }
@@ -632,10 +649,12 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 // Token out of bound
                 reportUnexpectedToken(null, Token.syntheticToken(type, peek(-2)?.span))
             }
+
             token.type != type -> {
                 // Token mismatch, returns a synthetic token
                 reportUnexpectedToken(token, Token.syntheticToken(type, token.span))
             }
+
             else -> token
         }
     }

@@ -3,7 +3,6 @@ package org.yakou.lang.ast
 import chaos.unity.nenggao.Span
 import org.yakou.lang.bind.Symbol
 import org.yakou.lang.bind.TypeInfo
-import org.yakou.lang.bind.Variable
 import kotlin.properties.Delegates
 
 sealed class Expression {
@@ -68,6 +67,13 @@ sealed class Expression {
     ) : LiteralExpression() {
         var value by Delegates.notNull<Double>()
         var specifiedTypeInfo: TypeInfo.Primitive? = null
+    }
+
+    class BoolLiteral(
+        val boolKeyword: Token?,
+        override val span: Span
+    ) : LiteralExpression() {
+        var value by Delegates.notNull<Boolean>()
     }
 
     // Empty expression represents an empty optional expression, which is useful in several cases, e.g. return statement

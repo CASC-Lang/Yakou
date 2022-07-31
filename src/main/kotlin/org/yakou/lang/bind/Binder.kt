@@ -292,9 +292,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun bindExpression(expression: Expression) {
         when (expression) {
             is Expression.BinaryExpression -> bindBinaryExpression(expression)
-            is Expression.Identifier -> bindIdentifier(expression)
-            is Expression.NumberLiteral -> bindNumberLiteral(expression)
             is Expression.As -> bindAs(expression)
+            is Expression.Identifier -> bindIdentifier(expression)
+            is Expression.BoolLiteral -> bindBoolLiteral(expression)
+            is Expression.NumberLiteral -> bindNumberLiteral(expression)
             is Expression.Empty -> {}
             Expression.Undefined -> TODO("UNREACHABLE")
         }
@@ -500,6 +501,13 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         `as`.originalType = `as`.expression.finalType
         `as`.finalType = bindType(`as`.type)
+    }
+
+    private fun bindBoolLiteral(boolLiteral: Expression.BoolLiteral) {
+        boolLiteral.value = boolLiteral.boolKeyword.isKeyword(Keyword.TRUE)
+
+        boolLiteral.originalType = TypeInfo.Primitive(PrimitiveType.Bool)
+        boolLiteral.finalType = TypeInfo.Primitive(PrimitiveType.Bool)
     }
 
     private fun bindNumberLiteral(numberLiteral: Expression.NumberLiteral) {
