@@ -314,7 +314,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         while (true) {
             if (optExpectRepeatType(TokenType.Greater, 3)) {
                 val operator = listOf(next()!!, next()!!, next()!!)
-                val rightExpression = parseExpression()
+                val rightExpression = parseAddictiveExpression()
 
                 leftExpression = Expression.BinaryExpression(
                     leftExpression,
@@ -324,7 +324,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 )
             } else if (optExpectRepeatType(TokenType.Greater, 2)) {
                 val operator = listOf(next()!!, next()!!)
-                val rightExpression = parseExpression()
+                val rightExpression = parseAddictiveExpression()
 
                 leftExpression = Expression.BinaryExpression(
                     leftExpression,
@@ -334,7 +334,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 )
             } else if (optExpectRepeatType(TokenType.Lesser, 2)) {
                 val operator = listOf(next()!!, next()!!)
-                val rightExpression = parseExpression()
+                val rightExpression = parseAddictiveExpression()
 
                 leftExpression = Expression.BinaryExpression(
                     leftExpression,
@@ -354,7 +354,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         while (true) {
             if (optExpectType(TokenType.Plus)) {
                 val operator = next()!!
-                val rightExpression = parseExpression()
+                val rightExpression = parseMultiplicativeExpression()
 
                 leftExpression =Expression.BinaryExpression(
                     leftExpression,
@@ -364,7 +364,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 )
             } else if (optExpectType(TokenType.Minus)) {
                 val operator = next()!!
-                val rightExpression = parseExpression()
+                val rightExpression = parseMultiplicativeExpression()
 
                 leftExpression =Expression.BinaryExpression(
                     leftExpression,
@@ -384,7 +384,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         while (true) {
             if (optExpectType(TokenType.Star)) {
                 val operator = next()!!
-                val rightExpression = parseExpression()
+                val rightExpression = parseConjunctionExpression()
 
                 leftExpression = Expression.BinaryExpression(
                     leftExpression,
@@ -394,7 +394,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 )
             } else if (optExpectType(TokenType.Slash)) {
                 val operator = next()!!
-                val rightExpression = parseExpression()
+                val rightExpression = parseConjunctionExpression()
 
                 leftExpression = Expression.BinaryExpression(
                     leftExpression,
@@ -404,7 +404,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 )
             } else if (optExpectType(TokenType.Percentage)) {
                 val operator = next()!!
-                val rightExpression = parseExpression()
+                val rightExpression = parseConjunctionExpression()
 
                 leftExpression = Expression.BinaryExpression(
                     leftExpression,
