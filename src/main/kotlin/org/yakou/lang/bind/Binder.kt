@@ -471,8 +471,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
                     return
                 }
 
-                binaryExpression.originalType = leftType
-                binaryExpression.finalType = leftType
+                binaryExpression.originalType = TypeInfo.Primitive.BOOL_TYPE_INFO
+                binaryExpression.finalType = TypeInfo.Primitive.BOOL_TYPE_INFO
             }
         }
     }
