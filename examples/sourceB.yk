@@ -7,4 +7,9 @@ pkg chaos {
         let b = a + b
         return b
     }
+
+    fn test2() -> bool {
+        let a = true && false
+        return a
+    }
 }

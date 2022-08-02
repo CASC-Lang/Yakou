@@ -11,12 +11,15 @@ import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.bind.Variable
 import org.yakou.lang.compilation.CompilationSession
 import org.yakou.lang.compilation.CompilationUnit
+import org.yakou.lang.gen.ChainType
 import java.io.File
 
 class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private val classWriters: HashMap<TypeInfo.Class, ClassWriter> = hashMapOf()
     private val staticBlockWriters: HashMap<TypeInfo.Class, MethodVisitor> = hashMapOf()
 
+    private var currentChainType: ChainType = ChainType.NONE
+    private var conditionChain: MutableList<Label> = mutableListOf()
     private var currentLineLabel: Label? = null
 
     fun gen(compilationUnit: CompilationUnit) {
@@ -273,7 +276,8 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             Expression.Undefined -> TODO("UNREACHABLE")
         }
 
-        // TODO: Generate casting if Expression#originalType does not match Expression#finalType
+        if (conditionChain.isNotEmpty() && currentChainType != ChainType.NONE)
+            currentChainType = ChainType.NONE
     }
 
     private fun genBinaryExpression(methodVisitor: MethodVisitor, binaryExpression: Expression.BinaryExpression) {
@@ -292,6 +296,57 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 Expression.BinaryExpression.BinaryOperation.UnsignedRightShift -> methodVisitor.visitInsn(primitiveType.ushrOpcode)
                 Expression.BinaryExpression.BinaryOperation.RightShift -> methodVisitor.visitInsn(primitiveType.shrOpcode)
                 Expression.BinaryExpression.BinaryOperation.LeftShift -> methodVisitor.visitInsn(primitiveType.shlOpcode)
+                Expression.BinaryExpression.BinaryOperation.LogicalAnd -> {
+                    when (currentChainType) {
+                        ChainType.OR -> {
+                            val label = Label()
+                            methodVisitor.visitLdcInsn(0)
+                            methodVisitor.visitJumpInsn(Opcodes.GOTO, label)
+                            conditionChain.forEach(methodVisitor::visitLabel)
+                            conditionChain.clear()
+                            methodVisitor.visitLdcInsn(1)
+                            methodVisitor.visitLabel(label)
+                            currentChainType = ChainType.AND
+                        }
+
+                        ChainType.AND -> {}
+                        ChainType.NONE -> {
+                            currentChainType = ChainType.AND
+                        }
+                    }
+
+                    val shortCircuitLabel = Label()
+
+                    conditionChain += shortCircuitLabel
+
+                    methodVisitor.visitJumpInsn(Opcodes.IFEQ, shortCircuitLabel)
+                }
+
+                Expression.BinaryExpression.BinaryOperation.LogicalOr -> {
+                    when (currentChainType) {
+                        ChainType.AND -> {
+                            val label = Label()
+                            methodVisitor.visitLdcInsn(1)
+                            methodVisitor.visitJumpInsn(Opcodes.GOTO, label)
+                            conditionChain.forEach(methodVisitor::visitLabel)
+                            conditionChain.clear()
+                            methodVisitor.visitLdcInsn(0)
+                            methodVisitor.visitLabel(label)
+                            currentChainType = ChainType.OR
+                        }
+
+                        ChainType.OR -> {}
+                        ChainType.NONE -> {
+                            currentChainType = ChainType.OR
+                        }
+                    }
+
+                    val shortCircuitLabel = Label()
+
+                    conditionChain += shortCircuitLabel
+
+                    methodVisitor.visitJumpInsn(Opcodes.IFNE, shortCircuitLabel)
+                }
             }
         }
     }
@@ -301,6 +356,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             is Variable -> {
                 methodVisitor.visitVarInsn(symbolInstance.typeInfo.loadOpcode, symbolInstance.index)
             }
+
             is ClassMember.Field -> {
                 if (symbolInstance.isStatic) {
                     methodVisitor.visitFieldInsn(
