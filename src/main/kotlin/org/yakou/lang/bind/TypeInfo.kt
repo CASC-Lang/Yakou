@@ -59,6 +59,7 @@ sealed class TypeInfo {
     class Primitive(val type: PrimitiveType) : TypeInfo() {
         companion object {
             val UNIT_TYPE_INFO = Primitive(PrimitiveType.Unit)
+            val BOOL_TYPE_INFO = Primitive(PrimitiveType.Bool)
         }
 
         val addOpcode: Int = when (type) {

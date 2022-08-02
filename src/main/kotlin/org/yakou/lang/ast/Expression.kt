@@ -1,6 +1,7 @@
 package org.yakou.lang.ast
 
 import chaos.unity.nenggao.Span
+import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.bind.Symbol
 import org.yakou.lang.bind.TypeInfo
 import kotlin.properties.Delegates
@@ -74,6 +75,11 @@ sealed class Expression {
         override val span: Span
     ) : LiteralExpression() {
         var value by Delegates.notNull<Boolean>()
+
+        init {
+            originalType = TypeInfo.Primitive.BOOL_TYPE_INFO
+            finalType = TypeInfo.Primitive.BOOL_TYPE_INFO
+        }
     }
 
     // Empty expression represents an empty optional expression, which is useful in several cases, e.g. return statement

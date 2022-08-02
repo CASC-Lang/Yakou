@@ -505,9 +505,6 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindBoolLiteral(boolLiteral: Expression.BoolLiteral) {
         boolLiteral.value = boolLiteral.boolKeyword?.isKeyword(Keyword.TRUE) ?: false
-
-        boolLiteral.originalType = TypeInfo.Primitive(PrimitiveType.Bool)
-        boolLiteral.finalType = TypeInfo.Primitive(PrimitiveType.Bool)
     }
 
     private fun bindNumberLiteral(numberLiteral: Expression.NumberLiteral) {
