@@ -4,6 +4,7 @@ import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
+import org.objectweb.asm.Type
 import org.yakou.lang.ast.*
 import org.yakou.lang.bind.*
 import org.yakou.lang.compilation.CompilationSession
@@ -361,10 +362,14 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             }
 
             Expression.BinaryExpression.BinaryOperation.Equal -> {
+                genExpression(methodVisitor, binaryExpression.leftExpression)
+
                 if (binaryExpression.leftExpression.finalType is TypeInfo.Class && binaryExpression.rightExpression.finalType is TypeInfo.Class) {
                     val nullLabel = Label()
                     val endLabel = Label()
+                    methodVisitor.visitInsn(Opcodes.DUP)
                     methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel)
+                    genExpression(methodVisitor, binaryExpression.rightExpression)
                     methodVisitor.visitMethodInsn(
                         Opcodes.INVOKEVIRTUAL,
                         "java/lang/Object",
@@ -374,6 +379,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                     )
                     methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
                     methodVisitor.visitLabel(nullLabel)
+                    methodVisitor.visitInsn(Opcodes.POP)
                     methodVisitor.visitLdcInsn(0)
                     methodVisitor.visitLabel(endLabel)
                 }
@@ -425,7 +431,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
             methodVisitor.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
-                wrappedClazz.typeName,
+                Type.getInternalName(wrappedClazz),
                 "valueOf",
                 "(${originalType.descriptor})${wrappedClazz.descriptorString()}",
                 false
@@ -436,7 +442,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
             methodVisitor.visitMethodInsn(
                 Opcodes.INVOKEVIRTUAL,
-                wrappedClazz.typeName,
+                Type.getInternalName(wrappedClazz),
                 "${finalType.type.originalName}Value",
                 "()${finalType.descriptor}",
                 false
