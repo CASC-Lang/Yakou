@@ -99,11 +99,6 @@ sealed class Expression {
         override val span: Span by lazy {
             leftParenthesis.span.expand(rightParenthesis.span)
         }
-
-        init {
-            originalType = expression.finalType
-            finalType = originalType
-        }
     }
 
     sealed class LiteralExpression : Expression()
