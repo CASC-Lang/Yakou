@@ -5,16 +5,15 @@ import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.yakou.lang.ast.*
-import org.yakou.lang.bind.ClassMember
-import org.yakou.lang.bind.PrimitiveType
-import org.yakou.lang.bind.TypeInfo
-import org.yakou.lang.bind.Variable
+import org.yakou.lang.bind.*
 import org.yakou.lang.compilation.CompilationSession
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.gen.ChainType
 import java.io.File
 
 class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
+    private val table: Table = compilationSession.table
+
     private val classWriters: HashMap<TypeInfo.Class, ClassWriter> = hashMapOf()
     private val staticBlockWriters: HashMap<TypeInfo.Class, MethodVisitor> = hashMapOf()
 
@@ -281,73 +280,107 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genBinaryExpression(methodVisitor: MethodVisitor, binaryExpression: Expression.BinaryExpression) {
-        genExpression(methodVisitor, binaryExpression.leftExpression)
-        genExpression(methodVisitor, binaryExpression.rightExpression)
+        val finalType = binaryExpression.finalType
 
-        if (binaryExpression.finalType is TypeInfo.Primitive) {
-            val primitiveType = binaryExpression.finalType as TypeInfo.Primitive
+        when (binaryExpression.operation) {
+            Expression.BinaryExpression.BinaryOperation.Addition,
+            Expression.BinaryExpression.BinaryOperation.Subtraction,
+            Expression.BinaryExpression.BinaryOperation.Multiplication,
+            Expression.BinaryExpression.BinaryOperation.Division,
+            Expression.BinaryExpression.BinaryOperation.Modulo,
+            Expression.BinaryExpression.BinaryOperation.UnsignedRightShift,
+            Expression.BinaryExpression.BinaryOperation.RightShift,
+            Expression.BinaryExpression.BinaryOperation.LeftShift -> {
+                genExpression(methodVisitor, binaryExpression.leftExpression)
+                genExpression(methodVisitor, binaryExpression.rightExpression)
 
-            when (binaryExpression.operation) {
-                Expression.BinaryExpression.BinaryOperation.Addition -> methodVisitor.visitInsn(primitiveType.addOpcode)
-                Expression.BinaryExpression.BinaryOperation.Subtraction -> methodVisitor.visitInsn(primitiveType.subOpcode)
-                Expression.BinaryExpression.BinaryOperation.Multiplication -> methodVisitor.visitInsn(primitiveType.mulOpcode)
-                Expression.BinaryExpression.BinaryOperation.Division -> methodVisitor.visitInsn(primitiveType.divOpcode)
-                Expression.BinaryExpression.BinaryOperation.Modulo -> methodVisitor.visitInsn(primitiveType.remOpcode)
-                Expression.BinaryExpression.BinaryOperation.UnsignedRightShift -> methodVisitor.visitInsn(primitiveType.ushrOpcode)
-                Expression.BinaryExpression.BinaryOperation.RightShift -> methodVisitor.visitInsn(primitiveType.shrOpcode)
-                Expression.BinaryExpression.BinaryOperation.LeftShift -> methodVisitor.visitInsn(primitiveType.shlOpcode)
-                Expression.BinaryExpression.BinaryOperation.LogicalAnd -> {
-                    when (currentChainType) {
-                        ChainType.OR -> {
-                            val label = Label()
-                            methodVisitor.visitLdcInsn(0)
-                            methodVisitor.visitJumpInsn(Opcodes.GOTO, label)
-                            conditionChain.forEach(methodVisitor::visitLabel)
-                            conditionChain.clear()
-                            methodVisitor.visitLdcInsn(1)
-                            methodVisitor.visitLabel(label)
-                            currentChainType = ChainType.AND
-                        }
-
-                        ChainType.AND -> {}
-                        ChainType.NONE -> {
-                            currentChainType = ChainType.AND
-                        }
-                    }
-
-                    val shortCircuitLabel = Label()
-
-                    conditionChain += shortCircuitLabel
-
-                    methodVisitor.visitJumpInsn(Opcodes.IFEQ, shortCircuitLabel)
-                }
-
-                Expression.BinaryExpression.BinaryOperation.LogicalOr -> {
-                    when (currentChainType) {
-                        ChainType.AND -> {
-                            val label = Label()
-                            methodVisitor.visitLdcInsn(1)
-                            methodVisitor.visitJumpInsn(Opcodes.GOTO, label)
-                            conditionChain.forEach(methodVisitor::visitLabel)
-                            conditionChain.clear()
-                            methodVisitor.visitLdcInsn(0)
-                            methodVisitor.visitLabel(label)
-                            currentChainType = ChainType.OR
-                        }
-
-                        ChainType.OR -> {}
-                        ChainType.NONE -> {
-                            currentChainType = ChainType.OR
-                        }
-                    }
-
-                    val shortCircuitLabel = Label()
-
-                    conditionChain += shortCircuitLabel
-
-                    methodVisitor.visitJumpInsn(Opcodes.IFNE, shortCircuitLabel)
+                if (finalType is TypeInfo.Primitive) {
+                    methodVisitor.visitInsn(binaryExpression.operation.getFunctorOpcode(finalType))
+                } else {
+                    throw IllegalStateException("Unable to emit `${binaryExpression.operation}` opcode for non-primitive type.")
                 }
             }
+
+            Expression.BinaryExpression.BinaryOperation.LogicalAnd -> {
+                genExpression(methodVisitor, binaryExpression.leftExpression)
+                genExpression(methodVisitor, binaryExpression.rightExpression)
+
+                when (currentChainType) {
+                    ChainType.OR -> {
+                        val label = Label()
+                        methodVisitor.visitLdcInsn(0)
+                        methodVisitor.visitJumpInsn(Opcodes.GOTO, label)
+                        conditionChain.forEach(methodVisitor::visitLabel)
+                        conditionChain.clear()
+                        methodVisitor.visitLdcInsn(1)
+                        methodVisitor.visitLabel(label)
+                        currentChainType = ChainType.AND
+                    }
+
+                    ChainType.AND -> {}
+                    ChainType.NONE -> {
+                        currentChainType = ChainType.AND
+                    }
+                }
+
+                val shortCircuitLabel = Label()
+
+                conditionChain += shortCircuitLabel
+
+                methodVisitor.visitJumpInsn(Opcodes.IFEQ, shortCircuitLabel)
+            }
+
+            Expression.BinaryExpression.BinaryOperation.LogicalOr -> {
+                genExpression(methodVisitor, binaryExpression.leftExpression)
+                genExpression(methodVisitor, binaryExpression.rightExpression)
+
+                when (currentChainType) {
+                    ChainType.AND -> {
+                        val label = Label()
+                        methodVisitor.visitLdcInsn(1)
+                        methodVisitor.visitJumpInsn(Opcodes.GOTO, label)
+                        conditionChain.forEach(methodVisitor::visitLabel)
+                        conditionChain.clear()
+                        methodVisitor.visitLdcInsn(0)
+                        methodVisitor.visitLabel(label)
+                        currentChainType = ChainType.OR
+                    }
+
+                    ChainType.OR -> {}
+                    ChainType.NONE -> {
+                        currentChainType = ChainType.OR
+                    }
+                }
+
+                val shortCircuitLabel = Label()
+
+                conditionChain += shortCircuitLabel
+
+                methodVisitor.visitJumpInsn(Opcodes.IFNE, shortCircuitLabel)
+            }
+
+            Expression.BinaryExpression.BinaryOperation.Equal -> {
+                if (binaryExpression.leftExpression.finalType is TypeInfo.Class && binaryExpression.rightExpression.finalType is TypeInfo.Class) {
+                    val nullLabel = Label()
+                    val endLabel = Label()
+                    methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel)
+                    methodVisitor.visitMethodInsn(
+                        Opcodes.INVOKEVIRTUAL,
+                        "java/lang/Object",
+                        "equals",
+                        "(Ljava/lang/Object;)Z",
+                        false
+                    )
+                    methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
+                    methodVisitor.visitLabel(nullLabel)
+                    methodVisitor.visitLdcInsn(0)
+                    methodVisitor.visitLabel(endLabel)
+                }
+            }
+
+            Expression.BinaryExpression.BinaryOperation.NotEqual -> TODO()
+            Expression.BinaryExpression.BinaryOperation.ExactEqual -> TODO()
+            Expression.BinaryExpression.BinaryOperation.ExactNotEqual -> TODO()
         }
     }
 

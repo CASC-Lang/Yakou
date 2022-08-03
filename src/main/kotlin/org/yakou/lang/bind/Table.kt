@@ -43,7 +43,11 @@ class Table {
         }
     }
 
-    fun findClassMember(qualifiedOwnerPath: String, memberType: ClassMember.MemberType, memberName: String): ClassMember? =
+    fun findClassMember(
+        qualifiedOwnerPath: String,
+        memberType: ClassMember.MemberType,
+        memberName: String
+    ): ClassMember? =
         classMemberTable[qualifiedOwnerPath]?.get(memberType)?.find { it.name == memberName }
 
     fun registerPackageClass(packagePath: String) {
@@ -90,13 +94,19 @@ class Table {
                     is TypeInfo.Array -> null // Unreachable
                 }
             }
+
             is TypeInfo.Class -> {
                 typeTable[typeName] = typeInfo
 
                 typeInfo
             }
+
             else -> typeTable[typeName]
         }
+    }
+
+    fun findImplementedEqualMethod(classTypeInfo: TypeInfo): ClassMember.Fn {
+        return ClassMember.Fn.fromMethod(Any::class.java.getDeclaredMethod("equals", Any::class.java)) // TODO: Search through inheritance tree
     }
 
     private fun asTypeInfo(type: Type): TypeInfo? = when (type) {
@@ -123,6 +133,7 @@ class Table {
                 finalArrayType
             } else null
         }
+
         is Type.TypePath -> {
             val typeName = type.standardizeType()
 
@@ -137,6 +148,22 @@ class Table {
                     val typeInfo = TypeInfo.fromClass(clazz)
                     typeTable[typeName] = typeInfo
 
+                    if (!classMemberTable.containsKey(typeName)) {
+                        classMemberTable[typeName] = EnumMap(ClassMember.MemberType::class.java)
+
+                        for (field in clazz.declaredFields) {
+                            classMemberTable[typeName]!![ClassMember.MemberType.FIELD]!! += ClassMember.Field.fromField(
+                                field
+                            )
+                        }
+
+                        for (method in clazz.declaredMethods) {
+                            classMemberTable[typeName]!![ClassMember.MemberType.FUNCTION]!! += ClassMember.Fn.fromMethod(
+                                method
+                            )
+                        }
+                    }
+
                     return@run typeInfo
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -147,5 +174,39 @@ class Table {
                 null
             }
         }
+    }
+
+    private fun collectBfsInheritanceTree(entryClass: TypeInfo.Class): Set<TypeInfo.Class> {
+        var index = 0
+        var previousSize = 0
+        val result = mutableListOf(entryClass)
+
+        while (true) {
+            val currentSize = result.size
+
+            for (i in index until currentSize) {
+                val parentClass = result[i].superClassType
+
+                if (parentClass != TypeInfo.Class.OBJECT_TYPE_INFO) {
+                    result.add(parentClass!!)
+                }
+
+                val interfaceClasses = result[i].interfaceTypes
+
+                result += interfaceClasses
+            }
+
+            if (previousSize == result.size) {
+                // No append in current iteration
+                break
+            } else {
+                index = previousSize - 1
+                previousSize = result.size
+            }
+        }
+
+        result += TypeInfo.Class.OBJECT_TYPE_INFO
+
+        return result.toSet()
     }
 }

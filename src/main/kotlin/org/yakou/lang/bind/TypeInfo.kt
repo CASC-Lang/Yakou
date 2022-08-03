@@ -112,6 +112,20 @@ sealed class TypeInfo {
             PrimitiveType.I64 -> Opcodes.LSHL
             else -> -1
         }
+        val eqOpcode: Int = when (type) {
+            PrimitiveType.Bool, PrimitiveType.Char, PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.IF_ICMPEQ
+            PrimitiveType.I64 -> Opcodes.LCMP
+            PrimitiveType.F32 -> Opcodes.FCMPG
+            PrimitiveType.F64 -> Opcodes.DCMPG
+            else -> -1
+        }
+        val neOpcode: Int = when (type) {
+            PrimitiveType.Bool, PrimitiveType.Char, PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.IF_ICMPNE
+            PrimitiveType.I64 -> Opcodes.LCMP
+            PrimitiveType.F32 -> Opcodes.FCMPG
+            PrimitiveType.F64 -> Opcodes.DCMPG
+            else -> -1
+        }
         override val storeOpcode: Int = when (type) {
             PrimitiveType.Bool, PrimitiveType.Char, PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.ISTORE
             PrimitiveType.I64 -> Opcodes.LSTORE

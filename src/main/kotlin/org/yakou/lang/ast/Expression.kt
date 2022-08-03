@@ -59,6 +59,18 @@ sealed class Expression {
                 LogicalOr -> Boolean::or
                 else -> null
             }
+
+            fun getFunctorOpcode(primitive: TypeInfo.Primitive): Int = when (this) {
+                Addition -> primitive.addOpcode
+                Subtraction -> primitive.subOpcode
+                Multiplication -> primitive.mulOpcode
+                Division -> primitive.divOpcode
+                Modulo -> primitive.remOpcode
+                LeftShift -> primitive.shlOpcode
+                RightShift -> primitive.shrOpcode
+                UnsignedRightShift -> primitive.ushrOpcode
+                else -> -1
+            }
         }
     }
 
