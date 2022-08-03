@@ -101,6 +101,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
         is Expression.BinaryExpression -> optimizeBinaryExpression(expression)
         is Expression.Identifier -> optimizeIdentifier(expression)
         is Expression.As -> optimizeAs(expression)
+        is Expression.Parenthesized -> optimizeParenthesized(expression)
         is Expression.BoolLiteral -> expression
         is Expression.NumberLiteral -> expression
         is Expression.Empty -> expression
@@ -173,12 +174,14 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                                 optimizedLeftExpression.value == optimizedRightExpression.value,
                                 expression.span
                             )
+
                         Expression.BinaryExpression.BinaryOperation.NotEqual,
                         Expression.BinaryExpression.BinaryOperation.ExactNotEqual ->
                             syntheticBoolLiteral(
                                 optimizedLeftExpression.value != optimizedRightExpression.value,
                                 expression.span
                             )
+
                         else -> finalExpression
                     }
                 } else if (optimizedLeftExpression is Expression.BoolLiteral && optimizedRightExpression is Expression.BoolLiteral) {
@@ -189,12 +192,14 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                                 optimizedLeftExpression.value == optimizedRightExpression.value,
                                 expression.span
                             )
+
                         Expression.BinaryExpression.BinaryOperation.NotEqual,
                         Expression.BinaryExpression.BinaryOperation.ExactNotEqual ->
                             syntheticBoolLiteral(
                                 optimizedLeftExpression.value != optimizedRightExpression.value,
                                 expression.span
                             )
+
                         else -> finalExpression
                     }
                 }
@@ -254,6 +259,12 @@ class Optimizer(val compilationUnit: CompilationUnit) {
         }
 
         return expression // TODO: Optimize?
+    }
+
+    private fun optimizeParenthesized(expression: Expression.Parenthesized): Expression {
+        expression.expression = optimizeExpression(expression.expression)
+
+        return expression
     }
 
     private fun syntheticBoolLiteral(value: Boolean, span: Span): Expression.BoolLiteral {
