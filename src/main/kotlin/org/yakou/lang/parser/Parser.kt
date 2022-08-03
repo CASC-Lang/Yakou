@@ -317,37 +317,38 @@ class Parser(private val compilationUnit: CompilationUnit) {
         var leftExpression = parseAddictiveExpression()
 
         while (true) {
-            if (optExpectRepeatType(TokenType.Greater, 3)) {
-                val operator = listOf(next()!!, next()!!, next()!!)
-                val rightExpression = parseAddictiveExpression()
+            leftExpression = when {
+                optExpectRepeatType(TokenType.Greater, 3) -> {
+                    parseRhsMultipleOp(
+                        3,
+                        leftExpression,
+                        ::parseAddictiveExpression,
+                        Expression.BinaryExpression.BinaryOperation.UnsignedRightShift
+                    )
+                }
 
-                leftExpression = Expression.BinaryExpression(
-                    leftExpression,
-                    operator,
-                    rightExpression,
-                    Expression.BinaryExpression.BinaryOperation.UnsignedRightShift
-                )
-            } else if (optExpectRepeatType(TokenType.Greater, 2)) {
-                val operator = listOf(next()!!, next()!!)
-                val rightExpression = parseAddictiveExpression()
+                optExpectRepeatType(TokenType.Greater, 2) -> {
+                    parseRhsMultipleOp(
+                        2,
+                        leftExpression,
+                        ::parseAddictiveExpression,
+                        Expression.BinaryExpression.BinaryOperation.RightShift
+                    )
+                }
 
-                leftExpression = Expression.BinaryExpression(
-                    leftExpression,
-                    operator,
-                    rightExpression,
-                    Expression.BinaryExpression.BinaryOperation.RightShift
-                )
-            } else if (optExpectRepeatType(TokenType.Lesser, 2)) {
-                val operator = listOf(next()!!, next()!!)
-                val rightExpression = parseAddictiveExpression()
+                optExpectRepeatType(TokenType.Lesser, 2) -> {
+                    parseRhsMultipleOp(
+                        2,
+                        leftExpression,
+                        ::parseAddictiveExpression,
+                        Expression.BinaryExpression.BinaryOperation.LeftShift
+                    )
+                }
 
-                leftExpression = Expression.BinaryExpression(
-                    leftExpression,
-                    operator,
-                    rightExpression,
-                    Expression.BinaryExpression.BinaryOperation.LeftShift
-                )
-            } else break
+                else -> {
+                    break
+                }
+            }
         }
 
         return leftExpression
@@ -357,27 +358,25 @@ class Parser(private val compilationUnit: CompilationUnit) {
         var leftExpression = parseMultiplicativeExpression()
 
         while (true) {
-            if (optExpectType(TokenType.Plus)) {
-                val operator = next()!!
-                val rightExpression = parseMultiplicativeExpression()
+            leftExpression = when {
+                optExpectType(TokenType.Plus) -> {
+                    parseRhsSingleOp(
+                        leftExpression,
+                        ::parseMultiplicativeExpression,
+                        Expression.BinaryExpression.BinaryOperation.Addition
+                    )
+                }
 
-                leftExpression = Expression.BinaryExpression(
-                    leftExpression,
-                    listOf(operator),
-                    rightExpression,
-                    Expression.BinaryExpression.BinaryOperation.Addition
-                )
-            } else if (optExpectType(TokenType.Minus)) {
-                val operator = next()!!
-                val rightExpression = parseMultiplicativeExpression()
+                optExpectType(TokenType.Minus) -> {
+                    parseRhsSingleOp(
+                        leftExpression,
+                        ::parseMultiplicativeExpression,
+                        Expression.BinaryExpression.BinaryOperation.Subtraction
+                    )
+                }
 
-                leftExpression = Expression.BinaryExpression(
-                    leftExpression,
-                    listOf(operator),
-                    rightExpression,
-                    Expression.BinaryExpression.BinaryOperation.Subtraction
-                )
-            } else break
+                else -> break
+            }
         }
 
         return leftExpression
@@ -387,40 +386,31 @@ class Parser(private val compilationUnit: CompilationUnit) {
         var leftExpression = parseEqualityExpression()
 
         while (true) {
-            when {
+            leftExpression = when {
                 optExpectType(TokenType.Star) -> {
-                    val operator = next()!!
-                    val rightExpression = parseEqualityExpression()
-
-                    leftExpression = Expression.BinaryExpression(
+                    parseRhsSingleOp(
                         leftExpression,
-                        listOf(operator),
-                        rightExpression,
+                        ::parseEqualityExpression,
                         Expression.BinaryExpression.BinaryOperation.Multiplication
                     )
                 }
-                optExpectType(TokenType.Slash) -> {
-                    val operator = next()!!
-                    val rightExpression = parseEqualityExpression()
 
-                    leftExpression = Expression.BinaryExpression(
+                optExpectType(TokenType.Slash) -> {
+                    parseRhsSingleOp(
                         leftExpression,
-                        listOf(operator),
-                        rightExpression,
+                        ::parseEqualityExpression,
                         Expression.BinaryExpression.BinaryOperation.Division
                     )
                 }
-                optExpectType(TokenType.Percentage) -> {
-                    val operator = next()!!
-                    val rightExpression = parseEqualityExpression()
 
-                    leftExpression = Expression.BinaryExpression(
+                optExpectType(TokenType.Percentage) -> {
+                    parseRhsSingleOp(
                         leftExpression,
-                        listOf(operator),
-                        rightExpression,
+                        ::parseEqualityExpression,
                         Expression.BinaryExpression.BinaryOperation.Modulo
                     )
                 }
+
                 else -> break
             }
         }
@@ -432,67 +422,54 @@ class Parser(private val compilationUnit: CompilationUnit) {
         var leftExpression = parseConjunctionExpression()
 
         while (true) {
-            when {
+            leftExpression = when {
                 optExpectType(TokenType.DoubleEqual) -> {
-                    val operator = next()!!
-                    val rightExpression = parseConjunctionExpression()
-
-                    leftExpression = Expression.BinaryExpression(
+                    parseRhsSingleOp(
                         leftExpression,
-                        listOf(operator),
-                        rightExpression,
+                        ::parseConjunctionExpression,
                         Expression.BinaryExpression.BinaryOperation.Equal
                     )
                 }
-                optExpectType(TokenType.BangEqual) -> {
-                    val operator = next()!!
-                    val rightExpression = parseConjunctionExpression()
 
-                    leftExpression = Expression.BinaryExpression(
+                optExpectType(TokenType.BangEqual) -> {
+                    parseRhsSingleOp(
                         leftExpression,
-                        listOf(operator),
-                        rightExpression,
+                        ::parseConjunctionExpression,
                         Expression.BinaryExpression.BinaryOperation.NotEqual
                     )
                 }
-                optExpectType(TokenType.TripleEqual) -> {
-                    val operator = next()!!
-                    val rightExpression = parseConjunctionExpression()
 
-                    leftExpression = Expression.BinaryExpression(
+                optExpectType(TokenType.TripleEqual) -> {
+                    parseRhsSingleOp(
                         leftExpression,
-                        listOf(operator),
-                        rightExpression,
+                        ::parseConjunctionExpression,
                         Expression.BinaryExpression.BinaryOperation.ExactEqual
                     )
                 }
-                optExpectType(TokenType.BangDoubleEqual) -> {
-                    val operator = next()!!
-                    val rightExpression = parseConjunctionExpression()
 
-                    leftExpression = Expression.BinaryExpression(
+                optExpectType(TokenType.BangDoubleEqual) -> {
+                    parseRhsSingleOp(
                         leftExpression,
-                        listOf(operator),
-                        rightExpression,
+                        ::parseConjunctionExpression,
                         Expression.BinaryExpression.BinaryOperation.ExactNotEqual
                     )
                 }
+
+                else -> break
             }
         }
+
+        return leftExpression
     }
 
     private fun parseConjunctionExpression(): Expression {
         var leftExpression = parseDisjunctionExpression()
 
         while (optExpectType(TokenType.DoubleAmpersand)) {
-            val operator = next()!!
-            val rightExpression = parseDisjunctionExpression()
-
-            leftExpression = Expression.BinaryExpression(
+            leftExpression = parseRhsSingleOp(
                 leftExpression,
-                listOf(operator),
-                rightExpression,
-                Expression.BinaryExpression.BinaryOperation.LogicalAnd
+                ::parseDisjunctionExpression,
+                Expression.BinaryExpression.BinaryOperation.LogicalOr
             )
         }
 
@@ -503,13 +480,9 @@ class Parser(private val compilationUnit: CompilationUnit) {
         var leftExpression = parseLiteralExpression()
 
         while (optExpectType(TokenType.DoublePipe)) {
-            val operator = next()!!
-            val rightExpression = parseDisjunctionExpression()
-
-            leftExpression = Expression.BinaryExpression(
+            leftExpression = parseRhsSingleOp(
                 leftExpression,
-                listOf(operator),
-                rightExpression,
+                ::parseLiteralExpression,
                 Expression.BinaryExpression.BinaryOperation.LogicalOr
             )
         }
@@ -524,6 +497,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
             Expression.BoolLiteral(boolLiteral, boolLiteral.span)
         }
+
         optExpectType(TokenType.NumberLiteral) -> {
             val numberToken = next()!! as Token.NumberLiteralToken
             val integer =
@@ -555,6 +529,39 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 Expression.Undefined
             }
         }
+    }
+
+    private fun parseRhsSingleOp(
+        lhs: Expression,
+        functor: () -> Expression,
+        operationType: Expression.BinaryExpression.BinaryOperation
+    ): Expression.BinaryExpression {
+        val operator = next()!!
+        val rightExpression = functor()
+
+        return Expression.BinaryExpression(
+            lhs,
+            listOf(operator),
+            rightExpression,
+            operationType
+        )
+    }
+
+    private fun parseRhsMultipleOp(
+        repeat: Int,
+        lhs: Expression,
+        functor: () -> Expression,
+        operationType: Expression.BinaryExpression.BinaryOperation
+    ): Expression.BinaryExpression {
+        val operator = (0 until repeat).map { next()!! }
+        val rightExpression = functor()
+
+        return Expression.BinaryExpression(
+            lhs,
+            operator,
+            rightExpression,
+            operationType
+        )
     }
 
     private fun parseParameters(): List<Parameter> {
