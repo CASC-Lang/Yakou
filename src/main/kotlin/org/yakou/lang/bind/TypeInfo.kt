@@ -5,7 +5,7 @@ import org.objectweb.asm.Opcodes
 sealed class TypeInfo {
     companion object {
         fun fromClass(clazz: java.lang.Class<*>): TypeInfo = when {
-            clazz.isArray -> Array(fromClass(clazz.arrayType()))
+            clazz.isArray -> Array(fromClass(clazz.componentType()))
             clazz.isPrimitive -> PrimitiveType.fromClass(clazz)!!
             else -> Class(
                 clazz.modifiers,
