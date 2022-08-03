@@ -38,8 +38,27 @@ sealed class Expression {
             ExactNotEqual
             ;
 
-            fun isShiftOperation(): Boolean =
-                this.ordinal in 5..7
+            fun getArithmeticFunctor(): ((Double, Double) -> Double)? = when (this) {
+                Addition -> Double::plus
+                Subtraction -> Double::minus
+                Multiplication -> Double::times
+                Division -> Double::div
+                Modulo -> Double::rem
+                else -> null
+            }
+
+            fun getBitwiseFunctor(): ((Long, Int) -> Long)? = when (this) {
+                LeftShift -> Long::shl
+                RightShift -> Long::shr
+                UnsignedRightShift -> Long::ushr
+                else -> null
+            }
+
+            fun getLogicalFunctor(): ((Boolean, Boolean) -> Boolean)? = when (this) {
+                LogicalAnd -> Boolean::and
+                LogicalOr -> Boolean::or
+                else -> null
+            }
         }
     }
 

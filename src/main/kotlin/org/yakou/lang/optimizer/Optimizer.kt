@@ -108,109 +108,106 @@ class Optimizer(val compilationUnit: CompilationUnit) {
     }
 
     private fun optimizeBinaryExpression(expression: Expression.BinaryExpression): Expression {
+        var finalExpression: Expression = expression
         val optimizedLeftExpression = optimizeExpression(expression.leftExpression)
         val optimizedRightExpression = optimizeExpression(expression.rightExpression)
 
-        return if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral) {
-            when (expression.operation) {
-                Expression.BinaryExpression.BinaryOperation.Addition -> {
-                    syntheticNumberLiteral(
-                        optimizedLeftExpression.value + optimizedRightExpression.value,
+        when (expression.operation) {
+            Expression.BinaryExpression.BinaryOperation.Addition,
+            Expression.BinaryExpression.BinaryOperation.Subtraction,
+            Expression.BinaryExpression.BinaryOperation.Multiplication,
+            Expression.BinaryExpression.BinaryOperation.Division,
+            Expression.BinaryExpression.BinaryOperation.Modulo -> {
+                if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral)
+                    finalExpression = syntheticNumberLiteral(
+                        expression.operation.getArithmeticFunctor()!!(
+                            optimizedLeftExpression.value,
+                            optimizedRightExpression.value
+                        ),
                         expression.span,
                         expression.finalType
                     )
-                }
-
-                Expression.BinaryExpression.BinaryOperation.Subtraction -> {
-                    syntheticNumberLiteral(
-                        optimizedLeftExpression.value - optimizedRightExpression.value,
-                        expression.span,
-                        expression.finalType
-                    )
-                }
-
-                Expression.BinaryExpression.BinaryOperation.Multiplication -> {
-                    syntheticNumberLiteral(
-                        optimizedLeftExpression.value * optimizedRightExpression.value,
-                        expression.span,
-                        expression.finalType
-                    )
-                }
-
-                Expression.BinaryExpression.BinaryOperation.Division -> {
-                    syntheticNumberLiteral(
-                        optimizedLeftExpression.value / optimizedRightExpression.value,
-                        expression.span,
-                        expression.finalType
-                    )
-                }
-
-                Expression.BinaryExpression.BinaryOperation.Modulo -> {
-                    syntheticNumberLiteral(
-                        optimizedLeftExpression.value % optimizedRightExpression.value,
-                        expression.span,
-                        expression.finalType
-                    )
-                }
-
-                Expression.BinaryExpression.BinaryOperation.UnsignedRightShift -> {
-                    syntheticNumberLiteral(
-                        (optimizedLeftExpression.value.toLong() ushr optimizedRightExpression.value.toInt()).toDouble(),
-                        expression.span,
-                        expression.finalType
-                    )
-                }
-
-                Expression.BinaryExpression.BinaryOperation.RightShift -> {
-                    syntheticNumberLiteral(
-                        (optimizedLeftExpression.value.toLong() shr optimizedRightExpression.value.toInt()).toDouble(),
-                        expression.span,
-                        expression.finalType
-                    )
-                }
-
-                Expression.BinaryExpression.BinaryOperation.LeftShift -> {
-                    syntheticNumberLiteral(
-                        (optimizedLeftExpression.value.toLong() shl optimizedRightExpression.value.toInt()).toDouble(),
-                        expression.span,
-                        expression.finalType
-                    )
-                }
-
-                else -> {
-                    expression.leftExpression = optimizedLeftExpression
-                    expression.rightExpression = optimizedRightExpression
-
-                    expression
-                }
             }
-        } else if (optimizedLeftExpression is Expression.BoolLiteral && optimizedRightExpression is Expression.BoolLiteral) {
-            when (expression.operation) {
-                Expression.BinaryExpression.BinaryOperation.LogicalOr -> {
-                    syntheticBoolLiteral(
-                        optimizedLeftExpression.value || optimizedRightExpression.value,
+
+            Expression.BinaryExpression.BinaryOperation.LeftShift,
+            Expression.BinaryExpression.BinaryOperation.RightShift,
+            Expression.BinaryExpression.BinaryOperation.UnsignedRightShift -> {
+                if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral)
+                    finalExpression = syntheticNumberLiteral(
+                        expression.operation.getBitwiseFunctor()!!(
+                            optimizedLeftExpression.value.toLong(),
+                            optimizedRightExpression.value.toInt()
+                        ).toDouble(),
+                        expression.span,
+                        expression.finalType
+                    )
+            }
+
+            Expression.BinaryExpression.BinaryOperation.LogicalOr,
+            Expression.BinaryExpression.BinaryOperation.LogicalAnd -> {
+                if (optimizedLeftExpression is Expression.BoolLiteral && optimizedRightExpression is Expression.BoolLiteral)
+                    finalExpression = syntheticBoolLiteral(
+                        expression.operation.getLogicalFunctor()!!(
+                            optimizedLeftExpression.value,
+                            optimizedRightExpression.value
+                        ),
                         expression.span
                     )
-                }
-                Expression.BinaryExpression.BinaryOperation.LogicalAnd -> {
-                    syntheticBoolLiteral(
-                        optimizedLeftExpression.value && optimizedRightExpression.value,
+            }
+
+            Expression.BinaryExpression.BinaryOperation.Equal,
+            Expression.BinaryExpression.BinaryOperation.NotEqual,
+            Expression.BinaryExpression.BinaryOperation.ExactEqual,
+            Expression.BinaryExpression.BinaryOperation.ExactNotEqual -> {
+                if (optimizedLeftExpression.finalType != optimizedRightExpression.finalType) {
+                    // Types unmatched
+                    finalExpression = syntheticBoolLiteral(
+                        false,
                         expression.span
                     )
-                }
-                else -> {
-                    expression.leftExpression = optimizedLeftExpression
-                    expression.rightExpression = optimizedRightExpression
-
-                    expression
+                } else if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral) {
+                    finalExpression = when (expression.operation) {
+                        Expression.BinaryExpression.BinaryOperation.Equal,
+                        Expression.BinaryExpression.BinaryOperation.ExactEqual ->
+                            syntheticBoolLiteral(
+                                optimizedLeftExpression.value == optimizedRightExpression.value,
+                                expression.span
+                            )
+                        Expression.BinaryExpression.BinaryOperation.NotEqual,
+                        Expression.BinaryExpression.BinaryOperation.ExactNotEqual ->
+                            syntheticBoolLiteral(
+                                optimizedLeftExpression.value != optimizedRightExpression.value,
+                                expression.span
+                            )
+                        else -> finalExpression
+                    }
+                } else if (optimizedLeftExpression is Expression.BoolLiteral && optimizedRightExpression is Expression.BoolLiteral) {
+                    finalExpression = when (expression.operation) {
+                        Expression.BinaryExpression.BinaryOperation.Equal,
+                        Expression.BinaryExpression.BinaryOperation.ExactEqual ->
+                            syntheticBoolLiteral(
+                                optimizedLeftExpression.value == optimizedRightExpression.value,
+                                expression.span
+                            )
+                        Expression.BinaryExpression.BinaryOperation.NotEqual,
+                        Expression.BinaryExpression.BinaryOperation.ExactNotEqual ->
+                            syntheticBoolLiteral(
+                                optimizedLeftExpression.value != optimizedRightExpression.value,
+                                expression.span
+                            )
+                        else -> finalExpression
+                    }
                 }
             }
-        } else {
-            expression.leftExpression = optimizedLeftExpression
-            expression.rightExpression = optimizedRightExpression
-
-            expression
         }
+
+        if (finalExpression is Expression.BinaryExpression) {
+            // Unoptimized but lhs and rhs might be optimized, thus we have to update lhs and rhs
+            finalExpression.leftExpression = optimizedLeftExpression
+            finalExpression.rightExpression = optimizedRightExpression
+        }
+
+        return finalExpression
     }
 
     private fun optimizeIdentifier(expression: Expression.Identifier): Expression {
