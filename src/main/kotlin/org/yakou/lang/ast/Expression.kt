@@ -31,7 +31,11 @@ sealed class Expression {
             RightShift,
             UnsignedRightShift,
             LogicalOr,
-            LogicalAnd
+            LogicalAnd,
+            Equal,
+            NotEqual,
+            ExactEqual,
+            ExactNotEqual
             ;
 
             fun isShiftOperation(): Boolean =

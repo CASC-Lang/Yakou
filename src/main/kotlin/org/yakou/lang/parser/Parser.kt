@@ -384,43 +384,101 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseMultiplicativeExpression(): Expression {
-        var leftExpression = parseConjunctionExpression()
+        var leftExpression = parseEqualityExpression()
 
         while (true) {
-            if (optExpectType(TokenType.Star)) {
-                val operator = next()!!
-                val rightExpression = parseConjunctionExpression()
+            when {
+                optExpectType(TokenType.Star) -> {
+                    val operator = next()!!
+                    val rightExpression = parseEqualityExpression()
 
-                leftExpression = Expression.BinaryExpression(
-                    leftExpression,
-                    listOf(operator),
-                    rightExpression,
-                    Expression.BinaryExpression.BinaryOperation.Multiplication
-                )
-            } else if (optExpectType(TokenType.Slash)) {
-                val operator = next()!!
-                val rightExpression = parseConjunctionExpression()
+                    leftExpression = Expression.BinaryExpression(
+                        leftExpression,
+                        listOf(operator),
+                        rightExpression,
+                        Expression.BinaryExpression.BinaryOperation.Multiplication
+                    )
+                }
+                optExpectType(TokenType.Slash) -> {
+                    val operator = next()!!
+                    val rightExpression = parseEqualityExpression()
 
-                leftExpression = Expression.BinaryExpression(
-                    leftExpression,
-                    listOf(operator),
-                    rightExpression,
-                    Expression.BinaryExpression.BinaryOperation.Division
-                )
-            } else if (optExpectType(TokenType.Percentage)) {
-                val operator = next()!!
-                val rightExpression = parseConjunctionExpression()
+                    leftExpression = Expression.BinaryExpression(
+                        leftExpression,
+                        listOf(operator),
+                        rightExpression,
+                        Expression.BinaryExpression.BinaryOperation.Division
+                    )
+                }
+                optExpectType(TokenType.Percentage) -> {
+                    val operator = next()!!
+                    val rightExpression = parseEqualityExpression()
 
-                leftExpression = Expression.BinaryExpression(
-                    leftExpression,
-                    listOf(operator),
-                    rightExpression,
-                    Expression.BinaryExpression.BinaryOperation.Modulo
-                )
-            } else break
+                    leftExpression = Expression.BinaryExpression(
+                        leftExpression,
+                        listOf(operator),
+                        rightExpression,
+                        Expression.BinaryExpression.BinaryOperation.Modulo
+                    )
+                }
+                else -> break
+            }
         }
 
         return leftExpression
+    }
+
+    private fun parseEqualityExpression(): Expression {
+        var leftExpression = parseConjunctionExpression()
+
+        while (true) {
+            when {
+                optExpectType(TokenType.DoubleEqual) -> {
+                    val operator = next()!!
+                    val rightExpression = parseConjunctionExpression()
+
+                    leftExpression = Expression.BinaryExpression(
+                        leftExpression,
+                        listOf(operator),
+                        rightExpression,
+                        Expression.BinaryExpression.BinaryOperation.Equal
+                    )
+                }
+                optExpectType(TokenType.BangEqual) -> {
+                    val operator = next()!!
+                    val rightExpression = parseConjunctionExpression()
+
+                    leftExpression = Expression.BinaryExpression(
+                        leftExpression,
+                        listOf(operator),
+                        rightExpression,
+                        Expression.BinaryExpression.BinaryOperation.NotEqual
+                    )
+                }
+                optExpectType(TokenType.TripleEqual) -> {
+                    val operator = next()!!
+                    val rightExpression = parseConjunctionExpression()
+
+                    leftExpression = Expression.BinaryExpression(
+                        leftExpression,
+                        listOf(operator),
+                        rightExpression,
+                        Expression.BinaryExpression.BinaryOperation.ExactEqual
+                    )
+                }
+                optExpectType(TokenType.BangDoubleEqual) -> {
+                    val operator = next()!!
+                    val rightExpression = parseConjunctionExpression()
+
+                    leftExpression = Expression.BinaryExpression(
+                        leftExpression,
+                        listOf(operator),
+                        rightExpression,
+                        Expression.BinaryExpression.BinaryOperation.ExactNotEqual
+                    )
+                }
+            }
+        }
     }
 
     private fun parseConjunctionExpression(): Expression {
