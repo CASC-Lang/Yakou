@@ -1,9 +1,6 @@
 package org.yakou.lang.gen.jvm
 
-import org.objectweb.asm.ClassWriter
-import org.objectweb.asm.Label
-import org.objectweb.asm.MethodVisitor
-import org.objectweb.asm.Opcodes
+import org.objectweb.asm.*
 import org.objectweb.asm.Type
 import org.yakou.lang.ast.*
 import org.yakou.lang.bind.*
@@ -364,24 +361,57 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             Expression.BinaryExpression.BinaryOperation.Equal -> {
                 genExpression(methodVisitor, binaryExpression.leftExpression)
 
-                if (binaryExpression.leftExpression.finalType is TypeInfo.Class && binaryExpression.rightExpression.finalType is TypeInfo.Class) {
-                    val nullLabel = Label()
-                    val endLabel = Label()
-                    methodVisitor.visitInsn(Opcodes.DUP)
-                    methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel)
-                    genExpression(methodVisitor, binaryExpression.rightExpression)
-                    methodVisitor.visitMethodInsn(
-                        Opcodes.INVOKEVIRTUAL,
-                        "java/lang/Object",
-                        "equals",
-                        "(Ljava/lang/Object;)Z",
-                        false
-                    ) // TODO: Find the closest implemented equals method instead of calling Object::equals
-                    methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
-                    methodVisitor.visitLabel(nullLabel)
-                    methodVisitor.visitInsn(Opcodes.POP)
-                    methodVisitor.visitLdcInsn(0)
-                    methodVisitor.visitLabel(endLabel)
+                val leftType = binaryExpression.leftExpression.finalType
+                val rightType = binaryExpression.rightExpression.finalType
+
+                when {
+                    leftType is TypeInfo.Class && rightType is TypeInfo.Class -> {
+                        val nullLabel = Label()
+                        val endLabel = Label()
+                        methodVisitor.visitInsn(Opcodes.DUP)
+                        methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel)
+                        genExpression(methodVisitor, binaryExpression.rightExpression)
+                        methodVisitor.visitMethodInsn(
+                            Opcodes.INVOKEVIRTUAL,
+                            "java/lang/Object",
+                            "equals",
+                            "(Ljava/lang/Object;)Z",
+                            false
+                        ) // TODO: Find the closest implemented equals method instead of calling Object::equals
+                        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
+                        methodVisitor.visitLabel(nullLabel)
+                        methodVisitor.visitInsn(Opcodes.POP)
+                        methodVisitor.visitLdcInsn(0)
+                        methodVisitor.visitLabel(endLabel)
+                    }
+
+                    leftType is TypeInfo.Array && rightType is TypeInfo.Array -> {
+                        TODO("Unimplemented")
+                    }
+
+                    leftType is TypeInfo.Primitive && rightType is TypeInfo.Primitive -> {
+                        when (leftType.type) {
+                            PrimitiveType.Bool,
+                            PrimitiveType.Char,
+                            PrimitiveType.I8,
+                            PrimitiveType.I16,
+                            PrimitiveType.I32 -> methodVisitor.visitInsn(leftType.eqOpcode)
+                            PrimitiveType.I64,
+                            PrimitiveType.F32,
+                            PrimitiveType.F64 -> {
+                                val falseLabel = Label()
+                                val endLabel = Label()
+                                methodVisitor.visitInsn(leftType.eqOpcode) // Opcodes.LCMP, Opcodes.FCMPG or Opcodes.DCMPG
+                                methodVisitor.visitJumpInsn(Opcodes.IFNE, falseLabel)
+                                methodVisitor.visitLdcInsn(1)
+                                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
+                                methodVisitor.visitLabel(falseLabel)
+                                methodVisitor.visitLdcInsn(0)
+                                methodVisitor.visitLabel(endLabel)
+                            }
+                            else -> {} // Unreachable
+                        }
+                    }
                 }
             }
 
