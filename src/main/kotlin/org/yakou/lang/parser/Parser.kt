@@ -294,24 +294,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
     private fun parseExpression(optional: Boolean = false): Expression {
         optionalExpression = optional
-        val expression = parseParenthesizedExpression()
+        val expression = parseAsExpression()
         optionalExpression = true
 
         return expression
     }
-
-    private fun parseParenthesizedExpression(): Expression =
-        if (optExpectType(TokenType.OpenParenthesis)) {
-            val leftParenthesis = next()!!
-            val expression = parseAsExpression()
-            val rightParenthesis = expect(TokenType.CloseParenthesis)
-
-            Expression.Parenthesized(
-                leftParenthesis,
-                expression,
-                rightParenthesis
-            )
-        } else parseAsExpression()
 
     private fun parseAsExpression(): Expression {
         var leftExpression = parseShiftingExpression()
@@ -490,17 +477,33 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseDisjunctionExpression(): Expression {
-        var leftExpression = parseLiteralExpression()
+        var leftExpression = parsePrimaryExpression()
 
         while (optExpectType(TokenType.DoublePipe)) {
             leftExpression = parseRhsSingleOp(
                 leftExpression,
-                ::parseLiteralExpression,
+                ::parsePrimaryExpression,
                 Expression.BinaryExpression.BinaryOperation.LogicalOr
             )
         }
 
         return leftExpression
+    }
+
+    private fun parsePrimaryExpression(): Expression = when {
+        optExpectType(TokenType.OpenParenthesis) -> {
+            val leftParenthesis = next()!!
+            val expression = parseAsExpression()
+            val rightParenthesis = expect(TokenType.CloseParenthesis)
+
+            Expression.Parenthesized(
+                leftParenthesis,
+                expression,
+                rightParenthesis
+            )
+        }
+
+        else -> parseLiteralExpression()
     }
 
     private fun parseLiteralExpression(): Expression = when {
