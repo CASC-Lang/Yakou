@@ -359,18 +359,31 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             }
 
             Expression.BinaryExpression.BinaryOperation.Equal -> {
-                genExpression(methodVisitor, binaryExpression.leftExpression)
+                genExpression(methodVisitor, binaryExpression.leftExpression)  // i1
+                genExpression(methodVisitor, binaryExpression.rightExpression) // i2
+
+                // stack: - i1 - i2
 
                 val leftType = binaryExpression.leftExpression.finalType
                 val rightType = binaryExpression.rightExpression.finalType
 
                 when {
                     leftType is TypeInfo.Class && rightType is TypeInfo.Class -> {
-                        val nullLabel = Label()
+                        // Structural Equality Check Strategy:
+                        // ```kt
+                        // o1?.equals(o2) ?: (o2 === null)
+                        // ```
+                        // or
+                        // ```java
+                        // o1 != null ? o1.equals(o2) : o2 == null;
+                        // ```
+
+                        val nullLabel1 = Label()
+                        val nullLabel2 = Label()
                         val endLabel = Label()
-                        methodVisitor.visitInsn(Opcodes.DUP)
-                        methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel)
-                        genExpression(methodVisitor, binaryExpression.rightExpression)
+                        methodVisitor.visitInsn(Opcodes.SWAP)                   // stack: - i2 - i1
+                        methodVisitor.visitInsn(Opcodes.DUP)                    // stack: - i2 - i1 - i1
+                        methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel1)  // stack: - i2 - i1
                         methodVisitor.visitMethodInsn(
                             Opcodes.INVOKEVIRTUAL,
                             "java/lang/Object",
@@ -378,11 +391,16 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                             "(Ljava/lang/Object;)Z",
                             false
                         ) // TODO: Find the closest implemented equals method instead of calling Object::equals
-                        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
-                        methodVisitor.visitLabel(nullLabel)
-                        methodVisitor.visitInsn(Opcodes.POP)
-                        methodVisitor.visitLdcInsn(0)
-                        methodVisitor.visitLabel(endLabel)
+                        // stack: - i2 - i1
+                        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
+                        methodVisitor.visitLabel(nullLabel1)                    // stack: - i2 - i1
+                        methodVisitor.visitInsn(Opcodes.POP)                    // stack: - i2
+                        methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel2) // stack: -
+                        methodVisitor.visitLdcInsn(1)                       // stack: - Z
+                        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
+                        methodVisitor.visitLabel(nullLabel2)                    // stack: -
+                        methodVisitor.visitLdcInsn(0)                       // stack: - Z
+                        methodVisitor.visitLabel(endLabel)                      // stack: - Z
                     }
 
                     leftType is TypeInfo.Array && rightType is TypeInfo.Array -> {
