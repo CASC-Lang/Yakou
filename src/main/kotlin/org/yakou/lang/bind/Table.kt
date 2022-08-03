@@ -106,7 +106,12 @@ class Table {
     }
 
     fun findImplementedEqualMethod(classTypeInfo: TypeInfo): ClassMember.Fn {
-        return ClassMember.Fn.fromMethod(Any::class.java.getDeclaredMethod("equals", Any::class.java)) // TODO: Search through inheritance tree
+        return ClassMember.Fn.fromMethod(
+            Any::class.java.getDeclaredMethod(
+                "equals",
+                Any::class.java
+            )
+        ) // TODO: Search through inheritance tree
     }
 
     private fun asTypeInfo(type: Type): TypeInfo? = when (type) {
@@ -150,6 +155,8 @@ class Table {
 
                     if (!classMemberTable.containsKey(typeName)) {
                         classMemberTable[typeName] = EnumMap(ClassMember.MemberType::class.java)
+                        classMemberTable[typeName]!![ClassMember.MemberType.FIELD] = mutableListOf()
+                        classMemberTable[typeName]!![ClassMember.MemberType.FUNCTION] = mutableListOf()
 
                         for (field in clazz.declaredFields) {
                             classMemberTable[typeName]!![ClassMember.MemberType.FIELD]!! += ClassMember.Field.fromField(
