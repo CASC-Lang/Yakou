@@ -376,7 +376,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                         "equals",
                         "(Ljava/lang/Object;)Z",
                         false
-                    )
+                    ) // TODO: Find the closest implemented equals method instead of calling Object::equals
                     methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
                     methodVisitor.visitLabel(nullLabel)
                     methodVisitor.visitInsn(Opcodes.POP)
