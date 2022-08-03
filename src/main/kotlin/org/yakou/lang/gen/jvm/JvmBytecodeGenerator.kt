@@ -383,7 +383,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                         val endLabel = Label()
                         methodVisitor.visitInsn(Opcodes.SWAP)                   // stack: - i2 - i1
                         methodVisitor.visitInsn(Opcodes.DUP)                    // stack: - i2 - i1 - i1
-                        methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel1)  // stack: - i2 - i1
+                        methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel1) // stack: - i2 - i1
                         methodVisitor.visitMethodInsn(
                             Opcodes.INVOKEVIRTUAL,
                             "java/lang/Object",
@@ -396,10 +396,10 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                         methodVisitor.visitLabel(nullLabel1)                    // stack: - i2 - i1
                         methodVisitor.visitInsn(Opcodes.POP)                    // stack: - i2
                         methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel2) // stack: -
-                        methodVisitor.visitLdcInsn(1)                       // stack: - Z
+                        methodVisitor.visitLdcInsn(1)                           // stack: - Z
                         methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
                         methodVisitor.visitLabel(nullLabel2)                    // stack: -
-                        methodVisitor.visitLdcInsn(0)                       // stack: - Z
+                        methodVisitor.visitLdcInsn(0)                           // stack: - Z
                         methodVisitor.visitLabel(endLabel)                      // stack: - Z
                     }
 
