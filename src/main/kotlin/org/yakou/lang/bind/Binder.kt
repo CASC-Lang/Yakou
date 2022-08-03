@@ -435,7 +435,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 val rightType = binaryExpression.rightExpression.finalType
 
                 if (leftType.asPrimitive()?.type != PrimitiveType.Bool ||
-                    rightType.asPrimitive()?.type != PrimitiveType.Bool) {
+                    rightType.asPrimitive()?.type != PrimitiveType.Bool
+                ) {
                     val coloredOperator = colorize(
                         binaryExpression.operator.joinToString(transform = Token::literal),
                         compilationUnit,
@@ -471,6 +472,14 @@ class Binder(private val compilationUnit: CompilationUnit) {
                     return
                 }
 
+                binaryExpression.originalType = TypeInfo.Primitive.BOOL_TYPE_INFO
+                binaryExpression.finalType = TypeInfo.Primitive.BOOL_TYPE_INFO
+            }
+
+            Expression.BinaryExpression.BinaryOperation.Equal,
+            Expression.BinaryExpression.BinaryOperation.NotEqual,
+            Expression.BinaryExpression.BinaryOperation.ExactEqual,
+            Expression.BinaryExpression.BinaryOperation.ExactNotEqual -> {
                 binaryExpression.originalType = TypeInfo.Primitive.BOOL_TYPE_INFO
                 binaryExpression.finalType = TypeInfo.Primitive.BOOL_TYPE_INFO
             }
