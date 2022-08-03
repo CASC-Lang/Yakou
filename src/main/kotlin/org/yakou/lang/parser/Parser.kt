@@ -294,11 +294,24 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
     private fun parseExpression(optional: Boolean = false): Expression {
         optionalExpression = optional
-        val expression = parseAsExpression()
+        val expression = parseParenthesizedExpression()
         optionalExpression = true
 
         return expression
     }
+
+    private fun parseParenthesizedExpression(): Expression =
+        if (optExpectType(TokenType.OpenParenthesis)) {
+            val leftParenthesis = next()!!
+            val expression = parseAsExpression()
+            val rightParenthesis = expect(TokenType.CloseParenthesis)
+
+            Expression.Parenthesized(
+                leftParenthesis,
+                expression,
+                rightParenthesis
+            )
+        } else parseAsExpression()
 
     private fun parseAsExpression(): Expression {
         var leftExpression = parseShiftingExpression()
