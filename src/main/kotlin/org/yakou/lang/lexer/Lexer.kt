@@ -164,11 +164,17 @@ class Lexer(private val compilationUnit: CompilationUnit) {
             ',' -> charToken(TokenType.Comma)
             '.' -> charToken(TokenType.Dot)
             '!' -> when (peek(1)) {
-                '=' -> stringToken(TokenType.BangEqual)
+                '=' -> when (peek(2)) {
+                    '=' -> stringToken(TokenType.BangDoubleEqual)
+                    else -> stringToken(TokenType.BangEqual)
+                }
                 else -> charToken(TokenType.Bang)
             }
             '=' -> when (peek(1)) {
-                '=' -> stringToken(TokenType.DoubleEqual)
+                '=' -> when (peek(2)) {
+                    '=' -> stringToken(TokenType.TripleEqual)
+                    else -> stringToken(TokenType.DoubleEqual)
+                }
                 else -> charToken(TokenType.Equal)
             }
             '|' -> when (peek(1)) {
