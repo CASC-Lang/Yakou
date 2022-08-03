@@ -294,6 +294,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             is Expression.BinaryExpression -> bindBinaryExpression(expression)
             is Expression.As -> bindAs(expression)
             is Expression.Identifier -> bindIdentifier(expression)
+            is Expression.Parenthesized -> bindParenthesized(expression)
             is Expression.BoolLiteral -> bindBoolLiteral(expression)
             is Expression.NumberLiteral -> bindNumberLiteral(expression)
             is Expression.Empty -> {}
@@ -510,6 +511,13 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         `as`.originalType = `as`.expression.finalType
         `as`.finalType = bindType(`as`.type)
+    }
+
+    private fun bindParenthesized(parenthesized: Expression.Parenthesized) {
+        bindExpression(parenthesized.expression)
+
+        parenthesized.originalType = parenthesized.expression.finalType
+        parenthesized.finalType = parenthesized.originalType
     }
 
     private fun bindBoolLiteral(boolLiteral: Expression.BoolLiteral) {
