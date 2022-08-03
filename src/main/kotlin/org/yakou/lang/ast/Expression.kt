@@ -1,7 +1,6 @@
 package org.yakou.lang.ast
 
 import chaos.unity.nenggao.Span
-import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.bind.Symbol
 import org.yakou.lang.bind.TypeInfo
 import kotlin.properties.Delegates
@@ -89,6 +88,21 @@ sealed class Expression {
     ) : Expression() {
         override val span: Span by lazy {
             expression.span.expand(type.span)
+        }
+    }
+
+    class Parenthesized(
+        val leftParenthesis: Token,
+        var expression: Expression,
+        val rightParenthesis: Token
+    ) : Expression() {
+        override val span: Span by lazy {
+            leftParenthesis.span.expand(rightParenthesis.span)
+        }
+
+        init {
+            originalType = expression.finalType
+            finalType = originalType
         }
     }
 
