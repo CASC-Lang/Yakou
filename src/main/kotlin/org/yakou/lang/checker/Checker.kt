@@ -240,6 +240,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             is Expression.BinaryExpression -> checkBinaryExpression(expression)
             is Expression.Identifier -> checkIdentifier(expression)
             is Expression.As -> checkAs(expression)
+            is Expression.Parenthesized -> {}
             is Expression.BoolLiteral -> {}
             is Expression.NumberLiteral -> checkNumberLiteral(expression)
             is Expression.Empty -> {}
