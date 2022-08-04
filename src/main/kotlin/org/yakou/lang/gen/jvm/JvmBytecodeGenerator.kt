@@ -494,6 +494,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         methodVisitor.visitJumpInsn(Opcodes.IF_ACMPNE, falseLabel)  // stack: -
         methodVisitor.visitInsn(Opcodes.ICONST_1)                   // stack: - Z
         methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)         // stack: - Z
+        methodVisitor.visitLabel(falseLabel)                        // stack: -
         methodVisitor.visitInsn(Opcodes.ICONST_0)                   // stack: - Z
         methodVisitor.visitLabel(endLabel)                          // stack: - Z
     }

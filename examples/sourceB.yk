@@ -10,6 +10,6 @@ pkg chaos {
 
     fn test2() -> bool {
         let a = true && false
-        return (1 as java::lang::Integer) != (2 as java::lang::Integer)
+        return (1 as java::lang::Integer) === (2 as java::lang::Integer)
     }
 }
