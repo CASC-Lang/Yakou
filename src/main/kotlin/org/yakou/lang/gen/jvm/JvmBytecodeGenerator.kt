@@ -6,7 +6,6 @@ import org.yakou.lang.ast.*
 import org.yakou.lang.bind.*
 import org.yakou.lang.compilation.CompilationSession
 import org.yakou.lang.compilation.CompilationUnit
-import org.yakou.lang.gen.ChainType
 import java.io.File
 
 class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
@@ -15,8 +14,6 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private val classWriters: HashMap<TypeInfo.Class, ClassWriter> = hashMapOf()
     private val staticBlockWriters: HashMap<TypeInfo.Class, MethodVisitor> = hashMapOf()
 
-    private var currentChainType: ChainType = ChainType.NONE
-    private var conditionChain: MutableList<Label> = mutableListOf()
     private var currentLineLabel: Label? = null
 
     fun gen(compilationUnit: CompilationUnit) {
@@ -273,15 +270,9 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             is Expression.Empty -> {}
             Expression.Undefined -> TODO("UNREACHABLE")
         }
-
-        if (conditionChain.isNotEmpty() && currentChainType != ChainType.NONE)
-            currentChainType = ChainType.NONE
     }
 
     private fun genBinaryExpression(methodVisitor: MethodVisitor, binaryExpression: Expression.BinaryExpression) {
-        genExpression(methodVisitor, binaryExpression.leftExpression)
-        genExpression(methodVisitor, binaryExpression.rightExpression)
-
         val leftType = binaryExpression.leftExpression.finalType
         val rightType = binaryExpression.rightExpression.finalType
         val finalType = binaryExpression.finalType
@@ -295,6 +286,9 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             Expression.BinaryExpression.BinaryOperation.UnsignedRightShift,
             Expression.BinaryExpression.BinaryOperation.RightShift,
             Expression.BinaryExpression.BinaryOperation.LeftShift -> {
+                genExpression(methodVisitor, binaryExpression.leftExpression)
+                genExpression(methodVisitor, binaryExpression.rightExpression)
+
                 if (finalType is TypeInfo.Primitive) {
                     methodVisitor.visitInsn(binaryExpression.operation.getFunctorOpcode(finalType))
                 } else {
@@ -303,70 +297,66 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             }
 
             Expression.BinaryExpression.BinaryOperation.LogicalAnd -> {
-                when (currentChainType) {
-                    ChainType.OR -> {
-                        val label = Label()
-                        methodVisitor.visitLdcInsn(0)
-                        methodVisitor.visitJumpInsn(Opcodes.GOTO, label)
-                        conditionChain.forEach(methodVisitor::visitLabel)
-                        conditionChain.clear()
-                        methodVisitor.visitLdcInsn(1)
-                        methodVisitor.visitLabel(label)
-                        currentChainType = ChainType.AND
-                    }
+                val falseLabel = Label()
+                val endLabel = Label()
 
-                    ChainType.AND -> {}
-                    ChainType.NONE -> {
-                        currentChainType = ChainType.AND
-                    }
-                }
+                genExpression(methodVisitor, binaryExpression.leftExpression)
 
-                val shortCircuitLabel = Label()
+                methodVisitor.visitJumpInsn(Opcodes.IFEQ, falseLabel)
 
-                conditionChain += shortCircuitLabel
+                genExpression(methodVisitor, binaryExpression.rightExpression)
 
-                methodVisitor.visitJumpInsn(Opcodes.IFEQ, shortCircuitLabel)
+                methodVisitor.visitJumpInsn(Opcodes.IFEQ, falseLabel)
+                methodVisitor.visitInsn(Opcodes.ICONST_1)
+                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
+                methodVisitor.visitLabel(falseLabel)
+                methodVisitor.visitInsn(Opcodes.ICONST_0)
+                methodVisitor.visitLabel(endLabel)
             }
 
             Expression.BinaryExpression.BinaryOperation.LogicalOr -> {
-                when (currentChainType) {
-                    ChainType.AND -> {
-                        val label = Label()
-                        methodVisitor.visitLdcInsn(1)
-                        methodVisitor.visitJumpInsn(Opcodes.GOTO, label)
-                        conditionChain.forEach(methodVisitor::visitLabel)
-                        conditionChain.clear()
-                        methodVisitor.visitLdcInsn(0)
-                        methodVisitor.visitLabel(label)
-                        currentChainType = ChainType.OR
-                    }
+                val trueLabel = Label()
+                val endLabel = Label()
 
-                    ChainType.OR -> {}
-                    ChainType.NONE -> {
-                        currentChainType = ChainType.OR
-                    }
-                }
+                genExpression(methodVisitor, binaryExpression.leftExpression)
 
-                val shortCircuitLabel = Label()
+                methodVisitor.visitJumpInsn(Opcodes.IFNE, trueLabel)
 
-                conditionChain += shortCircuitLabel
+                genExpression(methodVisitor, binaryExpression.rightExpression)
 
-                methodVisitor.visitJumpInsn(Opcodes.IFNE, shortCircuitLabel)
+                methodVisitor.visitJumpInsn(Opcodes.IFNE, trueLabel)
+                methodVisitor.visitInsn(Opcodes.ICONST_0)
+                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
+                methodVisitor.visitLabel(trueLabel)
+                methodVisitor.visitInsn(Opcodes.ICONST_1)
+                methodVisitor.visitLabel(endLabel)
             }
 
             Expression.BinaryExpression.BinaryOperation.Equal -> {
+                genExpression(methodVisitor, binaryExpression.leftExpression)
+                genExpression(methodVisitor, binaryExpression.rightExpression)
+
                 genStructuralEqualityCheck(methodVisitor, leftType, rightType, false)
             }
 
             Expression.BinaryExpression.BinaryOperation.NotEqual -> {
+                genExpression(methodVisitor, binaryExpression.leftExpression)
+                genExpression(methodVisitor, binaryExpression.rightExpression)
+
                 genStructuralEqualityCheck(methodVisitor, leftType, rightType, true)
             }
 
             Expression.BinaryExpression.BinaryOperation.ExactEqual -> {
+                genExpression(methodVisitor, binaryExpression.leftExpression)
+                genExpression(methodVisitor, binaryExpression.rightExpression)
+
                 genReferentialEquality(methodVisitor, leftType, rightType, false)
             }
 
             Expression.BinaryExpression.BinaryOperation.ExactNotEqual -> {
+                genExpression(methodVisitor, binaryExpression.leftExpression)
+                genExpression(methodVisitor, binaryExpression.rightExpression)
+
                 genReferentialEquality(methodVisitor, leftType, rightType, true)
             }
         }
@@ -505,7 +495,16 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             PrimitiveType.Char,
             PrimitiveType.I8,
             PrimitiveType.I16,
-            PrimitiveType.I32 -> methodVisitor.visitInsn(leftType.eqOpcode)
+            PrimitiveType.I32 -> {
+                val trueLabel = Label()
+                val endLabel = Label()
+                methodVisitor.visitJumpInsn(leftType.eqOpcode, trueLabel)
+                methodVisitor.visitInsn(Opcodes.ICONST_0)
+                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
+                methodVisitor.visitLabel(trueLabel)
+                methodVisitor.visitInsn(Opcodes.ICONST_1)
+                methodVisitor.visitLabel(endLabel)
+            }
 
             PrimitiveType.I64,
             PrimitiveType.F32,

@@ -321,7 +321,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
             leftExpression = parseRhsSingleOp(
                 leftExpression,
                 ::parseEqualityExpression,
-                Expression.BinaryExpression.BinaryOperation.LogicalOr
+                Expression.BinaryExpression.BinaryOperation.LogicalAnd
             )
         }
 
