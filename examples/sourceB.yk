@@ -8,7 +8,6 @@ pkg chaos {
         return b
     }
 
-    fn test2(a: i32, b: i32) -> bool {
-        return (1 as java::lang::Integer) === (2 as java::lang::Integer)
-    }
+    fn test2(a: i32, b: i32) -> bool =
+        1 == 2
 }

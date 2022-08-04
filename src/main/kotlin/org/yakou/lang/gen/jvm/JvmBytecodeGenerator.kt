@@ -423,7 +423,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                     Opcodes.INVOKEVIRTUAL,
                     eqMethod.ownerTypeInfo.internalName,
                     "equals",
-                    eqMethod.descriptor,
+                    "(Ljava/lang/Object;)Z",
                     false
                 ) // stack: - Z
                 methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
