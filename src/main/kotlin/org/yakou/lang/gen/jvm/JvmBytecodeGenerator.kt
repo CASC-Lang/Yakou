@@ -378,6 +378,8 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                         // o1 != null ? o1.equals(o2) : o2 == null;
                         // ```
 
+                        val eqMethod = table.findImplementedEqualMethod(leftType)
+
                         val nullLabel1 = Label()
                         val nullLabel2 = Label()
                         val endLabel = Label()
@@ -386,9 +388,9 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                         methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel1) // stack: - i2 - i1
                         methodVisitor.visitMethodInsn(
                             Opcodes.INVOKEVIRTUAL,
-                            "java/lang/Object",
+                            eqMethod.ownerTypeInfo.internalName,
                             "equals",
-                            "(Ljava/lang/Object;)Z",
+                            eqMethod.descriptor,
                             false
                         ) // TODO: Find the closest implemented equals method instead of calling Object::equals
                         // stack: - i2 - i1
@@ -396,7 +398,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                         methodVisitor.visitLabel(nullLabel1)                    // stack: - i2 - i1
                         methodVisitor.visitInsn(Opcodes.POP)                    // stack: - i2
                         methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel2) // stack: -
-                        methodVisitor.visitLdcInsn(1)                           // stack: - Z
+                        methodVisitor.visitInsn(Opcodes.ICONST_1)                           // stack: - Z
                         methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
                         methodVisitor.visitLabel(nullLabel2)                    // stack: -
                         methodVisitor.visitLdcInsn(0)                           // stack: - Z

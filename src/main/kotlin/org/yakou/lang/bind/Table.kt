@@ -105,13 +105,19 @@ class Table {
         }
     }
 
-    fun findImplementedEqualMethod(classTypeInfo: TypeInfo): ClassMember.Fn {
-        return ClassMember.Fn.fromMethod(
-            Any::class.java.getDeclaredMethod(
-                "equals",
-                Any::class.java
-            )
-        ) // TODO: Search through inheritance tree
+    fun findImplementedEqualMethod(classTypeInfo: TypeInfo.Class): ClassMember.Fn {
+        var currentClassTypeInfo: TypeInfo.Class? = classTypeInfo
+
+        while (currentClassTypeInfo != null) {
+            classMemberTable[currentClassTypeInfo.standardTypePath]
+                ?.get(ClassMember.MemberType.FUNCTION)
+                ?.find { it.name == "equals" }
+                ?.let { return it as ClassMember.Fn }
+
+            currentClassTypeInfo = currentClassTypeInfo.superClassType
+        }
+
+        return ClassMember.Fn.fromMethod(Any::class.java.getDeclaredMethod("equals", Any::class.java))
     }
 
     private fun asTypeInfo(type: Type): TypeInfo? = when (type) {
@@ -150,7 +156,7 @@ class Table {
 
                     // After assignment, we can determine the class actually exists in current JVM session, thus we
                     // cache it and return it
-                    val typeInfo = TypeInfo.fromClass(clazz)
+                    val typeInfo = TypeInfo.fromClass(clazz) as TypeInfo.Class
                     typeTable[typeName] = typeInfo
 
                     if (!classMemberTable.containsKey(typeName)) {
@@ -159,15 +165,11 @@ class Table {
                         classMemberTable[typeName]!![ClassMember.MemberType.FUNCTION] = mutableListOf()
 
                         for (field in clazz.declaredFields) {
-                            classMemberTable[typeName]!![ClassMember.MemberType.FIELD]!! += ClassMember.Field.fromField(
-                                field
-                            )
+                            classMemberTable[typeName]!![ClassMember.MemberType.FIELD]!! += ClassMember.Field.fromField(field)
                         }
 
                         for (method in clazz.declaredMethods) {
-                            classMemberTable[typeName]!![ClassMember.MemberType.FUNCTION]!! += ClassMember.Fn.fromMethod(
-                                method
-                            )
+                            classMemberTable[typeName]!![ClassMember.MemberType.FUNCTION]!! += ClassMember.Fn.fromMethod(method)
                         }
                     }
 

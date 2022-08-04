@@ -4,6 +4,7 @@ import org.objectweb.asm.Opcodes
 import org.yakou.lang.ast.*
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
+import kotlin.reflect.KFunction
 
 sealed class ClassMember(val memberType: MemberType) : Symbol() {
     abstract val access: Int
@@ -30,8 +31,8 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
         val propagateExpression: Expression? = null,
     ) : ClassMember(MemberType.FIELD) {
         companion object {
-            fun fromField(field: java.lang.reflect.Field): Field =
-                Field(
+            fun fromField(field: java.lang.reflect.Field): Field {
+                val fieldMember = Field(
                     field.modifiers,
                     field.declaringClass.packageName.replace(".", "::"),
                     field.declaringClass.typeName.split('.').last().replace("$", "::"),
@@ -41,6 +42,11 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     isConst = false,
                     inline = false
                 )
+
+                fieldMember.ownerTypeInfo = TypeInfo.fromClass(field.declaringClass) as TypeInfo.Class
+
+                return fieldMember
+            }
 
             fun fromConst(
                 packageSimplePath: Path.SimplePath,
@@ -143,8 +149,8 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
         override val inline: Boolean,
     ) : ClassMember(MemberType.FUNCTION) {
         companion object {
-            fun fromMethod(method: Method): Fn =
-                Fn(
+            fun fromMethod(method: Method): Fn {
+                val fn = Fn(
                     method.modifiers,
                     method.declaringClass.packageName.replace(".", "::"),
                     method.declaringClass.typeName.split('.').last().replace("$", "::"),
@@ -153,6 +159,11 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     TypeInfo.fromClass(method.returnType),
                     false
                 )
+
+                fn.ownerTypeInfo = TypeInfo.fromClass(method.declaringClass) as TypeInfo.Class
+
+                return fn
+            }
 
             fun fromFunction(
                 packageSimplePath: Path.SimplePath,
