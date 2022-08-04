@@ -8,8 +8,7 @@ pkg chaos {
         return b
     }
 
-    fn test2() -> bool {
-        let a = true && false
-        return (1 as java::lang::Integer) === (2 as java::lang::Integer)
+    fn test2(a: i32, b: i32) -> bool {
+        return a == 1 && b == 2
     }
 }

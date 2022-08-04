@@ -294,60 +294,78 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
     private fun parseExpression(optional: Boolean = false): Expression {
         optionalExpression = optional
-        val expression = parseAsExpression()
+        val expression = parseDisjunctionExpression()
         optionalExpression = true
 
         return expression
     }
 
-    private fun parseAsExpression(): Expression {
-        var leftExpression = parseShiftingExpression()
+    private fun parseDisjunctionExpression(): Expression {
+        var leftExpression = parseConjunctionExpression()
 
-        while (optExpectKeyword(Keyword.AS)) {
-            val `as` = next()!!
-            val type = parseType()
-
-            leftExpression = Expression.As(leftExpression, `as`, type)
+        while (optExpectType(TokenType.DoublePipe)) {
+            leftExpression = parseRhsSingleOp(
+                leftExpression,
+                ::parseConjunctionExpression,
+                Expression.BinaryExpression.BinaryOperation.LogicalOr
+            )
         }
 
         return leftExpression
     }
 
-    private fun parseShiftingExpression(): Expression {
+    private fun parseConjunctionExpression(): Expression {
+        var leftExpression = parseEqualityExpression()
+
+        while (optExpectType(TokenType.DoubleAmpersand)) {
+            leftExpression = parseRhsSingleOp(
+                leftExpression,
+                ::parseEqualityExpression,
+                Expression.BinaryExpression.BinaryOperation.LogicalOr
+            )
+        }
+
+        return leftExpression
+    }
+
+    private fun parseEqualityExpression(): Expression {
         var leftExpression = parseAddictiveExpression()
 
         while (true) {
             leftExpression = when {
-                optExpectRepeatType(TokenType.Greater, 3) -> {
-                    parseRhsMultipleOp(
-                        3,
+                optExpectType(TokenType.DoubleEqual) -> {
+                    parseRhsSingleOp(
                         leftExpression,
                         ::parseAddictiveExpression,
-                        Expression.BinaryExpression.BinaryOperation.UnsignedRightShift
+                        Expression.BinaryExpression.BinaryOperation.Equal
                     )
                 }
 
-                optExpectRepeatType(TokenType.Greater, 2) -> {
-                    parseRhsMultipleOp(
-                        2,
+                optExpectType(TokenType.BangEqual) -> {
+                    parseRhsSingleOp(
                         leftExpression,
                         ::parseAddictiveExpression,
-                        Expression.BinaryExpression.BinaryOperation.RightShift
+                        Expression.BinaryExpression.BinaryOperation.NotEqual
                     )
                 }
 
-                optExpectRepeatType(TokenType.Lesser, 2) -> {
-                    parseRhsMultipleOp(
-                        2,
+                optExpectType(TokenType.TripleEqual) -> {
+                    parseRhsSingleOp(
                         leftExpression,
                         ::parseAddictiveExpression,
-                        Expression.BinaryExpression.BinaryOperation.LeftShift
+                        Expression.BinaryExpression.BinaryOperation.ExactEqual
                     )
                 }
 
-                else -> {
-                    break
+                optExpectType(TokenType.BangDoubleEqual) -> {
+                    parseRhsSingleOp(
+                        leftExpression,
+                        ::parseAddictiveExpression,
+                        Expression.BinaryExpression.BinaryOperation.ExactNotEqual
+                    )
                 }
+
+                else -> break
             }
         }
 
@@ -383,14 +401,14 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseMultiplicativeExpression(): Expression {
-        var leftExpression = parseEqualityExpression()
+        var leftExpression = parseAsExpression()
 
         while (true) {
             leftExpression = when {
                 optExpectType(TokenType.Star) -> {
                     parseRhsSingleOp(
                         leftExpression,
-                        ::parseEqualityExpression,
+                        ::parseAsExpression,
                         Expression.BinaryExpression.BinaryOperation.Multiplication
                     )
                 }
@@ -398,7 +416,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 optExpectType(TokenType.Slash) -> {
                     parseRhsSingleOp(
                         leftExpression,
-                        ::parseEqualityExpression,
+                        ::parseAsExpression,
                         Expression.BinaryExpression.BinaryOperation.Division
                     )
                 }
@@ -406,7 +424,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 optExpectType(TokenType.Percentage) -> {
                     parseRhsSingleOp(
                         leftExpression,
-                        ::parseEqualityExpression,
+                        ::parseAsExpression,
                         Expression.BinaryExpression.BinaryOperation.Modulo
                     )
                 }
@@ -418,73 +436,55 @@ class Parser(private val compilationUnit: CompilationUnit) {
         return leftExpression
     }
 
-    private fun parseEqualityExpression(): Expression {
-        var leftExpression = parseConjunctionExpression()
+    private fun parseAsExpression(): Expression {
+        var leftExpression = parseShiftingExpression()
+
+        while (optExpectKeyword(Keyword.AS)) {
+            val `as` = next()!!
+            val type = parseType()
+
+            leftExpression = Expression.As(leftExpression, `as`, type)
+        }
+
+        return leftExpression
+    }
+
+    private fun parseShiftingExpression(): Expression {
+        var leftExpression = parsePrimaryExpression()
 
         while (true) {
             leftExpression = when {
-                optExpectType(TokenType.DoubleEqual) -> {
-                    parseRhsSingleOp(
+                optExpectRepeatType(TokenType.Greater, 3) -> {
+                    parseRhsMultipleOp(
+                        3,
                         leftExpression,
-                        ::parseConjunctionExpression,
-                        Expression.BinaryExpression.BinaryOperation.Equal
+                        ::parsePrimaryExpression,
+                        Expression.BinaryExpression.BinaryOperation.UnsignedRightShift
                     )
                 }
 
-                optExpectType(TokenType.BangEqual) -> {
-                    parseRhsSingleOp(
+                optExpectRepeatType(TokenType.Greater, 2) -> {
+                    parseRhsMultipleOp(
+                        2,
                         leftExpression,
-                        ::parseConjunctionExpression,
-                        Expression.BinaryExpression.BinaryOperation.NotEqual
+                        ::parsePrimaryExpression,
+                        Expression.BinaryExpression.BinaryOperation.RightShift
                     )
                 }
 
-                optExpectType(TokenType.TripleEqual) -> {
-                    parseRhsSingleOp(
+                optExpectRepeatType(TokenType.Lesser, 2) -> {
+                    parseRhsMultipleOp(
+                        2,
                         leftExpression,
-                        ::parseConjunctionExpression,
-                        Expression.BinaryExpression.BinaryOperation.ExactEqual
+                        ::parsePrimaryExpression,
+                        Expression.BinaryExpression.BinaryOperation.LeftShift
                     )
                 }
 
-                optExpectType(TokenType.BangDoubleEqual) -> {
-                    parseRhsSingleOp(
-                        leftExpression,
-                        ::parseConjunctionExpression,
-                        Expression.BinaryExpression.BinaryOperation.ExactNotEqual
-                    )
+                else -> {
+                    break
                 }
-
-                else -> break
             }
-        }
-
-        return leftExpression
-    }
-
-    private fun parseConjunctionExpression(): Expression {
-        var leftExpression = parseDisjunctionExpression()
-
-        while (optExpectType(TokenType.DoubleAmpersand)) {
-            leftExpression = parseRhsSingleOp(
-                leftExpression,
-                ::parseDisjunctionExpression,
-                Expression.BinaryExpression.BinaryOperation.LogicalOr
-            )
-        }
-
-        return leftExpression
-    }
-
-    private fun parseDisjunctionExpression(): Expression {
-        var leftExpression = parsePrimaryExpression()
-
-        while (optExpectType(TokenType.DoublePipe)) {
-            leftExpression = parseRhsSingleOp(
-                leftExpression,
-                ::parsePrimaryExpression,
-                Expression.BinaryExpression.BinaryOperation.LogicalOr
-            )
         }
 
         return leftExpression
