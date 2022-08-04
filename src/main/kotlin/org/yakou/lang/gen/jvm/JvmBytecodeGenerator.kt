@@ -398,18 +398,25 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                         methodVisitor.visitLabel(nullLabel1)                    // stack: - i2 - i1
                         methodVisitor.visitInsn(Opcodes.POP)                    // stack: - i2
                         methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel2) // stack: -
-                        methodVisitor.visitInsn(Opcodes.ICONST_1)                           // stack: - Z
+                        methodVisitor.visitInsn(Opcodes.ICONST_1)               // stack: - Z
                         methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
                         methodVisitor.visitLabel(nullLabel2)                    // stack: -
-                        methodVisitor.visitLdcInsn(0)                           // stack: - Z
+                        methodVisitor.visitInsn(Opcodes.ICONST_0)               // stack: - Z
                         methodVisitor.visitLabel(endLabel)                      // stack: - Z
                     }
 
                     leftType is TypeInfo.Array && rightType is TypeInfo.Array -> {
-                        TODO("Unimplemented")
+                        val falseLabel = Label()
+                        val endLabel = Label()
+                        methodVisitor.visitJumpInsn(Opcodes.IF_ACMPNE, falseLabel)  // stack: -
+                        methodVisitor.visitInsn(Opcodes.ICONST_1)                   // stack: - Z
+                        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)         // stack: - Z
+                        methodVisitor.visitInsn(Opcodes.ICONST_0)                   // stack: - Z
+                        methodVisitor.visitLabel(endLabel)                          // stack: - Z
                     }
 
                     leftType is TypeInfo.Primitive && rightType is TypeInfo.Primitive -> {
+                        // stack: - i1 - i2
                         when (leftType.type) {
                             PrimitiveType.Bool,
                             PrimitiveType.Char,
@@ -422,15 +429,16 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                                 val falseLabel = Label()
                                 val endLabel = Label()
                                 methodVisitor.visitInsn(leftType.eqOpcode) // Opcodes.LCMP, Opcodes.FCMPG or Opcodes.DCMPG
-                                methodVisitor.visitJumpInsn(Opcodes.IFNE, falseLabel)
-                                methodVisitor.visitLdcInsn(1)
-                                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
-                                methodVisitor.visitLabel(falseLabel)
-                                methodVisitor.visitLdcInsn(0)
-                                methodVisitor.visitLabel(endLabel)
+                                methodVisitor.visitJumpInsn(Opcodes.IFNE, falseLabel)   // stack: -
+                                methodVisitor.visitInsn(Opcodes.ICONST_1)               // stack: - Z
+                                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
+                                methodVisitor.visitLabel(falseLabel)                    // stack: -
+                                methodVisitor.visitInsn(Opcodes.ICONST_0)               // stack: - Z
+                                methodVisitor.visitLabel(endLabel)                      // stack: - Z
                             }
                             else -> {} // Unreachable
                         }
+                        // stack: - Z
                     }
                 }
             }
