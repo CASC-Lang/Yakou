@@ -362,8 +362,13 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 genStructuralEqualityCheck(methodVisitor, leftType, rightType, true)
             }
 
-            Expression.BinaryExpression.BinaryOperation.ExactEqual -> TODO()
-            Expression.BinaryExpression.BinaryOperation.ExactNotEqual -> TODO()
+            Expression.BinaryExpression.BinaryOperation.ExactEqual -> {
+                genReferentialEquality(methodVisitor, leftType, rightType, false)
+            }
+
+            Expression.BinaryExpression.BinaryOperation.ExactNotEqual -> {
+                genReferentialEquality(methodVisitor, leftType, rightType, true)
+            }
         }
     }
 
@@ -444,54 +449,92 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             }
 
             leftType is TypeInfo.Array && rightType is TypeInfo.Array -> {
-                val falseLabel = Label()
-                val endLabel = Label()
-                methodVisitor.visitJumpInsn(Opcodes.IF_ACMPNE, falseLabel)  // stack: -
-                methodVisitor.visitInsn(Opcodes.ICONST_1)                   // stack: - Z
-                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)         // stack: - Z
-                methodVisitor.visitInsn(Opcodes.ICONST_0)                   // stack: - Z
-                methodVisitor.visitLabel(endLabel)                          // stack: - Z
+                genObjectReferentialEquality(methodVisitor)
             }
 
             leftType is TypeInfo.Primitive && rightType is TypeInfo.Primitive -> {
-                // stack: - i1 - i2
-                when (leftType.type) {
-                    PrimitiveType.Bool,
-                    PrimitiveType.Char,
-                    PrimitiveType.I8,
-                    PrimitiveType.I16,
-                    PrimitiveType.I32 -> methodVisitor.visitInsn(leftType.eqOpcode)
-
-                    PrimitiveType.I64,
-                    PrimitiveType.F32,
-                    PrimitiveType.F64 -> {
-                        val falseLabel = Label()
-                        val endLabel = Label()
-                        methodVisitor.visitInsn(leftType.eqOpcode) // Opcodes.LCMP, Opcodes.FCMPG or Opcodes.DCMPG
-                        methodVisitor.visitJumpInsn(Opcodes.IFNE, falseLabel)   // stack: -
-                        methodVisitor.visitInsn(Opcodes.ICONST_1)               // stack: - Z
-                        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
-                        methodVisitor.visitLabel(falseLabel)                    // stack: -
-                        methodVisitor.visitInsn(Opcodes.ICONST_0)               // stack: - Z
-                        methodVisitor.visitLabel(endLabel)                      // stack: - Z
-                    }
-
-                    else -> {} // Unreachable
-                }
-                // stack: - Z
+                genPrimitiveEquality(methodVisitor, leftType)
             }
         }
 
         if (invert) {
-            val falseLabel = Label()
-            val endLabel = Label()
-            methodVisitor.visitJumpInsn(Opcodes.IFNE, falseLabel)
-            methodVisitor.visitInsn(Opcodes.ICONST_1)
-            methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
-            methodVisitor.visitLabel(falseLabel)
-            methodVisitor.visitInsn(Opcodes.ICONST_0)
-            methodVisitor.visitLabel(endLabel)
+            genInvert(methodVisitor)
         }
+    }
+
+    private fun genReferentialEquality(
+        methodVisitor: MethodVisitor,
+        leftType: TypeInfo,
+        rightType: TypeInfo,
+        invert: Boolean
+    ) {
+        // lhs -> i1
+        // rhs -> i2
+        // stack: - i1 - i2
+
+        when {
+            (leftType is TypeInfo.Class && rightType is TypeInfo.Class) ||
+                    (leftType is TypeInfo.Array && rightType is TypeInfo.Array) -> {
+                genObjectReferentialEquality(methodVisitor)
+            }
+
+            leftType is TypeInfo.Primitive && rightType is TypeInfo.Primitive -> {
+                genPrimitiveEquality(methodVisitor, leftType)
+            }
+        }
+
+        if (invert) {
+            genInvert(methodVisitor)
+        }
+    }
+
+    private fun genObjectReferentialEquality(methodVisitor: MethodVisitor) {
+        val falseLabel = Label()
+        val endLabel = Label()
+        methodVisitor.visitJumpInsn(Opcodes.IF_ACMPNE, falseLabel)  // stack: -
+        methodVisitor.visitInsn(Opcodes.ICONST_1)                   // stack: - Z
+        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)         // stack: - Z
+        methodVisitor.visitInsn(Opcodes.ICONST_0)                   // stack: - Z
+        methodVisitor.visitLabel(endLabel)                          // stack: - Z
+    }
+
+    private fun genPrimitiveEquality(methodVisitor: MethodVisitor, leftType: TypeInfo.Primitive) {
+        // stack: - i1 - i2
+        when (leftType.type) {
+            PrimitiveType.Bool,
+            PrimitiveType.Char,
+            PrimitiveType.I8,
+            PrimitiveType.I16,
+            PrimitiveType.I32 -> methodVisitor.visitInsn(leftType.eqOpcode)
+
+            PrimitiveType.I64,
+            PrimitiveType.F32,
+            PrimitiveType.F64 -> {
+                val falseLabel = Label()
+                val endLabel = Label()
+                methodVisitor.visitInsn(leftType.eqOpcode) // Opcodes.LCMP, Opcodes.FCMPG or Opcodes.DCMPG
+                methodVisitor.visitJumpInsn(Opcodes.IFNE, falseLabel)   // stack: -
+                methodVisitor.visitInsn(Opcodes.ICONST_1)               // stack: - Z
+                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
+                methodVisitor.visitLabel(falseLabel)                    // stack: -
+                methodVisitor.visitInsn(Opcodes.ICONST_0)               // stack: - Z
+                methodVisitor.visitLabel(endLabel)                      // stack: - Z
+            }
+
+            else -> {} // Unreachable
+        }
+        // stack: - Z
+    }
+
+    private fun genInvert(methodVisitor: MethodVisitor) {
+        val falseLabel = Label()
+        val endLabel = Label()
+        methodVisitor.visitJumpInsn(Opcodes.IFNE, falseLabel)
+        methodVisitor.visitInsn(Opcodes.ICONST_1)
+        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
+        methodVisitor.visitLabel(falseLabel)
+        methodVisitor.visitInsn(Opcodes.ICONST_0)
+        methodVisitor.visitLabel(endLabel)
     }
 
     private fun genAs(methodVisitor: MethodVisitor, `as`: Expression.As) {
