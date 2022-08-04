@@ -392,7 +392,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                             "equals",
                             eqMethod.descriptor,
                             false
-                        ) // TODO: Find the closest implemented equals method instead of calling Object::equals
+                        )
                         // stack: - i2 - i1
                         methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
                         methodVisitor.visitLabel(nullLabel1)                    // stack: - i2 - i1
