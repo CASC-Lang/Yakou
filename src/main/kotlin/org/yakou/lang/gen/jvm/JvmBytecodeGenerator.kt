@@ -279,6 +279,11 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genBinaryExpression(methodVisitor: MethodVisitor, binaryExpression: Expression.BinaryExpression) {
+        genExpression(methodVisitor, binaryExpression.leftExpression)
+        genExpression(methodVisitor, binaryExpression.rightExpression)
+
+        val leftType = binaryExpression.leftExpression.finalType
+        val rightType = binaryExpression.rightExpression.finalType
         val finalType = binaryExpression.finalType
 
         when (binaryExpression.operation) {
@@ -290,9 +295,6 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             Expression.BinaryExpression.BinaryOperation.UnsignedRightShift,
             Expression.BinaryExpression.BinaryOperation.RightShift,
             Expression.BinaryExpression.BinaryOperation.LeftShift -> {
-                genExpression(methodVisitor, binaryExpression.leftExpression)
-                genExpression(methodVisitor, binaryExpression.rightExpression)
-
                 if (finalType is TypeInfo.Primitive) {
                     methodVisitor.visitInsn(binaryExpression.operation.getFunctorOpcode(finalType))
                 } else {
@@ -301,9 +303,6 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             }
 
             Expression.BinaryExpression.BinaryOperation.LogicalAnd -> {
-                genExpression(methodVisitor, binaryExpression.leftExpression)
-                genExpression(methodVisitor, binaryExpression.rightExpression)
-
                 when (currentChainType) {
                     ChainType.OR -> {
                         val label = Label()
@@ -330,9 +329,6 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             }
 
             Expression.BinaryExpression.BinaryOperation.LogicalOr -> {
-                genExpression(methodVisitor, binaryExpression.leftExpression)
-                genExpression(methodVisitor, binaryExpression.rightExpression)
-
                 when (currentChainType) {
                     ChainType.AND -> {
                         val label = Label()
@@ -359,91 +355,13 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             }
 
             Expression.BinaryExpression.BinaryOperation.Equal -> {
-                genExpression(methodVisitor, binaryExpression.leftExpression)  // i1
-                genExpression(methodVisitor, binaryExpression.rightExpression) // i2
-
-                // stack: - i1 - i2
-
-                val leftType = binaryExpression.leftExpression.finalType
-                val rightType = binaryExpression.rightExpression.finalType
-
-                when {
-                    leftType is TypeInfo.Class && rightType is TypeInfo.Class -> {
-                        // Structural Equality Check Strategy:
-                        // ```kt
-                        // o1?.equals(o2) ?: (o2 === null)
-                        // ```
-                        // or
-                        // ```java
-                        // o1 != null ? o1.equals(o2) : o2 == null;
-                        // ```
-
-                        val eqMethod = table.findImplementedEqualMethod(leftType)
-
-                        val nullLabel1 = Label()
-                        val nullLabel2 = Label()
-                        val endLabel = Label()
-                        methodVisitor.visitInsn(Opcodes.SWAP)                   // stack: - i2 - i1
-                        methodVisitor.visitInsn(Opcodes.DUP)                    // stack: - i2 - i1 - i1
-                        methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel1) // stack: - i2 - i1
-                        methodVisitor.visitMethodInsn(
-                            Opcodes.INVOKEVIRTUAL,
-                            eqMethod.ownerTypeInfo.internalName,
-                            "equals",
-                            eqMethod.descriptor,
-                            false
-                        )
-                        // stack: - i2 - i1
-                        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
-                        methodVisitor.visitLabel(nullLabel1)                    // stack: - i2 - i1
-                        methodVisitor.visitInsn(Opcodes.POP)                    // stack: - i2
-                        methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel2) // stack: -
-                        methodVisitor.visitInsn(Opcodes.ICONST_1)               // stack: - Z
-                        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
-                        methodVisitor.visitLabel(nullLabel2)                    // stack: -
-                        methodVisitor.visitInsn(Opcodes.ICONST_0)               // stack: - Z
-                        methodVisitor.visitLabel(endLabel)                      // stack: - Z
-                    }
-
-                    leftType is TypeInfo.Array && rightType is TypeInfo.Array -> {
-                        val falseLabel = Label()
-                        val endLabel = Label()
-                        methodVisitor.visitJumpInsn(Opcodes.IF_ACMPNE, falseLabel)  // stack: -
-                        methodVisitor.visitInsn(Opcodes.ICONST_1)                   // stack: - Z
-                        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)         // stack: - Z
-                        methodVisitor.visitInsn(Opcodes.ICONST_0)                   // stack: - Z
-                        methodVisitor.visitLabel(endLabel)                          // stack: - Z
-                    }
-
-                    leftType is TypeInfo.Primitive && rightType is TypeInfo.Primitive -> {
-                        // stack: - i1 - i2
-                        when (leftType.type) {
-                            PrimitiveType.Bool,
-                            PrimitiveType.Char,
-                            PrimitiveType.I8,
-                            PrimitiveType.I16,
-                            PrimitiveType.I32 -> methodVisitor.visitInsn(leftType.eqOpcode)
-                            PrimitiveType.I64,
-                            PrimitiveType.F32,
-                            PrimitiveType.F64 -> {
-                                val falseLabel = Label()
-                                val endLabel = Label()
-                                methodVisitor.visitInsn(leftType.eqOpcode) // Opcodes.LCMP, Opcodes.FCMPG or Opcodes.DCMPG
-                                methodVisitor.visitJumpInsn(Opcodes.IFNE, falseLabel)   // stack: -
-                                methodVisitor.visitInsn(Opcodes.ICONST_1)               // stack: - Z
-                                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
-                                methodVisitor.visitLabel(falseLabel)                    // stack: -
-                                methodVisitor.visitInsn(Opcodes.ICONST_0)               // stack: - Z
-                                methodVisitor.visitLabel(endLabel)                      // stack: - Z
-                            }
-                            else -> {} // Unreachable
-                        }
-                        // stack: - Z
-                    }
-                }
+                genStructuralEqualityCheck(methodVisitor, leftType, rightType, false)
             }
 
-            Expression.BinaryExpression.BinaryOperation.NotEqual -> TODO()
+            Expression.BinaryExpression.BinaryOperation.NotEqual -> {
+                genStructuralEqualityCheck(methodVisitor, leftType, rightType, true)
+            }
+
             Expression.BinaryExpression.BinaryOperation.ExactEqual -> TODO()
             Expression.BinaryExpression.BinaryOperation.ExactNotEqual -> TODO()
         }
@@ -474,6 +392,105 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             }
 
             else -> TODO("UNREACHABLE")
+        }
+    }
+
+    private fun genStructuralEqualityCheck(
+        methodVisitor: MethodVisitor,
+        leftType: TypeInfo,
+        rightType: TypeInfo,
+        invert: Boolean
+    ) {
+        // lhs -> i1
+        // rhs -> i2
+        // stack: - i1 - i2
+
+        when {
+            leftType is TypeInfo.Class && rightType is TypeInfo.Class -> {
+                // Structural Equality Check Strategy:
+                // ```kt
+                // o1?.equals(o2) ?: (o2 === null)
+                // ```
+                // or
+                // ```java
+                // o1 != null ? o1.equals(o2) : o2 == null;
+                // ```
+
+                val eqMethod = table.findImplementedEqualMethod(leftType)
+
+                val nullLabel1 = Label()
+                val nullLabel2 = Label()
+                val endLabel = Label()
+                methodVisitor.visitInsn(Opcodes.SWAP)                   // stack: - i2 - i1
+                methodVisitor.visitInsn(Opcodes.DUP)                    // stack: - i2 - i1 - i1
+                methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel1) // stack: - i2 - i1
+                methodVisitor.visitMethodInsn(
+                    Opcodes.INVOKEVIRTUAL,
+                    eqMethod.ownerTypeInfo.internalName,
+                    "equals",
+                    eqMethod.descriptor,
+                    false
+                )
+                // stack: - i2 - i1
+                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
+                methodVisitor.visitLabel(nullLabel1)                    // stack: - i2 - i1
+                methodVisitor.visitInsn(Opcodes.POP)                    // stack: - i2
+                methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel2) // stack: -
+                methodVisitor.visitInsn(Opcodes.ICONST_1)               // stack: - Z
+                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
+                methodVisitor.visitLabel(nullLabel2)                    // stack: -
+                methodVisitor.visitInsn(Opcodes.ICONST_0)               // stack: - Z
+                methodVisitor.visitLabel(endLabel)                      // stack: - Z
+            }
+
+            leftType is TypeInfo.Array && rightType is TypeInfo.Array -> {
+                val falseLabel = Label()
+                val endLabel = Label()
+                methodVisitor.visitJumpInsn(Opcodes.IF_ACMPNE, falseLabel)  // stack: -
+                methodVisitor.visitInsn(Opcodes.ICONST_1)                   // stack: - Z
+                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)         // stack: - Z
+                methodVisitor.visitInsn(Opcodes.ICONST_0)                   // stack: - Z
+                methodVisitor.visitLabel(endLabel)                          // stack: - Z
+            }
+
+            leftType is TypeInfo.Primitive && rightType is TypeInfo.Primitive -> {
+                // stack: - i1 - i2
+                when (leftType.type) {
+                    PrimitiveType.Bool,
+                    PrimitiveType.Char,
+                    PrimitiveType.I8,
+                    PrimitiveType.I16,
+                    PrimitiveType.I32 -> methodVisitor.visitInsn(leftType.eqOpcode)
+
+                    PrimitiveType.I64,
+                    PrimitiveType.F32,
+                    PrimitiveType.F64 -> {
+                        val falseLabel = Label()
+                        val endLabel = Label()
+                        methodVisitor.visitInsn(leftType.eqOpcode) // Opcodes.LCMP, Opcodes.FCMPG or Opcodes.DCMPG
+                        methodVisitor.visitJumpInsn(Opcodes.IFNE, falseLabel)   // stack: -
+                        methodVisitor.visitInsn(Opcodes.ICONST_1)               // stack: - Z
+                        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
+                        methodVisitor.visitLabel(falseLabel)                    // stack: -
+                        methodVisitor.visitInsn(Opcodes.ICONST_0)               // stack: - Z
+                        methodVisitor.visitLabel(endLabel)                      // stack: - Z
+                    }
+
+                    else -> {} // Unreachable
+                }
+                // stack: - Z
+            }
+        }
+
+        if (invert) {
+            val falseLabel = Label()
+            val endLabel = Label()
+            methodVisitor.visitJumpInsn(Opcodes.IFNE, falseLabel)
+            methodVisitor.visitInsn(Opcodes.ICONST_0)
+            methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
+            methodVisitor.visitLabel(falseLabel)
+            methodVisitor.visitInsn(Opcodes.ICONST_1)
+            methodVisitor.visitLabel(endLabel)
         }
     }
 
