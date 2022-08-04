@@ -435,8 +435,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                     "equals",
                     eqMethod.descriptor,
                     false
-                )
-                // stack: - i2 - i1
+                ) // stack: - Z
                 methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
                 methodVisitor.visitLabel(nullLabel1)                    // stack: - i1 - i2
                 methodVisitor.visitInsn(Opcodes.POP)                    // stack: - i2
