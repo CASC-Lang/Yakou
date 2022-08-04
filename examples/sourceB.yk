@@ -9,6 +9,6 @@ pkg chaos {
     }
 
     fn test2(a: i32, b: i32) -> bool {
-        return a == 1 && b == 2
+        return (1 as java::lang::Integer) === (2 as java::lang::Integer)
     }
 }
