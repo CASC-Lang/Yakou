@@ -115,7 +115,17 @@ class Binder(private val compilationUnit: CompilationUnit) {
             parameter.typeInfo = typeInfo
         }
 
-        // TODO: register constructor
+        val constructor = ClassMember.Constructor.fromPrimaryConstructor(
+            table,
+            currentPackagePath,
+            currentClassPath,
+            primaryConstructor
+        )
+
+        if (!table.registerClassMember(constructor)) {
+            // Failed to register constructor
+            reportConstructorAlreadyDefined(constructor, primaryConstructor.span)
+        } else primaryConstructor.constructorInstance = constructor
     }
 
     private fun bindClassItemDeclaration(classItem: ClassItem) {
@@ -633,6 +643,19 @@ class Binder(private val compilationUnit: CompilationUnit) {
             .error(
                 SpanHelper.expandView(span, compilationUnit.maxLineCount),
                 "Function $coloredFnLiteral is already defined at `${fn.qualifiedOwnerPath}`"
+            )
+            .label(span, "Already defined")
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportConstructorAlreadyDefined(constructor: ClassMember.Constructor, span: Span) {
+        val coloredCtorLiteral = colorize(constructor.toString(), compilationUnit, Attribute.CYAN_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(span, compilationUnit.maxLineCount),
+                "Constructor $coloredCtorLiteral is already defined at `${constructor.qualifiedOwnerPath}`"
             )
             .label(span, "Already defined")
             .color(Attribute.RED_TEXT())
