@@ -89,6 +89,29 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                 return fieldMember
             }
 
+            fun fromConstructorParameter(
+                table: Table,
+                packageSimplePath: Path.SimplePath,
+                classSimplePath: Path.SimplePath,
+                constructorParameter: PrimaryConstructor.ConstructorParameter
+            ): Field {
+                val field = Field(
+                    constructorParameter.modifiers.sum(),
+                    packageSimplePath.toString(),
+                    classSimplePath.toString(),
+                    constructorParameter.name.literal,
+                    constructorParameter.typeInfo,
+                    isStatic = false,
+                    isConst = false,
+                    inline = false,
+                    propagateExpression = null
+                )
+
+                field.ownerTypeInfo = table.findType(field.classPath, field.packagePath)!!
+
+                return field
+            }
+
             fun fromConst(
                 table: Table,
                 packageSimplePath: Path.SimplePath,

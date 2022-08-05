@@ -17,5 +17,11 @@ data class PrimaryConstructor(
 
     lateinit var constructorInstance: ClassMember.Constructor
 
-    class ConstructorParameter(val modifiers: Modifiers, name: Token, colon: Token, type: Type): Parameter(name, colon, type)
+    class ConstructorParameter(val modifiers: Modifiers, name: Token, colon: Token, type: Type): Parameter(name, colon, type) {
+        val span: Span by lazy {
+            (modifiers.span ?: name.span).expand(type.span)
+        }
+
+        var fieldInstance: ClassMember.Field? = null
+    }
 }

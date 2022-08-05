@@ -31,6 +31,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
                     for (innerItem in item.items)
                         checkItem(innerItem)
             }
+
             is Item.Const -> checkConst(item)
             is Item.StaticField -> checkStaticField(item)
             is Item.Class -> checkClass(item)
@@ -123,6 +124,31 @@ class Checker(private val compilationUnit: CompilationUnit) {
         if (clazz.modifiers.hasModifier(Modifier.Inline)) {
             reportIllegalInline(clazz.modifiers[Modifier.Inline]!!, "Class cannot be inlined")
         }
+
+        if (clazz.primaryConstructor != null)
+            checkPrimaryConstructor(clazz.primaryConstructor)
+    }
+
+    private fun checkPrimaryConstructor(primaryConstructor: PrimaryConstructor) {
+        if (primaryConstructor.modifiers.hasModifier(Modifier.Inline)) {
+            reportIllegalInline(primaryConstructor.modifiers[Modifier.Inline]!!, "Constructor cannot be inlined")
+        }
+
+        if (primaryConstructor.modifiers.hasModifier(Modifier.Mut)) {
+            reportIllegalMut(primaryConstructor.modifiers[Modifier.Inline]!!, "Constructor cannot be mutable")
+        }
+
+        for (parameter in primaryConstructor.parameters)
+            checkConstructorParameter(parameter)
+    }
+
+    private fun checkConstructorParameter(constructorParameter: PrimaryConstructor.ConstructorParameter) {
+        if (constructorParameter.modifiers.hasModifier(Modifier.Inline)) {
+            reportIllegalInline(
+                constructorParameter.modifiers[Modifier.Inline]!!,
+                "Constructor field parameter cannot be inlined"
+            )
+        }
     }
 
     private fun checkClassItem(classItem: ClassItem) {
@@ -182,9 +208,11 @@ class Checker(private val compilationUnit: CompilationUnit) {
                         reportMissingReturn(function, body.closeBrace, function.returnTypeInfo)
                     }
                 }
+
                 is FunctionBody.SingleExpression -> {
 
                 }
+
                 else -> {}
             }
         }
@@ -196,6 +224,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 for (statement in functionBody.statements)
                     checkStatement(statement)
             }
+
             is FunctionBody.SingleExpression -> checkExpression(functionBody.expression)
         }
     }
@@ -215,6 +244,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
                     // No effect variable declaration
                     reportIgnoredVariableHasNoEffect(variableDeclaration.name.span, variableDeclaration.expression.span)
                 }
+
                 Expression.Undefined -> TODO("UNREACHABLE")
                 else -> {}
             }
@@ -268,6 +298,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
                     `as`.finalType.toString()
                 )
             }
+
             else -> {}
         }
     }

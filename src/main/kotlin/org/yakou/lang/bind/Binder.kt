@@ -101,6 +101,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
             return
         }
 
+        if (clazz.primaryConstructor != null)
+            bindPrimaryConstructor(clazz.primaryConstructor)
+
         if (clazz.classItems != null)
             for (classItem in clazz.classItems)
                 bindClassItemDeclaration(classItem)
@@ -124,8 +127,28 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         if (!table.registerClassMember(constructor)) {
             // Failed to register constructor
+            // In theory this would never have triggered since primary constructor always registered first and auxiliary
+            // constructor in `impl` block will register right after this.
             reportConstructorAlreadyDefined(constructor, primaryConstructor.span)
+            return
         } else primaryConstructor.constructorInstance = constructor
+
+        // Register field parameters
+        for (parameter in primaryConstructor.parameters) {
+            if (!parameter.modifiers.isEmpty()) {
+                val fieldInstance = ClassMember.Field.fromConstructorParameter(
+                    table,
+                    currentPackagePath,
+                    currentClassPath,
+                    parameter
+                )
+
+                if (!table.registerClassMember(fieldInstance)) {
+                    // Failed to register function
+                    reportFieldAlreadyDefined(fieldInstance, parameter.span)
+                } else parameter.fieldInstance = fieldInstance
+            }
+        }
     }
 
     private fun bindClassItemDeclaration(classItem: ClassItem) {
@@ -148,7 +171,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         if (!table.registerClassMember(fieldInstance)) {
             // Failed to register function
-            reportFieldAlreadyDefined(fieldInstance, field)
+            reportFieldAlreadyDefined(fieldInstance, field.span)
         } else field.fieldInstance = fieldInstance
     }
 
@@ -620,8 +643,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             .build().build()
     }
 
-    private fun reportFieldAlreadyDefined(fieldInstance: ClassMember.Field, field: ClassItem.Field) {
-        val span = field.span
+    private fun reportFieldAlreadyDefined(fieldInstance: ClassMember.Field, span: Span) {
         val coloredStaticFieldLiteral =
             colorize(fieldInstance.staticFieldToString(), compilationUnit, Attribute.CYAN_TEXT())
 

@@ -825,10 +825,10 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun reportUnusedModifiers(modifiers: Modifiers, message: String) {
         compilationUnit.reportBuilder
             .warning(
-                SpanHelper.expandView(modifiers.span, compilationUnit.maxLineCount),
+                SpanHelper.expandView(modifiers.span!!, compilationUnit.maxLineCount),
                 "Unused modifiers in current context"
             )
-            .label(modifiers.span, message)
+            .label(modifiers.span!!, message)
             .color(Attribute.CYAN_TEXT())
             .hint("It's safe to remove")
             .build().build()
