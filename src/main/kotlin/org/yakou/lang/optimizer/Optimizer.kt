@@ -36,6 +36,8 @@ class Optimizer(val compilationUnit: CompilationUnit) {
         if (clazz.classItems != null)
             for (classItem in clazz.classItems)
                 optimizeClassItem(classItem)
+
+        // primary constructor does not need to optimize
     }
 
     private fun optimizeClassItem(classItem: ClassItem) {
