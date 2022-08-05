@@ -33,7 +33,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                 primaryConstructor: PrimaryConstructor
             ): Constructor {
                 val constructor = Constructor(
-                    primaryConstructor.modifiers.sum(),
+                    primaryConstructor.modifiers.sum(-Opcodes.ACC_FINAL),
                     packageSimplePath.toString(),
                     classSimplePath.toString(),
                     primaryConstructor.parameters.map(Parameter::typeInfo)

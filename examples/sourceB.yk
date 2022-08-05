@@ -11,7 +11,7 @@ pkg chaos {
     fn test2(a: i32, b: i32) -> bool =
         1 == 2
 
-    class Person(pub firstName: str, pub lastName: str, pub age: i8) {
+    class Person priv(pub firstName: str, pub lastName: str, pub age: i8) {
         name: str
     }
 }
