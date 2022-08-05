@@ -4,8 +4,8 @@ import chaos.unity.nenggao.Span
 import org.objectweb.asm.Opcodes
 
 data class Modifiers(val modifierMap: LinkedHashMap<Modifier, Span> = linkedMapOf()) {
-    val span: Span by lazy {
-        modifierMap.values.reduce(Span::expand)
+    val span: Span? by lazy {
+        modifierMap.values.reduceOrNull(Span::expand)
     }
 
     fun set(modifier: Modifier, span: Span): Boolean =
