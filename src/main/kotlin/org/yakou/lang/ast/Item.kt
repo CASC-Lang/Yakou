@@ -73,6 +73,7 @@ sealed class Item {
         val modifiers: Modifiers,
         val `class`: Token,
         val identifier: Token,
+        val primaryConstructor: PrimaryConstructor?,
         val openBrace: Token?,
         val classItems: List<ClassItem>?,
         val closeBrace: Token?

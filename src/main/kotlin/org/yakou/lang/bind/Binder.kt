@@ -57,6 +57,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         const.typeInfo = bindType(const.explicitType)
 
         val field = ClassMember.Field.fromConst(
+            table,
             currentPackagePath,
             currentClassPath,
             const,
@@ -73,6 +74,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         staticField.typeInfo = bindType(staticField.explicitType)
 
         val field = ClassMember.Field.fromField(
+            table,
             currentPackagePath,
             currentClassPath,
             staticField
@@ -104,6 +106,16 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 bindClassItemDeclaration(classItem)
 
         currentClassPath = previousClassPath
+    }
+
+    private fun bindPrimaryConstructor(primaryConstructor: PrimaryConstructor) {
+        for (parameter in primaryConstructor.parameters) {
+            val typeInfo = bindType(parameter.type)
+
+            parameter.typeInfo = typeInfo
+        }
+
+        // TODO: register constructor
     }
 
     private fun bindClassItemDeclaration(classItem: ClassItem) {
@@ -142,6 +154,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             else TypeInfo.Primitive.UNIT_TYPE_INFO
 
         val fn = ClassMember.Fn.fromFunction(
+            table,
             currentPackagePath,
             currentClassPath,
             function,

@@ -4,7 +4,6 @@ import org.objectweb.asm.Opcodes
 import org.yakou.lang.ast.*
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
-import kotlin.reflect.KFunction
 
 sealed class ClassMember(val memberType: MemberType) : Symbol() {
     abstract val access: Int
@@ -18,6 +17,48 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
     abstract val inline: Boolean
 
     abstract override val mutable: Boolean
+
+    data class Constructor(
+        override val access: Int,
+        override val packagePath: String,
+        override val classPath: String,
+        val parameterTypeInfos: List<TypeInfo>,
+    ) : ClassMember(MemberType.CONSTRUCTOR) {
+        companion object {
+            fun fromPrimaryConstructor(
+                table: Table,
+                packageSimplePath: Path.SimplePath,
+                classSimplePath: Path.SimplePath,
+                primaryConstructor: PrimaryConstructor
+            ): Constructor {
+                val constructor = Constructor(
+                    primaryConstructor.modifiers.sum(),
+                    packageSimplePath.toString(),
+                    classSimplePath.toString(),
+                    primaryConstructor.parameters.map(Parameter::typeInfo)
+                )
+
+                val ownerType = table.findType(constructor.packagePath, constructor.classPath)!!
+
+                constructor.typeInfo = ownerType
+                constructor.ownerTypeInfo = ownerType
+
+                return constructor
+            }
+        }
+        override val name: String = "ctor"
+        override lateinit var typeInfo: TypeInfo
+        override lateinit var ownerTypeInfo: TypeInfo.Class
+        override val inline: Boolean = false
+        override val mutable: Boolean = false
+
+        override val qualifiedOwnerPath: String by lazy {
+            (if (packagePath.isBlank()) "" else "$packagePath::") + classPath
+        }
+
+        override fun toString(): String =
+            "ctor(self, ${parameterTypeInfos.joinToString(transform = TypeInfo::toString)}) -> $ownerTypeInfo"
+    }
 
     data class Field(
         override val access: Int,
@@ -49,37 +90,51 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
             }
 
             fun fromConst(
+                table: Table,
                 packageSimplePath: Path.SimplePath,
                 classSimplePath: Path.SimplePath,
                 const: Item.Const,
                 vararg additionalAccessFlags: Int
-            ): Field = Field(
-                const.modifiers.sum(*additionalAccessFlags),
-                packageSimplePath.toString(),
-                classSimplePath.toString().ifBlank { "PackageYk" },
-                const.identifier.literal,
-                const.typeInfo,
-                isStatic = true,
-                isConst = true,
-                const.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline),
-                const.expression
-            )
+            ): Field {
+                val field = Field(
+                    const.modifiers.sum(*additionalAccessFlags),
+                    packageSimplePath.toString(),
+                    classSimplePath.toString().ifBlank { "PackageYk" },
+                    const.identifier.literal,
+                    const.typeInfo,
+                    isStatic = true,
+                    isConst = true,
+                    const.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline),
+                    const.expression
+                )
+
+                field.ownerTypeInfo = table.findType(field.classPath, field.packagePath)!!
+
+                return field
+            }
 
             fun fromField(
+                table: Table,
                 packageSimplePath: Path.SimplePath,
                 classSimplePath: Path.SimplePath,
                 staticField: Item.StaticField
-            ): Field = Field(
-                staticField.modifiers.sum(Opcodes.ACC_STATIC),
-                packageSimplePath.toString(),
-                classSimplePath.toString().ifBlank { "PackageYk" },
-                staticField.identifier.literal,
-                staticField.typeInfo,
-                isStatic = true,
-                isConst = false,
-                staticField.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline),
-                staticField.expression
-            )
+            ): Field {
+                val field = Field(
+                    staticField.modifiers.sum(Opcodes.ACC_STATIC),
+                    packageSimplePath.toString(),
+                    classSimplePath.toString().ifBlank { "PackageYk" },
+                    staticField.identifier.literal,
+                    staticField.typeInfo,
+                    isStatic = true,
+                    isConst = false,
+                    staticField.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline),
+                    staticField.expression
+                )
+
+                field.ownerTypeInfo = table.findType(field.classPath, field.packagePath)!!
+
+                return field
+            }
 
             fun fromField(
                 packageSimplePath: Path.SimplePath,
@@ -166,19 +221,26 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
             }
 
             fun fromFunction(
+                table: Table,
                 packageSimplePath: Path.SimplePath,
                 classSimplePath: Path.SimplePath,
                 function: Item.Function,
                 vararg additionalAccessFlags: Int
-            ): Fn = Fn(
-                function.modifiers.sum(*additionalAccessFlags),
-                packageSimplePath.toString(),
-                classSimplePath.toString().ifBlank { "PackageYk" },
-                function.identifier.literal,
-                function.parameters.map(Parameter::typeInfo),
-                function.returnTypeInfo,
-                function.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline)
-            )
+            ): Fn {
+                val fn = Fn(
+                    function.modifiers.sum(*additionalAccessFlags),
+                    packageSimplePath.toString(),
+                    classSimplePath.toString().ifBlank { "PackageYk" },
+                    function.identifier.literal,
+                    function.parameters.map(Parameter::typeInfo),
+                    function.returnTypeInfo,
+                    function.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline)
+                )
+
+                fn.ownerTypeInfo = table.findType(fn.packagePath, fn.classPath)!!
+
+                return fn
+            }
         }
 
         val descriptor: String =
@@ -192,7 +254,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
         }
 
         override fun toString(): String =
-            "$name(${parameterTypeInfos.joinToString(transform = TypeInfo::toString)}) -> $returnTypeInfo"
+            "$name(${if (!Modifier.isStatic(access)) "self, " else ""}${parameterTypeInfos.joinToString(transform = TypeInfo::toString)}) -> $returnTypeInfo"
 
         override fun equals(other: Any?): Boolean {
             if (other is Fn) {
@@ -224,6 +286,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
     }
 
     enum class MemberType {
+        CONSTRUCTOR,
         FIELD,
         FUNCTION;
 

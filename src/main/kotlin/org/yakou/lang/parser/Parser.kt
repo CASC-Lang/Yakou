@@ -120,6 +120,16 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun parseClass(modifiers: Modifiers): Item.Class {
         val `class` = next()!! // Should be asserted when called
         val name = expect(TokenType.Identifier)
+        val primaryConstructorModifiers = parseModifiers()
+        val primaryConstructor =
+            if (optExpectType(TokenType.OpenParenthesis)) parsePrimaryConstructor(primaryConstructorModifiers)
+            else {
+                reportUnusedModifiers(
+                    primaryConstructorModifiers,
+                    "Expected primary constructor after modifiers but got class block"
+                )
+                null
+            }
         val openBrace: Token?
         val classItems: List<ClassItem>?
         val closeBrace: Token?
@@ -134,7 +144,47 @@ class Parser(private val compilationUnit: CompilationUnit) {
             closeBrace = null
         }
 
-        return Item.Class(modifiers, `class`, name, openBrace, classItems, closeBrace)
+        return Item.Class(modifiers, `class`, name, primaryConstructor, openBrace, classItems, closeBrace)
+    }
+
+    private fun parsePrimaryConstructor(modifiers: Modifiers): PrimaryConstructor {
+        val openParenthesis = next()!!
+        val self: Token?
+        val selfComma: Token?
+
+        if (optExpectKeyword(Keyword.SELF)) {
+            self = next()!!
+            selfComma = expect(TokenType.Comma)
+        } else {
+            self = null
+            selfComma = null
+        }
+
+        val parameters = parseConstructorParameters()
+        val closeParenthesis = expect(TokenType.CloseParenthesis)
+
+        return PrimaryConstructor(modifiers, openParenthesis, self, selfComma, parameters, closeParenthesis)
+    }
+
+    private fun parseConstructorParameters(): List<PrimaryConstructor.ConstructorParameter> {
+        val parameters = mutableListOf<PrimaryConstructor.ConstructorParameter>()
+
+        while (pos < tokens.size && optExpectType(TokenType.Identifier)) {
+            val modifiers = parseModifiers()
+            val parameter = parseParameter()
+
+            parameters += PrimaryConstructor.ConstructorParameter(
+                modifiers,
+                parameter.name,
+                parameter.colon,
+                parameter.type
+            )
+
+            if (optExpectType(TokenType.Comma)) consume()
+            else break
+        }
+
+        return parameters
     }
 
     private fun parseClassItems(): List<ClassItem> {
@@ -771,6 +821,18 @@ class Parser(private val compilationUnit: CompilationUnit) {
             pos++
             peek(-1)
         } else tokens.lastOrNull()
+
+    private fun reportUnusedModifiers(modifiers: Modifiers, message: String) {
+        compilationUnit.reportBuilder
+            .warning(
+                SpanHelper.expandView(modifiers.span, compilationUnit.maxLineCount),
+                "Unused modifiers in current context"
+            )
+            .label(modifiers.span, message)
+            .color(Attribute.CYAN_TEXT())
+            .hint("It's safe to remove")
+            .build().build()
+    }
 
     private fun reportModifierDuplication(firstSpan: Span, duplicatedSpan: Span) {
         compilationUnit.reportBuilder
