@@ -159,13 +159,18 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             null
         )
 
-        primaryConstructorWriters[primaryConstructor.constructorInstance.ownerTypeInfo] = methodWriter
+        methodWriter.visitCode()
+
+        methodWriter.visitVarInsn(Opcodes.ALOAD, 0)
+        methodWriter.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false) // TODO: Remove this hardcode
 
         for ((i, parameter) in primaryConstructor.parameters.withIndex()) {
             if (!parameter.modifiers.isEmpty()) {
                 genConstructorParameter(classWriter, methodWriter, parameter, i + 1)
             }
         }
+
+        primaryConstructorWriters[primaryConstructor.constructorInstance.ownerTypeInfo] = methodWriter
     }
 
     private fun genConstructorParameter(
