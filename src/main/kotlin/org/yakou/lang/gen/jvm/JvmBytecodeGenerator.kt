@@ -12,6 +12,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private val table: Table = compilationSession.table
 
     private val classWriters: HashMap<TypeInfo.Class, ClassWriter> = hashMapOf()
+    private val primaryConstructorWriters: HashMap<TypeInfo.Class, MethodVisitor> = hashMapOf()
     private val staticBlockWriters: HashMap<TypeInfo.Class, MethodVisitor> = hashMapOf()
 
     private var currentLineLabel: Label? = null
@@ -21,10 +22,16 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     fun finalize() {
-        for ((_, methodVisitor) in staticBlockWriters) {
-            methodVisitor.visitInsn(Opcodes.RETURN)
-            methodVisitor.visitMaxs(-1, -1)
-            methodVisitor.visitEnd()
+        for (methodWriter in staticBlockWriters.values) {
+            methodWriter.visitInsn(Opcodes.RETURN)
+            methodWriter.visitMaxs(-1, -1)
+            methodWriter.visitEnd()
+        }
+
+        for (methodWriter in primaryConstructorWriters.values) {
+            methodWriter.visitInsn(Opcodes.RETURN)
+            methodWriter.visitMaxs(-1, -1)
+            methodWriter.visitEnd()
         }
 
         for ((classTypeInfo, classWriter) in classWriters) {
@@ -137,6 +144,52 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         if (clazz.classItems != null)
             for (classItem in clazz.classItems)
                 genClassItem(classItem)
+
+        if (clazz.primaryConstructor != null)
+            genPrimaryConstructor(clazz.primaryConstructor)
+    }
+
+    private fun genPrimaryConstructor(primaryConstructor: PrimaryConstructor) {
+        val classWriter = getClassWriter(primaryConstructor.constructorInstance.ownerTypeInfo)
+        val methodWriter = classWriter.visitMethod(
+            primaryConstructor.constructorInstance.access,
+            "<init>",
+            primaryConstructor.constructorInstance.descriptor,
+            null,
+            null
+        )
+
+        primaryConstructorWriters[primaryConstructor.constructorInstance.ownerTypeInfo] = methodWriter
+
+        for ((i, parameter) in primaryConstructor.parameters.withIndex()) {
+            if (!parameter.modifiers.isEmpty()) {
+                genConstructorParameter(classWriter, methodWriter, parameter, i + 1)
+            }
+        }
+    }
+
+    private fun genConstructorParameter(
+        classWriter: ClassWriter,
+        methodVisitor: MethodVisitor,
+        constructorParameter: PrimaryConstructor.ConstructorParameter,
+        offset: Int
+    ) {
+        classWriter.visitField(
+            constructorParameter.fieldInstance!!.access,
+            constructorParameter.fieldInstance!!.name,
+            constructorParameter.fieldInstance!!.descriptor,
+            null,
+            null
+        ).visitEnd()
+
+        methodVisitor.visitVarInsn(Opcodes.ALOAD, 0)
+        methodVisitor.visitVarInsn(constructorParameter.fieldInstance!!.typeInfo.loadOpcode, offset)
+        methodVisitor.visitFieldInsn(
+            Opcodes.PUTFIELD,
+            constructorParameter.fieldInstance!!.ownerTypeInfo.internalName,
+            constructorParameter.fieldInstance!!.name,
+            constructorParameter.fieldInstance!!.descriptor
+        )
     }
 
     private fun genClassItem(classItem: ClassItem) {
@@ -147,15 +200,18 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
     private fun genField(field: ClassItem.Field) {
         val classWriter = getClassWriter(field.fieldInstance.ownerTypeInfo)
-        val fieldWriter = classWriter.visitField(
+
+        classWriter.visitField(
             field.fieldInstance.access,
             field.fieldInstance.name,
             field.fieldInstance.descriptor,
             null,
             null
-        )
+        ).visitEnd()
 
-        fieldWriter.visitEnd()
+        if (field.expression != null) {
+
+        }
     }
 
     private fun genFunction(function: Item.Function) {
@@ -585,6 +641,24 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         )
     }
 
+    private fun getClassWriter(clazz: TypeInfo.Class): ClassWriter =
+        classWriters[clazz] ?: run {
+            val classWriter = ClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS)
+
+            classWriters[clazz] = classWriter
+
+            classWriter.visit(
+                Opcodes.V17,
+                clazz.access + Opcodes.ACC_SUPER,
+                clazz.internalName,
+                null, // TODO: Implement generic
+                clazz.superClassType?.internalName.orEmpty(),
+                clazz.interfaceTypes.map(TypeInfo.Class::internalName).toTypedArray()
+            )
+
+            classWriter
+        }
+
     private fun getStaticBlockWriter(clazz: TypeInfo.Class): MethodVisitor =
         staticBlockWriters[clazz] ?: run {
             val classWriter = getClassWriter(clazz)
@@ -603,22 +677,22 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             methodVisitor
         }
 
-    private fun getClassWriter(clazz: TypeInfo.Class): ClassWriter =
-        classWriters[clazz] ?: run {
-            val classWriter = ClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS)
-
-            classWriters[clazz] = classWriter
-
-            classWriter.visit(
-                Opcodes.V17,
-                clazz.access + Opcodes.ACC_SUPER,
-                clazz.internalName,
-                null, // TODO: Implement generic
-                clazz.superClassType?.internalName.orEmpty(),
-                clazz.interfaceTypes.map(TypeInfo.Class::internalName).toTypedArray()
+    private fun getPrimaryConstructorWriter(clazz: TypeInfo.Class): MethodVisitor =
+        primaryConstructorWriters[clazz] ?: run {
+            val classWriter = getClassWriter(clazz)
+            val methodVisitor = classWriter.visitMethod(
+                Opcodes.ACC_PUBLIC,
+                "<init>",
+                "()V",
+                null,
+                null
             )
 
-            classWriter
+            primaryConstructorWriters[clazz] = methodVisitor
+
+            methodVisitor.visitCode()
+
+            methodVisitor
         }
 
     private fun getCastOpcode(from: PrimitiveType, to: PrimitiveType): Int = when (from) {

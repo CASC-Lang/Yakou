@@ -169,7 +169,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun parseConstructorParameters(): List<PrimaryConstructor.ConstructorParameter> {
         val parameters = mutableListOf<PrimaryConstructor.ConstructorParameter>()
 
-        while (pos < tokens.size && optExpectType(TokenType.Identifier)) {
+        while (pos < tokens.size && (optExpectType(TokenType.Keyword) || optExpectType(TokenType.Identifier))) {
             val modifiers = parseModifiers()
             val parameter = parseParameter()
 

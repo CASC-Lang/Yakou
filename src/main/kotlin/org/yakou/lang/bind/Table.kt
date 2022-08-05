@@ -80,8 +80,8 @@ class Table {
         }
     }
 
-    fun findType(packagePath: String, classPath: String): TypeInfo.Class? =
-        typeTable[packagePath + classPath]?.let { it as TypeInfo.Class }
+    fun findType(qualifiedPath: String): TypeInfo.Class? =
+        typeTable[qualifiedPath]?.let { it as TypeInfo.Class }
 
     fun findType(type: Type): TypeInfo? {
         val typeName = type.standardizeType()

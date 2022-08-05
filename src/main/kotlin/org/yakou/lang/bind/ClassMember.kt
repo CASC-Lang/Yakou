@@ -6,6 +6,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
 sealed class ClassMember(val memberType: MemberType) : Symbol() {
+    abstract val descriptor: String
     abstract val access: Int
     abstract val packagePath: String
     abstract val classPath: String
@@ -38,7 +39,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     primaryConstructor.parameters.map(Parameter::typeInfo)
                 )
 
-                val ownerType = table.findType(constructor.packagePath, constructor.classPath)!!
+                val ownerType = table.findType(constructor.qualifiedOwnerPath)!!
 
                 constructor.typeInfo = ownerType
                 constructor.ownerTypeInfo = ownerType
@@ -46,6 +47,9 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                 return constructor
             }
         }
+        override val descriptor: String =
+            "(${parameterTypeInfos.map(TypeInfo::descriptor).joinToString(separator = "")})V"
+
         override val name: String = "ctor"
         override lateinit var typeInfo: TypeInfo
         override lateinit var ownerTypeInfo: TypeInfo.Class
@@ -107,7 +111,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     propagateExpression = null
                 )
 
-                field.ownerTypeInfo = table.findType(field.classPath, field.packagePath)!!
+                field.ownerTypeInfo = table.findType(field.qualifiedOwnerPath)!!
 
                 return field
             }
@@ -131,7 +135,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     const.expression
                 )
 
-                field.ownerTypeInfo = table.findType(field.classPath, field.packagePath)!!
+                field.ownerTypeInfo = table.findType(field.qualifiedOwnerPath)!!
 
                 return field
             }
@@ -154,7 +158,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     staticField.expression
                 )
 
-                field.ownerTypeInfo = table.findType(field.classPath, field.packagePath)!!
+                field.ownerTypeInfo = table.findType(field.qualifiedOwnerPath)!!
 
                 return field
             }
@@ -176,7 +180,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
             )
         }
 
-        val descriptor: String = typeInfo.descriptor
+        override val descriptor: String = typeInfo.descriptor
         override lateinit var ownerTypeInfo: TypeInfo.Class
         override val mutable: Boolean = !Modifier.isFinal(access)
 
@@ -260,13 +264,13 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     function.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline)
                 )
 
-                fn.ownerTypeInfo = table.findType(fn.packagePath, fn.classPath)!!
+                fn.ownerTypeInfo = table.findType(fn.qualifiedOwnerPath)!!
 
                 return fn
             }
         }
 
-        val descriptor: String =
+        override val descriptor: String =
             "(${parameterTypeInfos.map(TypeInfo::descriptor).joinToString(separator = "")})${returnTypeInfo.descriptor}"
         override val typeInfo: TypeInfo = returnTypeInfo
         override lateinit var ownerTypeInfo: TypeInfo.Class
