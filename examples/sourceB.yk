@@ -12,6 +12,6 @@ pkg chaos {
         1 == 2
 
     class Person priv(pub firstName: str, pub lastName: str, pub age: i8) {
-        name: str
+        name: str = firstName
     }
 }

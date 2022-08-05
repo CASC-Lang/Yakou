@@ -102,7 +102,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
 
         if (clazz.primaryConstructor != null)
-            bindPrimaryConstructor(clazz.primaryConstructor)
+            bindPrimaryConstructorDeclaration(clazz.primaryConstructor)
 
         if (clazz.classItems != null)
             for (classItem in clazz.classItems)
@@ -111,7 +111,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         currentClassPath = previousClassPath
     }
 
-    private fun bindPrimaryConstructor(primaryConstructor: PrimaryConstructor) {
+    private fun bindPrimaryConstructorDeclaration(primaryConstructor: PrimaryConstructor) {
         for (parameter in primaryConstructor.parameters) {
             val typeInfo = bindType(parameter.type)
 
@@ -158,9 +158,6 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindFieldDeclaration(field: ClassItem.Field) {
-        if (field.expression != null)
-            bindExpression(field.expression!!)
-
         field.typeInfo = bindType(field.explicitType)
 
         val fieldInstance = ClassMember.Field.fromField(
@@ -242,11 +239,29 @@ class Binder(private val compilationUnit: CompilationUnit) {
         val previousClassPath = currentClassPath
         currentClassPath = currentClassPath.append(clazz.identifier)
 
+        if (clazz.primaryConstructor != null) {
+            bindPrimaryConstructor(clazz.primaryConstructor)
+        }
+
         if (clazz.classItems != null)
             for (clazzItem in clazz.classItems)
                 bindClassItem(clazzItem)
 
         currentClassPath = previousClassPath
+        currentScope = null
+    }
+
+    private fun bindPrimaryConstructor(primaryConstructor: PrimaryConstructor) {
+        val classScope = Scope(table)
+
+        if (primaryConstructor.self != null) {
+            classScope.addVariable(primaryConstructor.self, primaryConstructor.self, primaryConstructor.constructorInstance.ownerTypeInfo)
+        }
+
+        for (parameter in primaryConstructor.parameters)
+            classScope.addValueParameter(parameter.name, parameter.typeInfo)
+
+        currentScope = classScope
     }
 
     private fun bindClassItem(classItem: ClassItem) {
