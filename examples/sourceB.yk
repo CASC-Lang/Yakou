@@ -10,4 +10,8 @@ pkg chaos {
 
     fn test2(a: i32, b: i32) -> bool =
         1 == 2
+
+    class Person(let firstName: str, let lastName: str, let age: i8) {
+        name: str = firstName + lastName
+    }
 }
