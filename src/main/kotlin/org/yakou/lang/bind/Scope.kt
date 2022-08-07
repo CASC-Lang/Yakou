@@ -5,12 +5,12 @@ import org.yakou.lang.ast.Token
 class Scope(internal val table: Table) {
     val variables: VariableList = VariableList()
 
-    fun currentVariableIndex(): Int =
+    private fun currentVariableIndex(): Int =
         variables.currentIndex
 
     // does not check duplication since it was checked at declaration checking phase
-    fun addValueParameter(nameToken: Token, typeInfo: TypeInfo) {
-        val valueParameter = Variable.ValueParameter(nameToken, currentVariableIndex())
+    fun addValueParameter(nameToken: Token, typeInfo: TypeInfo, selfSkipped: Boolean = false) {
+        val valueParameter = Variable.ValueParameter(nameToken, currentVariableIndex() + if (selfSkipped) 1 else 0)
 
         valueParameter.typeInfo = typeInfo
 

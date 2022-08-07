@@ -259,7 +259,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
 
         for (parameter in primaryConstructor.parameters)
-            classScope.addValueParameter(parameter.name, parameter.typeInfo)
+            classScope.addValueParameter(parameter.name, parameter.typeInfo, selfSkipped = primaryConstructor.self == null)
 
         currentScope = classScope
     }

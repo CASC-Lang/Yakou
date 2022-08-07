@@ -141,12 +141,12 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genClass(clazz: Item.Class) {
+        if (clazz.primaryConstructor != null)
+            genPrimaryConstructor(clazz.primaryConstructor)
+
         if (clazz.classItems != null)
             for (classItem in clazz.classItems)
                 genClassItem(classItem)
-
-        if (clazz.primaryConstructor != null)
-            genPrimaryConstructor(clazz.primaryConstructor)
     }
 
     private fun genPrimaryConstructor(primaryConstructor: PrimaryConstructor) {
@@ -162,7 +162,13 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         methodWriter.visitCode()
 
         methodWriter.visitVarInsn(Opcodes.ALOAD, 0)
-        methodWriter.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false) // TODO: Remove this hardcode
+        methodWriter.visitMethodInsn(
+            Opcodes.INVOKESPECIAL,
+            "java/lang/Object",
+            "<init>",
+            "()V",
+            false
+        ) // TODO: Remove this hardcode
 
         for ((i, parameter) in primaryConstructor.parameters.withIndex()) {
             if (!parameter.modifiers.isEmpty()) {
@@ -215,7 +221,18 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         ).visitEnd()
 
         if (field.expression != null) {
+            val methodVisitor = getPrimaryConstructorWriter(field.fieldInstance.ownerTypeInfo)
 
+            methodVisitor.visitVarInsn(Opcodes.ALOAD, 0)
+
+            genExpression(methodVisitor, field.expression!!)
+
+            methodVisitor.visitFieldInsn(
+                Opcodes.PUTFIELD,
+                field.fieldInstance.ownerTypeInfo.internalName,
+                field.fieldInstance.name,
+                field.fieldInstance.descriptor
+            )
         }
     }
 
