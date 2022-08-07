@@ -74,6 +74,8 @@ sealed class Item {
         val `class`: Token,
         val identifier: Token,
         val primaryConstructor: PrimaryConstructor?,
+        val colon: Token?,
+        val superClassConstructorCall: SuperClassConstructorCall?,
         val openBrace: Token?,
         val classItems: List<ClassItem>?,
         val closeBrace: Token?
@@ -87,6 +89,13 @@ sealed class Item {
 
             finalSpan
         }
+
+        data class SuperClassConstructorCall(
+            val superClassType: Type,
+            val openParenthesis: Token,
+            val arguments: List<Argument>,
+            val closeParenthesis: Token
+        )
     }
 
     data class Function(

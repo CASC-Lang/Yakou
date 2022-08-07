@@ -130,6 +130,17 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 )
                 null
             }
+        val colon: Token?
+        val superClassConstructorCall: Item.Class.SuperClassConstructorCall?
+
+        if (optExpectType(TokenType.Colon)) {
+            colon = next()!!
+            superClassConstructorCall = parseSuperClassConstructorCall()
+        } else {
+            colon = null
+            superClassConstructorCall = null
+        }
+
         val openBrace: Token?
         val classItems: List<ClassItem>?
         val closeBrace: Token?
@@ -144,7 +155,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
             closeBrace = null
         }
 
-        return Item.Class(modifiers, `class`, name, primaryConstructor, openBrace, classItems, closeBrace)
+        return Item.Class(modifiers, `class`, name, primaryConstructor, colon, superClassConstructorCall, openBrace, classItems, closeBrace)
     }
 
     private fun parsePrimaryConstructor(modifiers: Modifiers): PrimaryConstructor {
@@ -185,6 +196,15 @@ class Parser(private val compilationUnit: CompilationUnit) {
         }
 
         return parameters
+    }
+
+    private fun parseSuperClassConstructorCall(): Item.Class.SuperClassConstructorCall {
+        val superClass = parseType()
+        val openParenthesis = expect(TokenType.OpenParenthesis)
+        val arguments = parseArguments()
+        val closeParenthesis = expect(TokenType.CloseParenthesis)
+
+        return Item.Class.SuperClassConstructorCall(superClass, openParenthesis, arguments, closeParenthesis)
     }
 
     private fun parseClassItems(): List<ClassItem> {
@@ -650,6 +670,22 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
         return Parameter(name, colon, type)
     }
+
+    private fun parseArguments(): List<Argument> {
+        val arguments = mutableListOf<Argument>()
+
+        while (pos < tokens.size && optExpectType(TokenType.Identifier)) {
+            arguments += parseArgument()
+
+            if (optExpectType(TokenType.Comma)) consume()
+            else break
+        }
+
+        return arguments
+    }
+
+    private fun parseArgument(): Argument =
+        parseExpression()
 
     private fun parseType(): Type = when {
         optExpectType(TokenType.OpenBracket) -> {
