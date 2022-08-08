@@ -1,5 +1,6 @@
 package org.yakou.lang.bind
 
+import org.yakou.lang.ast.Item
 import org.yakou.lang.ast.Type
 import java.util.*
 
@@ -43,12 +44,37 @@ class Table {
         }
     }
 
+    @Deprecated("Due to ambiguity, this function has been seperated into different functions")
     fun findClassMember(
         qualifiedOwnerPath: String,
         memberType: ClassMember.MemberType,
         memberName: String
     ): ClassMember? =
         classMemberTable[qualifiedOwnerPath]?.get(memberType)?.find { it.name == memberName }
+
+    fun findField(
+        qualifiedOwnerPath: String,
+        fieldName: String
+    ): ClassMember.Field? =
+        classMemberTable[qualifiedOwnerPath]
+            ?.get(ClassMember.MemberType.FIELD)
+            ?.find { it.name == fieldName }
+            ?.let { it as ClassMember.Field }
+
+    fun findFunction(
+        qualifiedOwnerPath: String,
+        functionName: String,
+        argumentTypes: List<TypeInfo>
+    ): ClassMember.Fn? =
+        classMemberTable[qualifiedOwnerPath]
+            ?.get(ClassMember.MemberType.FUNCTION)
+            ?.filterIsInstance<ClassMember.Fn>()
+            ?.filter { it.name == functionName && it.parameterTypeInfos.size == argumentTypes.size }
+            ?.find {
+                it.parameterTypeInfos.zip(argumentTypes).all { (from, to) ->
+                    from.canImplicitCast(to)
+                }
+            }
 
     fun registerPackageClass(packagePath: String) {
         val qualifiedClassPath = packagePath.appendPath("PackageYk")
@@ -241,7 +267,7 @@ class Table {
         return result.toSet()
     }
 
-    fun String.appendPath(path: String): String =
+    private fun String.appendPath(path: String): String =
         if (this.isEmpty()) path
         else "$this::$path"
 }
