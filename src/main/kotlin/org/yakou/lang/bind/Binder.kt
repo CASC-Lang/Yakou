@@ -151,6 +151,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
     }
 
+    private fun bindSuperClassConstructor(superClassConstructorCall: Item.Class.SuperClassConstructorCall) {
+
+    }
+
     private fun bindClassItemDeclaration(classItem: ClassItem) {
         when (classItem) {
             is ClassItem.Field -> bindFieldDeclaration(classItem)
