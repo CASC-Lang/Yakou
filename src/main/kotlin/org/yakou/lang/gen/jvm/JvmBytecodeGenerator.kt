@@ -144,7 +144,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         getClassWriter(clazz.classTypeInfo)
 
         if (clazz.primaryConstructor != null) {
-            genPrimaryConstructor(clazz.primaryConstructor)
+            genPrimaryConstructor(clazz.primaryConstructor, clazz.superClassConstructorCall)
         } else {
             getPrimaryConstructorWriter(clazz.classTypeInfo)
         }
@@ -154,7 +154,10 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 genClassItem(classItem)
     }
 
-    private fun genPrimaryConstructor(primaryConstructor: PrimaryConstructor) {
+    private fun genPrimaryConstructor(
+        primaryConstructor: PrimaryConstructor,
+        superClassConstructorCall: Item.Class.SuperClassConstructorCall?
+    ) {
         val classWriter = getClassWriter(primaryConstructor.constructorInstance.ownerTypeInfo)
         val methodWriter = classWriter.visitMethod(
             primaryConstructor.constructorInstance.access,
@@ -169,11 +172,11 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         methodWriter.visitVarInsn(Opcodes.ALOAD, 0)
         methodWriter.visitMethodInsn(
             Opcodes.INVOKESPECIAL,
-            "java/lang/Object",
+            superClassConstructorCall?.superClassTypeInfo?.internalName ?: "java/lang/Object",
             "<init>",
-            "()V",
+            superClassConstructorCall?.functionInstance?.descriptor ?: "()V",
             false
-        ) // TODO: Remove this hardcode
+        )
 
         for ((i, parameter) in primaryConstructor.parameters.withIndex()) {
             if (!parameter.modifiers.isEmpty()) {

@@ -99,6 +99,7 @@ sealed class Item {
             val closeParenthesis: Token
         ) {
             lateinit var superClassTypeInfo: TypeInfo.Class
+            lateinit var functionInstance: ClassMember.Fn
         }
     }
 
