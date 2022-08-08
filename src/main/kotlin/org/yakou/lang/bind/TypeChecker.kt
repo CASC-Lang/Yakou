@@ -70,7 +70,7 @@ object TypeChecker {
         }
 
         if (clazz.superClassType != null)
-            appendToQueue(queue, clazz.superClassType)
+            appendToQueue(queue, clazz.superClassType!!)
     }
 
     // Used for representing different behaviour of casting

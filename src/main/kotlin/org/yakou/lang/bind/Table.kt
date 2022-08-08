@@ -51,9 +51,7 @@ class Table {
         classMemberTable[qualifiedOwnerPath]?.get(memberType)?.find { it.name == memberName }
 
     fun registerPackageClass(packagePath: String) {
-        val qualifiedClassPath =
-            if (packagePath.isBlank()) "PackageYk"
-            else "$packagePath::PackageYk"
+        val qualifiedClassPath = packagePath.appendPath("PackageYk")
 
         if (!typeTable.containsKey(packagePath)) {
             typeTable[qualifiedClassPath] = TypeInfo.PackageClass(
@@ -62,10 +60,12 @@ class Table {
         }
     }
 
-    fun registerClassType(access: Int, packagePath: String, classPath: String): Boolean {
-        val qualifiedClassPath =
-            if (packagePath.isBlank()) classPath
-            else "$packagePath::$classPath"
+    fun registerClassType(
+        access: Int,
+        packagePath: String,
+        classPath: String,
+    ): Boolean {
+        val qualifiedClassPath = packagePath.appendPath(classPath)
 
         return if (typeTable.containsKey(qualifiedClassPath)) false
         else {
@@ -75,6 +75,21 @@ class Table {
                 TypeInfo.fromClass(Any::class.java) as TypeInfo.Class,
                 listOf()
             )
+
+            true
+        }
+    }
+
+    fun registerSuperClassType(
+        packagePath: String,
+        classPath: String,
+        superClassType: TypeInfo.Class
+    ): Boolean {
+        val qualifiedOwnerPath = packagePath.appendPath(classPath)
+
+        return if (!typeTable.containsKey(qualifiedOwnerPath)) false
+        else {
+            (typeTable[qualifiedOwnerPath] as TypeInfo.Class).superClassType = superClassType
 
             true
         }
@@ -168,19 +183,21 @@ class Table {
                         classMemberTable[typeName]!![ClassMember.MemberType.FUNCTION] = mutableListOf()
 
                         for (field in clazz.declaredFields) {
-                            classMemberTable[typeName]!![ClassMember.MemberType.FIELD]!! += ClassMember.Field.fromField(field)
+                            classMemberTable[typeName]!![ClassMember.MemberType.FIELD]!! += ClassMember.Field.fromField(
+                                field
+                            )
                         }
 
                         for (method in clazz.declaredMethods) {
-                            classMemberTable[typeName]!![ClassMember.MemberType.FUNCTION]!! += ClassMember.Fn.fromMethod(method)
+                            classMemberTable[typeName]!![ClassMember.MemberType.FUNCTION]!! += ClassMember.Fn.fromMethod(
+                                method
+                            )
                         }
                     }
 
                     return@run typeInfo
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                } catch (e: Error) {
-                    e.printStackTrace()
+                } catch (_: Exception) {
+                } catch (_: Error) {
                 }
 
                 null
@@ -221,4 +238,8 @@ class Table {
 
         return result.toSet()
     }
+
+    fun String.appendPath(path: String): String =
+        if (this.isEmpty()) path
+        else "$this::$path"
 }

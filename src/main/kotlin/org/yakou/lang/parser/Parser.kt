@@ -124,10 +124,12 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val primaryConstructor =
             if (optExpectType(TokenType.OpenParenthesis)) parsePrimaryConstructor(primaryConstructorModifiers)
             else {
-                reportUnusedModifiers(
-                    primaryConstructorModifiers,
-                    "Expected primary constructor after modifiers but got class block"
-                )
+                if (!primaryConstructorModifiers.isEmpty()) {
+                    reportUnusedModifiers(
+                        primaryConstructorModifiers,
+                        "Expected primary constructor after modifiers but got class block"
+                    )
+                }
                 null
             }
         val colon: Token?
@@ -155,7 +157,17 @@ class Parser(private val compilationUnit: CompilationUnit) {
             closeBrace = null
         }
 
-        return Item.Class(modifiers, `class`, name, primaryConstructor, colon, superClassConstructorCall, openBrace, classItems, closeBrace)
+        return Item.Class(
+            modifiers,
+            `class`,
+            name,
+            primaryConstructor,
+            colon,
+            superClassConstructorCall,
+            openBrace,
+            classItems,
+            closeBrace
+        )
     }
 
     private fun parsePrimaryConstructor(modifiers: Modifiers): PrimaryConstructor {
@@ -181,7 +193,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val parameters = mutableListOf<PrimaryConstructor.ConstructorParameter>()
 
         while (pos < tokens.size && (optExpectType(TokenType.Keyword) || optExpectType(TokenType.Identifier))) {
-            val modifiers = parseModifiers()
+            val modifiers = parseModifiers(mute = true)
             val parameter = parseParameter()
 
             parameters += PrimaryConstructor.ConstructorParameter(
@@ -705,7 +717,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun parseModifiers(): Modifiers {
+    private fun parseModifiers(mute: Boolean = false): Modifiers {
         val modifiers = Modifiers()
 
         while (pos < tokens.size) {
@@ -730,7 +742,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                         if (!modifiers.set(Modifier.Pub, span)) {
                             // Duplication
                             reportModifierDuplication(modifiers[Modifier.Pub]!!, span)
-                        } else {
+                        } else if (!mute) {
                             // Warning about modifiers contains `pub` access modifier by default (it's hidden though)
                             val pubLiteral = colorize("pub", compilationUnit, Attribute.CYAN_TEXT())
 

@@ -151,10 +151,6 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun bindSuperClassConstructor(superClassConstructorCall: Item.Class.SuperClassConstructorCall) {
-
-    }
-
     private fun bindClassItemDeclaration(classItem: ClassItem) {
         when (classItem) {
             is ClassItem.Field -> bindFieldDeclaration(classItem)
@@ -242,9 +238,18 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun bindClass(clazz: Item.Class) {
         val previousClassPath = currentClassPath
         currentClassPath = currentClassPath.append(clazz.identifier)
+        currentScope = Scope(table)
 
         if (clazz.primaryConstructor != null) {
             bindPrimaryConstructor(clazz.primaryConstructor)
+        }
+
+        if (clazz.superClassConstructorCall != null) {
+            val superClassType = bindSuperClassConstructorCall(clazz.superClassConstructorCall)
+
+            if (superClassType != null) {
+                table.registerSuperClassType(currentPackagePath.toString(), currentClassPath.toString(), superClassType)
+            }
         }
 
         if (clazz.classItems != null)
@@ -256,16 +261,61 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindPrimaryConstructor(primaryConstructor: PrimaryConstructor) {
-        val classScope = Scope(table)
-
         if (primaryConstructor.self != null) {
-            classScope.addVariable(primaryConstructor.self, primaryConstructor.self, primaryConstructor.constructorInstance.ownerTypeInfo)
+            currentScope!!.addVariable(
+                primaryConstructor.self,
+                primaryConstructor.self,
+                primaryConstructor.constructorInstance.ownerTypeInfo
+            )
         }
 
         for (parameter in primaryConstructor.parameters)
-            classScope.addValueParameter(parameter.name, parameter.typeInfo, selfSkipped = primaryConstructor.self == null)
+            currentScope!!.addValueParameter(
+                parameter.name,
+                parameter.typeInfo,
+                selfSkipped = primaryConstructor.self == null
+            )
+    }
 
-        currentScope = classScope
+    private fun bindSuperClassConstructorCall(superClassConstructorCall: Item.Class.SuperClassConstructorCall): TypeInfo.Class? {
+        val typeLiteral =
+            colorize(superClassConstructorCall.superClassType.standardizeType(), compilationUnit, Attribute.CYAN_TEXT())
+
+        return when (val superType = bindType(superClassConstructorCall.superClassType)) {
+            is TypeInfo.Array, is TypeInfo.Primitive -> {
+                compilationUnit.reportBuilder
+                    .error(
+                        SpanHelper.expandView(
+                            superClassConstructorCall.superClassType.span,
+                            compilationUnit.maxLineCount
+                        ),
+                        "Unable to inherit from non-class type"
+                    )
+                    .label(superClassConstructorCall.superClassType.span, "Type $typeLiteral is not a class type")
+                    .color(Attribute.RED_TEXT())
+                    .build().build()
+
+                null
+            }
+
+            is TypeInfo.Class -> {
+                if (superType is TypeInfo.PackageClass) {
+                    compilationUnit.reportBuilder
+                        .error(
+                            SpanHelper.expandView(
+                                superClassConstructorCall.superClassType.span,
+                                compilationUnit.maxLineCount
+                            ),
+                            "Unable to inherit from package"
+                        )
+                        .label(superClassConstructorCall.superClassType.span, "Package is not inheritable")
+                        .color(Attribute.RED_TEXT())
+                        .build().build()
+                }
+
+                superType
+            }
+        }
     }
 
     private fun bindClassItem(classItem: ClassItem) {

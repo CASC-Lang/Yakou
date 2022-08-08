@@ -188,7 +188,7 @@ sealed class TypeInfo {
     open class Class(
         val access: Int,
         val standardTypePath: String,
-        val superClassType: Class?,
+        var superClassType: Class?,
         val interfaceTypes: List<Class>
     ) : TypeInfo() {
         companion object {

@@ -1,17 +1,7 @@
 pkg chaos {
-    const a: i32 = 1
-    inline static b: i32 = 1
+    class Animal()
 
-    fn test(kek: str) -> i32 {
-        let a = 1
-        let b = a + b
-        return b
-    }
-
-    fn test2(a: i32, b: i32) -> bool =
-        1 == 2
-
-    class Person priv(pub firstName: str, pub lastName: str, pub age: i8) {
+    class Person priv(pub firstName: str, pub lastName: str, pub age: i8): chaos::Animal() {
         name: str = firstName
     }
 }
