@@ -104,8 +104,19 @@ class Binder(private val compilationUnit: CompilationUnit) {
             clazz.classTypeInfo = classType
         }
 
-        if (clazz.primaryConstructor != null)
+        if (clazz.primaryConstructor != null) {
             bindPrimaryConstructorDeclaration(clazz.primaryConstructor)
+        } else {
+            // Generate an empty constructor
+            table.registerClassMember(
+                ClassMember.Constructor(
+                    Opcodes.ACC_PUBLIC,
+                    currentPackagePath.toString(),
+                    currentClassPath.toString(),
+                    listOf()
+                )
+            )
+        }
 
         if (clazz.classItems != null)
             for (classItem in clazz.classItems)
@@ -281,11 +292,18 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindSuperClassConstructorCall(superClassConstructorCall: Item.Class.SuperClassConstructorCall): TypeInfo.Class? {
-        val typeLiteral =
-            colorize(superClassConstructorCall.superClassType.standardizeType(), compilationUnit, Attribute.CYAN_TEXT())
+        for (argument in superClassConstructorCall.arguments)
+            bindExpression(argument)
 
         return when (val superType = bindType(superClassConstructorCall.superClassType)) {
             is TypeInfo.Array, is TypeInfo.Primitive -> {
+                val typeLiteral =
+                    colorize(
+                        superClassConstructorCall.superClassType.standardizeType(),
+                        compilationUnit,
+                        Attribute.CYAN_TEXT()
+                    )
+
                 compilationUnit.reportBuilder
                     .error(
                         SpanHelper.expandView(
@@ -314,6 +332,18 @@ class Binder(private val compilationUnit: CompilationUnit) {
                         .label(superClassConstructorCall.superClassType.span, "Package is not inheritable")
                         .color(Attribute.RED_TEXT())
                         .build().build()
+                } else {
+                    val superConstructor =
+                        table.findConstructor(superType.standardTypePath, superClassConstructorCall.argumentTypeInfos)
+
+                    if (superConstructor == null) {
+                        reportUnresolvedSymbol(
+                            "self(${superClassConstructorCall.arguments.joinToString { it.finalType.toString() }}) -> ${superClassConstructorCall.superClassType.standardizeType()}",
+                            superClassConstructorCall.span
+                        )
+                    } else {
+                        superClassConstructorCall.constructorInstance = superConstructor
+                    }
                 }
 
                 superClassConstructorCall.superClassTypeInfo = superType
@@ -672,6 +702,19 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 else -> TypeInfo.Primitive(PrimitiveType.F64)
             }
         }
+    }
+
+    private fun reportUnresolvedSymbol(name: String, span: Span) {
+        val coloredName = colorize(name, compilationUnit, Attribute.CYAN_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(span, compilationUnit.maxLineCount),
+                "Unresolved symbol"
+            )
+            .label(span, "Unable to find symbol `$coloredName` in current context")
+            .color(Attribute.RED_TEXT())
+            .build().build()
     }
 
     private fun reportConstAlreadyDefined(field: ClassMember.Field, const: Item.Const) {

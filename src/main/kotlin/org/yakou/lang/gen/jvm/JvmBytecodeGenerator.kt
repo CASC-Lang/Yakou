@@ -146,7 +146,16 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         if (clazz.primaryConstructor != null) {
             genPrimaryConstructor(clazz.primaryConstructor, clazz.superClassConstructorCall)
         } else {
-            getPrimaryConstructorWriter(clazz.classTypeInfo)
+            val methodVisitor = getPrimaryConstructorWriter(clazz.classTypeInfo)
+
+            methodVisitor.visitVarInsn(Opcodes.ALOAD, 0)
+            methodVisitor.visitMethodInsn(
+                Opcodes.INVOKESPECIAL,
+                "java/lang/Object",
+                "<init>",
+                "()V",
+                false
+            )
         }
 
         if (clazz.classItems != null)
@@ -159,7 +168,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         superClassConstructorCall: Item.Class.SuperClassConstructorCall?
     ) {
         val classWriter = getClassWriter(primaryConstructor.constructorInstance.ownerTypeInfo)
-        val methodWriter = classWriter.visitMethod(
+        val methodVisitor = classWriter.visitMethod(
             primaryConstructor.constructorInstance.access,
             "<init>",
             primaryConstructor.constructorInstance.descriptor,
@@ -167,24 +176,24 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             null
         )
 
-        methodWriter.visitCode()
+        methodVisitor.visitCode()
 
-        methodWriter.visitVarInsn(Opcodes.ALOAD, 0)
-        methodWriter.visitMethodInsn(
+        methodVisitor.visitVarInsn(Opcodes.ALOAD, 0)
+        methodVisitor.visitMethodInsn(
             Opcodes.INVOKESPECIAL,
             superClassConstructorCall?.superClassTypeInfo?.internalName ?: "java/lang/Object",
             "<init>",
-            superClassConstructorCall?.functionInstance?.descriptor ?: "()V",
+            superClassConstructorCall?.constructorInstance?.descriptor ?: "()V",
             false
         )
 
         for ((i, parameter) in primaryConstructor.parameters.withIndex()) {
             if (!parameter.modifiers.isEmpty()) {
-                genConstructorParameter(classWriter, methodWriter, parameter, i + 1)
+                genConstructorParameter(classWriter, methodVisitor, parameter, i + 1)
             }
         }
 
-        primaryConstructorWriters[primaryConstructor.constructorInstance.ownerTypeInfo] = methodWriter
+        primaryConstructorWriters[primaryConstructor.constructorInstance.ownerTypeInfo] = methodVisitor
     }
 
     private fun genConstructorParameter(

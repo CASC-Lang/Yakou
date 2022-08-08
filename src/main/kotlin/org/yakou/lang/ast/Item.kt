@@ -98,8 +98,16 @@ sealed class Item {
             val arguments: List<Argument>,
             val closeParenthesis: Token
         ) {
+            val span: Span by lazy {
+                superClassType.span.expand(closeParenthesis.span)
+            }
+
             lateinit var superClassTypeInfo: TypeInfo.Class
-            lateinit var functionInstance: ClassMember.Fn
+            lateinit var constructorInstance: ClassMember.Constructor
+
+            val argumentTypeInfos: List<TypeInfo> by lazy {
+                arguments.map(Expression::finalType)
+            }
         }
     }
 

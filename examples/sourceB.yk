@@ -1,5 +1,5 @@
 pkg chaos {
-    class Animal
+    mut class Animal
 
     class Person priv(pub firstName: str, pub lastName: str, pub age: i8): chaos::Animal() {
         name: str = firstName

@@ -127,6 +127,9 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
         if (clazz.primaryConstructor != null)
             checkPrimaryConstructor(clazz.primaryConstructor)
+
+        if (clazz.superClassConstructorCall != null)
+            checkSuperClassConstructorCall(clazz.superClassConstructorCall)
     }
 
     private fun checkPrimaryConstructor(primaryConstructor: PrimaryConstructor) {
@@ -148,6 +151,31 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 constructorParameter.modifiers[Modifier.Inline]!!,
                 "Constructor field parameter cannot be inlined"
             )
+        }
+    }
+
+    private fun checkSuperClassConstructorCall(superClassConstructorCall: Item.Class.SuperClassConstructorCall) {
+        if (java.lang.reflect.Modifier.isFinal(superClassConstructorCall.superClassTypeInfo.access)) {
+            val typeLiteral = colorize(
+                superClassConstructorCall.superClassType.standardizeType(),
+                compilationUnit,
+                Attribute.CYAN_TEXT()
+            )
+            val mutKeyword = colorize("mut", compilationUnit, Attribute.CYAN_TEXT())
+
+            compilationUnit.reportBuilder
+                .error(
+                    SpanHelper.expandView(
+                        superClassConstructorCall.superClassType.span,
+                        compilationUnit.maxLineCount
+                    ), "Unable to inherit immutable class"
+                )
+                .label(
+                    superClassConstructorCall.superClassType.span,
+                    "Consider make class `$typeLiteral` mutable with keyword `$mutKeyword`"
+                )
+                .color(Attribute.CYAN_TEXT())
+                .build().build()
         }
     }
 

@@ -61,7 +61,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
         }
 
         override fun toString(): String =
-            "ctor(self, ${parameterTypeInfos.joinToString(transform = TypeInfo::toString)}) -> $ownerTypeInfo"
+            "Self(self, ${parameterTypeInfos.joinToString(transform = TypeInfo::toString)}) -> $ownerTypeInfo"
     }
 
     data class Field(

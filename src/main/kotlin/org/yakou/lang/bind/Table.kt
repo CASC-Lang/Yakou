@@ -2,6 +2,7 @@ package org.yakou.lang.bind
 
 import org.yakou.lang.ast.Item
 import org.yakou.lang.ast.Type
+import org.yakou.lang.util.mapAs
 import java.util.*
 
 /**
@@ -68,8 +69,22 @@ class Table {
     ): ClassMember.Fn? =
         classMemberTable[qualifiedOwnerPath]
             ?.get(ClassMember.MemberType.FUNCTION)
-            ?.filterIsInstance<ClassMember.Fn>()
+            ?.mapAs<ClassMember, ClassMember.Fn>()
             ?.filter { it.name == functionName && it.parameterTypeInfos.size == argumentTypes.size }
+            ?.find {
+                it.parameterTypeInfos.zip(argumentTypes).all { (from, to) ->
+                    from.canImplicitCast(to)
+                }
+            }
+
+    fun findConstructor(
+        qualifiedOwnerPath: String,
+        argumentTypes: List<TypeInfo>
+    ): ClassMember.Constructor? =
+        classMemberTable[qualifiedOwnerPath]
+            ?.get(ClassMember.MemberType.CONSTRUCTOR)
+            ?.mapAs<ClassMember, ClassMember.Constructor>()
+            ?.filter { it.parameterTypeInfos.size == argumentTypes.size }
             ?.find {
                 it.parameterTypeInfos.zip(argumentTypes).all { (from, to) ->
                     from.canImplicitCast(to)
