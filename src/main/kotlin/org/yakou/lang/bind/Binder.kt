@@ -90,15 +90,18 @@ class Binder(private val compilationUnit: CompilationUnit) {
         val previousClassPath = currentClassPath
         currentClassPath = currentClassPath.append(clazz.identifier)
 
-        if (!table.registerClassType(
-                clazz.modifiers.sum(),
-                currentPackagePath.toString(),
-                currentClassPath.toString()
-            )
-        ) {
+        val classType = table.registerClassType(
+            clazz.modifiers.sum(),
+            currentPackagePath.toString(),
+            currentClassPath.toString()
+        )
+
+        if (classType == null) {
             // Failed to register class type
             reportClassAlreadyDefined(clazz)
             return
+        } else {
+            clazz.classTypeInfo = classType
         }
 
         if (clazz.primaryConstructor != null)
@@ -312,6 +315,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
                         .color(Attribute.RED_TEXT())
                         .build().build()
                 }
+
+                superClassConstructorCall.superClassTypeInfo = superType
 
                 superType
             }

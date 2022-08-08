@@ -64,19 +64,21 @@ class Table {
         access: Int,
         packagePath: String,
         classPath: String,
-    ): Boolean {
+    ): TypeInfo.Class? {
         val qualifiedClassPath = packagePath.appendPath(classPath)
 
-        return if (typeTable.containsKey(qualifiedClassPath)) false
+        return if (typeTable.containsKey(qualifiedClassPath)) null
         else {
-            typeTable[qualifiedClassPath] = TypeInfo.Class(
+            val classType = TypeInfo.Class(
                 access,
                 qualifiedClassPath,
                 TypeInfo.fromClass(Any::class.java) as TypeInfo.Class,
                 listOf()
             )
 
-            true
+            typeTable[qualifiedClassPath] = classType
+
+            classType
         }
     }
 

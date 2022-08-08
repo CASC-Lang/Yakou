@@ -90,12 +90,16 @@ sealed class Item {
             finalSpan
         }
 
+        lateinit var classTypeInfo: TypeInfo.Class
+
         data class SuperClassConstructorCall(
             val superClassType: Type,
             val openParenthesis: Token,
             val arguments: List<Argument>,
             val closeParenthesis: Token
-        )
+        ) {
+            lateinit var superClassTypeInfo: TypeInfo.Class
+        }
     }
 
     data class Function(

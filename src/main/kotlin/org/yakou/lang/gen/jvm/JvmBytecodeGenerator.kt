@@ -141,6 +141,8 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genClass(clazz: Item.Class) {
+        val classWriter = getClassWriter(clazz.classTypeInfo)
+
         if (clazz.primaryConstructor != null)
             genPrimaryConstructor(clazz.primaryConstructor)
 
