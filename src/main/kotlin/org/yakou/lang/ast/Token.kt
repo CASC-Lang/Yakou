@@ -4,7 +4,7 @@ import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Attribute
 import org.yakou.lang.api.AbstractPreference
 
-open class Token(open val literal: String, val type: TokenType, val span: Span) {
+open class Token(open val literal: String, val type: TokenType, override val span: Span): AstNode {
     companion object {
         /**
          * Create a token that does not actually exist in the source. Useful when attempting to show missing tokens in

@@ -3,8 +3,8 @@ package org.yakou.lang.ast
 import chaos.unity.nenggao.Span
 import org.objectweb.asm.Opcodes
 
-data class Modifiers(val modifierMap: LinkedHashMap<Modifier, Span> = linkedMapOf()) {
-    val span: Span? by lazy {
+data class Modifiers(val modifierMap: LinkedHashMap<Modifier, Span> = linkedMapOf()): AstNode {
+    override val span: Span? by lazy {
         modifierMap.values.reduceOrNull(Span::expand)
     }
 

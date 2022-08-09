@@ -1,7 +1,12 @@
 package org.yakou.lang.ast
 
-sealed class Path {
+import chaos.unity.nenggao.Span
+
+sealed class Path: AstNode {
     data class SimplePath(val pathSegments: List<Token>) : Path() {
+        override val span: Span?
+            get() = pathSegments.firstOrNull()?.span?.expand(pathSegments.lastOrNull()?.span)
+
         fun append(token: Token): SimplePath {
             val pathSegments = pathSegments.toMutableList()
 

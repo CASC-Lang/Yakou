@@ -5,8 +5,8 @@ import org.yakou.lang.bind.Symbol
 import org.yakou.lang.bind.TypeInfo
 import kotlin.properties.Delegates
 
-sealed class Expression {
-    abstract val span: Span
+sealed class Expression: AstNode {
+    abstract override val span: Span
     var originalType: TypeInfo = TypeInfo.Primitive.UNIT_TYPE_INFO
     var finalType: TypeInfo = TypeInfo.Primitive.UNIT_TYPE_INFO
 

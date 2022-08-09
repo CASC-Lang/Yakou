@@ -3,8 +3,8 @@ package org.yakou.lang.ast
 import chaos.unity.nenggao.Span
 import org.yakou.lang.bind.Variable
 
-sealed class Statement {
-    abstract val span: Span
+sealed class Statement: AstNode {
+    abstract override val span: Span
 
     class VariableDeclaration(
         val let: Token,

@@ -4,8 +4,8 @@ import chaos.unity.nenggao.Span
 import org.yakou.lang.bind.ClassMember
 import org.yakou.lang.bind.TypeInfo
 
-sealed class Item {
-    abstract val span: Span
+sealed class Item: AstNode {
+    abstract override val span: Span
 
     data class Package(
         val pkg: Token,

@@ -2,8 +2,8 @@ package org.yakou.lang.ast
 
 import chaos.unity.nenggao.Span
 
-sealed class Type {
-    abstract val span: Span
+sealed class Type: AstNode {
+    abstract override val span: Span
 
     fun standardizeType(): String = when (this) {
         is Array -> {
