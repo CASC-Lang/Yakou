@@ -1,8 +1,49 @@
 package org.yakou.lang.bind
 
 import org.yakou.lang.ast.Path
+import org.yakou.lang.ast.Type
 
 class SymbolResolver(private val scope: Scope) {
+    fun resolveType(
+        currentPackagePath: Path.SimplePath,
+        currentClassPath: Path.SimplePath,
+        typePath: Type
+    ): TypeInfo? =
+        resolvePrimitiveOrArrayType(currentPackagePath, currentClassPath, typePath)
+
+    private fun resolvePrimitiveOrArrayType(
+        currentPackagePath: Path.SimplePath,
+        currentClassPath: Path.SimplePath,
+        typePath: Type
+    ): TypeInfo? =
+        scope.table.findType(typePath) ?: resolveTypeOnSamePackage(currentPackagePath, currentClassPath, typePath)
+
+    private fun resolveTypeOnSamePackage(
+        currentPackagePath: Path.SimplePath,
+        currentClassPath: Path.SimplePath,
+        typePath: Type
+    ): TypeInfo? =
+        scope.table.findType(currentPackagePath.toString().appendPath(typePath.standardizeType()))
+            ?: resolveTypeFromTop(currentPackagePath, currentClassPath, typePath)
+
+    private fun resolveTypeFromTop(
+        currentPackagePath: Path.SimplePath,
+        currentClassPath: Path.SimplePath,
+        typePath: Type
+    ): TypeInfo? =
+        scope.table.findType(typePath.standardizeType()) ?: resolveTypeFromCurrentPath(
+            currentPackagePath,
+            currentClassPath,
+            typePath
+        )
+
+    private fun resolveTypeFromCurrentPath(
+        currentPackagePath: Path.SimplePath,
+        currentClassPath: Path.SimplePath,
+        typePath: Type
+    ): TypeInfo.Class? =
+        scope.table.findType(currentPackagePath.appendPath(currentClassPath).appendPath(typePath.standardizeType()))
+
     fun resolveFunction(
         currentPackagePath: Path.SimplePath,
         currentClassPath: Path.SimplePath,

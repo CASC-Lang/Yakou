@@ -179,6 +179,13 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         methodVisitor.visitCode()
 
         methodVisitor.visitVarInsn(Opcodes.ALOAD, 0)
+
+        if (superClassConstructorCall != null) {
+            for (argument in superClassConstructorCall.arguments) {
+                genExpression(methodVisitor, argument)
+            }
+        }
+
         methodVisitor.visitMethodInsn(
             Opcodes.INVOKESPECIAL,
             superClassConstructorCall?.superClassTypeInfo?.internalName ?: "java/lang/Object",

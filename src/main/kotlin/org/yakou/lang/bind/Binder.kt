@@ -295,7 +295,11 @@ class Binder(private val compilationUnit: CompilationUnit) {
         for (argument in superClassConstructorCall.arguments)
             bindExpression(argument)
 
-        return when (val superType = bindType(superClassConstructorCall.superClassType)) {
+        return when (val superType = SymbolResolver(currentScope!!).resolveType(
+            currentPackagePath,
+            currentClassPath,
+            superClassConstructorCall.superClassType
+        )) {
             is TypeInfo.Array, is TypeInfo.Primitive -> {
                 val typeLiteral =
                     colorize(
@@ -349,6 +353,12 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 superClassConstructorCall.superClassTypeInfo = superType
 
                 superType
+            }
+
+            null -> {
+                reportUnresolvedType(superClassConstructorCall.superClassType.standardizeType(), superClassConstructorCall.superClassType.span)
+
+                null
             }
         }
     }
@@ -847,15 +857,20 @@ class Binder(private val compilationUnit: CompilationUnit) {
             // Unknown type
             val span = type.span
             val typeName = type.standardizeType()
-            val colorizedTypeName = colorize(typeName, compilationUnit, Attribute.RED_TEXT())
 
-            compilationUnit.reportBuilder
-                .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Unknown type $colorizedTypeName")
-                .label(span, "Unresolvable type here")
-                .color(Attribute.RED_TEXT())
-                .build().build()
+            reportUnresolvedType(typeName, span)
 
             TypeInfo.Primitive.UNIT_TYPE_INFO
         } else typeInfo
+    }
+
+    private fun reportUnresolvedType(typeName: String, span: Span) {
+        val colorizedTypeName = colorize(typeName, compilationUnit, Attribute.RED_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Unknown type $colorizedTypeName")
+            .label(span, "Unresolvable type here")
+            .color(Attribute.RED_TEXT())
+            .build().build()
     }
 }
