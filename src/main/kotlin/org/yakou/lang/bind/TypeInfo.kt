@@ -254,4 +254,18 @@ sealed class TypeInfo {
             return innerType.hashCode()
         }
     }
+
+    class GenericConstraint(
+        val bounds: List<Class>
+    ) : TypeInfo() {
+        override val internalName: String by lazy {
+            bounds.firstOrNull()?.internalName ?: Class.OBJECT_TYPE_INFO.internalName
+        }
+        override val descriptor: String by lazy {
+            bounds.firstOrNull()?.descriptor ?: Class.OBJECT_TYPE_INFO.internalName
+        }
+        override val storeOpcode: Int = Opcodes.ASTORE
+        override val loadOpcode: Int = Opcodes.ALOAD
+        override val returnOpcode: Int = Opcodes.ARETURN
+    }
 }
