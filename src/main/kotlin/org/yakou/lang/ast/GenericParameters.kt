@@ -3,26 +3,30 @@ package org.yakou.lang.ast
 import chaos.unity.nenggao.Span
 import org.yakou.lang.bind.TypeInfo
 
-data class GenericParameters(val openBracket: Token, val parameters: List<GenericParameter>, val closeBracket: Token) : AstNode {
+data class GenericParameters(val openBracket: Token, val parameters: List<GenericParameter>, val closeBracket: Token) :
+    AstNode {
     override val span: Span by lazy {
         openBracket.span.expand(closeBracket.span)
     }
 
-    sealed class GenericParameter: AstNode {
+    sealed class GenericParameter : AstNode {
         abstract override val span: Span
     }
 
-    data class ConstraintGenericParameter(val identifier: Token, val boundIndicator: Token?, val constraints: List<ConstraintParameter>): GenericParameter() {
+    data class ConstraintGenericParameter(
+        val identifier: Token,
+        val boundIndicator: Token?,
+        val constraints: List<Type>
+    ) : GenericParameter() {
         override val span: Span by lazy {
             identifier.span.expand(boundIndicator?.span).expand(constraints.lastOrNull()?.span)
         }
-
-        data class ConstraintParameter(val type: Type): AstNode {
-            override val span: Span = type.span
-        }
     }
 
-    data class WildCardBoundGenericParameter(val boundIndicator: Token, val type: Type) : GenericParameter() { // TODO: Constraints
+    data class WildCardConstraintGenericParameter(
+        val boundIndicator: Token,
+        val type: Type
+    ) : GenericParameter() { // TODO: Constraints
         override val span: Span by lazy {
             boundIndicator.span.expand(type.span)
         }
@@ -36,10 +40,13 @@ data class GenericParameters(val openBracket: Token, val parameters: List<Generi
             },
             TypeInfo.GenericConstraint.VarianceType.INVARIANCE,
 
-        )
+            )
     }
 
-    data class VarianceGenericParameter(val varianceIndicator: Token, val identifier: Token) : GenericParameter() {
+    data class VarianceGenericParameter(
+        val varianceIndicator: Token,
+        val identifier: Token
+    ) : GenericParameter() {
         override val span: Span by lazy {
             varianceIndicator.span.expand(identifier.span)
         }

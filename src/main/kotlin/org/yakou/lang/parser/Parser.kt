@@ -673,7 +673,9 @@ class Parser(private val compilationUnit: CompilationUnit) {
         while (pos < tokens.size &&
             (optExpectType(TokenType.Identifier) ||
                     optExpectType(TokenType.Plus) ||
-                    optExpectType(TokenType.Minus))
+                    optExpectType(TokenType.Minus) ||
+                    optExpectType(TokenType.PlusColon) ||
+                    optExpectType(TokenType.MinusColon))
         ) {
             parameters += parseGenericParameter()
 
@@ -686,13 +688,58 @@ class Parser(private val compilationUnit: CompilationUnit) {
         return GenericParameters(lesser, parameters, greater)
     }
 
-    private fun parseGenericParameter(): GenericParameters.GenericParameter {
-        val varianceIndicator =
-            if (optExpectType(TokenType.Plus) || optExpectType(TokenType.Minus)) next()!!
-            else null
+    private fun parseGenericParameter(): GenericParameters.GenericParameter = when {
+        optExpectType(TokenType.Identifier) -> parseConstraintGenericParameter()
+        optExpectType(TokenType.PlusColon) || optExpectType(TokenType.MinusColon) -> parseWildCardConstraintGenericParameter()
+        optExpectType(TokenType.Plus) || optExpectType(TokenType.Minus) -> parseVarianceGenericParameter()
+        else -> TODO("UNREACHABLE")
+    }
+
+    private fun parseConstraintGenericParameter(): GenericParameters.ConstraintGenericParameter {
+        val identifier = next()!!
+        val boundIndicator: Token?
+        val constraints: List<Type>
+
+        if (optExpectType(TokenType.GreaterColon) || optExpectType(TokenType.LesserColon)) {
+            boundIndicator = next()!!
+            constraints = parseConstraintParameters()
+        } else {
+            boundIndicator = null
+            constraints = listOf()
+        }
+
+        return GenericParameters.ConstraintGenericParameter(identifier, boundIndicator, constraints)
+    }
+
+    private fun parseConstraintParameters(): List<Type> {
+        val constraints = mutableListOf<Type>()
+
+        // Identifier for primitive type or class type path
+        // OpenBracket for array type
+        // though in generic, primitive type and array type are not able to be used as upper or lower bound type
+        // we later check this in binder
+        while (pos < tokens.size && (optExpectType(TokenType.Identifier) || optExpectType(TokenType.OpenBracket))) {
+            constraints += parseType()
+
+            if (optExpectType(TokenType.Plus)) consume()
+            else break
+        }
+
+        return constraints
+    }
+
+    private fun parseWildCardConstraintGenericParameter(): GenericParameters.WildCardConstraintGenericParameter {
+        val boundIndicator = next()!!
+        val type = parseType()
+
+        return GenericParameters.WildCardConstraintGenericParameter(boundIndicator, type)
+    }
+
+    private fun parseVarianceGenericParameter(): GenericParameters.VarianceGenericParameter {
+        val varianceIndicator = next()!!
         val identifier = expect(TokenType.Identifier)
 
-        return GenericParameters.GenericParameter(varianceIndicator, identifier)
+        return GenericParameters.VarianceGenericParameter(varianceIndicator, identifier)
     }
 
     private fun parseParameters(): List<Parameter> {
