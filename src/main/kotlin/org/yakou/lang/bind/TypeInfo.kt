@@ -1,7 +1,6 @@
 package org.yakou.lang.bind
 
 import org.objectweb.asm.Opcodes
-import java.lang.reflect.ParameterizedType
 import java.lang.reflect.TypeVariable
 
 sealed class TypeInfo {
@@ -134,7 +133,6 @@ sealed class TypeInfo {
             PrimitiveType.I64 -> Opcodes.LSTORE
             PrimitiveType.F32 -> Opcodes.FSTORE
             PrimitiveType.F64 -> Opcodes.DSTORE
-            PrimitiveType.Str -> Opcodes.ASTORE
             else -> -1
         }
         override val loadOpcode: Int = when (type) {
@@ -142,7 +140,6 @@ sealed class TypeInfo {
             PrimitiveType.I64 -> Opcodes.LLOAD
             PrimitiveType.F32 -> Opcodes.FLOAD
             PrimitiveType.F64 -> Opcodes.DLOAD
-            PrimitiveType.Str -> Opcodes.ALOAD
             else -> -1
         }
         override val returnOpcode: Int = when (type) {
@@ -151,13 +148,9 @@ sealed class TypeInfo {
             PrimitiveType.I64 -> Opcodes.LRETURN
             PrimitiveType.F32 -> Opcodes.FRETURN
             PrimitiveType.F64 -> Opcodes.DRETURN
-            PrimitiveType.Str -> Opcodes.ARETURN
         }
 
-        override val internalName: String? = when (type) {
-            PrimitiveType.Str -> "java/lang/String"
-            else -> null
-        }
+        override val internalName: String? = null
         override val descriptor: String = type.descriptor
 
         override fun toString(): String =
@@ -264,7 +257,7 @@ sealed class TypeInfo {
         val genericParameterName: String,
         val boundType: BoundType,
         val varianceType: VarianceType,
-        val bounds: MutableList<TypeInfoVariable> = mutableListOf()
+        var bounds: MutableList<TypeInfoVariable> = mutableListOf()
     ) : TypeInfo(), TypeInfoVariable {
         companion object {
             fun fromTypeVariable(
@@ -273,11 +266,21 @@ sealed class TypeInfo {
             ): GenericConstraint =
                 GenericConstraint(
                     typeVariable.name,
-                    TODO(), // TODO: Investigate how to get bound of type variable
+                    when {
+                        typeVariable.bounds.isNotEmpty() -> BoundType.UPPER
+                        else -> BoundType.NONE
+                    }, // TODO: Investigate how to get bound of type variable
                     VarianceType.INVARIANCE,
                     typeVariable.bounds.map {
                         if (declaredTypeVariables.find { typeVariable -> typeVariable.typeName == it.typeName } != null) {
-                            GenericConstraint(it.typeName, TODO(), VarianceType.INVARIANCE)
+                            GenericConstraint(
+                                it.typeName,
+                                when {
+                                    typeVariable.bounds.isNotEmpty() -> BoundType.UPPER
+                                    else -> BoundType.NONE
+                                },
+                                VarianceType.INVARIANCE
+                            )
                         } else {
                             fromClass(java.lang.Class.forName(it.typeName)) as Class
                         }

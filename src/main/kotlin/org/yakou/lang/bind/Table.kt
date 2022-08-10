@@ -151,6 +151,10 @@ class Table {
             return TypeInfo.Primitive(it)
         }
 
+        if (typeName == "str") {
+            return TypeInfo.fromClass(String::class.java)
+        }
+
         return when (val typeInfo = asTypeInfo(type)) {
             is TypeInfo.Array -> {
                 when (typeInfo.baseType) {

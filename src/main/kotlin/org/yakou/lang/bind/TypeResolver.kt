@@ -7,7 +7,7 @@ class TypeResolver(private val scope: Scope?, private val table: Table) {
         resolveTypeVariable(type)
 
     private fun resolveTypeVariable(type: Type): TypeInfo? =
-        scope?.typeVariables?.find { it.genericParameterName == type.standardizeType() } ?: resolveTypeFromTable(type)
+        scope?.typeVariables?.get(type.standardizeType()) ?: resolveTypeFromTable(type)
 
     private fun resolveTypeFromTable(type: Type): TypeInfo? =
         table.findType(type)

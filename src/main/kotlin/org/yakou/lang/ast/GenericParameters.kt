@@ -11,6 +11,7 @@ data class GenericParameters(val openBracket: Token, val parameters: List<Generi
 
     sealed class GenericParameter : AstNode {
         abstract override val span: Span
+        abstract val genericConstraint: TypeInfo.GenericConstraint
     }
 
     data class ConstraintGenericParameter(
@@ -21,9 +22,20 @@ data class GenericParameters(val openBracket: Token, val parameters: List<Generi
         override val span: Span by lazy {
             identifier.span.expand(boundIndicator?.span).expand(constraints.lastOrNull()?.span)
         }
+
+        override val genericConstraint: TypeInfo.GenericConstraint = TypeInfo.GenericConstraint(
+            identifier.literal,
+            when (boundIndicator?.type) {
+                TokenType.LesserColon -> TypeInfo.GenericConstraint.BoundType.UPPER
+                TokenType.GreaterColon -> TypeInfo.GenericConstraint.BoundType.LOWER
+                else -> TypeInfo.GenericConstraint.BoundType.NONE
+            },
+            TypeInfo.GenericConstraint.VarianceType.INVARIANCE,
+
+            )
     }
 
-    data class WildCardConstraintGenericParameter(
+    data class WildcardConstraintGenericParameter(
         val boundIndicator: Token,
         val type: Type
     ) : GenericParameter() { // TODO: Constraints
@@ -31,7 +43,7 @@ data class GenericParameters(val openBracket: Token, val parameters: List<Generi
             boundIndicator.span.expand(type.span)
         }
 
-        val genericConstraint: TypeInfo.GenericConstraint = TypeInfo.GenericConstraint(
+        override val genericConstraint: TypeInfo.GenericConstraint = TypeInfo.GenericConstraint(
             "_",
             when (boundIndicator.type) {
                 TokenType.PlusColon -> TypeInfo.GenericConstraint.BoundType.UPPER
@@ -51,7 +63,7 @@ data class GenericParameters(val openBracket: Token, val parameters: List<Generi
             varianceIndicator.span.expand(identifier.span)
         }
 
-        val genericConstraint: TypeInfo.GenericConstraint = TypeInfo.GenericConstraint(
+        override val genericConstraint: TypeInfo.GenericConstraint = TypeInfo.GenericConstraint(
             identifier.literal,
             TypeInfo.GenericConstraint.BoundType.NONE,
             when (varianceIndicator.type) {

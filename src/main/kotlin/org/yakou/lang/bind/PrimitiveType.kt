@@ -17,7 +17,6 @@ enum class PrimitiveType(
     I64("i64", "long", java.lang.Long.TYPE, java.lang.Long::class.java, "J", 3),
     F32("f32", "float", java.lang.Float.TYPE, java.lang.Float::class.java, "F", 4),
     F64("f64", "double", java.lang.Double.TYPE, java.lang.Double::class.java, "D", 5),
-    Str("str", "String", java.lang.String::class.java, java.lang.String::class.java, "Ljava/lang/String;", -1),
     ;
 
     companion object {
@@ -45,7 +44,6 @@ enum class PrimitiveType(
 
         fun fromClass(clazz: Class<*>): TypeInfo? = when {
             clazz.isPrimitive -> TypeInfo.Primitive(primitiveTypes.find { it.jvmClazz == clazz || it.wrappedJvmClazz == clazz }!!)
-            clazz.typeName == "java.lang.String" -> TypeInfo.Primitive(Str)
             else -> null
         }
     }

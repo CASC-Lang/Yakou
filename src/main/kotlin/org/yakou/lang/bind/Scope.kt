@@ -3,11 +3,15 @@ package org.yakou.lang.bind
 import org.yakou.lang.ast.Token
 
 class Scope(internal val table: Table) {
-    val typeVariables: MutableList<TypeInfo.GenericConstraint> = mutableListOf()
+    val typeVariables: MutableMap<String, TypeInfo.GenericConstraint> = mutableMapOf()
     val variables: VariableList = VariableList()
 
     fun addTypeVariable(typeVariable: TypeInfo.GenericConstraint) {
-        typeVariables.add(typeVariable)
+        typeVariables[typeVariable.genericParameterName] = typeVariable
+    }
+
+    fun setConstraint(typeParameterName: String, typeInfoVariable: TypeInfo.TypeInfoVariable) {
+        typeVariables[typeParameterName]?.bounds?.add(typeInfoVariable)
     }
 
     private fun currentVariableIndex(): Int =

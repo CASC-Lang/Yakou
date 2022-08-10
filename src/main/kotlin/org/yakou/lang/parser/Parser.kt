@@ -121,7 +121,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val `class` = next()!! // Should be asserted when called
         val name = expect(TokenType.Identifier)
         val genericParameters =
-            if (optExpectType(TokenType.Lesser)) parseGenericParameters()
+            if (optExpectType(TokenType.OpenBracket)) parseGenericParameters()
             else null
         val primaryConstructorModifiers = parseModifiers()
         val primaryConstructor =
@@ -667,7 +667,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseGenericParameters(): GenericParameters {
-        val lesser = next()!!
+        val openBracket = next()!!
         val parameters = mutableListOf<GenericParameters.GenericParameter>()
 
         while (pos < tokens.size &&
@@ -683,9 +683,9 @@ class Parser(private val compilationUnit: CompilationUnit) {
             else break
         }
 
-        val greater = next()!!
+        val closeBracket = next()!!
 
-        return GenericParameters(lesser, parameters, greater)
+        return GenericParameters(openBracket, parameters, closeBracket)
     }
 
     private fun parseGenericParameter(): GenericParameters.GenericParameter = when {
@@ -728,11 +728,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
         return constraints
     }
 
-    private fun parseWildCardConstraintGenericParameter(): GenericParameters.WildCardConstraintGenericParameter {
+    private fun parseWildCardConstraintGenericParameter(): GenericParameters.WildcardConstraintGenericParameter {
         val boundIndicator = next()!!
         val type = parseType()
 
-        return GenericParameters.WildCardConstraintGenericParameter(boundIndicator, type)
+        return GenericParameters.WildcardConstraintGenericParameter(boundIndicator, type)
     }
 
     private fun parseVarianceGenericParameter(): GenericParameters.VarianceGenericParameter {

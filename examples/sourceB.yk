@@ -1,7 +1,7 @@
 pkg chaos {
     mut class Animal(pub age: i8)
 
-    class Person[+T](pub firstName: str,
+    class Person[T <: str](pub firstName: str,
                     pub lastName: str,
                     age: i8,
                     pub what: T

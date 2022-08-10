@@ -100,7 +100,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         if (clazz.genericParameters != null) {
             for (parameter in clazz.genericParameters.parameters) {
-                currentScope!!.addTypeVariable(parameter.genericConstraint)
+                bindGenericParameterDeclaration(parameter)
             }
         }
 
@@ -132,6 +132,34 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         currentScope = null
         currentClassPath = previousClassPath
+    }
+
+    private fun bindGenericParameterDeclaration(genericParameter: GenericParameters.GenericParameter) {
+        if (genericParameter is GenericParameters.WildcardConstraintGenericParameter) {
+            compilationUnit.reportBuilder
+                .error(
+                    SpanHelper.expandView(genericParameter.span, compilationUnit.maxLineCount),
+                    "Unable to use wildcard bound here"
+                )
+                .label(genericParameter.span, "Wildcard bound cannot be used at generic parameter declaration")
+                .color(Attribute.CYAN_TEXT())
+                .build().build()
+        } else if (genericParameter is GenericParameters.ConstraintGenericParameter && genericParameter.genericConstraint.boundType == TypeInfo.GenericConstraint.BoundType.LOWER) {
+            // Illegal bound, cannot declare type parameter with lower bound
+            val boundIndicatorLiteral =
+                colorize(">:", compilationUnit, Attribute.CYAN_TEXT())
+
+            compilationUnit.reportBuilder
+                .error(
+                    SpanHelper.expandView(genericParameter.boundIndicator!!.span, compilationUnit.maxLineCount),
+                    "Illegal bound indicator `$boundIndicatorLiteral`"
+                )
+                .label(genericParameter.boundIndicator.span, "Cannot declare type parameter with lower bound")
+                .color(Attribute.CYAN_TEXT())
+                .build().build()
+        } else {
+            currentScope!!.addTypeVariable(genericParameter.genericConstraint)
+        }
     }
 
     private fun bindPrimaryConstructorDeclaration(primaryConstructor: PrimaryConstructor) {
@@ -263,6 +291,12 @@ class Binder(private val compilationUnit: CompilationUnit) {
         currentClassPath = currentClassPath.append(clazz.identifier)
         currentScope = Scope(table)
 
+        if (clazz.genericParameters != null) {
+            for (parameter in clazz.genericParameters.parameters) {
+                bindGenericParameter(parameter)
+            }
+        }
+
         if (clazz.primaryConstructor != null) {
             bindPrimaryConstructor(clazz.primaryConstructor)
         }
@@ -283,8 +317,27 @@ class Binder(private val compilationUnit: CompilationUnit) {
         currentScope = null
     }
 
-    private fun bindGenericConstraints(genericParameters: GenericParameters) {
-        // TODO: Bind constraints
+    private fun bindGenericParameter(genericParameter: GenericParameters.GenericParameter) {
+        if (genericParameter is GenericParameters.ConstraintGenericParameter) {
+            for (bound in genericParameter.constraints) {
+                val boundType = bindType(bound)
+
+                if (boundType !is TypeInfo.TypeInfoVariable) {
+                    compilationUnit.reportBuilder
+                        .error(
+                            SpanHelper.expandView(genericParameter.span, compilationUnit.maxLineCount),
+                            "Unable to set bound to non-class type or non-type-parameter"
+                        )
+                        .label(genericParameter.span, "Bound type can only be class type or type parameter")
+                        .color(Attribute.CYAN_TEXT())
+                        .build().build()
+                } else {
+                    genericParameter.genericConstraint.bounds += boundType
+
+                    currentScope!!.setConstraint(genericParameter.genericConstraint.genericParameterName, boundType)
+                }
+            }
+        }
     }
 
     private fun bindPrimaryConstructor(primaryConstructor: PrimaryConstructor) {
@@ -345,7 +398,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
                         ),
                         "Unable to inherit from generic type"
                     )
-                    .label(superClassConstructorCall.superClassType.span, "Generic type constraint cannot be inherited from")
+                    .label(
+                        superClassConstructorCall.superClassType.span,
+                        "Generic type constraint cannot be inherited from"
+                    )
                     .color(Attribute.RED_TEXT())
                     .build().build()
 
@@ -385,7 +441,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
             }
 
             null -> {
-                reportUnresolvedType(superClassConstructorCall.superClassType.standardizeType(), superClassConstructorCall.superClassType.span)
+                reportUnresolvedType(
+                    superClassConstructorCall.superClassType.standardizeType(),
+                    superClassConstructorCall.superClassType.span
+                )
 
                 null
             }

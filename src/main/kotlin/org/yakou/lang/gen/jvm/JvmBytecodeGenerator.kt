@@ -732,9 +732,11 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             if (genericConstraint.bounds.isNotEmpty()) {
                 val signatureVisitor = signatureWriter.visitClassBound()
 
-                for (bounds in genericConstraint.bounds) {
-                    signatureVisitor.visitClassBound()
+                for (bound in genericConstraint.bounds) {
+                    signatureVisitor.visitClassType(bound.internalName)
                 }
+
+                signatureWriter.visitEnd()
             } else {
                 val signatureVisitor = signatureWriter.visitClassBound()
                 signatureVisitor.visitClassType(TypeInfo.Class.OBJECT_TYPE_INFO.internalName)
@@ -786,12 +788,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genGenericSignature(signatureVisitor: SignatureVisitor, primitiveType: TypeInfo.Primitive) {
-        if (primitiveType.type == PrimitiveType.Str) {
-            signatureVisitor.visitClassType(primitiveType.internalName)
-            signatureVisitor.visitEnd()
-        } else {
-            signatureVisitor.visitBaseType(primitiveType.descriptor[0]) // Force cast
-        }
+        signatureVisitor.visitBaseType(primitiveType.descriptor[0]) // Force cast
     }
 
     private fun genGenericSignature(signatureVisitor: SignatureVisitor, classType: TypeInfo.Class) {
