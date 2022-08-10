@@ -186,10 +186,12 @@ class Lexer(private val compilationUnit: CompilationUnit) {
                 else -> charToken(TokenType.Ampersand)
             }
             '>' -> when (peek(1)) {
+                ':' -> stringToken(TokenType.GreaterColon)
                 '=' -> stringToken(TokenType.GreaterEqual)
                 else -> charToken(TokenType.Greater)
             }
             '<' -> when (peek(1)) {
+                ':' -> stringToken(TokenType.LesserColon)
                 '=' -> stringToken(TokenType.LesserEqual)
                 else -> charToken(TokenType.Lesser)
             }
@@ -197,11 +199,13 @@ class Lexer(private val compilationUnit: CompilationUnit) {
             '^' -> charToken(TokenType.Hat)
             '+' -> when (peek(1)) {
                 '+' -> stringToken(TokenType.DoublePlus)
+                ':' -> stringToken(TokenType.PlusColon)
                 else -> charToken(TokenType.Plus)
             }
             '-' -> when (peek(1)) {
-                '>' -> stringToken(TokenType.Arrow)
                 '-' -> stringToken(TokenType.DoubleMinus)
+                ':' -> stringToken(TokenType.MinusColon)
+                '>' -> stringToken(TokenType.Arrow)
                 else -> charToken(TokenType.Minus)
             }
             '*' -> charToken(TokenType.Star)

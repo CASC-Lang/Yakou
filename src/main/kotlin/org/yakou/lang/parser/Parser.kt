@@ -670,7 +670,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val lesser = next()!!
         val parameters = mutableListOf<GenericParameters.GenericParameter>()
 
-        while (pos < tokens.size && optExpectType(TokenType.Identifier)) {
+        while (pos < tokens.size &&
+            (optExpectType(TokenType.Identifier) ||
+                    optExpectType(TokenType.Plus) ||
+                    optExpectType(TokenType.Minus))
+        ) {
             parameters += parseGenericParameter()
 
             if (optExpectType(TokenType.Comma)) consume()
@@ -683,9 +687,12 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseGenericParameter(): GenericParameters.GenericParameter {
+        val varianceIndicator =
+            if (optExpectType(TokenType.Plus) || optExpectType(TokenType.Minus)) next()!!
+            else null
         val identifier = expect(TokenType.Identifier)
 
-        return GenericParameters.GenericParameter(identifier)
+        return GenericParameters.GenericParameter(varianceIndicator, identifier)
     }
 
     private fun parseParameters(): List<Parameter> {

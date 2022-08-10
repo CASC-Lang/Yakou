@@ -1,7 +1,11 @@
 pkg chaos {
     mut class Animal(pub age: i8)
 
-    class Person<T>(pub firstName: str, pub lastName: str, age: i8, pub what: T): Animal(age) {
+    class Person[+T](pub firstName: str,
+                    pub lastName: str,
+                    age: i8,
+                    pub what: T
+                    ): Animal(age) {
         name: str = firstName
     }
 }

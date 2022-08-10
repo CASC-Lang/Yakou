@@ -1,6 +1,7 @@
 package org.yakou.lang.bind
 
 import org.objectweb.asm.Opcodes
+import java.lang.reflect.ParameterizedType
 import java.lang.reflect.TypeVariable
 
 sealed class TypeInfo {
@@ -17,7 +18,7 @@ sealed class TypeInfo {
             )
         }
 
-        fun standardizeTypeName(typeName: String): String =
+        private fun standardizeTypeName(typeName: String): String =
             typeName.replace(".", "::")
     }
 
@@ -261,6 +262,8 @@ sealed class TypeInfo {
 
     class GenericConstraint(
         val genericParameterName: String,
+        val boundType: BoundType,
+        val varianceType: VarianceType,
         val bounds: MutableList<TypeInfoVariable> = mutableListOf()
     ) : TypeInfo(), TypeInfoVariable {
         companion object {
@@ -268,13 +271,18 @@ sealed class TypeInfo {
                 declaredTypeVariables: kotlin.Array<out TypeVariable<out java.lang.Class<*>>>,
                 typeVariable: TypeVariable<*>
             ): GenericConstraint =
-                GenericConstraint(typeVariable.name, typeVariable.bounds.map {
-                    if (declaredTypeVariables.find { typeVariable -> typeVariable.typeName == it.typeName } != null) {
-                        GenericConstraint(it.typeName)
-                    } else {
-                        fromClass(java.lang.Class.forName(it.typeName)) as Class
-                    }
-                }.toMutableList())
+                GenericConstraint(
+                    typeVariable.name,
+                    TODO(), // TODO: Investigate how to get bound of type variable
+                    VarianceType.INVARIANCE,
+                    typeVariable.bounds.map {
+                        if (declaredTypeVariables.find { typeVariable -> typeVariable.typeName == it.typeName } != null) {
+                            GenericConstraint(it.typeName, TODO(), VarianceType.INVARIANCE)
+                        } else {
+                            fromClass(java.lang.Class.forName(it.typeName)) as Class
+                        }
+                    }.toMutableList()
+                )
         }
 
         override val internalName: String by lazy {
@@ -286,6 +294,18 @@ sealed class TypeInfo {
         override val storeOpcode: Int = Opcodes.ASTORE
         override val loadOpcode: Int = Opcodes.ALOAD
         override val returnOpcode: Int = Opcodes.ARETURN
+
+        enum class BoundType {
+            UPPER,
+            LOWER,
+            NONE
+        }
+
+        enum class VarianceType {
+            COVARIANCE,
+            CONTRAVARIANCE,
+            INVARIANCE
+        }
     }
 
     interface TypeInfoVariable {
