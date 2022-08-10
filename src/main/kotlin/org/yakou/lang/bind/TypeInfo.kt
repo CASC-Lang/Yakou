@@ -1,6 +1,7 @@
 package org.yakou.lang.bind
 
 import org.objectweb.asm.Opcodes
+import java.lang.reflect.Modifier
 import java.lang.reflect.TypeVariable
 
 sealed class TypeInfo {
@@ -193,6 +194,7 @@ sealed class TypeInfo {
             val OBJECT_TYPE_INFO: Class = fromClass(Any::class.java) as Class
         }
 
+        val isInterface: Boolean = Modifier.isInterface(access)
         val canonicalName: String = standardTypePath.replace("::", ".")
         final override val internalName: String = standardTypePath.replace("::", "/")
         final override val descriptor: String = "L$internalName;"

@@ -730,13 +730,29 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             signatureWriter.visitFormalTypeParameter(genericConstraint.genericParameterName)
 
             if (genericConstraint.bounds.isNotEmpty()) {
-                val signatureVisitor = signatureWriter.visitClassBound()
+                when (val firstBound = genericConstraint.bounds[0]) {
+                    is TypeInfo.GenericConstraint -> {
+                        signatureWriter.visitClassBound().visitTypeVariable(firstBound.genericParameterName)
+                    }
 
-                for (bound in genericConstraint.bounds) {
-                    signatureVisitor.visitClassType(bound.internalName)
+                    is TypeInfo.Class -> {
+                        if (!firstBound.isInterface) {
+                            val signatureVisitor = signatureWriter.visitClassBound()
+                            signatureVisitor.visitClassType(firstBound.internalName)
+                            signatureVisitor.visitEnd()
+                        }
+
+                        if (genericConstraint.bounds.size > 1) {
+                            val signatureVisitor = signatureWriter.visitInterfaceBound()
+
+                            for (bound in genericConstraint.bounds.drop(1)) {
+                                signatureWriter.visitClassType(bound.internalName)
+                            }
+
+                            signatureVisitor.visitEnd()
+                        }
+                    }
                 }
-
-                signatureWriter.visitEnd()
             } else {
                 val signatureVisitor = signatureWriter.visitClassBound()
                 signatureVisitor.visitClassType(TypeInfo.Class.OBJECT_TYPE_INFO.internalName)
