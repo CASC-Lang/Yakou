@@ -73,6 +73,7 @@ sealed class Item: AstNode {
         val modifiers: Modifiers,
         val `class`: Token,
         val identifier: Token,
+        val genericParameters: GenericParameters?,
         val primaryConstructor: PrimaryConstructor?,
         val colon: Token?,
         val superClassConstructorCall: SuperClassConstructorCall?,

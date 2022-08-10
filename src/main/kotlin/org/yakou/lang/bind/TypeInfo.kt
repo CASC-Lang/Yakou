@@ -1,6 +1,7 @@
 package org.yakou.lang.bind
 
 import org.objectweb.asm.Opcodes
+import java.lang.reflect.TypeVariable
 
 sealed class TypeInfo {
     companion object {
@@ -10,6 +11,7 @@ sealed class TypeInfo {
             else -> Class(
                 clazz.modifiers,
                 standardizeTypeName(clazz.typeName),
+                clazz.typeParameters.map { GenericConstraint.fromTypeVariable(clazz.typeParameters, it) },
                 clazz.superclass?.let { fromClass(it) as Class },
                 clazz.interfaces.map(::fromClass).map { it as Class }
             )
@@ -97,17 +99,17 @@ sealed class TypeInfo {
             PrimitiveType.F64 -> Opcodes.DREM
             else -> -1
         }
-        val ushrOpcode: Int =  when (type) {
+        val ushrOpcode: Int = when (type) {
             PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.IUSHR
             PrimitiveType.I64 -> Opcodes.LUSHR
             else -> -1
         }
-        val shrOpcode: Int =  when (type) {
+        val shrOpcode: Int = when (type) {
             PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.ISHR
             PrimitiveType.I64 -> Opcodes.LSHR
             else -> -1
         }
-        val shlOpcode: Int =  when (type) {
+        val shlOpcode: Int = when (type) {
             PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.ISHL
             PrimitiveType.I64 -> Opcodes.LSHL
             else -> -1
@@ -181,6 +183,7 @@ sealed class TypeInfo {
     ) : Class(
         Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL,
         "$standardPackagePath::PackageYk",
+        listOf(),
         fromClass(Any::class.java) as Class,
         listOf()
     )
@@ -188,9 +191,10 @@ sealed class TypeInfo {
     open class Class(
         val access: Int,
         val standardTypePath: String,
+        val genericParameters: List<GenericConstraint>,
         var superClassType: Class?,
         val interfaceTypes: List<Class>
-    ) : TypeInfo() {
+    ) : TypeInfo(), TypeInfoVariable {
         companion object {
             val OBJECT_TYPE_INFO: Class = fromClass(Any::class.java) as Class
         }
@@ -256,16 +260,36 @@ sealed class TypeInfo {
     }
 
     class GenericConstraint(
-        val bounds: List<Class>
-    ) : TypeInfo() {
+        val genericParameterName: String,
+        val bounds: MutableList<TypeInfoVariable> = mutableListOf()
+    ) : TypeInfo(), TypeInfoVariable {
+        companion object {
+            fun fromTypeVariable(
+                declaredTypeVariables: kotlin.Array<out TypeVariable<out java.lang.Class<*>>>,
+                typeVariable: TypeVariable<*>
+            ): GenericConstraint =
+                GenericConstraint(typeVariable.name, typeVariable.bounds.map {
+                    if (declaredTypeVariables.find { typeVariable -> typeVariable.typeName == it.typeName } != null) {
+                        GenericConstraint(it.typeName)
+                    } else {
+                        fromClass(java.lang.Class.forName(it.typeName)) as Class
+                    }
+                }.toMutableList())
+        }
+
         override val internalName: String by lazy {
             bounds.firstOrNull()?.internalName ?: Class.OBJECT_TYPE_INFO.internalName
         }
         override val descriptor: String by lazy {
-            bounds.firstOrNull()?.descriptor ?: Class.OBJECT_TYPE_INFO.internalName
+            bounds.firstOrNull()?.descriptor ?: Class.OBJECT_TYPE_INFO.descriptor
         }
         override val storeOpcode: Int = Opcodes.ASTORE
         override val loadOpcode: Int = Opcodes.ALOAD
         override val returnOpcode: Int = Opcodes.ARETURN
+    }
+
+    interface TypeInfoVariable {
+        val internalName: String
+        val descriptor: String
     }
 }

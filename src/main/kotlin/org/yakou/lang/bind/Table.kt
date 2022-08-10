@@ -1,5 +1,6 @@
 package org.yakou.lang.bind
 
+import org.yakou.lang.ast.GenericParameters
 import org.yakou.lang.ast.Item
 import org.yakou.lang.ast.Type
 import org.yakou.lang.util.mapAs
@@ -105,6 +106,7 @@ class Table {
         access: Int,
         packagePath: String,
         classPath: String,
+        genericParameters: List<GenericParameters.GenericParameter>
     ): TypeInfo.Class? {
         val qualifiedClassPath = packagePath.appendPath(classPath)
 
@@ -113,6 +115,7 @@ class Table {
             val classType = TypeInfo.Class(
                 access,
                 qualifiedClassPath,
+                genericParameters.map(GenericParameters.GenericParameter::genericConstraint),
                 TypeInfo.fromClass(Any::class.java) as TypeInfo.Class,
                 listOf()
             )
@@ -151,7 +154,7 @@ class Table {
         return when (val typeInfo = asTypeInfo(type)) {
             is TypeInfo.Array -> {
                 when (typeInfo.baseType) {
-                    is TypeInfo.Primitive, is TypeInfo.Class -> typeInfo
+                    is TypeInfo.Primitive, is TypeInfo.Class, is TypeInfo.GenericConstraint -> typeInfo
                     is TypeInfo.Array -> null // Unreachable
                 }
             }

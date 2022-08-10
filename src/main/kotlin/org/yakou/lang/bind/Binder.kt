@@ -89,12 +89,20 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun bindClassDeclaration(clazz: Item.Class) {
         val previousClassPath = currentClassPath
         currentClassPath = currentClassPath.append(clazz.identifier)
+        currentScope = Scope(table)
 
         val classType = table.registerClassType(
             clazz.modifiers.sum(),
             currentPackagePath.toString(),
-            currentClassPath.toString()
+            currentClassPath.toString(),
+            clazz.genericParameters?.parameters ?: listOf()
         )
+
+        if (clazz.genericParameters != null) {
+            for (parameter in clazz.genericParameters.parameters) {
+                currentScope!!.addTypeVariable(parameter.genericConstraint)
+            }
+        }
 
         if (classType == null) {
             // Failed to register class type
@@ -122,6 +130,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             for (classItem in clazz.classItems)
                 bindClassItemDeclaration(classItem)
 
+        currentScope = null
         currentClassPath = previousClassPath
     }
 
@@ -274,6 +283,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
         currentScope = null
     }
 
+    private fun bindGenericConstraints(genericParameters: GenericParameters) {
+        // TODO: Bind constraints
+    }
+
     private fun bindPrimaryConstructor(primaryConstructor: PrimaryConstructor) {
         if (primaryConstructor.self != null) {
             currentScope!!.addVariable(
@@ -317,6 +330,22 @@ class Binder(private val compilationUnit: CompilationUnit) {
                         "Unable to inherit from non-class type"
                     )
                     .label(superClassConstructorCall.superClassType.span, "Type $typeLiteral is not a class type")
+                    .color(Attribute.RED_TEXT())
+                    .build().build()
+
+                null
+            }
+
+            is TypeInfo.GenericConstraint -> {
+                compilationUnit.reportBuilder
+                    .error(
+                        SpanHelper.expandView(
+                            superClassConstructorCall.superClassType.span,
+                            compilationUnit.maxLineCount
+                        ),
+                        "Unable to inherit from generic type"
+                    )
+                    .label(superClassConstructorCall.superClassType.span, "Generic type constraint cannot be inherited from")
                     .color(Attribute.RED_TEXT())
                     .build().build()
 
@@ -851,7 +880,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindType(type: Type): TypeInfo {
-        val typeInfo = table.findType(type)
+        val resolver = TypeResolver(currentScope, table)
+        val typeInfo = resolver.resolveType(type)
 
         return if (typeInfo == null) {
             // Unknown type

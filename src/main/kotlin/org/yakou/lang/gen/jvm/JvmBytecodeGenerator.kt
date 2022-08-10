@@ -2,6 +2,8 @@ package org.yakou.lang.gen.jvm
 
 import org.objectweb.asm.*
 import org.objectweb.asm.Type
+import org.objectweb.asm.signature.SignatureVisitor
+import org.objectweb.asm.signature.SignatureWriter
 import org.yakou.lang.ast.*
 import org.yakou.lang.bind.*
 import org.yakou.lang.compilation.CompilationSession
@@ -151,7 +153,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             methodVisitor.visitVarInsn(Opcodes.ALOAD, 0)
             methodVisitor.visitMethodInsn(
                 Opcodes.INVOKESPECIAL,
-                "java/lang/Object",
+                TypeInfo.Class.OBJECT_TYPE_INFO.internalName,
                 "<init>",
                 "()V",
                 false
@@ -172,7 +174,10 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             primaryConstructor.constructorInstance.access,
             "<init>",
             primaryConstructor.constructorInstance.descriptor,
-            null,
+            genGenericFunctionSignature(
+                primaryConstructor.constructorInstance.parameterTypeInfos,
+                TypeInfo.Primitive.UNIT_TYPE_INFO
+            ),
             null
         )
 
@@ -188,7 +193,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
         methodVisitor.visitMethodInsn(
             Opcodes.INVOKESPECIAL,
-            superClassConstructorCall?.superClassTypeInfo?.internalName ?: "java/lang/Object",
+            superClassConstructorCall?.superClassTypeInfo?.internalName ?: TypeInfo.Class.OBJECT_TYPE_INFO.internalName,
             "<init>",
             superClassConstructorCall?.constructorInstance?.descriptor ?: "()V",
             false
@@ -213,7 +218,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             constructorParameter.fieldInstance!!.access,
             constructorParameter.fieldInstance!!.name,
             constructorParameter.fieldInstance!!.descriptor,
-            null,
+            genGenericFieldSignature(constructorParameter.typeInfo),
             null
         ).visitEnd()
 
@@ -240,7 +245,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             field.fieldInstance.access,
             field.fieldInstance.name,
             field.fieldInstance.descriptor,
-            null,
+            genGenericFieldSignature(field.typeInfo),
             null
         ).visitEnd()
 
@@ -687,6 +692,122 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         )
     }
 
+    private fun genGenericClassSignature(
+        genericConstraints: List<TypeInfo.GenericConstraint>,
+        superTypeInfo: TypeInfo.Class,
+        interfaceTypeInfos: List<TypeInfo.Class>
+    ): String {
+        val signatureWriter = SignatureWriter()
+
+        for (genericConstraint in genericConstraints) {
+            genGenericBoundSignature(signatureWriter, genericConstraint)
+        }
+
+        signatureWriter.visitSuperclass().visitClassType(superTypeInfo.internalName)
+
+        for (interfaceTypeInfo in interfaceTypeInfos) {
+            signatureWriter.visitInterface().visitClassType(interfaceTypeInfo.internalName)
+        }
+
+        signatureWriter.visitEnd()
+
+        return signatureWriter.toString()
+    }
+
+    private fun genGenericFieldSignature(
+        genericConstraint: TypeInfo
+    ): String? =
+        if (genericConstraint is TypeInfo.GenericConstraint) "T${genericConstraint.genericParameterName};"
+        else null
+
+    private fun genGenericBoundSignature(
+        signatureWriter: SignatureWriter,
+        genericConstraint: TypeInfo.GenericConstraint
+    ) {
+        signatureWriter.visitFormalTypeParameter(genericConstraint.genericParameterName)
+
+        if (genericConstraint.bounds.isNotEmpty()) {
+            val signatureVisitor = signatureWriter.visitClassBound()
+
+            for (bounds in genericConstraint.bounds) {
+                signatureVisitor.visitClassBound()
+            }
+        } else {
+            val signatureVisitor = signatureWriter.visitClassBound()
+            signatureVisitor.visitClassType(TypeInfo.Class.OBJECT_TYPE_INFO.internalName)
+            signatureVisitor.visitEnd()
+        }
+    }
+
+    private fun genGenericFunctionSignature(
+        parameterTypeInfos: List<TypeInfo>,
+        returnTypeInfo: TypeInfo
+    ): String {
+        val signatureWriter = SignatureWriter()
+
+        genGenericFunctionSignature(signatureWriter, parameterTypeInfos, returnTypeInfo)
+
+        signatureWriter.visitEnd()
+
+        return signatureWriter.toString()
+    }
+
+    private fun genGenericFunctionSignature(
+        signatureWriter: SignatureWriter,
+        parameterTypeInfos: List<TypeInfo>,
+        returnTypeInfo: TypeInfo
+    ) {
+        val parameterSignatureVisitor = signatureWriter.visitParameterType()
+
+        for (typeInfo in parameterTypeInfos) {
+            genGenericFunctionSignature(parameterSignatureVisitor, typeInfo)
+        }
+
+        val returnTypeSignatureVisitor = signatureWriter.visitReturnType()
+
+        genGenericFunctionSignature(returnTypeSignatureVisitor, returnTypeInfo)
+    }
+
+    private fun genGenericFunctionSignature(signatureVisitor: SignatureVisitor, typeInfo: TypeInfo) {
+        when (typeInfo) {
+            is TypeInfo.Primitive -> genGenericFunctionSignature(signatureVisitor, typeInfo)
+            is TypeInfo.Class -> {
+                genGenericFunctionSignature(signatureVisitor, typeInfo)
+                signatureVisitor.visitEnd()
+            }
+            is TypeInfo.Array -> genGenericFunctionSignature(signatureVisitor, typeInfo)
+            is TypeInfo.GenericConstraint -> genGenericFunctionSignature(signatureVisitor, typeInfo)
+        }
+    }
+
+    private fun genGenericFunctionSignature(signatureVisitor: SignatureVisitor, primitiveType: TypeInfo.Primitive) {
+        if (primitiveType.type == PrimitiveType.Str) {
+            signatureVisitor.visitClassType(primitiveType.internalName)
+            signatureVisitor.visitEnd()
+        } else {
+            signatureVisitor.visitBaseType(primitiveType.descriptor[0]) // Force cast
+        }
+    }
+
+    private fun genGenericFunctionSignature(signatureVisitor: SignatureVisitor, classType: TypeInfo.Class) {
+        signatureVisitor.visitClassType(classType.internalName)
+    }
+
+    private fun genGenericFunctionSignature(signatureVisitor: SignatureVisitor, arrayType: TypeInfo.Array) {
+        val arraySignatureVisitor = signatureVisitor.visitArrayType()
+
+        genGenericFunctionSignature(arraySignatureVisitor, arrayType.innerType)
+
+        arraySignatureVisitor.visitEnd()
+    }
+
+    private fun genGenericFunctionSignature(
+        signatureVisitor: SignatureVisitor,
+        genericConstraint: TypeInfo.GenericConstraint
+    ) {
+        signatureVisitor.visitTypeVariable(genericConstraint.genericParameterName)
+    }
+
     private fun getClassWriter(clazz: TypeInfo.Class): ClassWriter =
         classWriters[clazz] ?: run {
             val classWriter = ClassWriter(ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS)
@@ -697,7 +818,11 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 Opcodes.V17,
                 clazz.access + Opcodes.ACC_SUPER,
                 clazz.internalName,
-                null, // TODO: Implement generic
+                genGenericClassSignature(
+                    clazz.genericParameters,
+                    clazz.superClassType ?: TypeInfo.Class.OBJECT_TYPE_INFO,
+                    clazz.interfaceTypes
+                ),
                 clazz.superClassType?.internalName.orEmpty(),
                 clazz.interfaceTypes.map(TypeInfo.Class::internalName).toTypedArray()
             )
