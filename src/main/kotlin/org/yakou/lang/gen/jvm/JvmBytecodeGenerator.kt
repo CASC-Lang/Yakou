@@ -729,7 +729,8 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         if (genericConstraint.varianceType == TypeInfo.GenericConstraint.VarianceType.INVARIANCE) {
             signatureWriter.visitFormalTypeParameter(genericConstraint.genericParameterName)
 
-            if (genericConstraint.bounds.isNotEmpty()) {
+            if (genericConstraint.bounds.isNotEmpty() && genericConstraint.boundType != TypeInfo.GenericConstraint.BoundType.LOWER) {
+                // Only upper bound needs to declare
                 when (val firstBound = genericConstraint.bounds[0]) {
                     is TypeInfo.GenericConstraint -> {
                         signatureWriter.visitClassBound().visitTypeVariable(firstBound.genericParameterName)

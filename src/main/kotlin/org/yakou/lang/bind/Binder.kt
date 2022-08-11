@@ -144,19 +144,6 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 .label(genericParameter.span, "Wildcard bound cannot be used at generic parameter declaration")
                 .color(Attribute.CYAN_TEXT())
                 .build().build()
-        } else if (genericParameter is GenericParameters.ConstraintGenericParameter && genericParameter.genericConstraint.boundType == TypeInfo.GenericConstraint.BoundType.LOWER) {
-            // Illegal bound, cannot declare type parameter with lower bound
-            val boundIndicatorLiteral =
-                colorize(">:", compilationUnit, Attribute.CYAN_TEXT())
-
-            compilationUnit.reportBuilder
-                .error(
-                    SpanHelper.expandView(genericParameter.boundIndicator!!.span, compilationUnit.maxLineCount),
-                    "Illegal bound indicator `$boundIndicatorLiteral`"
-                )
-                .label(genericParameter.boundIndicator.span, "Cannot declare type parameter with lower bound")
-                .color(Attribute.CYAN_TEXT())
-                .build().build()
         } else {
             currentScope!!.addTypeVariable(genericParameter.genericConstraint)
         }
