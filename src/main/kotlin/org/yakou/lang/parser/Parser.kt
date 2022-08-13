@@ -615,7 +615,8 @@ class Parser(private val compilationUnit: CompilationUnit) {
                                 numberToken.typeAnnotationSpan!!
                             )
                         )
-                    )
+                    ),
+                    null
                 )
             }
 
@@ -792,8 +793,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
         else -> {
             // Path type
             val simplePath = parseSimplePath()
+            val genericParameters =
+                if (optExpectType(TokenType.OpenBracket)) parseGenericParameters()
+                else null
 
-            Type.TypePath(simplePath)
+            Type.TypePath(simplePath, genericParameters)
         }
     }
 
