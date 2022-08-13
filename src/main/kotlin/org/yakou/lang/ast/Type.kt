@@ -3,8 +3,6 @@ package org.yakou.lang.ast
 import chaos.unity.nenggao.Span
 
 sealed class Type: AstNode {
-    abstract override val span: Span
-
     fun standardizeType(): String = when (this) {
         is Array -> {
             val typeBuilder = StringBuilder()
@@ -37,9 +35,9 @@ sealed class Type: AstNode {
         }
     }
 
-    data class TypePath(val path: Path.SimplePath) : Type() {
-        override val span: Span by lazy {
-            path.pathSegments.first().span.expand(path.pathSegments.last().span)
+    data class TypePath(val path: Path.SimplePath, val genericParameters: GenericParameters?) : Type() {
+        override val span: Span? by lazy {
+            path.span?.expand(path.pathSegments.last().span)?.expand(genericParameters?.span)
         }
     }
 
