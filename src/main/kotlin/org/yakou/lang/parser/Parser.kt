@@ -121,7 +121,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val `class` = next()!! // Should be asserted when called
         val name = expect(TokenType.Identifier)
         val genericParameters =
-            if (optExpectType(TokenType.OpenBracket)) parseGenericParameters()
+            if (optExpectType(TokenType.OpenBracket)) genericDeclarationParameters()
             else null
         val primaryConstructorModifiers = parseModifiers()
         val primaryConstructor =
@@ -667,9 +667,9 @@ class Parser(private val compilationUnit: CompilationUnit) {
         )
     }
 
-    private fun parseGenericParameters(): GenericParameters {
+    private fun genericDeclarationParameters(): GenericDeclarationParameters {
         val openBracket = next()!!
-        val parameters = mutableListOf<GenericParameters.GenericParameter>()
+        val parameters = mutableListOf<GenericDeclarationParameters.GenericDeclarationParameter>()
 
         while (pos < tokens.size &&
             (optExpectType(TokenType.Identifier) ||
@@ -678,25 +678,41 @@ class Parser(private val compilationUnit: CompilationUnit) {
                     optExpectType(TokenType.PlusColon) ||
                     optExpectType(TokenType.MinusColon))
         ) {
-            parameters += parseGenericParameter()
+            parameters += parseGenericDeclarationParameter()
 
             if (optExpectType(TokenType.Comma)) consume()
             else break
         }
 
-        val closeBracket = next()!!
+        val closeBracket = expect(TokenType.CloseBracket)
 
-        return GenericParameters(openBracket, parameters, closeBracket)
+        return GenericDeclarationParameters(openBracket, parameters, closeBracket)
     }
 
-    private fun parseGenericParameter(): GenericParameters.GenericParameter = when {
+    private fun parseGenericDeclarationParameter(): GenericDeclarationParameters.GenericDeclarationParameter = when {
         optExpectType(TokenType.Identifier) -> parseConstraintGenericParameter()
         optExpectType(TokenType.PlusColon) || optExpectType(TokenType.MinusColon) -> parseWildCardConstraintGenericParameter()
         optExpectType(TokenType.Plus) || optExpectType(TokenType.Minus) -> parseVarianceGenericParameter()
         else -> TODO("UNREACHABLE")
     }
 
-    private fun parseConstraintGenericParameter(): GenericParameters.ConstraintGenericParameter {
+    private fun parseGenericParameters(): GenericParameters {
+        val openBracket = next()!!
+        val parameters = mutableListOf<GenericParameter>()
+
+        while (pos < tokens.size && (optExpectType(TokenType.Identifier) || optExpectType(TokenType.OpenBracket))) {
+            parameters += parseType()
+
+            if (optExpectType(TokenType.Comma)) consume()
+            else break
+        }
+
+        val closeBracket = expect(TokenType.CloseBracket)
+
+        return GenericParameters(openBracket, parameters, closeBracket)
+    }
+
+    private fun parseConstraintGenericParameter(): GenericDeclarationParameters.ConstraintGenericDeclarationParameter {
         val identifier = next()!!
         val boundIndicator: Token?
         val constraints: List<Type>
@@ -709,7 +725,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
             constraints = listOf()
         }
 
-        return GenericParameters.ConstraintGenericParameter(identifier, boundIndicator, constraints)
+        return GenericDeclarationParameters.ConstraintGenericDeclarationParameter(
+            identifier,
+            boundIndicator,
+            constraints
+        )
     }
 
     private fun parseConstraintParameters(): List<Type> {
@@ -729,18 +749,18 @@ class Parser(private val compilationUnit: CompilationUnit) {
         return constraints
     }
 
-    private fun parseWildCardConstraintGenericParameter(): GenericParameters.WildcardConstraintGenericParameter {
+    private fun parseWildCardConstraintGenericParameter(): GenericDeclarationParameters.WildcardConstraintGenericDeclarationParameter {
         val boundIndicator = next()!!
         val type = parseType()
 
-        return GenericParameters.WildcardConstraintGenericParameter(boundIndicator, type)
+        return GenericDeclarationParameters.WildcardConstraintGenericDeclarationParameter(boundIndicator, type)
     }
 
-    private fun parseVarianceGenericParameter(): GenericParameters.VarianceGenericParameter {
+    private fun parseVarianceGenericParameter(): GenericDeclarationParameters.VarianceGenericDeclarationParameter {
         val varianceIndicator = next()!!
         val identifier = expect(TokenType.Identifier)
 
-        return GenericParameters.VarianceGenericParameter(varianceIndicator, identifier)
+        return GenericDeclarationParameters.VarianceGenericDeclarationParameter(varianceIndicator, identifier)
     }
 
     private fun parseParameters(): List<Parameter> {

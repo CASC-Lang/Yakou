@@ -95,11 +95,11 @@ class Binder(private val compilationUnit: CompilationUnit) {
             clazz.modifiers.sum(),
             currentPackagePath.toString(),
             currentClassPath.toString(),
-            clazz.genericParameters?.parameters ?: listOf()
+            clazz.genericDeclarationParameters?.parameters ?: listOf()
         )
 
-        if (clazz.genericParameters != null) {
-            for (parameter in clazz.genericParameters.parameters) {
+        if (clazz.genericDeclarationParameters != null) {
+            for (parameter in clazz.genericDeclarationParameters.parameters) {
                 bindGenericParameterDeclaration(parameter)
             }
         }
@@ -134,18 +134,18 @@ class Binder(private val compilationUnit: CompilationUnit) {
         currentClassPath = previousClassPath
     }
 
-    private fun bindGenericParameterDeclaration(genericParameter: GenericParameters.GenericParameter) {
-        if (genericParameter is GenericParameters.WildcardConstraintGenericParameter) {
+    private fun bindGenericParameterDeclaration(genericDeclarationParameter: GenericDeclarationParameters.GenericDeclarationParameter) {
+        if (genericDeclarationParameter is GenericDeclarationParameters.WildcardConstraintGenericDeclarationParameter) {
             compilationUnit.reportBuilder
                 .error(
-                    SpanHelper.expandView(genericParameter.span, compilationUnit.maxLineCount),
+                    SpanHelper.expandView(genericDeclarationParameter.span, compilationUnit.maxLineCount),
                     "Unable to use wildcard bound here"
                 )
-                .label(genericParameter.span, "Wildcard bound cannot be used at generic parameter declaration")
+                .label(genericDeclarationParameter.span, "Wildcard bound cannot be used at generic parameter declaration")
                 .color(Attribute.CYAN_TEXT())
                 .build().build()
         } else {
-            currentScope!!.addTypeVariable(genericParameter.genericConstraint)
+            currentScope!!.addTypeVariable(genericDeclarationParameter.genericConstraint)
         }
     }
 
@@ -278,8 +278,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
         currentClassPath = currentClassPath.append(clazz.identifier)
         currentScope = Scope(table)
 
-        if (clazz.genericParameters != null) {
-            for (parameter in clazz.genericParameters.parameters) {
+        if (clazz.genericDeclarationParameters != null) {
+            for (parameter in clazz.genericDeclarationParameters.parameters) {
                 bindGenericParameter(parameter)
             }
         }
@@ -304,24 +304,24 @@ class Binder(private val compilationUnit: CompilationUnit) {
         currentScope = null
     }
 
-    private fun bindGenericParameter(genericParameter: GenericParameters.GenericParameter) {
-        if (genericParameter is GenericParameters.ConstraintGenericParameter) {
-            for (bound in genericParameter.constraints) {
+    private fun bindGenericParameter(genericDeclarationParameter: GenericDeclarationParameters.GenericDeclarationParameter) {
+        if (genericDeclarationParameter is GenericDeclarationParameters.ConstraintGenericDeclarationParameter) {
+            for (bound in genericDeclarationParameter.constraints) {
                 val boundType = bindType(bound)
 
                 if (boundType !is TypeInfo.TypeInfoVariable) {
                     compilationUnit.reportBuilder
                         .error(
-                            SpanHelper.expandView(genericParameter.span, compilationUnit.maxLineCount),
+                            SpanHelper.expandView(genericDeclarationParameter.span, compilationUnit.maxLineCount),
                             "Unable to set bound to non-class type or non-type-parameter"
                         )
-                        .label(genericParameter.span, "Bound type can only be class type or type parameter")
+                        .label(genericDeclarationParameter.span, "Bound type can only be class type or type parameter")
                         .color(Attribute.CYAN_TEXT())
                         .build().build()
                 } else {
-                    genericParameter.genericConstraint.bounds += boundType
+                    genericDeclarationParameter.genericConstraint.bounds += boundType
 
-                    currentScope!!.setConstraint(genericParameter.genericConstraint.genericParameterName, boundType)
+                    currentScope!!.setConstraint(genericDeclarationParameter.genericConstraint.genericParameterName, boundType)
                 }
             }
         }

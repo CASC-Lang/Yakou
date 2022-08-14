@@ -1,7 +1,6 @@
 package org.yakou.lang.bind
 
-import org.yakou.lang.ast.GenericParameters
-import org.yakou.lang.ast.Item
+import org.yakou.lang.ast.GenericDeclarationParameters
 import org.yakou.lang.ast.Type
 import org.yakou.lang.util.mapAs
 import java.util.*
@@ -106,7 +105,7 @@ class Table {
         access: Int,
         packagePath: String,
         classPath: String,
-        genericParameters: List<GenericParameters.GenericParameter>
+        genericDeclarationParameters: List<GenericDeclarationParameters.GenericDeclarationParameter>
     ): TypeInfo.Class? {
         val qualifiedClassPath = packagePath.appendPath(classPath)
 
@@ -115,7 +114,7 @@ class Table {
             val classType = TypeInfo.Class(
                 access,
                 qualifiedClassPath,
-                genericParameters.map(GenericParameters.GenericParameter::genericConstraint),
+                genericDeclarationParameters.map(GenericDeclarationParameters.GenericDeclarationParameter::genericConstraint),
                 TypeInfo.fromClass(Any::class.java) as TypeInfo.Class,
                 listOf()
             )
