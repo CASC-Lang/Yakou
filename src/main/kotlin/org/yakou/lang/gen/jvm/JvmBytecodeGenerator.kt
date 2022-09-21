@@ -175,6 +175,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             "<init>",
             primaryConstructor.constructorInstance.descriptor,
             genGenericFunctionSignature(
+                listOf(),
                 primaryConstructor.constructorInstance.parameterTypeInfos,
                 TypeInfo.Primitive.UNIT_TYPE_INFO
             ),
@@ -271,7 +272,11 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             function.functionInstance.access,
             function.functionInstance.name,
             function.functionInstance.descriptor,
-            null,
+            genGenericFunctionSignature(
+                function.functionInstance.genericParameters,
+                function.functionInstance.parameterTypeInfos,
+                function.functionInstance.returnTypeInfo
+            ),
             null
         )
 
@@ -763,12 +768,13 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genGenericFunctionSignature(
+        genericConstraints: List<TypeInfo.GenericConstraint>,
         parameterTypeInfos: List<TypeInfo>,
         returnTypeInfo: TypeInfo
     ): String {
         val signatureWriter = SignatureWriter()
 
-        genGenericFunctionSignature(signatureWriter, parameterTypeInfos, returnTypeInfo)
+        genGenericFunctionSignature(signatureWriter, genericConstraints, parameterTypeInfos, returnTypeInfo)
 
         signatureWriter.visitEnd()
 
@@ -777,9 +783,14 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
     private fun genGenericFunctionSignature(
         signatureWriter: SignatureWriter,
+        genericConstraints: List<TypeInfo.GenericConstraint>,
         parameterTypeInfos: List<TypeInfo>,
         returnTypeInfo: TypeInfo
     ) {
+        for (genericConstraint in genericConstraints) {
+            genGenericBoundSignature(signatureWriter, genericConstraint)
+        }
+
         val parameterSignatureVisitor = signatureWriter.visitParameterType()
 
         for (typeInfo in parameterTypeInfos) {
@@ -788,15 +799,18 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
         val returnTypeSignatureVisitor = signatureWriter.visitReturnType()
 
-        genGenericSignature(returnTypeSignatureVisitor, returnTypeInfo)
+        genGenericSignature(returnTypeSignatureVisitor, returnTypeInfo, true)
     }
 
-    private fun genGenericSignature(signatureVisitor: SignatureVisitor, typeInfo: TypeInfo) {
+    private fun genGenericSignature(signatureVisitor: SignatureVisitor, typeInfo: TypeInfo, noVisitEnd: Boolean = false) {
         when (typeInfo) {
             is TypeInfo.Primitive -> genGenericSignature(signatureVisitor, typeInfo)
             is TypeInfo.Class -> {
                 genGenericSignature(signatureVisitor, typeInfo)
-                signatureVisitor.visitEnd()
+
+                if (!noVisitEnd) {
+                    signatureVisitor.visitEnd()
+                }
             }
 
             is TypeInfo.Array -> genGenericSignature(signatureVisitor, typeInfo)

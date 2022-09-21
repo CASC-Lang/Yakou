@@ -226,6 +226,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
         override val packagePath: String,
         override val classPath: String,
         override val name: String,
+        val genericParameters: List<TypeInfo.GenericConstraint>,
         val parameterTypeInfos: List<TypeInfo>,
         val returnTypeInfo: TypeInfo,
         override val inline: Boolean,
@@ -237,6 +238,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     method.declaringClass.packageName.replace(".", "::"),
                     method.declaringClass.typeName.split('.').last().replace("$", "::"),
                     method.name,
+                    method.typeParameters.map { TypeInfo.GenericConstraint.fromTypeVariable(method.typeParameters, it) },
                     method.parameters.map { TypeInfo.fromClass(it.type) },
                     TypeInfo.fromClass(method.returnType),
                     false
@@ -259,6 +261,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     packageSimplePath.toString(),
                     classSimplePath.toString().ifBlank { "PackageYk" },
                     function.identifier.literal,
+                    function.genericDeclarationParameters?.parameters?.map(GenericDeclarationParameters.GenericDeclarationParameter::genericConstraint) ?: listOf(),
                     function.parameters.map(Parameter::typeInfo),
                     function.returnTypeInfo,
                     function.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline)

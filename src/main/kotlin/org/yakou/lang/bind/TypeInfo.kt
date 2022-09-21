@@ -263,7 +263,7 @@ sealed class TypeInfo {
     ) : TypeInfo(), TypeInfoVariable {
         companion object {
             fun fromTypeVariable(
-                declaredTypeVariables: kotlin.Array<out TypeVariable<out java.lang.Class<*>>>,
+                declaredTypeVariables: kotlin.Array<out TypeVariable<*>>,
                 typeVariable: TypeVariable<*>
             ): GenericConstraint =
                 GenericConstraint(

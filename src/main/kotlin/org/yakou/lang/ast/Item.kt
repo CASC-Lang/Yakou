@@ -116,6 +116,7 @@ sealed class Item: AstNode {
         val modifiers: Modifiers,
         val fn: Token,
         val identifier: Token,
+        val genericDeclarationParameters: GenericDeclarationParameters?,
         val openParenthesis: Token,
         val self: Token?,
         val selfComma: Token?,

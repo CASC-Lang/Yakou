@@ -1,6 +1,6 @@
 pkg chaos {
     pkg unity {
-        fn test() -> java::lang::Object {
+        fn test[T <: str + java::lang::Runnable]() -> java::lang::Object {
             return 1 as java::lang::Integer as java::lang::Number as java::lang::Integer
         }
     }

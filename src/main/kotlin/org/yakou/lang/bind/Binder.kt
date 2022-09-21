@@ -280,7 +280,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         if (clazz.genericDeclarationParameters != null) {
             for (parameter in clazz.genericDeclarationParameters.parameters) {
-                bindGenericParameter(parameter)
+                bindGenericDeclarationParameter(parameter)
             }
         }
 
@@ -304,7 +304,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         currentScope = null
     }
 
-    private fun bindGenericParameter(genericDeclarationParameter: GenericDeclarationParameters.GenericDeclarationParameter) {
+    private fun bindGenericDeclarationParameter(genericDeclarationParameter: GenericDeclarationParameters.GenericDeclarationParameter) {
         if (genericDeclarationParameter is GenericDeclarationParameters.ConstraintGenericDeclarationParameter) {
             for (bound in genericDeclarationParameter.constraints) {
                 val boundType = bindType(bound)
@@ -465,6 +465,12 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         // Bind scope
         currentScope = functionScope
+
+        if (function.genericDeclarationParameters != null) {
+            for (parameter in function.genericDeclarationParameters.parameters) {
+                bindGenericDeclarationParameter(parameter)
+            }
+        }
 
         when (function.body) {
             is FunctionBody.BlockExpression -> {

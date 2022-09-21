@@ -121,7 +121,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val `class` = next()!! // Should be asserted when called
         val name = expect(TokenType.Identifier)
         val genericParameters =
-            if (optExpectType(TokenType.OpenBracket)) genericDeclarationParameters()
+            if (optExpectType(TokenType.OpenBracket)) parseGenericDeclarationParameters()
             else null
         val primaryConstructorModifiers = parseModifiers()
         val primaryConstructor =
@@ -267,6 +267,9 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun parseFunction(modifiers: Modifiers): Item.Function {
         val fn = next()!! // Should be asserted when called
         val name = expect(TokenType.Identifier)
+        val genericDeclarationParameters =
+            if (optExpectType(TokenType.OpenBracket)) parseGenericDeclarationParameters()
+            else null
         val openParenthesis = expect(TokenType.OpenParenthesis)
         val self: Token?
         val selfComma: Token?
@@ -299,6 +302,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
             modifiers,
             fn,
             name,
+            genericDeclarationParameters,
             openParenthesis,
             self,
             selfComma,
@@ -667,7 +671,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         )
     }
 
-    private fun genericDeclarationParameters(): GenericDeclarationParameters {
+    private fun parseGenericDeclarationParameters(): GenericDeclarationParameters {
         val openBracket = next()!!
         val parameters = mutableListOf<GenericDeclarationParameters.GenericDeclarationParameter>()
 
