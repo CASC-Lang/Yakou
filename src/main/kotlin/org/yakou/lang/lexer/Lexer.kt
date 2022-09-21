@@ -186,11 +186,16 @@ class Lexer(private val compilationUnit: CompilationUnit) {
                 else -> charToken(TokenType.Ampersand)
             }
             '>' -> when (peek(1)) {
+                '>' -> when (peek(2)) {
+                    '>' -> stringToken(TokenType.TripleGreater)
+                    else -> stringToken(TokenType.DoubleGreater)
+                }
                 ':' -> stringToken(TokenType.GreaterColon)
                 '=' -> stringToken(TokenType.GreaterEqual)
                 else -> charToken(TokenType.Greater)
             }
             '<' -> when (peek(1)) {
+                '<' -> stringToken(TokenType.DoubleLesser)
                 ':' -> stringToken(TokenType.LesserColon)
                 '=' -> stringToken(TokenType.LesserEqual)
                 else -> charToken(TokenType.Lesser)

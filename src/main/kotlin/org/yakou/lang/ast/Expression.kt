@@ -12,7 +12,7 @@ sealed class Expression: AstNode {
 
     class BinaryExpression(
         var leftExpression: Expression,
-        val operator: List<Token>,
+        val operator: Token,
         var rightExpression: Expression,
         val operation: BinaryOperation
     ) : Expression() {
