@@ -559,13 +559,12 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
                 if (promotedType == null) {
                     val coloredOperator = colorize(
-                        binaryExpression.operator.joinToString(transform = Token::literal),
+                        binaryExpression.operator.literal,
                         compilationUnit,
                         Attribute.CYAN_TEXT()
                     )
                     val coloredLeftTypeLiteral = colorize(leftType.toString(), compilationUnit, Attribute.CYAN_TEXT())
                     val coloredRightTypeLiteral = colorize(rightType.toString(), compilationUnit, Attribute.CYAN_TEXT())
-                    val operatorSpan = binaryExpression.operator.map(Token::span).reduce(Span::expand)
 
                     compilationUnit.reportBuilder
                         .error(
@@ -578,7 +577,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
                         )
                         .color(Attribute.CYAN_TEXT())
                         .build()
-                        .label(operatorSpan, "Inapplicable operator `$coloredOperator`")
+                        .label(binaryExpression.operator.span, "Inapplicable operator `$coloredOperator`")
                         .color(Attribute.RED_TEXT())
                         .build()
                         .label(
@@ -603,7 +602,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
                 if (leftType == null || !leftType.type.isIntegerType()) {
                     val coloredOperator = colorize(
-                        binaryExpression.operator.joinToString(separator = "", transform = Token::literal),
+                        binaryExpression.operator.literal,
                         compilationUnit,
                         Attribute.CYAN_TEXT()
                     )
@@ -625,7 +624,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
                         .color(Attribute.CYAN_TEXT())
                         .build()
                         .label(
-                            binaryExpression.operator.map(Token::span).reduce(Span::expand),
+                            binaryExpression.operator.span,
                             "Inapplicable operator `$coloredOperator`"
                         )
                         .color(Attribute.RED_TEXT())
@@ -636,7 +635,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
                 if (rightType == null || rightType.type != PrimitiveType.I32) {
                     val coloredOperator = colorize(
-                        binaryExpression.operator.joinToString(separator = "", transform = Token::literal),
+                        binaryExpression.operator.literal,
                         compilationUnit,
                         Attribute.CYAN_TEXT()
                     )
@@ -658,7 +657,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
                         .color(Attribute.CYAN_TEXT())
                         .build()
                         .label(
-                            binaryExpression.operator.map(Token::span).reduce(Span::expand),
+                            binaryExpression.operator.span,
                             "Inapplicable operator `$coloredOperator`"
                         )
                         .color(Attribute.RED_TEXT())
@@ -680,14 +679,13 @@ class Binder(private val compilationUnit: CompilationUnit) {
                     rightType.asPrimitive()?.type != PrimitiveType.Bool
                 ) {
                     val coloredOperator = colorize(
-                        binaryExpression.operator.joinToString(transform = Token::literal),
+                        binaryExpression.operator.literal,
                         compilationUnit,
                         Attribute.CYAN_TEXT()
                     )
                     val coloredLeftTypeLiteral = colorize(leftType.toString(), compilationUnit, Attribute.CYAN_TEXT())
                     val coloredRightTypeLiteral = colorize(rightType.toString(), compilationUnit, Attribute.CYAN_TEXT())
                     val coloredBoolLiteral = colorize("bool", compilationUnit, Attribute.CYAN_TEXT())
-                    val operatorSpan = binaryExpression.operator.map(Token::span).reduce(Span::expand)
 
                     compilationUnit.reportBuilder
                         .error(
@@ -700,7 +698,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
                         )
                         .color(Attribute.CYAN_TEXT())
                         .build()
-                        .label(operatorSpan, "Inapplicable operator `$coloredOperator`")
+                        .label(binaryExpression.operator.span, "Inapplicable operator `$coloredOperator`")
                         .color(Attribute.RED_TEXT())
                         .hint("Only type `$coloredBoolLiteral` is applicable")
                         .build()
