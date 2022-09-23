@@ -23,6 +23,26 @@ sealed class Statement: AstNode {
         var ignore: Boolean = name.literal == "_"
     }
 
+    class For(
+        val `for`: Token,
+        val conditionExpression: Expression,
+        val block: Block
+    ) : Statement() {
+        override val span: Span by lazy {
+            `for`.span.expand(block.span)
+        }
+    }
+
+    class Block(
+        val openBrace: Token,
+        val statements: List<Statement>,
+        val closeBrace: Token,
+    ) : Statement() {
+        override val span: Span by lazy {
+            openBrace.span.expand(closeBrace.span)
+        }
+    }
+
     class Return(val `return`: Token, var expression: Expression): Statement() {
         override val span: Span by lazy {
             `return`.span.expand(expression.span)
