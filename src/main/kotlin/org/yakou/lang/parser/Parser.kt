@@ -345,41 +345,61 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseStatement(): Statement = when {
-        optExpectKeyword(Keyword.LET) -> {
-            val let = next()!!
-            val mut =
-                if (optExpectKeyword(Keyword.MUT)) next()!!
-                else null
-            val name = expect(TokenType.Identifier)
-            val colon: Token?
-            val specifiedType: Path.SimplePath?
-
-            if (optExpectType(TokenType.Colon)) {
-                colon = next()!!
-                specifiedType = parseSimplePath()
-            } else {
-                colon = null
-                specifiedType = null
-            }
-
-            val equal = expect(TokenType.Equal)
-            val expression = parseExpression()
-
-            Statement.VariableDeclaration(let, mut, name, colon, specifiedType, equal, expression)
-        }
-
-        optExpectKeyword(Keyword.RETURN) -> {
-            val `return` = next()!!
-            val expression = parseExpression(true)
-
-            Statement.Return(`return`, expression)
-        }
-
+        optExpectKeyword(Keyword.LET) -> parseVariableDeclaration()
+        optExpectKeyword(Keyword.FOR) -> parseFor()
+        optExpectType(TokenType.OpenBrace) -> parseBlock()
+        optExpectKeyword(Keyword.RETURN) -> parseReturn()
         else -> {
             val expression = parseExpression()
 
             Statement.ExpressionStatement(expression)
         }
+    }
+
+    private fun parseVariableDeclaration(): Statement.VariableDeclaration {
+        val let = next()!!
+        val mut =
+            if (optExpectKeyword(Keyword.MUT)) next()!!
+            else null
+        val name = expect(TokenType.Identifier)
+        val colon: Token?
+        val specifiedType: Path.SimplePath?
+
+        if (optExpectType(TokenType.Colon)) {
+            colon = next()!!
+            specifiedType = parseSimplePath()
+        } else {
+            colon = null
+            specifiedType = null
+        }
+
+        val equal = expect(TokenType.Equal)
+        val expression = parseExpression()
+
+        return Statement.VariableDeclaration(let, mut, name, colon, specifiedType, equal, expression)
+    }
+
+    private fun parseFor(): Statement.For {
+        val `for` = next()!!
+        val expression = parseExpression(true)
+        val block = parseBlock()
+
+        return Statement.For(`for`, expression, block)
+    }
+
+    private fun parseBlock(): Statement.Block {
+        val openBrace = expect(TokenType.OpenBrace)
+        val statements = parseStatements()
+        val closeBrace = expect(TokenType.CloseBrace)
+
+        return Statement.Block(openBrace, statements, closeBrace)
+    }
+
+    private fun parseReturn(): Statement.Return {
+        val `return` = next()!!
+        val expression = parseExpression(true)
+
+        return Statement.Return(`return`, expression)
     }
 
     private fun parseExpression(optional: Boolean = false): Expression {

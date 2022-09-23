@@ -17,7 +17,8 @@ enum class Keyword(val literal: String) {
     AS("as"),
     TRUE("true"),
     FALSE("false"),
-    RETURN("return");
+    RETURN("return"),
+    FOR("for");
 
     companion object {
         val keywords: Array<Keyword> = values()
