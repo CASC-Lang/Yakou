@@ -492,6 +492,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun bindStatement(statement: Statement) {
         when (statement) {
             is Statement.VariableDeclaration -> bindVariableDeclaration(statement)
+            is Statement.For -> bindFor(statement)
+            is Statement.Block -> bindBlock(statement)
             is Statement.Return -> bindReturn(statement)
             is Statement.ExpressionStatement -> bindExpression(statement.expression)
         }
@@ -521,6 +523,17 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
                 reportVariableAlreadyDeclared(originalVariable, variableDeclaration.name.span)
             }
+        }
+    }
+
+    private fun bindFor(`for`: Statement.For) {
+        bindExpression(`for`.conditionExpression)
+        bindBlock(`for`.block)
+    }
+
+    private fun bindBlock(block: Statement.Block) {
+        for (statement in block.statements) {
+            bindStatement(statement)
         }
     }
 
