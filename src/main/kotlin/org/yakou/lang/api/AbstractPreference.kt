@@ -1,19 +1,14 @@
-package org.yakou.lang.api;
+package org.yakou.lang.api
 
-import chaos.unity.nenggao.FileReportBuilder;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import chaos.unity.nenggao.FileReportBuilder
+import java.io.File
 
-import java.io.File;
-import java.io.PrintStream;
-
-public abstract class AbstractPreference {
-    public @Nullable File sourceFile = null;
-    public @NotNull File outputFolder = new File("out");
-    public @NotNull PrintStream outputStream = System.out;
-    public boolean enableColor = false;
-    public boolean useAscii = false;
-    public boolean enableTiming = false;
-
-    public abstract FileReportBuilder reportBuilder(@NotNull File currentFile);
+abstract class AbstractPreference {
+    var sourceFile: File? = null
+    var outputFolder = File("out")
+    var outputStream = System.out
+    var enableColor = false
+    var useAscii = false
+    var enableTiming = false
+    abstract fun reportBuilder(currentFile: File): FileReportBuilder?
 }
