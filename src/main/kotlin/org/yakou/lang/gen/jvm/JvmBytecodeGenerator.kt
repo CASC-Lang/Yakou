@@ -9,6 +9,7 @@ import org.yakou.lang.bind.*
 import org.yakou.lang.compilation.CompilationSession
 import org.yakou.lang.compilation.CompilationUnit
 import java.io.File
+import java.util.OptionalDouble
 
 class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private val table: Table = compilationSession.table
@@ -323,6 +324,8 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         when (statement) {
             is Statement.VariableDeclaration -> genVariableDeclaration(methodVisitor, statement)
             is Statement.Return -> genReturn(methodVisitor, statement)
+            is Statement.For -> genFor(methodVisitor, statement)
+            is Statement.Block -> genBlock(methodVisitor, statement)
             is Statement.ExpressionStatement -> genExpression(methodVisitor, statement.expression)
         }
     }
@@ -362,6 +365,32 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                     methodVisitor.visitInsn(Opcodes.POP)
                 }
             }
+        }
+    }
+
+    private fun genFor(methodVisitor: MethodVisitor, `for`: Statement.For) {
+        val startLabel = Label()
+        val endLabel = Label()
+
+        methodVisitor.visitLabel(startLabel)
+
+        if (`for`.conditionExpression !is Expression.Empty) {
+            genExpression(methodVisitor, `for`.conditionExpression)
+        } else {
+            methodVisitor.visitLdcInsn(1)
+        }
+
+        methodVisitor.visitJumpInsn(Opcodes.IFEQ, endLabel)
+
+        genBlock(methodVisitor, `for`.block)
+
+        methodVisitor.visitJumpInsn(Opcodes.GOTO, startLabel)
+        methodVisitor.visitLabel(endLabel)
+    }
+
+    private fun genBlock(methodVisitor: MethodVisitor, block: Statement.Block) {
+        for (statement in block.statements) {
+            genStatement(methodVisitor, statement)
         }
     }
 
