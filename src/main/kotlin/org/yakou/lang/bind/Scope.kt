@@ -6,6 +6,11 @@ class Scope(internal val table: Table) {
     val typeVariables: MutableMap<String, TypeInfo.GenericConstraint> = mutableMapOf()
     val variables: VariableList = VariableList()
 
+    constructor(scope: Scope) : this(scope.table) {
+        typeVariables += scope.typeVariables
+        variables += scope.variables
+    }
+
     fun addTypeVariable(typeVariable: TypeInfo.GenericConstraint) {
         typeVariables[typeVariable.genericParameterName] = typeVariable
     }

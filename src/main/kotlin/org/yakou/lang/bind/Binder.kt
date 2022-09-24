@@ -532,9 +532,14 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindBlock(block: Statement.Block) {
+        val outerScope = currentScope
+        currentScope = Scope(outerScope!!)
+
         for (statement in block.statements) {
             bindStatement(statement)
         }
+
+        currentScope = outerScope
     }
 
     private fun bindReturn(`return`: Statement.Return) {
