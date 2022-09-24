@@ -3,10 +3,7 @@ package org.yakou.lang.checker
 import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Attribute
 import org.yakou.lang.ast.*
-import org.yakou.lang.bind.PrimitiveType
-import org.yakou.lang.bind.Table
-import org.yakou.lang.bind.TypeChecker
-import org.yakou.lang.bind.TypeInfo
+import org.yakou.lang.bind.*
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
 import org.yakou.lang.util.colorize
@@ -260,6 +257,8 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkStatement(statement: Statement) {
         when (statement) {
             is Statement.VariableDeclaration -> checkVariableDeclaration(statement)
+            is Statement.For -> checkFor(statement)
+            is Statement.Block -> checkBlock(statement)
             is Statement.Return -> checkReturn(statement)
             is Statement.ExpressionStatement -> checkExpression(statement.expression)
         }
@@ -276,6 +275,22 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 Expression.Undefined -> TODO("UNREACHABLE")
                 else -> {}
             }
+        }
+    }
+
+    private fun checkFor(`for`: Statement.For) {
+        checkExpression(`for`.conditionExpression)
+
+        if (`for`.conditionExpression !is Expression.Empty && !`for`.conditionExpression.finalType.canImplicitCast(TypeInfo.Primitive.BOOL_TYPE_INFO)) {
+            reportUnableToImplicitlyCast(`for`.conditionExpression.span, `for`.conditionExpression.finalType.toString(), TypeInfo.Primitive.BOOL_TYPE_INFO.toString())
+        }
+
+        checkBlock(`for`.block)
+    }
+
+    private fun checkBlock(block: Statement.Block) {
+        for (statement in block.statements) {
+            checkStatement(statement)
         }
     }
 
@@ -477,6 +492,24 @@ class Checker(private val compilationUnit: CompilationUnit) {
             .build()
             .label(fromTypeSpan, "Got `$fromType`")
             .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportUnableToImplicitlyCast(
+        fromTypeSpan: Span,
+        fromTypeLiteral: String,
+        toTypeLiteral: String
+    ) {
+        val fromType = colorize(fromTypeLiteral, compilationUnit, Attribute.RED_TEXT())
+        val toType = colorize(toTypeLiteral, compilationUnit, Attribute.CYAN_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(fromTypeSpan, compilationUnit.maxLineCount),
+                "Unable to implicitly cast `$fromType` into `$toType`"
+            )
+            .label(fromTypeSpan, "Expected `${toType}`, Got `${fromType}`")
+            .color(Attribute.CYAN_TEXT())
             .build().build()
     }
 
