@@ -25,7 +25,7 @@ sealed class Statement: AstNode {
 
     class For(
         val `for`: Token,
-        val conditionExpression: Expression,
+        var conditionExpression: Expression,
         val block: Block
     ) : Statement() {
         override val span: Span by lazy {

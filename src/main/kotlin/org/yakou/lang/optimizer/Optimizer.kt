@@ -78,6 +78,8 @@ class Optimizer(val compilationUnit: CompilationUnit) {
     private fun optimizeStatement(statement: Statement) {
         when (statement) {
             is Statement.VariableDeclaration -> optimizeVariableDeclaration(statement)
+            is Statement.For -> optimizeFor(statement)
+            is Statement.Block -> optimizeBlock(statement)
             is Statement.Return -> optimizeReturn(statement)
             is Statement.ExpressionStatement -> {
                 statement.expression = optimizeExpression(statement.expression)
@@ -92,6 +94,17 @@ class Optimizer(val compilationUnit: CompilationUnit) {
             // can be propagated to other expressions
             statement.variableInstance.propagatable = true
             statement.variableInstance.propagateExpression = statement.expression
+        }
+    }
+
+    private fun optimizeFor(statement: Statement.For) {
+        statement.conditionExpression = optimizeExpression(statement.conditionExpression)
+        optimizeBlock(statement.block)
+    }
+
+    private fun optimizeBlock(statement: Statement.Block) {
+        for (innerStatement in statement.statements) {
+            optimizeStatement(innerStatement)
         }
     }
 
