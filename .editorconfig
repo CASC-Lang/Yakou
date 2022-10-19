@@ -1,4 +1,4 @@
 root = true
 
 [*.{kt,kts}]
-ktlint_disabled_rules = no-wildcard-imports:filename
+disabled_rules = no-wildcard-imports,filename
