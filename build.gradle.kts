@@ -29,3 +29,7 @@ tasks.test {
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "17"
 }
+
+kotlinter {
+    disabledRules = arrayOf("no-wildcard-imports", "filename")
+}
