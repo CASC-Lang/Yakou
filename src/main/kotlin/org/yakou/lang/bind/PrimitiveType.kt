@@ -16,7 +16,7 @@ enum class PrimitiveType(
     I32("i32", "int", Integer.TYPE, Integer::class.java, "I", 2),
     I64("i64", "long", java.lang.Long.TYPE, java.lang.Long::class.java, "J", 3),
     F32("f32", "float", java.lang.Float.TYPE, java.lang.Float::class.java, "F", 4),
-    F64("f64", "double", java.lang.Double.TYPE, java.lang.Double::class.java, "D", 5),
+    F64("f64", "double", java.lang.Double.TYPE, java.lang.Double::class.java, "D", 5)
     ;
 
     companion object {

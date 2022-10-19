@@ -2,7 +2,7 @@ package org.yakou.lang.ast
 
 import chaos.unity.nenggao.Span
 
-sealed class FunctionBody: AstNode {
+sealed class FunctionBody : AstNode {
     abstract override val span: Span
 
     data class SingleExpression(val equal: Token, var expression: Expression) : FunctionBody() {

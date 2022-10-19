@@ -17,8 +17,9 @@ class CompilationSession(val preference: AbstractPreference) {
     private val unitProcessResult: MutableMap<String, Pair<Boolean, Long>> = mutableMapOf()
 
     fun compile() {
-        if (sourceFile == null || !sourceFile.exists())
+        if (sourceFile == null || !sourceFile.exists()) {
             return
+        }
 
         if (sourceFile.isDirectory) {
             compileDirectory()
@@ -40,11 +41,15 @@ class CompilationSession(val preference: AbstractPreference) {
                     "%-${unitNamePadding}s %s status: %-${statusPadding}s | elapsed time: %d ms".format(
                         if (preference.enableColor) Ansi.colorize(unitName, Attribute.CYAN_TEXT()) else unitName,
                         if (preference.useAscii) CharacterSet.ASCII.rightArrow else CharacterSet.UNICODE.rightArrow,
-                        if (preference.enableColor) Ansi.colorize(
-                            status,
-                            if (result.first) Attribute.GREEN_BACK() else Attribute.RED_BACK(),
-                            Attribute.BLACK_TEXT()
-                        ) else status,
+                        if (preference.enableColor) {
+                            Ansi.colorize(
+                                status,
+                                if (result.first) Attribute.GREEN_BACK() else Attribute.RED_BACK(),
+                                Attribute.BLACK_TEXT()
+                            )
+                        } else {
+                            status
+                        },
                         result.second
                     )
                 )
@@ -63,16 +68,18 @@ class CompilationSession(val preference: AbstractPreference) {
             compilationUnits.all(CompilationUnit::lex)
         }
 
-        if (!unitProcessResult["lexical analysis"]!!.first)
+        if (!unitProcessResult["lexical analysis"]!!.first) {
             return
+        }
 
         // PHASE II: SYNTACTIC ANALYSIS
         unitProcessResult["syntactic analysis"] = measureTime {
             compilationUnits.all(CompilationUnit::parse)
         }
 
-        if (!unitProcessResult["syntactic analysis"]!!.first)
+        if (!unitProcessResult["syntactic analysis"]!!.first) {
             return
+        }
 
         // PHASE III: TYPE BINDING
         unitProcessResult["type binding"] = measureTime {
@@ -81,24 +88,27 @@ class CompilationSession(val preference: AbstractPreference) {
             declarationBinding && compilationUnits.all(CompilationUnit::postBind)
         }
 
-        if (!unitProcessResult["type binding"]!!.first)
+        if (!unitProcessResult["type binding"]!!.first) {
             return
+        }
 
         // PHASE III: SEMANTIC CHECKING
         unitProcessResult["semantic checking"] = measureTime {
             compilationUnits.all(CompilationUnit::check)
         }
 
-        if (!unitProcessResult["semantic checking"]!!.first)
+        if (!unitProcessResult["semantic checking"]!!.first) {
             return
+        }
 
         // PHASE IV: CODE OPTIMIZATION
         unitProcessResult["code optimization"] = measureTime {
             compilationUnits.all(CompilationUnit::optimize)
         }
 
-        if (!unitProcessResult["code optimization"]!!.first)
+        if (!unitProcessResult["code optimization"]!!.first) {
             return
+        }
 
         // PHASE V: CODE GENERATION
         unitProcessResult["code generation"] = measureTime {
@@ -119,34 +129,39 @@ class CompilationSession(val preference: AbstractPreference) {
         // PHASE I: LEXICAL ANALYZE
         unitProcessResult["lexical analysis"] = measureTime(compilationUnit::lex)
 
-        if (!unitProcessResult["lexical analysis"]!!.first)
+        if (!unitProcessResult["lexical analysis"]!!.first) {
             return
+        }
 
         // PHASE II: SYNTACTIC ANALYSIS
         unitProcessResult["syntactic analysis"] = measureTime(compilationUnit::parse)
 
-        if (!unitProcessResult["syntactic analysis"]!!.first)
+        if (!unitProcessResult["syntactic analysis"]!!.first) {
             return
+        }
 
         // PHASE III: TYPE BINDING
         unitProcessResult["type binding"] = measureTime {
             compilationUnit.bind() && compilationUnit.postBind()
         }
 
-        if (!unitProcessResult["type binding"]!!.first)
+        if (!unitProcessResult["type binding"]!!.first) {
             return
+        }
 
         // PHASE III: SEMANTIC CHECKING
         unitProcessResult["semantic checking"] = measureTime(compilationUnit::check)
 
-        if (!unitProcessResult["semantic checking"]!!.first)
+        if (!unitProcessResult["semantic checking"]!!.first) {
             return
+        }
 
         // PHASE IV: SEMANTIC CHECKING
         unitProcessResult["code optimization"] = measureTime(compilationUnit::optimize)
 
-        if (!unitProcessResult["code optimization"]!!.first)
+        if (!unitProcessResult["code optimization"]!!.first) {
             return
+        }
 
         // PHASE V: CODE GENERATION
         unitProcessResult["code generation"] = measureTime {

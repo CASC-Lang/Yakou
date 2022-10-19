@@ -13,8 +13,11 @@ sealed class TokenType(open val literal: String?) {
             NumberLiteral -> "<Number Literal>" // TODO: Necessary
             Synthetic -> "<Synthetic>"
         }
-        return if (preference.enableColor) Ansi.colorize(tokenLiteral, *attribute)
-        else tokenLiteral
+        return if (preference.enableColor) {
+            Ansi.colorize(tokenLiteral, *attribute)
+        } else {
+            tokenLiteral
+        }
     }
 
     object Identifier : TokenType(null)

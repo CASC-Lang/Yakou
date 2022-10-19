@@ -38,9 +38,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
                 table.registerPackageClass(currentPackagePath.toString())
 
-                if (item.items != null)
+                if (item.items != null) {
                     for (innerItem in item.items)
                         bindItemDeclaration(innerItem)
+                }
 
                 currentPackagePath = previousPackagePath
             }
@@ -51,7 +52,6 @@ class Binder(private val compilationUnit: CompilationUnit) {
             is Item.Function -> bindFunctionDeclaration(item)
         }
     }
-
 
     private fun bindConstDeclaration(const: Item.Const) {
         const.typeInfo = bindType(const.explicitType)
@@ -67,7 +67,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
         if (!table.registerClassMember(field)) {
             // Failed to register function
             reportConstAlreadyDefined(field, const)
-        } else const.fieldInstance = field
+        } else {
+            const.fieldInstance = field
+        }
     }
 
     private fun bindStaticFieldDeclaration(staticField: Item.StaticField) {
@@ -83,7 +85,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
         if (!table.registerClassMember(field)) {
             // Failed to register function
             reportStaticFieldAlreadyDefined(field, staticField)
-        } else staticField.fieldInstance = field
+        } else {
+            staticField.fieldInstance = field
+        }
     }
 
     private fun bindClassDeclaration(clazz: Item.Class) {
@@ -126,9 +130,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
             )
         }
 
-        if (clazz.classItems != null)
+        if (clazz.classItems != null) {
             for (classItem in clazz.classItems)
                 bindClassItemDeclaration(classItem)
+        }
 
         currentScope = null
         currentClassPath = previousClassPath
@@ -172,7 +177,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
             // constructor in `impl` block will register right after this.
             reportConstructorAlreadyDefined(constructor, primaryConstructor.span)
             return
-        } else primaryConstructor.constructorInstance = constructor
+        } else {
+            primaryConstructor.constructorInstance = constructor
+        }
 
         // Register field parameters
         for (parameter in primaryConstructor.parameters) {
@@ -187,7 +194,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 if (!table.registerClassMember(fieldInstance)) {
                     // Failed to register function
                     reportFieldAlreadyDefined(fieldInstance, parameter.span)
-                } else parameter.fieldInstance = fieldInstance
+                } else {
+                    parameter.fieldInstance = fieldInstance
+                }
             }
         }
     }
@@ -210,7 +219,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
         if (!table.registerClassMember(fieldInstance)) {
             // Failed to register function
             reportFieldAlreadyDefined(fieldInstance, field.span)
-        } else field.fieldInstance = fieldInstance
+        } else {
+            field.fieldInstance = fieldInstance
+        }
     }
 
     private fun bindFunctionDeclaration(function: Item.Function) {
@@ -221,8 +232,11 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
 
         function.returnTypeInfo =
-            if (function.returnType != null) bindType(function.returnType)
-            else TypeInfo.Primitive.UNIT_TYPE_INFO
+            if (function.returnType != null) {
+                bindType(function.returnType)
+            } else {
+                TypeInfo.Primitive.UNIT_TYPE_INFO
+            }
 
         val fn = ClassMember.Fn.fromFunction(
             table,
@@ -235,9 +249,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
         if (!table.registerClassMember(fn)) {
             // Failed to register function
             reportFunctionAlreadyDefined(fn, function)
-        } else function.functionInstance = fn
+        } else {
+            function.functionInstance = fn
+        }
     }
-
 
     fun bindSecondary() {
         bindYkFilePost(compilationUnit.ykFile!!)
@@ -254,9 +269,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 val previousPackagePath = currentPackagePath
                 currentPackagePath = currentPackagePath.append(item.identifier)
 
-                if (item.items != null)
+                if (item.items != null) {
                     for (innerItem in item.items)
                         bindItem(innerItem)
+                }
 
                 currentPackagePath = previousPackagePath
             }
@@ -299,9 +315,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
             }
         }
 
-        if (clazz.classItems != null)
+        if (clazz.classItems != null) {
             for (clazzItem in clazz.classItems)
                 bindClassItem(clazzItem)
+        }
 
         currentClassPath = previousClassPath
         currentScope = null
@@ -354,11 +371,13 @@ class Binder(private val compilationUnit: CompilationUnit) {
         for (argument in superClassConstructorCall.arguments)
             bindExpression(argument)
 
-        return when (val superType = SymbolResolver(currentScope!!).resolveType(
-            currentPackagePath,
-            currentClassPath,
-            superClassConstructorCall.superClassType
-        )) {
+        return when (
+            val superType = SymbolResolver(currentScope!!).resolveType(
+                currentPackagePath,
+                currentClassPath,
+                superClassConstructorCall.superClassType
+            )
+        ) {
             is TypeInfo.Array, is TypeInfo.Primitive -> {
                 val typeLiteral =
                     colorize(
@@ -451,8 +470,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindField(field: ClassItem.Field) {
-        if (field.expression != null)
+        if (field.expression != null) {
             bindExpression(field.expression!!)
+        }
     }
 
     private fun bindFunction(function: Item.Function) {
@@ -820,8 +840,11 @@ class Binder(private val compilationUnit: CompilationUnit) {
             numberLiteral.finalType = specifiedType
         } else {
             numberLiteral.originalType =
-                if (numberLiteral.dot == null && numberLiteral.floatPart == null) TypeInfo.Primitive(PrimitiveType.I32)
-                else TypeInfo.Primitive(PrimitiveType.F64)
+                if (numberLiteral.dot == null && numberLiteral.floatPart == null) {
+                    TypeInfo.Primitive(PrimitiveType.I32)
+                } else {
+                    TypeInfo.Primitive(PrimitiveType.F64)
+                }
             numberLiteral.finalType = when {
                 numberLiteral.dot == null && numberLiteral.floatPart == null -> TypeInfo.Primitive(PrimitiveType.I32)
                 else -> TypeInfo.Primitive(PrimitiveType.F64)
@@ -977,7 +1000,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
             reportUnresolvedType(typeName, span)
 
             TypeInfo.Primitive.UNIT_TYPE_INFO
-        } else typeInfo
+        } else {
+            typeInfo
+        }
     }
 
     private fun reportUnresolvedType(typeName: String, span: Span) {

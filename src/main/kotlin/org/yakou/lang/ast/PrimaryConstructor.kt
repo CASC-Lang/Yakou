@@ -10,7 +10,7 @@ data class PrimaryConstructor(
     val selfComma: Token?,
     val parameters: List<ConstructorParameter>,
     val closeParenthesis: Token
-): AstNode {
+) : AstNode {
     override val span: Span by lazy {
         (modifiers.span ?: openParenthesis.span).expand(closeParenthesis.span)
     }
@@ -18,7 +18,7 @@ data class PrimaryConstructor(
     lateinit var constructorInstance: ClassMember.Constructor
     lateinit var superConstructorInstance: ClassMember.Constructor
 
-    class ConstructorParameter(val modifiers: Modifiers, name: Token, colon: Token, type: Type): Parameter(name, colon, type) {
+    class ConstructorParameter(val modifiers: Modifiers, name: Token, colon: Token, type: Type) : Parameter(name, colon, type) {
         override val span: Span by lazy {
             (modifiers.span ?: name.span).expand(type.span)
         }

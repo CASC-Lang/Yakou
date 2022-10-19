@@ -23,7 +23,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
         override val access: Int,
         override val packagePath: String,
         override val classPath: String,
-        val parameterTypeInfos: List<TypeInfo>,
+        val parameterTypeInfos: List<TypeInfo>
     ) : ClassMember(MemberType.CONSTRUCTOR) {
         companion object {
             fun fromPrimaryConstructor(
@@ -73,7 +73,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
         val isStatic: Boolean,
         val isConst: Boolean,
         override val inline: Boolean,
-        val propagateExpression: Expression? = null,
+        val propagateExpression: Expression? = null
     ) : ClassMember(MemberType.FIELD) {
         companion object {
             fun fromField(field: java.lang.reflect.Field): Field {
@@ -229,7 +229,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
         val genericParameters: List<TypeInfo.GenericConstraint>,
         val parameterTypeInfos: List<TypeInfo>,
         val returnTypeInfo: TypeInfo,
-        override val inline: Boolean,
+        override val inline: Boolean
     ) : ClassMember(MemberType.FUNCTION) {
         companion object {
             fun fromMethod(method: Method): Fn {
@@ -288,18 +288,24 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
 
         override fun equals(other: Any?): Boolean {
             if (other is Fn) {
-                if (packagePath != other.packagePath)
+                if (packagePath != other.packagePath) {
                     return false
-                if (classPath != other.classPath)
+                }
+                if (classPath != other.classPath) {
                     return false
-                if (name != other.name)
+                }
+                if (name != other.name) {
                     return false
-                if (parameterTypeInfos.size != other.parameterTypeInfos.size)
+                }
+                if (parameterTypeInfos.size != other.parameterTypeInfos.size) {
                     return false
-                if (!parameterTypeInfos.zip(other.parameterTypeInfos).all { (l, r) -> l == r })
+                }
+                if (!parameterTypeInfos.zip(other.parameterTypeInfos).all { (l, r) -> l == r }) {
                     return false
-                if (returnTypeInfo != other.returnTypeInfo)
+                }
+                if (returnTypeInfo != other.returnTypeInfo) {
                     return false
+                }
                 return true
             }
             return false

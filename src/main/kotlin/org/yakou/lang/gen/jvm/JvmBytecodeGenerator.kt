@@ -9,7 +9,6 @@ import org.yakou.lang.bind.*
 import org.yakou.lang.compilation.CompilationSession
 import org.yakou.lang.compilation.CompilationUnit
 import java.io.File
-import java.util.OptionalDouble
 
 class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private val table: Table = compilationSession.table
@@ -64,9 +63,10 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private fun genItem(item: Item) {
         when (item) {
             is Item.Package -> {
-                if (item.items != null)
+                if (item.items != null) {
                     for (innerItem in item.items)
                         genItem(innerItem)
+                }
             }
 
             is Item.Const -> genConst(item)
@@ -161,9 +161,10 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             )
         }
 
-        if (clazz.classItems != null)
+        if (clazz.classItems != null) {
             for (classItem in clazz.classItems)
                 genClassItem(classItem)
+        }
     }
 
     private fun genPrimaryConstructor(
@@ -283,8 +284,9 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
         methodVisitor.visitCode()
 
-        if (function.body != null)
+        if (function.body != null) {
             genFunctionBody(methodVisitor, function.body)
+        }
 
         // Attempt to automatically generate return statement if:
         // 1. Last statement is not return statement
@@ -334,8 +336,9 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         methodVisitor: MethodVisitor,
         variableDeclaration: Statement.VariableDeclaration
     ) {
-        if (variableDeclaration.variableInstance.propagatable && variableDeclaration.variableInstance.referencedCount == 0)
+        if (variableDeclaration.variableInstance.propagatable && variableDeclaration.variableInstance.referencedCount == 0) {
             return
+        }
 
         genExpression(methodVisitor, variableDeclaration.expression)
 
@@ -565,8 +568,8 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 val nullLabel1 = Label()
                 val nullLabel2 = Label()
                 val endLabel = Label()
-                methodVisitor.visitInsn(Opcodes.SWAP)                   // stack: - i2 - i1
-                methodVisitor.visitInsn(Opcodes.DUP_X1)                 // stack: - i1 - i2 - i1
+                methodVisitor.visitInsn(Opcodes.SWAP) // stack: - i2 - i1
+                methodVisitor.visitInsn(Opcodes.DUP_X1) // stack: - i1 - i2 - i1
                 methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel1) // stack: - i1 - i2
                 methodVisitor.visitMethodInsn(
                     Opcodes.INVOKEVIRTUAL,
@@ -575,16 +578,16 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                     "(Ljava/lang/Object;)Z",
                     false
                 ) // stack: - Z
-                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
-                methodVisitor.visitLabel(nullLabel1)                    // stack: - i1 - i2
-                methodVisitor.visitInsn(Opcodes.SWAP)                   // stack: - i2 - i1
-                methodVisitor.visitInsn(Opcodes.POP)                    // stack: - i2
+                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel) // stack: - Z
+                methodVisitor.visitLabel(nullLabel1) // stack: - i1 - i2
+                methodVisitor.visitInsn(Opcodes.SWAP) // stack: - i2 - i1
+                methodVisitor.visitInsn(Opcodes.POP) // stack: - i2
                 methodVisitor.visitJumpInsn(Opcodes.IFNULL, nullLabel2) // stack: -
-                methodVisitor.visitInsn(Opcodes.ICONST_1)               // stack: - Z
-                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
-                methodVisitor.visitLabel(nullLabel2)                    // stack: -
-                methodVisitor.visitInsn(Opcodes.ICONST_0)               // stack: - Z
-                methodVisitor.visitLabel(endLabel)                      // stack: - Z
+                methodVisitor.visitInsn(Opcodes.ICONST_1) // stack: - Z
+                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel) // stack: - Z
+                methodVisitor.visitLabel(nullLabel2) // stack: -
+                methodVisitor.visitInsn(Opcodes.ICONST_0) // stack: - Z
+                methodVisitor.visitLabel(endLabel) // stack: - Z
             }
 
             leftType is TypeInfo.Array && rightType is TypeInfo.Array -> {
@@ -609,7 +612,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
         when {
             (leftType is TypeInfo.Class && rightType is TypeInfo.Class) ||
-                    (leftType is TypeInfo.Array && rightType is TypeInfo.Array) -> {
+                (leftType is TypeInfo.Array && rightType is TypeInfo.Array) -> {
                 genObjectReferentialEquality(methodVisitor, invert)
             }
 
@@ -622,12 +625,12 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private fun genObjectReferentialEquality(methodVisitor: MethodVisitor, invert: Boolean) {
         val falseLabel = Label()
         val endLabel = Label()
-        methodVisitor.visitJumpInsn(if (invert) Opcodes.IF_ACMPEQ else Opcodes.IF_ACMPNE, falseLabel)  // stack: -
-        methodVisitor.visitInsn(Opcodes.ICONST_1)                   // stack: - Z
-        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)         // stack: - Z
-        methodVisitor.visitLabel(falseLabel)                        // stack: -
-        methodVisitor.visitInsn(Opcodes.ICONST_0)                   // stack: - Z
-        methodVisitor.visitLabel(endLabel)                          // stack: - Z
+        methodVisitor.visitJumpInsn(if (invert) Opcodes.IF_ACMPEQ else Opcodes.IF_ACMPNE, falseLabel) // stack: -
+        methodVisitor.visitInsn(Opcodes.ICONST_1) // stack: - Z
+        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel) // stack: - Z
+        methodVisitor.visitLabel(falseLabel) // stack: -
+        methodVisitor.visitInsn(Opcodes.ICONST_0) // stack: - Z
+        methodVisitor.visitLabel(endLabel) // stack: - Z
     }
 
     private fun genPrimitiveEquality(methodVisitor: MethodVisitor, leftType: TypeInfo.Primitive, invert: Boolean) {
@@ -654,12 +657,12 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 val falseLabel = Label()
                 val endLabel = Label()
                 methodVisitor.visitInsn(leftType.eqOpcode) // Opcodes.LCMP, Opcodes.FCMPG or Opcodes.DCMPG
-                methodVisitor.visitJumpInsn(Opcodes.IFNE, falseLabel)   // stack: -
-                methodVisitor.visitInsn(Opcodes.ICONST_1)               // stack: - Z
-                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)     // stack: - Z
-                methodVisitor.visitLabel(falseLabel)                    // stack: -
-                methodVisitor.visitInsn(Opcodes.ICONST_0)               // stack: - Z
-                methodVisitor.visitLabel(endLabel)                      // stack: - Z
+                methodVisitor.visitJumpInsn(Opcodes.IFNE, falseLabel) // stack: -
+                methodVisitor.visitInsn(Opcodes.ICONST_1) // stack: - Z
+                methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel) // stack: - Z
+                methodVisitor.visitLabel(falseLabel) // stack: -
+                methodVisitor.visitInsn(Opcodes.ICONST_0) // stack: - Z
+                methodVisitor.visitLabel(endLabel) // stack: - Z
             }
 
             else -> {} // Unreachable
@@ -742,8 +745,11 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     ): String? =
         if (genericConstraint is TypeInfo.GenericConstraint &&
             genericConstraint.varianceType == TypeInfo.GenericConstraint.VarianceType.INVARIANCE
-        ) "T${genericConstraint.genericParameterName};"
-        else null
+        ) {
+            "T${genericConstraint.genericParameterName};"
+        } else {
+            null
+        }
 
     private fun genGenericBoundSignature(
         signatureWriter: SignatureWriter,
@@ -961,7 +967,6 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
         else -> -1
     }
-
 
     private fun castNumber(originalNumber: Number, actualType: PrimitiveType): Number {
         return when (actualType) {

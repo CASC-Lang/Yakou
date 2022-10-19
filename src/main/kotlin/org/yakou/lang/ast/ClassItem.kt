@@ -4,7 +4,7 @@ import chaos.unity.nenggao.Span
 import org.yakou.lang.bind.ClassMember
 import org.yakou.lang.bind.TypeInfo
 
-sealed class ClassItem: AstNode {
+sealed class ClassItem : AstNode {
     abstract override val span: Span
 
     data class Field(
@@ -17,12 +17,18 @@ sealed class ClassItem: AstNode {
     ) : ClassItem() {
         override val span: Span by lazy {
             var finalSpan =
-                if (!modifiers.isEmpty()) modifiers.modifierMap.toList().first().second
-                else identifier.span
+                if (!modifiers.isEmpty()) {
+                    modifiers.modifierMap.toList().first().second
+                } else {
+                    identifier.span
+                }
 
             finalSpan =
-                if (equal != null && expression != null) finalSpan.expand(expression!!.span)
-                else finalSpan.expand(explicitType.span)
+                if (equal != null && expression != null) {
+                    finalSpan.expand(expression!!.span)
+                } else {
+                    finalSpan.expand(explicitType.span)
+                }
 
             finalSpan
         }

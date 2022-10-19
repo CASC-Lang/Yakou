@@ -103,6 +103,9 @@ class SymbolResolver(private val scope: Scope) {
         this.toString().appendPath(path.toString())
 
     private fun String.appendPath(path: String): String =
-        if (this.isEmpty()) path
-        else "$this::$path"
+        if (this.isEmpty()) {
+            path
+        } else {
+            "$this::$path"
+        }
 }

@@ -48,8 +48,11 @@ class Lexer(private val compilationUnit: CompilationUnit) {
                     )
                     val (floatLiteral, floatLiteralSpan) = lexFloatLiteral()
                     val (typeAnnotation, typeAnnotationSpan) =
-                        if (!currentLine[pos].isWhitespace()) lexLiteralTypeAnnotation()
-                        else null to null
+                        if (!currentLine[pos].isWhitespace()) {
+                            lexLiteralTypeAnnotation()
+                        } else {
+                            null to null
+                        }
 
                     reportInvalidTypeAnnotation(typeAnnotation, typeAnnotationSpan)
 
@@ -80,8 +83,11 @@ class Lexer(private val compilationUnit: CompilationUnit) {
 
                     tokens += Token(
                         finalIdentifier,
-                        if (Keyword.isKeyword(finalIdentifier)) TokenType.Keyword
-                        else TokenType.Identifier,
+                        if (Keyword.isKeyword(finalIdentifier)) {
+                            TokenType.Keyword
+                        } else {
+                            TokenType.Identifier
+                        },
                         finalIdentifierSpan
                     )
                     continue
@@ -98,17 +104,27 @@ class Lexer(private val compilationUnit: CompilationUnit) {
 
     private fun lexNumberLiteral() {
         val (integerLiteral, integerLiteralSpan) = lexIntegerLiteral()
-        val dot = if (currentLine[pos] == '.') Token(
-            currentLine.substring(pos..pos),
-            TokenType.Dot,
-            Span.singleLine(line + 1, pos, ++pos)
-        ) else null
+        val dot = if (currentLine[pos] == '.') {
+            Token(
+                currentLine.substring(pos..pos),
+                TokenType.Dot,
+                Span.singleLine(line + 1, pos, ++pos)
+            )
+        } else {
+            null
+        }
         val (floatLiteral, floatLiteralSpan) =
-            if (currentLine[pos].isDigit()) lexFloatLiteral()
-            else null to null
+            if (currentLine[pos].isDigit()) {
+                lexFloatLiteral()
+            } else {
+                null to null
+            }
         val (typeAnnotation, typeAnnotationSpan) =
-            if (!currentLine[pos].isWhitespace()) lexLiteralTypeAnnotation()
-            else null to null
+            if (!currentLine[pos].isWhitespace()) {
+                lexLiteralTypeAnnotation()
+            } else {
+                null to null
+            }
 
         reportInvalidTypeAnnotation(typeAnnotation, typeAnnotationSpan)
 
@@ -219,15 +235,18 @@ class Lexer(private val compilationUnit: CompilationUnit) {
             else -> {
                 val currentSpan = currentSpan()
                 val colorizedCharacter =
-                    if (compilationUnit.preference.enableColor) Ansi.colorize(
-                        currentLine[pos++].toString(),
-                        Attribute.CYAN_TEXT()
-                    )
-                    else currentLine[pos++].toString()
+                    if (compilationUnit.preference.enableColor) {
+                        Ansi.colorize(
+                            currentLine[pos++].toString(),
+                            Attribute.CYAN_TEXT()
+                        )
+                    } else {
+                        currentLine[pos++].toString()
+                    }
 
                 compilationUnit.reportBuilder.error(
                     SpanHelper.expandView(currentSpan, lines.size),
-                    "Unknown character `${colorizedCharacter}`"
+                    "Unknown character `$colorizedCharacter`"
                 )
                     .label(currentSpan, "This character is unable to be lexical analyzed")
                     .color(Attribute.RED_TEXT())
@@ -262,8 +281,11 @@ class Lexer(private val compilationUnit: CompilationUnit) {
     }
 
     private fun peek(offset: Int = 0): Char? =
-        if (pos + offset < currentLine.length) currentLine[pos + offset]
-        else null
+        if (pos + offset < currentLine.length) {
+            currentLine[pos + offset]
+        } else {
+            null
+        }
 
     private fun currentSpan(): Span =
         Span.singleLine(line + 1, pos, pos + 1)

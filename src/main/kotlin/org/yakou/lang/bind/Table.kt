@@ -35,8 +35,9 @@ class Table {
             classMember.ownerTypeInfo = ownerTypeInfo
 
             true
-        } else if (classMemberTable[qualifiedOwnerPath]?.get(classMember.memberType)!!.any { it == classMember }) false
-        else {
+        } else if (classMemberTable[qualifiedOwnerPath]?.get(classMember.memberType)!!.any { it == classMember }) {
+            false
+        } else {
             classMemberTable[qualifiedOwnerPath]!![classMember.memberType]!! += classMember
 
             classMember.ownerTypeInfo = ownerTypeInfo
@@ -109,8 +110,9 @@ class Table {
     ): TypeInfo.Class? {
         val qualifiedClassPath = packagePath.appendPath(classPath)
 
-        return if (typeTable.containsKey(qualifiedClassPath)) null
-        else {
+        return if (typeTable.containsKey(qualifiedClassPath)) {
+            null
+        } else {
             val classType = TypeInfo.Class(
                 access,
                 qualifiedClassPath,
@@ -132,8 +134,9 @@ class Table {
     ): Boolean {
         val qualifiedOwnerPath = packagePath.appendPath(classPath)
 
-        return if (!typeTable.containsKey(qualifiedOwnerPath)) false
-        else {
+        return if (!typeTable.containsKey(qualifiedOwnerPath)) {
+            false
+        } else {
             (typeTable[qualifiedOwnerPath] as TypeInfo.Class).superClassType = superClassType
 
             true
@@ -209,7 +212,9 @@ class Table {
                 }
 
                 finalArrayType
-            } else null
+            } else {
+                null
+            }
         }
 
         is Type.TypePath -> {
@@ -289,6 +294,9 @@ class Table {
     }
 
     private fun String.appendPath(path: String): String =
-        if (this.isEmpty()) path
-        else "$this::$path"
+        if (this.isEmpty()) {
+            path
+        } else {
+            "$this::$path"
+        }
 }

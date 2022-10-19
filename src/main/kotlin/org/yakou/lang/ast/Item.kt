@@ -4,7 +4,7 @@ import chaos.unity.nenggao.Span
 import org.yakou.lang.bind.ClassMember
 import org.yakou.lang.bind.TypeInfo
 
-sealed class Item: AstNode {
+sealed class Item : AstNode {
     abstract override val span: Span
 
     data class Package(
@@ -18,8 +18,11 @@ sealed class Item: AstNode {
             var finalSpan = pkg.span
 
             finalSpan =
-                if (closeBrace != null) finalSpan.expand(closeBrace.span)
-                else finalSpan.expand(identifier.span)
+                if (closeBrace != null) {
+                    finalSpan.expand(closeBrace.span)
+                } else {
+                    finalSpan.expand(identifier.span)
+                }
 
             finalSpan
         }
@@ -36,8 +39,11 @@ sealed class Item: AstNode {
     ) : Item() {
         override val span: Span by lazy {
             var finalSpan =
-                if (!modifiers.isEmpty()) modifiers.modifierMap.toList().first().second
-                else const.span
+                if (!modifiers.isEmpty()) {
+                    modifiers.modifierMap.toList().first().second
+                } else {
+                    const.span
+                }
 
             finalSpan = finalSpan.expand(expression.span)
 
@@ -58,8 +64,11 @@ sealed class Item: AstNode {
     ) : Item() {
         override val span: Span by lazy {
             var finalSpan =
-                if (!modifiers.isEmpty()) modifiers.modifierMap.toList().first().second
-                else static.span
+                if (!modifiers.isEmpty()) {
+                    modifiers.modifierMap.toList().first().second
+                } else {
+                    static.span
+                }
 
             finalSpan = finalSpan.expand(expression.span)
 
@@ -85,8 +94,11 @@ sealed class Item: AstNode {
             var finalSpan = `class`.span
 
             finalSpan =
-                if (closeBrace != null) finalSpan.expand(closeBrace.span)
-                else finalSpan.expand(identifier.span)
+                if (closeBrace != null) {
+                    finalSpan.expand(closeBrace.span)
+                } else {
+                    finalSpan.expand(identifier.span)
+                }
 
             finalSpan
         }
@@ -124,12 +136,15 @@ sealed class Item: AstNode {
         val closeParenthesis: Token,
         val arrow: Token?,
         val returnType: Type?,
-        val body: FunctionBody?,
+        val body: FunctionBody?
     ) : Item() {
         override val span: Span by lazy {
             var finalSpan =
-                if (!modifiers.isEmpty()) modifiers.modifierMap.toList().first().second
-                else fn.span
+                if (!modifiers.isEmpty()) {
+                    modifiers.modifierMap.toList().first().second
+                } else {
+                    fn.span
+                }
 
             finalSpan = if (body != null) {
                 when (body) {

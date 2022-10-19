@@ -50,20 +50,23 @@ class ArgumentProcessor {
             if (flag == "-o" || flag == "-output") {
                 processOutputFile(flag, flagSpan)
             } else if (flag == "-t" || flag == "-timing") {
-                if (checkReassignment("timing", flag, flagSpan))
+                if (checkReassignment("timing", flag, flagSpan)) {
                     continue
+                }
 
                 preference.enableTiming = true
                 markedFlags["timing"] = flagSpan
             } else if (flag == "-a" || flag == "-ascii") {
-                if (checkReassignment("ascii", flag, flagSpan))
+                if (checkReassignment("ascii", flag, flagSpan)) {
                     continue
+                }
 
                 preference.useAscii = true
                 markedFlags["ascii"] = flagSpan
             } else if (flag == "-c" || flag == "-color") {
-                if (checkReassignment("color", flag, flagSpan))
+                if (checkReassignment("color", flag, flagSpan)) {
                     continue
+                }
 
                 preference.enableColor = true
                 markedFlags["color"] = flagSpan
@@ -112,8 +115,9 @@ class ArgumentProcessor {
             return
         }
 
-        if (checkReassignment("output", flag, flagSpan))
+        if (checkReassignment("output", flag, flagSpan)) {
             return
+        }
 
         val folder = File(folderPath)
 
@@ -153,7 +157,9 @@ class ArgumentProcessor {
                 .color(Attribute.YELLOW_TEXT())
                 .build().build()
             true
-        } else false
+        } else {
+            false
+        }
 
     private fun skipSpaces() {
         while (pos < command.length && command[pos].isWhitespace())

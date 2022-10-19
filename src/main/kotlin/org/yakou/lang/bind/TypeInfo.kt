@@ -34,15 +34,21 @@ sealed class TypeInfo {
         val rightPrimitiveType =
             PrimitiveType.primitiveTypes.find { it.jvmClazz.descriptorString() == otherTypeInfo.descriptor || it.wrappedJvmClazz.descriptorString() == otherTypeInfo.descriptor }
 
-        if (leftPrimitiveType == null || rightPrimitiveType == null)
+        if (leftPrimitiveType == null || rightPrimitiveType == null) {
             return null
+        }
 
-        if (leftPrimitiveType.precedence == -1 || rightPrimitiveType.precedence == -1)
+        if (leftPrimitiveType.precedence == -1 || rightPrimitiveType.precedence == -1) {
             return null
+        }
 
-        return if (leftPrimitiveType.precedence > rightPrimitiveType.precedence) Primitive(leftPrimitiveType)
-        else if (leftPrimitiveType.precedence < rightPrimitiveType.precedence) Primitive(rightPrimitiveType)
-        else Primitive(leftPrimitiveType)
+        return if (leftPrimitiveType.precedence > rightPrimitiveType.precedence) {
+            Primitive(leftPrimitiveType)
+        } else if (leftPrimitiveType.precedence < rightPrimitiveType.precedence) {
+            Primitive(rightPrimitiveType)
+        } else {
+            Primitive(leftPrimitiveType)
+        }
     }
 
     fun canImplicitCast(otherTypeInfo: TypeInfo): Boolean {

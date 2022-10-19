@@ -121,12 +121,16 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val `class` = next()!! // Should be asserted when called
         val name = expect(TokenType.Identifier)
         val genericParameters =
-            if (optExpectType(TokenType.OpenBracket)) parseGenericDeclarationParameters()
-            else null
+            if (optExpectType(TokenType.OpenBracket)) {
+                parseGenericDeclarationParameters()
+            } else {
+                null
+            }
         val primaryConstructorModifiers = parseModifiers()
         val primaryConstructor =
-            if (optExpectType(TokenType.OpenParenthesis)) parsePrimaryConstructor(primaryConstructorModifiers)
-            else {
+            if (optExpectType(TokenType.OpenParenthesis)) {
+                parsePrimaryConstructor(primaryConstructorModifiers)
+            } else {
                 if (!primaryConstructorModifiers.isEmpty()) {
                     reportUnusedModifiers(
                         primaryConstructorModifiers,
@@ -207,8 +211,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 parameter.type
             )
 
-            if (optExpectType(TokenType.Comma)) consume()
-            else break
+            if (optExpectType(TokenType.Comma)) {
+                consume()
+            } else {
+                break
+            }
         }
 
         return parameters
@@ -268,8 +275,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val fn = next()!! // Should be asserted when called
         val name = expect(TokenType.Identifier)
         val genericDeclarationParameters =
-            if (optExpectType(TokenType.OpenBracket)) parseGenericDeclarationParameters()
-            else null
+            if (optExpectType(TokenType.OpenBracket)) {
+                parseGenericDeclarationParameters()
+            } else {
+                null
+            }
         val openParenthesis = expect(TokenType.OpenParenthesis)
         val self: Token?
         val selfComma: Token?
@@ -359,8 +369,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun parseVariableDeclaration(): Statement.VariableDeclaration {
         val let = next()!!
         val mut =
-            if (optExpectKeyword(Keyword.MUT)) next()!!
-            else null
+            if (optExpectKeyword(Keyword.MUT)) {
+                next()!!
+            } else {
+                null
+            }
         val name = expect(TokenType.Identifier)
         val colon: Token?
         val specifiedType: Path.SimplePath?
@@ -676,16 +689,21 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val parameters = mutableListOf<GenericDeclarationParameters.GenericDeclarationParameter>()
 
         while (pos < tokens.size &&
-            (optExpectType(TokenType.Identifier) ||
+            (
+                optExpectType(TokenType.Identifier) ||
                     optExpectType(TokenType.Plus) ||
                     optExpectType(TokenType.Minus) ||
                     optExpectType(TokenType.PlusColon) ||
-                    optExpectType(TokenType.MinusColon))
+                    optExpectType(TokenType.MinusColon)
+                )
         ) {
             parameters += parseGenericDeclarationParameter()
 
-            if (optExpectType(TokenType.Comma)) consume()
-            else break
+            if (optExpectType(TokenType.Comma)) {
+                consume()
+            } else {
+                break
+            }
         }
 
         val closeBracket = expect(TokenType.CloseBracket)
@@ -707,8 +725,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
         while (pos < tokens.size && (optExpectType(TokenType.Identifier) || optExpectType(TokenType.OpenBracket))) {
             parameters += parseType()
 
-            if (optExpectType(TokenType.Comma)) consume()
-            else break
+            if (optExpectType(TokenType.Comma)) {
+                consume()
+            } else {
+                break
+            }
         }
 
         val closeBracket = expect(TokenType.CloseBracket)
@@ -746,8 +767,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
         while (pos < tokens.size && (optExpectType(TokenType.Identifier) || optExpectType(TokenType.OpenBracket))) {
             constraints += parseType()
 
-            if (optExpectType(TokenType.Plus)) consume()
-            else break
+            if (optExpectType(TokenType.Plus)) {
+                consume()
+            } else {
+                break
+            }
         }
 
         return constraints
@@ -773,8 +797,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
         while (pos < tokens.size && optExpectType(TokenType.Identifier)) {
             parameters += parseParameter()
 
-            if (optExpectType(TokenType.Comma)) consume()
-            else break
+            if (optExpectType(TokenType.Comma)) {
+                consume()
+            } else {
+                break
+            }
         }
 
         return parameters
@@ -794,8 +821,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
         while (pos < tokens.size && optExpectType(TokenType.Identifier)) {
             arguments += parseArgument()
 
-            if (optExpectType(TokenType.Comma)) consume()
-            else break
+            if (optExpectType(TokenType.Comma)) {
+                consume()
+            } else {
+                break
+            }
         }
 
         return arguments
@@ -818,8 +848,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
             // Path type
             val simplePath = parseSimplePath()
             val genericParameters =
-                if (optExpectType(TokenType.OpenBracket)) parseGenericParameters()
-                else null
+                if (optExpectType(TokenType.OpenBracket)) {
+                    parseGenericParameters()
+                } else {
+                    null
+                }
 
             Type.TypePath(simplePath, genericParameters)
         }
@@ -976,7 +1009,9 @@ class Parser(private val compilationUnit: CompilationUnit) {
         if (pos < tokens.size) {
             pos++
             peek(-1)
-        } else tokens.lastOrNull()
+        } else {
+            tokens.lastOrNull()
+        }
 
     private fun reportUnusedModifiers(modifiers: Modifiers, message: String) {
         compilationUnit.reportBuilder

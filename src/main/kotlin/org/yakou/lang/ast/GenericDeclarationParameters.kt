@@ -33,9 +33,9 @@ data class GenericDeclarationParameters(
                 TokenType.GreaterColon -> TypeInfo.GenericConstraint.BoundType.LOWER
                 else -> TypeInfo.GenericConstraint.BoundType.NONE
             },
-            TypeInfo.GenericConstraint.VarianceType.INVARIANCE,
+            TypeInfo.GenericConstraint.VarianceType.INVARIANCE
 
-            )
+        )
     }
 
     data class WildcardConstraintGenericDeclarationParameter(
@@ -53,9 +53,9 @@ data class GenericDeclarationParameters(
                 TokenType.MinusColon -> TypeInfo.GenericConstraint.BoundType.LOWER
                 else -> TypeInfo.GenericConstraint.BoundType.NONE
             },
-            TypeInfo.GenericConstraint.VarianceType.INVARIANCE,
+            TypeInfo.GenericConstraint.VarianceType.INVARIANCE
 
-            )
+        )
     }
 
     data class VarianceGenericDeclarationParameter(

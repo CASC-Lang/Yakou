@@ -9,5 +9,8 @@ fun colorize(literal: String, compilationUnit: CompilationUnit, vararg attribute
     colorize(literal, compilationUnit.preference, *attributes)
 
 fun colorize(literal: String, preference: AbstractPreference, vararg attributes: Attribute): String =
-    if (preference.enableColor) Ansi.colorize(literal, *attributes)
-    else literal
+    if (preference.enableColor) {
+        Ansi.colorize(literal, *attributes)
+    } else {
+        literal
+    }

@@ -23,9 +23,10 @@ class Optimizer(val compilationUnit: CompilationUnit) {
             is Item.Const -> optimizeConst(item)
             is Item.Function -> optimizeFunction(item)
             is Item.Package -> {
-                if (item.items != null)
+                if (item.items != null) {
                     for (innerItem in item.items)
                         optimizeItem(innerItem)
+                }
             }
 
             is Item.StaticField -> optimizeStaticField(item)
@@ -33,9 +34,10 @@ class Optimizer(val compilationUnit: CompilationUnit) {
     }
 
     private fun optimizeClass(clazz: Item.Class) {
-        if (clazz.classItems != null)
+        if (clazz.classItems != null) {
             for (classItem in clazz.classItems)
                 optimizeClassItem(classItem)
+        }
 
         // primary constructor does not need to optimize
     }
@@ -43,8 +45,9 @@ class Optimizer(val compilationUnit: CompilationUnit) {
     private fun optimizeClassItem(classItem: ClassItem) {
         when (classItem) {
             is ClassItem.Field -> {
-                if (classItem.expression != null)
+                if (classItem.expression != null) {
                     classItem.expression = optimizeExpression(classItem.expression!!)
+                }
             }
         }
     }
@@ -54,8 +57,9 @@ class Optimizer(val compilationUnit: CompilationUnit) {
     }
 
     private fun optimizeFunction(function: Item.Function) {
-        if (function.body != null)
+        if (function.body != null) {
             optimizeFunctionBody(function.body)
+        }
     }
 
     private fun optimizeFunctionBody(functionBody: FunctionBody) {
@@ -134,7 +138,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
             Expression.BinaryExpression.BinaryOperation.Multiplication,
             Expression.BinaryExpression.BinaryOperation.Division,
             Expression.BinaryExpression.BinaryOperation.Modulo -> {
-                if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral)
+                if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral) {
                     finalExpression = syntheticNumberLiteral(
                         expression.operation.getArithmeticFunctor()!!(
                             optimizedLeftExpression.value,
@@ -143,6 +147,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                         expression.span,
                         expression.finalType
                     )
+                }
             }
 
             Expression.BinaryExpression.BinaryOperation.LeftShift,
@@ -256,7 +261,9 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                 symbolInstance.dereference()
 
                 symbolInstance.propagateExpression
-            } else expression
+            } else {
+                expression
+            }
         } else if (symbolInstance is ClassMember.Field) {
             // Propagate expression when applicable
 
@@ -269,9 +276,15 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                 // - or force inline
                 if (symbolInstance.propagateExpression is Expression.LiteralExpression) {
                     symbolInstance.propagateExpression
-                } else expression
-            } else expression
-        } else expression
+                } else {
+                    expression
+                }
+            } else {
+                expression
+            }
+        } else {
+            expression
+        }
     }
 
     private fun optimizeAs(expression: Expression.As): Expression {

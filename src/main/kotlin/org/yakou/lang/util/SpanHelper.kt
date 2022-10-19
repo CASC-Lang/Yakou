@@ -13,11 +13,13 @@ object SpanHelper {
         var startLine = span.startPosition.line
         var endLine = span.endPosition.line
 
-        if (startLine > 1)
+        if (startLine > 1) {
             startLine--
+        }
 
-        if (endLine < maxLineNumber)
+        if (endLine < maxLineNumber) {
             endLine++
+        }
 
         return Span.multipleLine(startLine, span.startPosition.pos + 1, endLine, 0) // Character's actual start position starts from 1 instead of 0
     }

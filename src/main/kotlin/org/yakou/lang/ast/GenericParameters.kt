@@ -8,7 +8,7 @@ data class GenericParameters(
     val openBracket: Token,
     val genericParameters: List<GenericParameter>,
     val closeBracket: Token
-): AstNode {
+) : AstNode {
     override val span: Span by lazy {
         openBracket.span.expand(closeBracket.span)
     }

@@ -2,7 +2,7 @@ package org.yakou.lang.ast
 
 import chaos.unity.nenggao.Span
 
-sealed class Path: AstNode {
+sealed class Path : AstNode {
     data class SimplePath(val pathSegments: List<Token>) : Path() {
         override val span: Span?
             get() = pathSegments.firstOrNull()?.span?.expand(pathSegments.lastOrNull()?.span)

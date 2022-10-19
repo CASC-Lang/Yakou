@@ -50,8 +50,9 @@ class Scope(internal val table: Table) {
         var currentIndex: Int = 0
 
         override fun add(element: Variable): Boolean {
-            if (contains(element))
+            if (contains(element)) {
                 return false
+            }
 
             val result = super.add(element)
 

@@ -5,9 +5,13 @@ import kotlin.collections.LinkedHashSet
 // Yakou permits no implicit type conversion, only lower-bound implicit type conversion is allowed by default
 object TypeChecker {
     fun canImplicitCast(from: TypeInfo, to: TypeInfo): BoundResult =
-        if (from == to) BoundResult.SAME
-        else if (from is TypeInfo.Class && to is TypeInfo.Class) isSubClass(from, to)
-        else BoundResult.FAIL
+        if (from == to) {
+            BoundResult.SAME
+        } else if (from is TypeInfo.Class && to is TypeInfo.Class) {
+            isSubClass(from, to)
+        } else {
+            BoundResult.FAIL
+        }
 
     fun canExplicitCast(from: TypeInfo, to: TypeInfo): BoundResult {
         if (from is TypeInfo.Primitive && to is TypeInfo.Primitive) {
@@ -34,16 +38,18 @@ object TypeChecker {
     }
 
     private fun isSubClass(from: TypeInfo.Class, to: TypeInfo.Class): BoundResult {
-        if (from == to)
+        if (from == to) {
             return BoundResult.SAME
+        }
 
         val castingIterator = classAsQueue(from).iterator()
 
         while (castingIterator.hasNext()) {
             val currentClass = castingIterator.next()
 
-            if (currentClass == from)
+            if (currentClass == from) {
                 return BoundResult.SUBCLASS
+            }
         }
 
         return BoundResult.IMPOSSIBLE
@@ -60,8 +66,9 @@ object TypeChecker {
     }
 
     private fun appendToQueue(queue: LinkedHashSet<TypeInfo.Class>, clazz: TypeInfo.Class) {
-        if (clazz == TypeInfo.Class.OBJECT_TYPE_INFO)
+        if (clazz == TypeInfo.Class.OBJECT_TYPE_INFO) {
             return
+        }
 
         queue.add(clazz)
 
@@ -69,18 +76,19 @@ object TypeChecker {
             appendToQueue(queue, trait)
         }
 
-        if (clazz.superClassType != null)
+        if (clazz.superClassType != null) {
             appendToQueue(queue, clazz.superClassType!!)
+        }
     }
 
     // Used for representing different behaviour of casting
     enum class BoundResult {
-        SAME,               // types are same
-        IMPOSSIBLE,         // types are unrelated, but we still allowed it exists anyway
-        SUBCLASS,           // types are related, source type is able to cast into target type
-        CAST,               // types are related, source type is able to promote into target type (primitive class only)
-        BOX,                // types are related, target type is source type's boxed class variant, box source type into target type
-        UNBOX,              // types are related, target type is source type's boxed class variant, unbox source type from target type
-        FAIL                // types are unrelated, one of types is primitive type meanwhile the other type is not primitive
+        SAME, // types are same
+        IMPOSSIBLE, // types are unrelated, but we still allowed it exists anyway
+        SUBCLASS, // types are related, source type is able to cast into target type
+        CAST, // types are related, source type is able to promote into target type (primitive class only)
+        BOX, // types are related, target type is source type's boxed class variant, box source type into target type
+        UNBOX, // types are related, target type is source type's boxed class variant, unbox source type from target type
+        FAIL // types are unrelated, one of types is primitive type meanwhile the other type is not primitive
     }
 }

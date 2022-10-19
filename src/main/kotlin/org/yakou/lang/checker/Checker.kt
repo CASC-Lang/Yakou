@@ -24,9 +24,10 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkItem(item: Item) {
         when (item) {
             is Item.Package -> {
-                if (item.items != null)
+                if (item.items != null) {
                     for (innerItem in item.items)
                         checkItem(innerItem)
+                }
             }
 
             is Item.Const -> checkConst(item)
@@ -114,19 +115,22 @@ class Checker(private val compilationUnit: CompilationUnit) {
     }
 
     private fun checkClass(clazz: Item.Class) {
-        if (clazz.classItems != null)
+        if (clazz.classItems != null) {
             for (classItem in clazz.classItems)
                 checkClassItem(classItem)
+        }
 
         if (clazz.modifiers.hasModifier(Modifier.Inline)) {
             reportIllegalInline(clazz.modifiers[Modifier.Inline]!!, "Class cannot be inlined")
         }
 
-        if (clazz.primaryConstructor != null)
+        if (clazz.primaryConstructor != null) {
             checkPrimaryConstructor(clazz.primaryConstructor)
+        }
 
-        if (clazz.superClassConstructorCall != null)
+        if (clazz.superClassConstructorCall != null) {
             checkSuperClassConstructorCall(clazz.superClassConstructorCall)
+        }
     }
 
     private fun checkPrimaryConstructor(primaryConstructor: PrimaryConstructor) {
@@ -165,7 +169,8 @@ class Checker(private val compilationUnit: CompilationUnit) {
                     SpanHelper.expandView(
                         superClassConstructorCall.superClassType.span,
                         compilationUnit.maxLineCount
-                    ), "Unable to inherit immutable class"
+                    ),
+                    "Unable to inherit immutable class"
                 )
                 .label(
                     superClassConstructorCall.superClassType.span,
@@ -216,8 +221,9 @@ class Checker(private val compilationUnit: CompilationUnit) {
             }
         }
 
-        if (function.body != null)
+        if (function.body != null) {
             checkFunctionBody(function.body)
+        }
 
         checkControlFlow(function)
 
@@ -235,7 +241,6 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 }
 
                 is FunctionBody.SingleExpression -> {
-
                 }
 
                 else -> {}
@@ -508,7 +513,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 SpanHelper.expandView(fromTypeSpan, compilationUnit.maxLineCount),
                 "Unable to implicitly cast `$fromType` into `$toType`"
             )
-            .label(fromTypeSpan, "Expected `${toType}`, Got `${fromType}`")
+            .label(fromTypeSpan, "Expected `$toType`, Got `$fromType`")
             .color(Attribute.CYAN_TEXT())
             .build().build()
     }
