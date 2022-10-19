@@ -227,20 +227,27 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                 }
             }
             Expression.BinaryExpression.BinaryOperation.Greater,
-            Expression.BinaryExpression.BinaryOperation.GreaterEqual,
             Expression.BinaryExpression.BinaryOperation.Lesser,
+            Expression.BinaryExpression.BinaryOperation.GreaterEqual,
             Expression.BinaryExpression.BinaryOperation.LesserEqual -> {
-                // Unsupported
-//                if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral) {
-//                    finalExpression = syntheticNumberLiteral(
-//                        expression.operation.get()!!(
-//                            optimizedLeftExpression.value.toLong(),
-//                            optimizedRightExpression.value.toInt()
-//                        ).toDouble(),
-//                        expression.span,
-//                        expression.finalType
-//                    )
-//                }
+                if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral) {
+                    val flag = expression.operation.getComparisonFunctor()!!(
+                        optimizedLeftExpression.value,
+                        optimizedRightExpression.value
+                    )
+                    val comparedResult = when (expression.operation) {
+                        Expression.BinaryExpression.BinaryOperation.Greater-> flag > 0
+                        Expression.BinaryExpression.BinaryOperation.Lesser-> flag < 0
+                        Expression.BinaryExpression.BinaryOperation.GreaterEqual-> flag >= 0
+                        Expression.BinaryExpression.BinaryOperation.LesserEqual -> flag <= 0
+                        else -> false
+                    }
+
+                    finalExpression = syntheticBoolLiteral(
+                        comparedResult,
+                        expression.span
+                    )
+                }
             }
         }
 

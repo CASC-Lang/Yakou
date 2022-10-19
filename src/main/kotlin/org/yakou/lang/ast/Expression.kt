@@ -63,6 +63,11 @@ sealed class Expression : AstNode {
                 else -> null
             }
 
+            fun getComparisonFunctor(): ((Double, Double) -> Int)? = when (this) {
+                Greater, GreaterEqual, Lesser, LesserEqual -> Double::compareTo
+                else -> null
+            }
+
             fun getFunctorOpcode(primitive: TypeInfo.Primitive): Int = when (this) {
                 Addition -> primitive.addOpcode
                 Subtraction -> primitive.subOpcode

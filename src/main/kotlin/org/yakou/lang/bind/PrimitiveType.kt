@@ -20,7 +20,7 @@ enum class PrimitiveType(
     ;
 
     companion object {
-        val values: Array<PrimitiveType> = values()
+        private val values: Array<PrimitiveType> = values()
         val primitiveTypes: Array<PrimitiveType> = arrayOf(Unit, Bool, Char, I8, I16, I32, I64, F32, F64)
         val convertableTypes: Array<PrimitiveType> = arrayOf(Bool, Char, I8, I16, I32, I64, F32, F64)
         val numberTypes: Array<PrimitiveType> = arrayOf(I8, I16, I32, I64, F32, F64)
