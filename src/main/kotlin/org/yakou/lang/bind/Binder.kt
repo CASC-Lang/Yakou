@@ -141,7 +141,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
                     SpanHelper.expandView(genericDeclarationParameter.span, compilationUnit.maxLineCount),
                     "Unable to use wildcard bound here"
                 )
-                .label(genericDeclarationParameter.span, "Wildcard bound cannot be used at generic parameter declaration")
+                .label(
+                    genericDeclarationParameter.span,
+                    "Wildcard bound cannot be used at generic parameter declaration"
+                )
                 .color(Attribute.CYAN_TEXT())
                 .build().build()
         } else {
@@ -321,7 +324,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 } else {
                     genericDeclarationParameter.genericConstraint.bounds += boundType
 
-                    currentScope!!.setConstraint(genericDeclarationParameter.genericConstraint.genericParameterName, boundType)
+                    currentScope!!.setConstraint(
+                        genericDeclarationParameter.genericConstraint.genericParameterName,
+                        boundType
+                    )
                 }
             }
         }
@@ -576,34 +582,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 val promotedType = leftType promote rightType
 
                 if (promotedType == null) {
-                    val coloredOperator = colorize(
-                        binaryExpression.operator.literal,
-                        compilationUnit,
-                        Attribute.CYAN_TEXT()
-                    )
-                    val coloredLeftTypeLiteral = colorize(leftType.toString(), compilationUnit, Attribute.CYAN_TEXT())
-                    val coloredRightTypeLiteral = colorize(rightType.toString(), compilationUnit, Attribute.CYAN_TEXT())
-
-                    compilationUnit.reportBuilder
-                        .error(
-                            SpanHelper.expandView(binaryExpression.span, compilationUnit.maxLineCount),
-                            "Unable to apply `$coloredOperator` on `$coloredLeftTypeLiteral` and `$coloredRightTypeLiteral`"
-                        )
-                        .label(
-                            binaryExpression.leftExpression.span,
-                            "Left expression has type `$coloredLeftTypeLiteral`"
-                        )
-                        .color(Attribute.CYAN_TEXT())
-                        .build()
-                        .label(binaryExpression.operator.span, "Inapplicable operator `$coloredOperator`")
-                        .color(Attribute.RED_TEXT())
-                        .build()
-                        .label(
-                            binaryExpression.rightExpression.span,
-                            "Right expression has type `$coloredRightTypeLiteral`"
-                        )
-                        .color(Attribute.CYAN_TEXT())
-                        .build().build()
+                    reportInapplicableOperator(binaryExpression, leftType, rightType, null)
 
                     return
                 }
@@ -619,67 +598,13 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 val rightType = binaryExpression.rightExpression.finalType.asPrimitive()
 
                 if (leftType == null || !leftType.type.isIntegerType()) {
-                    val coloredOperator = colorize(
-                        binaryExpression.operator.literal,
-                        compilationUnit,
-                        Attribute.CYAN_TEXT()
-                    )
-                    val coloredLeftTypeLiteral = colorize(
-                        binaryExpression.leftExpression.finalType.toString(),
-                        compilationUnit,
-                        Attribute.CYAN_TEXT()
-                    )
-
-                    compilationUnit.reportBuilder
-                        .error(
-                            SpanHelper.expandView(binaryExpression.span, compilationUnit.maxLineCount),
-                            "Unable to shift type `$coloredLeftTypeLiteral` with `$coloredOperator`"
-                        )
-                        .label(
-                            binaryExpression.leftExpression.span,
-                            "Expression has non-integer type `$coloredLeftTypeLiteral`"
-                        )
-                        .color(Attribute.CYAN_TEXT())
-                        .build()
-                        .label(
-                            binaryExpression.operator.span,
-                            "Inapplicable operator `$coloredOperator`"
-                        )
-                        .color(Attribute.RED_TEXT())
-                        .build().build()
+                    reportNonIntegerShiftOperation(binaryExpression)
 
                     return
                 }
 
                 if (rightType == null || rightType.type != PrimitiveType.I32) {
-                    val coloredOperator = colorize(
-                        binaryExpression.operator.literal,
-                        compilationUnit,
-                        Attribute.CYAN_TEXT()
-                    )
-                    val coloredRightTypeLiteral = colorize(
-                        binaryExpression.rightExpression.finalType.toString(),
-                        compilationUnit,
-                        Attribute.CYAN_TEXT()
-                    )
-
-                    compilationUnit.reportBuilder
-                        .error(
-                            SpanHelper.expandView(binaryExpression.span, compilationUnit.maxLineCount),
-                            "Unable to shift type `$coloredRightTypeLiteral` with `$coloredOperator`"
-                        )
-                        .label(
-                            binaryExpression.rightExpression.span,
-                            "Expression has non-i32 type `$coloredRightTypeLiteral`"
-                        )
-                        .color(Attribute.CYAN_TEXT())
-                        .build()
-                        .label(
-                            binaryExpression.operator.span,
-                            "Inapplicable operator `$coloredOperator`"
-                        )
-                        .color(Attribute.RED_TEXT())
-                        .build().build()
+                    reportNonI32ShiftOperation(binaryExpression)
 
                     return
                 }
@@ -696,36 +621,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 if (leftType.asPrimitive()?.type != PrimitiveType.Bool ||
                     rightType.asPrimitive()?.type != PrimitiveType.Bool
                 ) {
-                    val coloredOperator = colorize(
-                        binaryExpression.operator.literal,
-                        compilationUnit,
-                        Attribute.CYAN_TEXT()
-                    )
-                    val coloredLeftTypeLiteral = colorize(leftType.toString(), compilationUnit, Attribute.CYAN_TEXT())
-                    val coloredRightTypeLiteral = colorize(rightType.toString(), compilationUnit, Attribute.CYAN_TEXT())
-                    val coloredBoolLiteral = colorize("bool", compilationUnit, Attribute.CYAN_TEXT())
-
-                    compilationUnit.reportBuilder
-                        .error(
-                            SpanHelper.expandView(binaryExpression.span, compilationUnit.maxLineCount),
-                            "Unable to apply `$coloredOperator` on `$coloredLeftTypeLiteral` and `$coloredRightTypeLiteral`"
-                        )
-                        .label(
-                            binaryExpression.leftExpression.span,
-                            "Left expression has type `$coloredLeftTypeLiteral`"
-                        )
-                        .color(Attribute.CYAN_TEXT())
-                        .build()
-                        .label(binaryExpression.operator.span, "Inapplicable operator `$coloredOperator`")
-                        .color(Attribute.RED_TEXT())
-                        .hint("Only type `$coloredBoolLiteral` is applicable")
-                        .build()
-                        .label(
-                            binaryExpression.rightExpression.span,
-                            "Right expression has type `$coloredRightTypeLiteral`"
-                        )
-                        .color(Attribute.CYAN_TEXT())
-                        .build().build()
+                    reportInapplicableOperator(binaryExpression, leftType, rightType)
 
                     return
                 }
@@ -741,7 +637,129 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 binaryExpression.originalType = TypeInfo.Primitive.BOOL_TYPE_INFO
                 binaryExpression.finalType = TypeInfo.Primitive.BOOL_TYPE_INFO
             }
+
+            Expression.BinaryExpression.BinaryOperation.Greater,
+            Expression.BinaryExpression.BinaryOperation.GreaterEqual,
+            Expression.BinaryExpression.BinaryOperation.Lesser,
+            Expression.BinaryExpression.BinaryOperation.LesserEqual -> {
+                val leftType = binaryExpression.leftExpression.finalType
+                val rightType = binaryExpression.rightExpression.finalType
+                val promotedType = leftType promote rightType
+
+                if (promotedType == null) {
+                    reportInapplicableOperator(binaryExpression, leftType, rightType, null)
+
+                    return
+                }
+
+                binaryExpression.originalType = TypeInfo.Primitive.BOOL_TYPE_INFO
+                binaryExpression.finalType = TypeInfo.Primitive.BOOL_TYPE_INFO
+            }
         }
+    }
+
+    private fun reportNonIntegerShiftOperation(binaryExpression: Expression.BinaryExpression) {
+        val coloredOperator = colorize(
+            binaryExpression.operator.literal,
+            compilationUnit,
+            Attribute.CYAN_TEXT()
+        )
+        val coloredLeftTypeLiteral = colorize(
+            binaryExpression.leftExpression.finalType.toString(),
+            compilationUnit,
+            Attribute.CYAN_TEXT()
+        )
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(binaryExpression.span, compilationUnit.maxLineCount),
+                "Unable to shift type `$coloredLeftTypeLiteral` with `$coloredOperator`"
+            )
+            .label(
+                binaryExpression.leftExpression.span,
+                "Expression has non-integer type `$coloredLeftTypeLiteral`"
+            )
+            .color(Attribute.CYAN_TEXT())
+            .build()
+            .label(
+                binaryExpression.operator.span,
+                "Inapplicable operator `$coloredOperator`"
+            )
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportNonI32ShiftOperation(binaryExpression: Expression.BinaryExpression) {
+        val coloredOperator = colorize(
+            binaryExpression.operator.literal,
+            compilationUnit,
+            Attribute.CYAN_TEXT()
+        )
+        val coloredRightTypeLiteral = colorize(
+            binaryExpression.rightExpression.finalType.toString(),
+            compilationUnit,
+            Attribute.CYAN_TEXT()
+        )
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(binaryExpression.span, compilationUnit.maxLineCount),
+                "Unable to shift type `$coloredRightTypeLiteral` with `$coloredOperator`"
+            )
+            .label(
+                binaryExpression.rightExpression.span,
+                "Expression has non-i32 type `$coloredRightTypeLiteral`"
+            )
+            .color(Attribute.CYAN_TEXT())
+            .build()
+            .label(
+                binaryExpression.operator.span,
+                "Inapplicable operator `$coloredOperator`"
+            )
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportInapplicableOperator(
+        binaryExpression: Expression.BinaryExpression,
+        leftType: TypeInfo,
+        rightType: TypeInfo,
+        expectedType: TypeInfo? = TypeInfo.Primitive.BOOL_TYPE_INFO
+    ) {
+        val coloredOperator = colorize(
+            binaryExpression.operator.literal,
+            compilationUnit,
+            Attribute.CYAN_TEXT()
+        )
+        val coloredLeftTypeLiteral = colorize(leftType.toString(), compilationUnit, Attribute.CYAN_TEXT())
+        val coloredRightTypeLiteral = colorize(rightType.toString(), compilationUnit, Attribute.CYAN_TEXT())
+        val coloredBoolLiteral = colorize(expectedType.toString(), compilationUnit, Attribute.CYAN_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(binaryExpression.span, compilationUnit.maxLineCount),
+                "Unable to apply `$coloredOperator` on `$coloredLeftTypeLiteral` and `$coloredRightTypeLiteral`"
+            )
+            .label(
+                binaryExpression.leftExpression.span,
+                "Left expression has type `$coloredLeftTypeLiteral`"
+            )
+            .color(Attribute.CYAN_TEXT())
+            .build()
+            .label(binaryExpression.operator.span, "Inapplicable operator `$coloredOperator`")
+            .color(Attribute.RED_TEXT())
+            .apply {
+                if (expectedType != null) {
+                    hint("Only type `$coloredBoolLiteral` is applicable")
+                }
+            }
+            .build()
+            .label(
+                binaryExpression.rightExpression.span,
+                "Right expression has type `$coloredRightTypeLiteral`"
+            )
+            .color(Attribute.CYAN_TEXT())
+            .build().build()
     }
 
     private fun bindIdentifier(identifier: Expression.Identifier) {

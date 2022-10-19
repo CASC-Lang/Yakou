@@ -34,7 +34,11 @@ sealed class Expression: AstNode {
             Equal,
             NotEqual,
             ExactEqual,
-            ExactNotEqual
+            ExactNotEqual,
+            Greater,
+            GreaterEqual,
+            Lesser,
+            LesserEqual
             ;
 
             fun getArithmeticFunctor(): ((Double, Double) -> Double)? = when (this) {

@@ -21,7 +21,7 @@ enum class Keyword(val literal: String) {
     FOR("for");
 
     companion object {
-        val keywords: Array<Keyword> = values()
+        private val keywords: Array<Keyword> = values()
 
         fun isKeyword(literal: String): Boolean =
             keywords.any { it.literal == literal }

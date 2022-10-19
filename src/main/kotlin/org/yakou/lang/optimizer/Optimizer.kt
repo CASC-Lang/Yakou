@@ -148,7 +148,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
             Expression.BinaryExpression.BinaryOperation.LeftShift,
             Expression.BinaryExpression.BinaryOperation.RightShift,
             Expression.BinaryExpression.BinaryOperation.UnsignedRightShift -> {
-                if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral)
+                if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral) {
                     finalExpression = syntheticNumberLiteral(
                         expression.operation.getBitwiseFunctor()!!(
                             optimizedLeftExpression.value.toLong(),
@@ -157,11 +157,12 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                         expression.span,
                         expression.finalType
                     )
+                }
             }
 
             Expression.BinaryExpression.BinaryOperation.LogicalOr,
             Expression.BinaryExpression.BinaryOperation.LogicalAnd -> {
-                if (optimizedLeftExpression is Expression.BoolLiteral && optimizedRightExpression is Expression.BoolLiteral)
+                if (optimizedLeftExpression is Expression.BoolLiteral && optimizedRightExpression is Expression.BoolLiteral) {
                     finalExpression = syntheticBoolLiteral(
                         expression.operation.getLogicalFunctor()!!(
                             optimizedLeftExpression.value,
@@ -169,6 +170,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                         ),
                         expression.span
                     )
+                }
             }
 
             Expression.BinaryExpression.BinaryOperation.Equal,
@@ -218,6 +220,22 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                         else -> finalExpression
                     }
                 }
+            }
+            Expression.BinaryExpression.BinaryOperation.Greater,
+            Expression.BinaryExpression.BinaryOperation.GreaterEqual,
+            Expression.BinaryExpression.BinaryOperation.Lesser,
+            Expression.BinaryExpression.BinaryOperation.LesserEqual -> {
+                // Unsupported
+//                if (optimizedLeftExpression is Expression.NumberLiteral && optimizedRightExpression is Expression.NumberLiteral) {
+//                    finalExpression = syntheticNumberLiteral(
+//                        expression.operation.get()!!(
+//                            optimizedLeftExpression.value.toLong(),
+//                            optimizedRightExpression.value.toInt()
+//                        ).toDouble(),
+//                        expression.span,
+//                        expression.finalType
+//                    )
+//                }
             }
         }
 

@@ -3,7 +3,7 @@ pkg chaos {
         fn test[T <: str + java::lang::Runnable]() -> java::lang::Object {
             let a = 1
 
-            {
+            for a > 1 {
                 let b = 1
             }
 

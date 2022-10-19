@@ -500,6 +500,13 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
                 genReferentialEquality(methodVisitor, leftType, rightType, true)
             }
+
+            Expression.BinaryExpression.BinaryOperation.Greater,
+            Expression.BinaryExpression.BinaryOperation.GreaterEqual,
+            Expression.BinaryExpression.BinaryOperation.Lesser,
+            Expression.BinaryExpression.BinaryOperation.LesserEqual -> {
+                TODO()
+            }
         }
     }
 
