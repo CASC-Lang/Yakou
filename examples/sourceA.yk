@@ -1,13 +1,11 @@
 pkg chaos {
     pkg unity {
-        fn test[T <: str + java::lang::Runnable]() -> java::lang::Object {
+        fn main(args: [str]) {
             let a = 1
 
             for a > 1 {
                 let b = 1
             }
-
-            return 1 as java::lang::Integer as java::lang::Number as java::lang::Integer
         }
     }
 }
