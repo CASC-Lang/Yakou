@@ -135,6 +135,34 @@ sealed class TypeInfo {
             PrimitiveType.F64 -> Opcodes.DCMPG
             else -> -1
         }
+        val gtOpcode: Int = when (type) {
+            PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.IF_ICMPGE
+            PrimitiveType.I64 -> Opcodes.LCMP
+            PrimitiveType.F32 -> Opcodes.FCMPG
+            PrimitiveType.F64 -> Opcodes.DCMPG
+            else -> -1
+        }
+        val geOpcode: Int = when (type) {
+            PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.IF_ICMPGE
+            PrimitiveType.I64 -> Opcodes.LCMP
+            PrimitiveType.F32 -> Opcodes.FCMPG
+            PrimitiveType.F64 -> Opcodes.DCMPG
+            else -> -1
+        }
+        val ltOpcode: Int = when (type) {
+            PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.IF_ICMPLT
+            PrimitiveType.I64 -> Opcodes.LCMP
+            PrimitiveType.F32 -> Opcodes.FCMPG
+            PrimitiveType.F64 -> Opcodes.DCMPG
+            else -> -1
+        }
+        val leOpcode: Int = when (type) {
+            PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.IF_ICMPLE
+            PrimitiveType.I64 -> Opcodes.LCMP
+            PrimitiveType.F32 -> Opcodes.FCMPG
+            PrimitiveType.F64 -> Opcodes.DCMPG
+            else -> -1
+        }
         override val storeOpcode: Int = when (type) {
             PrimitiveType.Bool, PrimitiveType.Char, PrimitiveType.I8, PrimitiveType.I16, PrimitiveType.I32 -> Opcodes.ISTORE
             PrimitiveType.I64 -> Opcodes.LSTORE
