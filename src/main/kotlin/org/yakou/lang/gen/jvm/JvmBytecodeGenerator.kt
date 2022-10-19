@@ -505,7 +505,8 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             Expression.BinaryExpression.BinaryOperation.GreaterEqual,
             Expression.BinaryExpression.BinaryOperation.Lesser,
             Expression.BinaryExpression.BinaryOperation.LesserEqual -> {
-                TODO()
+                genExpression(methodVisitor, binaryExpression.leftExpression)
+                genExpression(methodVisitor, binaryExpression.rightExpression)
             }
         }
     }
@@ -587,16 +588,12 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             }
 
             leftType is TypeInfo.Array && rightType is TypeInfo.Array -> {
-                genObjectReferentialEquality(methodVisitor)
+                genObjectReferentialEquality(methodVisitor, invert)
             }
 
             leftType is TypeInfo.Primitive && rightType is TypeInfo.Primitive -> {
-                genPrimitiveEquality(methodVisitor, leftType)
+                genPrimitiveEquality(methodVisitor, leftType, invert)
             }
-        }
-
-        if (invert) {
-            genInvert(methodVisitor)
         }
     }
 
@@ -613,23 +610,19 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         when {
             (leftType is TypeInfo.Class && rightType is TypeInfo.Class) ||
                     (leftType is TypeInfo.Array && rightType is TypeInfo.Array) -> {
-                genObjectReferentialEquality(methodVisitor)
+                genObjectReferentialEquality(methodVisitor, invert)
             }
 
             leftType is TypeInfo.Primitive && rightType is TypeInfo.Primitive -> {
-                genPrimitiveEquality(methodVisitor, leftType)
+                genPrimitiveEquality(methodVisitor, leftType, invert)
             }
-        }
-
-        if (invert) {
-            genInvert(methodVisitor)
         }
     }
 
-    private fun genObjectReferentialEquality(methodVisitor: MethodVisitor) {
+    private fun genObjectReferentialEquality(methodVisitor: MethodVisitor, invert: Boolean) {
         val falseLabel = Label()
         val endLabel = Label()
-        methodVisitor.visitJumpInsn(Opcodes.IF_ACMPNE, falseLabel)  // stack: -
+        methodVisitor.visitJumpInsn(if (invert) Opcodes.IF_ACMPEQ else Opcodes.IF_ACMPNE, falseLabel)  // stack: -
         methodVisitor.visitInsn(Opcodes.ICONST_1)                   // stack: - Z
         methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)         // stack: - Z
         methodVisitor.visitLabel(falseLabel)                        // stack: -
@@ -637,7 +630,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         methodVisitor.visitLabel(endLabel)                          // stack: - Z
     }
 
-    private fun genPrimitiveEquality(methodVisitor: MethodVisitor, leftType: TypeInfo.Primitive) {
+    private fun genPrimitiveEquality(methodVisitor: MethodVisitor, leftType: TypeInfo.Primitive, invert: Boolean) {
         // stack: - i1 - i2
         when (leftType.type) {
             PrimitiveType.Bool,
@@ -647,7 +640,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             PrimitiveType.I32 -> {
                 val trueLabel = Label()
                 val endLabel = Label()
-                methodVisitor.visitJumpInsn(leftType.eqOpcode, trueLabel)
+                methodVisitor.visitJumpInsn(if (invert) leftType.neOpcode else leftType.eqOpcode, trueLabel)
                 methodVisitor.visitInsn(Opcodes.ICONST_0)
                 methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
                 methodVisitor.visitLabel(trueLabel)
@@ -672,17 +665,6 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             else -> {} // Unreachable
         }
         // stack: - Z
-    }
-
-    private fun genInvert(methodVisitor: MethodVisitor) {
-        val falseLabel = Label()
-        val endLabel = Label()
-        methodVisitor.visitJumpInsn(Opcodes.IFNE, falseLabel)
-        methodVisitor.visitInsn(Opcodes.ICONST_1)
-        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
-        methodVisitor.visitLabel(falseLabel)
-        methodVisitor.visitInsn(Opcodes.ICONST_0)
-        methodVisitor.visitLabel(endLabel)
     }
 
     private fun genAs(methodVisitor: MethodVisitor, `as`: Expression.As) {
