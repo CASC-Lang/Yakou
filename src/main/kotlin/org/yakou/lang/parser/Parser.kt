@@ -452,14 +452,14 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseEqualityExpression(): Expression {
-        var leftExpression = parseAddictiveExpression()
+        var leftExpression = parseComparisonExpression()
 
         while (true) {
             leftExpression = when {
                 optExpectType(TokenType.DoubleEqual) -> {
                     parseRhsOp(
                         leftExpression,
-                        ::parseAddictiveExpression,
+                        ::parseComparisonExpression,
                         Expression.BinaryExpression.BinaryOperation.Equal
                     )
                 }
@@ -467,7 +467,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 optExpectType(TokenType.BangEqual) -> {
                     parseRhsOp(
                         leftExpression,
-                        ::parseAddictiveExpression,
+                        ::parseComparisonExpression,
                         Expression.BinaryExpression.BinaryOperation.NotEqual
                     )
                 }
@@ -475,7 +475,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 optExpectType(TokenType.TripleEqual) -> {
                     parseRhsOp(
                         leftExpression,
-                        ::parseAddictiveExpression,
+                        ::parseComparisonExpression,
                         Expression.BinaryExpression.BinaryOperation.ExactEqual
                     )
                 }
@@ -483,8 +483,52 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 optExpectType(TokenType.BangDoubleEqual) -> {
                     parseRhsOp(
                         leftExpression,
-                        ::parseAddictiveExpression,
+                        ::parseComparisonExpression,
                         Expression.BinaryExpression.BinaryOperation.ExactNotEqual
+                    )
+                }
+
+                else -> break
+            }
+        }
+
+        return leftExpression
+    }
+
+    private fun parseComparisonExpression(): Expression {
+        var leftExpression = parseAddictiveExpression()
+
+        while (true) {
+            leftExpression = when {
+                optExpectType(TokenType.Greater) -> {
+                    parseRhsOp(
+                        leftExpression,
+                        ::parseAddictiveExpression,
+                        Expression.BinaryExpression.BinaryOperation.Greater
+                    )
+                }
+
+                optExpectType(TokenType.GreaterEqual) -> {
+                    parseRhsOp(
+                        leftExpression,
+                        ::parseAddictiveExpression,
+                        Expression.BinaryExpression.BinaryOperation.GreaterEqual
+                    )
+                }
+
+                optExpectType(TokenType.Lesser) -> {
+                    parseRhsOp(
+                        leftExpression,
+                        ::parseAddictiveExpression,
+                        Expression.BinaryExpression.BinaryOperation.Lesser
+                    )
+                }
+
+                optExpectType(TokenType.LesserEqual) -> {
+                    parseRhsOp(
+                        leftExpression,
+                        ::parseAddictiveExpression,
+                        Expression.BinaryExpression.BinaryOperation.LesserEqual
                     )
                 }
 
@@ -577,7 +621,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
         while (true) {
             leftExpression = when {
-                optExpectType(TokenType.Greater) -> {
+                optExpectType(TokenType.Lesser) -> {
                     parseRhsOp(
                         leftExpression,
                         ::parsePrimaryExpression,
@@ -593,7 +637,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                     )
                 }
 
-                optExpectType(TokenType.Greater) -> {
+                optExpectType(TokenType.TripleGreater) -> {
                     parseRhsOp(
                         leftExpression,
                         ::parsePrimaryExpression,
