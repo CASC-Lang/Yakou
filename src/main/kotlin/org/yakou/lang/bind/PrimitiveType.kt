@@ -25,6 +25,7 @@ enum class PrimitiveType(
         val convertableTypes: Array<PrimitiveType> = arrayOf(Bool, Char, I8, I16, I32, I64, F32, F64)
         val numberTypes: Array<PrimitiveType> = arrayOf(I8, I16, I32, I64, F32, F64)
         val integerTypes: Array<PrimitiveType> = arrayOf(I8, I16, I32, I64)
+        val intTypes: Array<PrimitiveType> = arrayOf(I8, I16, I32)
         val floatTypes: Array<PrimitiveType> = arrayOf(F32, F64)
 
         fun isPrimitiveType(typeLiteral: String): Boolean =
@@ -58,6 +59,9 @@ enum class PrimitiveType(
         numberTypes.any { it == this }
 
     fun isIntegerType(): Boolean =
+        integerTypes.any { it == this }
+
+    fun isIntType(): Boolean =
         integerTypes.any { it == this }
 
     fun isFloatType(): Boolean =

@@ -236,9 +236,9 @@ class Optimizer(val compilationUnit: CompilationUnit) {
                         optimizedRightExpression.value
                     )
                     val comparedResult = when (expression.operation) {
-                        Expression.BinaryExpression.BinaryOperation.Greater-> flag > 0
-                        Expression.BinaryExpression.BinaryOperation.Lesser-> flag < 0
-                        Expression.BinaryExpression.BinaryOperation.GreaterEqual-> flag >= 0
+                        Expression.BinaryExpression.BinaryOperation.Greater -> flag > 0
+                        Expression.BinaryExpression.BinaryOperation.Lesser -> flag < 0
+                        Expression.BinaryExpression.BinaryOperation.GreaterEqual -> flag >= 0
                         Expression.BinaryExpression.BinaryOperation.LesserEqual -> flag <= 0
                         else -> false
                     }

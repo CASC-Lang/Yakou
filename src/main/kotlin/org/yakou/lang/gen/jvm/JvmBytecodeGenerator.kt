@@ -510,6 +510,14 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             Expression.BinaryExpression.BinaryOperation.LesserEqual -> {
                 genExpression(methodVisitor, binaryExpression.leftExpression)
                 genExpression(methodVisitor, binaryExpression.rightExpression)
+
+                val leftPrimitiveType = leftType as TypeInfo.Primitive
+
+                if (leftPrimitiveType.type.isIntType()) {
+                    genIntegerComparison(methodVisitor, binaryExpression.operation.getFunctorOpcode(leftPrimitiveType))
+                } else {
+                    genComparison(methodVisitor, binaryExpression.operation, binaryExpression.operation.getFunctorOpcode(leftPrimitiveType))
+                }
             }
         }
     }
@@ -668,6 +676,38 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             else -> {} // Unreachable
         }
         // stack: - Z
+    }
+
+    private fun genIntegerComparison(methodVisitor: MethodVisitor, opcode: Int) {
+        val trueLabel = Label()
+        val endLabel = Label()
+
+        methodVisitor.visitJumpInsn(opcode, trueLabel)
+        methodVisitor.visitInsn(Opcodes.ICONST_0)
+        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
+        methodVisitor.visitLabel(trueLabel)
+        methodVisitor.visitInsn(Opcodes.ICONST_1)
+        methodVisitor.visitLabel(endLabel)
+    }
+
+    private fun genComparison(methodVisitor: MethodVisitor, operation: Expression.BinaryExpression.BinaryOperation, opcode: Int) {
+        val trueLabel = Label()
+        val endLabel = Label()
+        val jmpOpcode = when (operation) {
+            Expression.BinaryExpression.BinaryOperation.Greater -> Opcodes.IFGT
+            Expression.BinaryExpression.BinaryOperation.GreaterEqual -> Opcodes.IFGE
+            Expression.BinaryExpression.BinaryOperation.Lesser -> Opcodes.IFLT
+            Expression.BinaryExpression.BinaryOperation.LesserEqual -> Opcodes.IFLE
+            else -> -1
+        }
+
+        methodVisitor.visitInsn(opcode)
+        methodVisitor.visitJumpInsn(jmpOpcode, trueLabel)
+        methodVisitor.visitInsn(Opcodes.ICONST_0)
+        methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel)
+        methodVisitor.visitLabel(trueLabel)
+        methodVisitor.visitInsn(Opcodes.ICONST_1)
+        methodVisitor.visitLabel(endLabel)
     }
 
     private fun genAs(methodVisitor: MethodVisitor, `as`: Expression.As) {

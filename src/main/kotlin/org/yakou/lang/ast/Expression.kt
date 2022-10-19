@@ -77,6 +77,10 @@ sealed class Expression : AstNode {
                 LeftShift -> primitive.shlOpcode
                 RightShift -> primitive.shrOpcode
                 UnsignedRightShift -> primitive.ushrOpcode
+                Greater -> primitive.gtOpcode
+                GreaterEqual -> primitive.geOpcode
+                Lesser -> primitive.ltOpcode
+                LesserEqual -> primitive.leOpcode
                 else -> -1
             }
         }
