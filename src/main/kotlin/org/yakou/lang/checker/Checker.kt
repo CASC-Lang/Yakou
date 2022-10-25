@@ -17,16 +17,18 @@ class Checker(private val compilationUnit: CompilationUnit) {
     }
 
     private fun checkYkFile(ykFile: YkFile) {
-        for (item in ykFile.items)
+        for (item in ykFile.items) {
             checkItem(item)
+        }
     }
 
     private fun checkItem(item: Item) {
         when (item) {
             is Item.Package -> {
                 if (item.items != null) {
-                    for (innerItem in item.items)
+                    for (innerItem in item.items) {
                         checkItem(innerItem)
+                    }
                 }
             }
 
@@ -42,25 +44,13 @@ class Checker(private val compilationUnit: CompilationUnit) {
         if (const.modifiers.hasModifier(Modifier.Mut)) {
             reportIllegalMut(const.modifiers[Modifier.Mut]!!, "Constant cannot be mutable")
         }
+
         // Check expression
         checkExpression(const.expression)
+
         // Check expression's type explicitly matches constant's explicit type
         if (const.typeInfo != const.expression.finalType) {
-            val explicitTypeLiteral = colorize(const.typeInfo.toString(), compilationUnit, Attribute.CYAN_TEXT())
-            val expressionTypeLiteral =
-                colorize(const.expression.finalType.toString(), compilationUnit, Attribute.RED_TEXT())
-
-            compilationUnit.reportBuilder
-                .error(
-                    SpanHelper.expandView(const.span, compilationUnit.maxLineCount),
-                    "Cannot implicitly cast constant's expression"
-                )
-                .label(const.explicitType.span, "Expression type should explicitly be `$explicitTypeLiteral`")
-                .color(Attribute.CYAN_TEXT())
-                .build()
-                .label(const.expression.span, "Expression has type `$expressionTypeLiteral`")
-                .color(Attribute.RED_TEXT())
-                .build().build()
+            reportImplicitTypeConversionOnConstant(const)
         }
 
         if (!(const.expression.finalType.canImplicitCast(const.typeInfo))) {
@@ -84,22 +74,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 staticField.expression is Expression.LiteralExpression &&
                 !staticField.modifiers.hasModifier(Modifier.Mut)
             ) {
-                val staticLiteral = colorize("static", compilationUnit, Attribute.CYAN_TEXT())
-                val constLiteral = colorize("const", compilationUnit, Attribute.CYAN_TEXT())
-                val expressionTypeLiteral =
-                    colorize(staticField.expression.finalType.toString(), compilationUnit, Attribute.GREEN_TEXT())
-
-                compilationUnit.reportBuilder
-                    .warning(
-                        SpanHelper.expandView(staticField.span, compilationUnit.maxLineCount),
-                        "Static field is sufficient to convert into constant"
-                    )
-                    .label(staticField.static.span, "Consider replace `$staticLiteral` with `$constLiteral`")
-                    .color(Attribute.YELLOW_TEXT())
-                    .build()
-                    .label(staticField.expression.span, "Expression has primitive type `$expressionTypeLiteral`")
-                    .color(Attribute.CYAN_TEXT())
-                    .build().build()
+                reportStaticFieldAsConstant(staticField)
             }
         }
 
@@ -116,8 +91,9 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
     private fun checkClass(clazz: Item.Class) {
         if (clazz.classItems != null) {
-            for (classItem in clazz.classItems)
+            for (classItem in clazz.classItems) {
                 checkClassItem(classItem)
+            }
         }
 
         if (clazz.modifiers.hasModifier(Modifier.Inline)) {
@@ -142,8 +118,9 @@ class Checker(private val compilationUnit: CompilationUnit) {
             reportIllegalMut(primaryConstructor.modifiers[Modifier.Inline]!!, "Constructor cannot be mutable")
         }
 
-        for (parameter in primaryConstructor.parameters)
+        for (parameter in primaryConstructor.parameters) {
             checkConstructorParameter(parameter)
+        }
     }
 
     private fun checkConstructorParameter(constructorParameter: PrimaryConstructor.ConstructorParameter) {
@@ -157,27 +134,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
     private fun checkSuperClassConstructorCall(superClassConstructorCall: Item.Class.SuperClassConstructorCall) {
         if (java.lang.reflect.Modifier.isFinal(superClassConstructorCall.superClassTypeInfo.access)) {
-            val typeLiteral = colorize(
-                superClassConstructorCall.superClassType.standardizeType(),
-                compilationUnit,
-                Attribute.CYAN_TEXT()
-            )
-            val mutKeyword = colorize("mut", compilationUnit, Attribute.CYAN_TEXT())
-
-            compilationUnit.reportBuilder
-                .error(
-                    SpanHelper.expandView(
-                        superClassConstructorCall.superClassType.span,
-                        compilationUnit.maxLineCount
-                    ),
-                    "Unable to inherit immutable class"
-                )
-                .label(
-                    superClassConstructorCall.superClassType.span,
-                    "Consider make class `$typeLiteral` mutable with keyword `$mutKeyword`"
-                )
-                .color(Attribute.CYAN_TEXT())
-                .build().build()
+            reportInheritsFromImmutableClass(superClassConstructorCall)
         }
     }
 
@@ -191,7 +148,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
         if (field.expression != null) {
             checkExpression(field.expression!!)
 
-            if (!(field.expression!!.finalType.canImplicitCast(field.typeInfo))) {
+            if (!field.expression!!.finalType.canImplicitCast(field.typeInfo)) {
                 reportUnableToImplicitlyCast(
                     field.span,
                     field.expression!!.span,
@@ -211,6 +168,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             if (function.modifiers.hasModifier(Modifier.Mut)) {
                 reportIllegalMut(function.modifiers[Modifier.Mut]!!, "Top-level function cannot be mutable")
             }
+
             if (function.self != null) {
                 val coloredSelf = colorize("self", compilationUnit, Attribute.CYAN_TEXT())
 
@@ -241,6 +199,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 }
 
                 is FunctionBody.SingleExpression -> {
+                    // Single expression only required to have same return type as current function's return type
                 }
 
                 else -> {}
@@ -251,8 +210,9 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkFunctionBody(functionBody: FunctionBody) {
         when (functionBody) {
             is FunctionBody.BlockExpression -> {
-                for (statement in functionBody.statements)
+                for (statement in functionBody.statements) {
                     checkStatement(statement)
+                }
             }
 
             is FunctionBody.SingleExpression -> checkExpression(functionBody.expression)
@@ -272,11 +232,10 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkVariableDeclaration(variableDeclaration: Statement.VariableDeclaration) {
         if (variableDeclaration.name.literal == "_") {
             when (variableDeclaration.expression) {
-                is Expression.NumberLiteral -> {
+                is Expression.LiteralExpression -> {
                     // No effect variable declaration
                     reportIgnoredVariableHasNoEffect(variableDeclaration.name.span, variableDeclaration.expression.span)
                 }
-
                 Expression.Undefined -> TODO("UNREACHABLE")
                 else -> {}
             }
@@ -318,7 +277,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             is Expression.BinaryExpression -> checkBinaryExpression(expression)
             is Expression.Identifier -> checkIdentifier(expression)
             is Expression.As -> checkAs(expression)
-            is Expression.Parenthesized -> {}
+            is Expression.Parenthesized -> checkExpression(expression.expression)
             is Expression.BoolLiteral -> {}
             is Expression.NumberLiteral -> checkNumberLiteral(expression)
             is Expression.Empty -> {}
@@ -358,56 +317,122 @@ class Checker(private val compilationUnit: CompilationUnit) {
         if (numberLiteral.dot != null && numberLiteral.floatPart != null && numberLiteral.specifiedType != null) {
             if (isIntegerValue) {
                 // Number literal represents a float number but specified with an integer type
-                val specifiedTypeLiteral =
-                    colorize(numberLiteral.specifiedType.standardizeType(), compilationUnit, Attribute.RED_TEXT())
-
-                compilationUnit.reportBuilder
-                    .error(
-                        SpanHelper.expandView(numberLiteral.span, compilationUnit.maxLineCount),
-                        "Illegal type suffix `$specifiedTypeLiteral` for float number literal"
-                    )
-                    .label(numberLiteral.floatPart.span, "Float number literal here")
-                    .color(Attribute.CYAN_TEXT())
-                    .build()
-                    .label(numberLiteral.specifiedType.span, "Illegal type suffix here")
-                    .color(Attribute.RED_TEXT())
-                    .build().build()
+                reportNumberLiteralIllegalRepresentation(numberLiteral.specifiedType, numberLiteral, numberLiteral.floatPart)
             } else if (originalType is TypeInfo.Primitive) {
                 if (numberLiteral.specifiedTypeInfo?.type == PrimitiveType.F64 && originalType.type == PrimitiveType.F64) {
                     // Redundant type suffix `f64` for float number literal
-                    val specifiedTypeLiteral =
-                        colorize(numberLiteral.specifiedType.standardizeType(), compilationUnit, Attribute.CYAN_TEXT())
-
-                    compilationUnit.reportBuilder
-                        .warning(
-                            SpanHelper.expandView(numberLiteral.span, compilationUnit.maxLineCount),
-                            "Redundant type suffix `$specifiedTypeLiteral` for float number literal"
-                        )
-                        .label(numberLiteral.floatPart.span, "Float number literal here")
-                        .color(Attribute.CYAN_TEXT())
-                        .build()
-                        .label(numberLiteral.specifiedType.span, "Redundant type suffix here")
-                        .color(Attribute.YELLOW_TEXT())
-                        .build().build()
+                    reportNumberLiteralRedundantTypeSuffix(numberLiteral.specifiedType, numberLiteral, numberLiteral.floatPart)
                 } else if (numberLiteral.specifiedTypeInfo?.type == PrimitiveType.I32 && originalType.type == PrimitiveType.I32) {
                     // Redundant type suffix `i32` for integer number literal
-                    val specifiedTypeLiteral =
-                        colorize(numberLiteral.specifiedType.standardizeType(), compilationUnit, Attribute.CYAN_TEXT())
-
-                    compilationUnit.reportBuilder
-                        .warning(
-                            SpanHelper.expandView(numberLiteral.span, compilationUnit.maxLineCount),
-                            "Redundant type suffix `$specifiedTypeLiteral` for integer number literal"
-                        )
-                        .label(numberLiteral.floatPart.span, "Integer number literal here")
-                        .color(Attribute.CYAN_TEXT())
-                        .build()
-                        .label(numberLiteral.specifiedType.span, "Redundant type suffix here")
-                        .color(Attribute.YELLOW_TEXT())
-                        .build().build()
+                    reportNumberLiteralRedundantTypeSuffix(numberLiteral.specifiedType, numberLiteral, numberLiteral.floatPart)
                 }
             }
         }
+    }
+
+    // REPORTS
+
+    private fun reportImplicitTypeConversionOnConstant(const: Item.Const) {
+        val explicitTypeLiteral = colorize(const.typeInfo.toString(), compilationUnit, Attribute.CYAN_TEXT())
+        val expressionTypeLiteral =
+            colorize(const.expression.finalType.toString(), compilationUnit, Attribute.RED_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(const.span, compilationUnit.maxLineCount),
+                "Cannot implicitly cast constant's expression"
+            )
+            .label(const.explicitType.span, "Expression type should explicitly be `$explicitTypeLiteral`")
+            .color(Attribute.CYAN_TEXT())
+            .build()
+            .label(const.expression.span, "Expression has type `$expressionTypeLiteral`")
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportStaticFieldAsConstant(staticField: Item.StaticField) {
+        val staticLiteral = colorize("static", compilationUnit, Attribute.CYAN_TEXT())
+        val constLiteral = colorize("const", compilationUnit, Attribute.CYAN_TEXT())
+        val expressionTypeLiteral =
+            colorize(staticField.expression.finalType.toString(), compilationUnit, Attribute.GREEN_TEXT())
+
+        compilationUnit.reportBuilder
+            .warning(
+                SpanHelper.expandView(staticField.span, compilationUnit.maxLineCount),
+                "Static field is sufficient to convert into constant"
+            )
+            .label(staticField.static.span, "Consider replace `$staticLiteral` with `$constLiteral`")
+            .color(Attribute.YELLOW_TEXT())
+            .build()
+            .label(staticField.expression.span, "Expression has primitive type `$expressionTypeLiteral`")
+            .color(Attribute.CYAN_TEXT())
+            .build().build()
+    }
+
+    private fun reportInheritsFromImmutableClass(superClassConstructorCall: Item.Class.SuperClassConstructorCall) {
+        val typeLiteral = colorize(
+            superClassConstructorCall.superClassType.standardizeType(),
+            compilationUnit,
+            Attribute.CYAN_TEXT()
+        )
+        val mutKeyword = colorize("mut", compilationUnit, Attribute.CYAN_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(
+                    superClassConstructorCall.superClassType.span,
+                    compilationUnit.maxLineCount
+                ),
+                "Unable to inherit immutable class"
+            )
+            .label(
+                superClassConstructorCall.superClassType.span,
+                "Consider make class `$typeLiteral` mutable with keyword `$mutKeyword`"
+            )
+            .color(Attribute.CYAN_TEXT())
+            .build().build()
+    }
+
+    private fun reportNumberLiteralRedundantTypeSuffix(
+        specifiedType: Type,
+        numberLiteral: Expression.NumberLiteral,
+        floatPart: Token
+    ) {
+        val specifiedTypeLiteral =
+            colorize(specifiedType.standardizeType(), compilationUnit, Attribute.CYAN_TEXT())
+
+        compilationUnit.reportBuilder
+            .warning(
+                SpanHelper.expandView(numberLiteral.span, compilationUnit.maxLineCount),
+                "Redundant type suffix `$specifiedTypeLiteral` for float number literal"
+            )
+            .label(floatPart.span, "Float number literal here")
+            .color(Attribute.CYAN_TEXT())
+            .build()
+            .label(specifiedType.span, "Redundant type suffix here")
+            .color(Attribute.YELLOW_TEXT())
+            .build().build()
+    }
+
+    private fun reportNumberLiteralIllegalRepresentation(
+        specifiedType: Type,
+        numberLiteral: Expression.NumberLiteral,
+        floatPart: Token
+    ) {
+        val specifiedTypeLiteral =
+            colorize(specifiedType.standardizeType(), compilationUnit, Attribute.RED_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(numberLiteral.span, compilationUnit.maxLineCount),
+                "Illegal type suffix `$specifiedTypeLiteral` for float number literal"
+            )
+            .label(floatPart.span, "Float number literal here")
+            .color(Attribute.CYAN_TEXT())
+            .build()
+            .label(specifiedType.span, "Illegal type suffix here")
+            .color(Attribute.RED_TEXT())
+            .build().build()
     }
 
     private fun reportIgnoredVariableHasNoEffect(variableSpan: Span, expressionSpan: Span) {
