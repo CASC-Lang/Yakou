@@ -26,10 +26,21 @@ sealed class Type : AstNode {
             val typeBuilder = StringBuilder()
 
             for (token in path.pathSegments) {
-                if (token.type is TokenType.Identifier) {
-                    typeBuilder.append(token.literal)
-                } else if (token.type is TokenType.DoubleColon) {
-                    typeBuilder.append("::")
+                when (token.type) {
+                    is TokenType.Identifier -> {
+                        typeBuilder.append(token.literal)
+                    }
+
+                    is TokenType.DoubleColon -> {
+                        typeBuilder.append("::")
+                    }
+
+                    is TokenType.Keyword -> {
+                        // Self type
+                        typeBuilder.append(token.type.literal)
+                    }
+
+                    else -> {}
                 }
             }
 
