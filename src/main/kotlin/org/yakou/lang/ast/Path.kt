@@ -7,6 +7,8 @@ sealed class Path : AstNode {
         override val span: Span?
             get() = pathSegments.firstOrNull()?.span?.expand(pathSegments.lastOrNull()?.span)
 
+        constructor(vararg pathTokens: Token) : this(pathTokens.toList()) {}
+
         fun append(token: Token): SimplePath {
             val pathSegments = pathSegments.toMutableList()
 

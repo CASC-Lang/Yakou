@@ -9,7 +9,18 @@ class SymbolResolver(private val scope: Scope) {
         currentClassPath: Path.SimplePath,
         typePath: Type
     ): TypeInfo? =
-        resolvePrimitiveOrArrayType(currentPackagePath, currentClassPath, typePath)
+        resolveSelfType(currentPackagePath, currentClassPath, typePath)
+
+    private fun resolveSelfType(
+        currentPackagePath: Path.SimplePath,
+        currentClassPath: Path.SimplePath,
+        typePath: Type
+    ): TypeInfo? =
+        if (typePath.standardizeType() == "Self") {
+            scope.ownerClass
+        } else {
+            resolvePrimitiveOrArrayType(currentPackagePath, currentClassPath, typePath)
+        }
 
     private fun resolvePrimitiveOrArrayType(
         currentPackagePath: Path.SimplePath,

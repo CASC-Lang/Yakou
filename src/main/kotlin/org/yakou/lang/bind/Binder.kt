@@ -26,8 +26,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindYkFile(ykFile: YkFile) {
-        for (item in ykFile.items)
+        for (item in ykFile.items) {
             bindItemDeclaration(item)
+        }
     }
 
     private fun bindItemDeclaration(item: Item) {
@@ -39,8 +40,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 table.registerPackageClass(currentPackagePath.toString())
 
                 if (item.items != null) {
-                    for (innerItem in item.items)
+                    for (innerItem in item.items) {
                         bindItemDeclaration(innerItem)
+                    }
                 }
 
                 currentPackagePath = previousPackagePath
@@ -93,7 +95,6 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun bindClassDeclaration(clazz: Item.Class) {
         val previousClassPath = currentClassPath
         currentClassPath = currentClassPath.append(clazz.identifier)
-        currentScope = Scope(table)
 
         val classType = table.registerClassType(
             clazz.modifiers.sum(),
@@ -101,6 +102,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
             currentClassPath.toString(),
             clazz.genericDeclarationParameters?.parameters ?: listOf()
         )
+
+        currentScope = Scope(table, classType)
 
         if (clazz.genericDeclarationParameters != null) {
             for (parameter in clazz.genericDeclarationParameters.parameters) {
@@ -131,8 +134,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
 
         if (clazz.classItems != null) {
-            for (classItem in clazz.classItems)
+            for (classItem in clazz.classItems) {
                 bindClassItemDeclaration(classItem)
+            }
         }
 
         currentScope = null
@@ -259,8 +263,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindYkFilePost(ykFile: YkFile) {
-        for (item in ykFile.items)
+        for (item in ykFile.items) {
             bindItem(item)
+        }
     }
 
     private fun bindItem(item: Item) {
@@ -270,8 +275,9 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 currentPackagePath = currentPackagePath.append(item.identifier)
 
                 if (item.items != null) {
-                    for (innerItem in item.items)
+                    for (innerItem in item.items) {
                         bindItem(innerItem)
+                    }
                 }
 
                 currentPackagePath = previousPackagePath
@@ -295,7 +301,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun bindClass(clazz: Item.Class) {
         val previousClassPath = currentClassPath
         currentClassPath = currentClassPath.append(clazz.identifier)
-        currentScope = Scope(table)
+        currentScope = Scope(table, clazz.classTypeInfo)
 
         if (clazz.genericDeclarationParameters != null) {
             for (parameter in clazz.genericDeclarationParameters.parameters) {

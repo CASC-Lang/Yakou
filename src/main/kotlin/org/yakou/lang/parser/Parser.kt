@@ -888,6 +888,13 @@ class Parser(private val compilationUnit: CompilationUnit) {
             Type.Array(openBracket, type, closeBracket)
         }
 
+        optExpectKeyword(Keyword.SELF_TYPE) -> {
+            // Self type
+            val self = next()!!
+
+            Type.TypePath(Path.SimplePath(self), null)
+        }
+
         else -> {
             // Path type
             val simplePath = parseSimplePath()
