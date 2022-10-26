@@ -183,7 +183,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val self: Token?
         val selfComma: Token?
 
-        if (optExpectKeyword(Keyword.SELF)) {
+        if (optExpectKeyword(Keyword.SELF_VALUE)) {
             self = next()!!
             selfComma = expect(TokenType.Comma)
         } else {
@@ -284,7 +284,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val self: Token?
         val selfComma: Token?
 
-        if (optExpectKeyword(Keyword.SELF)) {
+        if (optExpectKeyword(Keyword.SELF_VALUE)) {
             self = next()!!
             selfComma = expect(TokenType.Comma)
         } else {
