@@ -78,6 +78,11 @@ class Checker(private val compilationUnit: CompilationUnit) {
             }
         }
 
+        // Check if static field is both mutable and inline-able
+        if (staticField.modifiers.hasModifier(Modifier.Mut) && staticField.modifiers.hasModifier(Modifier.Inline)) {
+            reportMutableStaticFieldIsInlined(staticField)
+        }
+
         if (!(staticField.expression.finalType.canImplicitCast(staticField.typeInfo))) {
             reportUnableToImplicitlyCast(
                 staticField.span,
@@ -366,6 +371,23 @@ class Checker(private val compilationUnit: CompilationUnit) {
             .build()
             .label(staticField.expression.span, "Expression has primitive type `$expressionTypeLiteral`")
             .color(Attribute.CYAN_TEXT())
+            .build().build()
+    }
+
+    private fun reportMutableStaticFieldIsInlined(staticField: Item.StaticField) {
+        val inlineLiteral = colorize("inline", compilationUnit, Attribute.YELLOW_TEXT())
+        val mutLiteral = colorize("mut", compilationUnit, Attribute.YELLOW_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(staticField.span, compilationUnit.maxLineCount),
+                "Static field cannot be mutable and inline-able at the same time"
+            )
+            .label(staticField.modifiers[Modifier.Inline]!!, "`$inlineLiteral` modifier here")
+            .color(Attribute.RED_TEXT())
+            .build()
+            .label(staticField.modifiers[Modifier.Mut]!!, "`$mutLiteral` modifier here")
+            .color(Attribute.RED_TEXT())
             .build().build()
     }
 

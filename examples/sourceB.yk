@@ -1,11 +1,6 @@
 pkg chaos {
-    mut class Animal(pub age: i8)
-
-    class Person[T >: str + java::lang::Runnable](pub firstName: str,
-                    pub lastName: str,
-                    age: i8,
-                    pub what: T
-                    ): Animal(age) {
-        name: str = firstName
-    }
+    const a: i32 = 1
+    static b: i32 = 1
+    mut static c: i32 = 1
+    inline mut static d: i32 = 1
 }
