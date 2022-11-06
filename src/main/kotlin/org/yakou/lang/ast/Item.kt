@@ -124,6 +124,15 @@ sealed class Item : AstNode {
         }
     }
 
+    data class Impl(
+        val impl: Token,
+        val genericDeclarationParameters: GenericDeclarationParameters?,
+        val identifier: Token,
+        val openBrace: Token?,
+        val implItems: List<ImplItem>?,
+        val closeBrace: Token?
+    )
+
     data class Function(
         val modifiers: Modifiers,
         val fn: Token,
