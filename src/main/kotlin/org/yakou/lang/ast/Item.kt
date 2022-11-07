@@ -36,7 +36,7 @@ sealed class Item : AstNode {
         val explicitType: Type,
         val equal: Token,
         var expression: Expression
-    ) : Item() {
+    ) : Item(), ImplItem {
         override val span: Span by lazy {
             var finalSpan =
                 if (!modifiers.isEmpty()) {
@@ -61,7 +61,7 @@ sealed class Item : AstNode {
         val explicitType: Type,
         val equal: Token,
         var expression: Expression
-    ) : Item() {
+    ) : Item(), ImplItem {
         override val span: Span by lazy {
             var finalSpan =
                 if (!modifiers.isEmpty()) {
@@ -89,7 +89,7 @@ sealed class Item : AstNode {
         val openBrace: Token?,
         val classItems: List<ClassItem>?,
         val closeBrace: Token?
-    ) : Item() {
+    ) : Item(), ImplItem {
         override val span: Span by lazy {
             var finalSpan = `class`.span
 
@@ -125,13 +125,28 @@ sealed class Item : AstNode {
     }
 
     data class Impl(
+        val modifiers: Modifiers,
         val impl: Token,
         val genericDeclarationParameters: GenericDeclarationParameters?,
         val identifier: Token,
         val openBrace: Token?,
         val implItems: List<ImplItem>?,
         val closeBrace: Token?
-    )
+    ): Item(), ImplItem {
+        override val span: Span by lazy {
+            var finalSpan =
+                if (!modifiers.isEmpty()) modifiers.span!!
+                else impl.span
+
+            finalSpan = finalSpan.expand(identifier.span)
+
+            if (closeBrace != null) {
+                finalSpan.expand(closeBrace.span)
+            }
+
+            finalSpan
+        }
+    }
 
     data class Function(
         val modifiers: Modifiers,
@@ -150,7 +165,7 @@ sealed class Item : AstNode {
         override val span: Span by lazy {
             var finalSpan =
                 if (!modifiers.isEmpty()) {
-                    modifiers.modifierMap.toList().first().second
+                    modifiers.span!!
                 } else {
                     fn.span
                 }
