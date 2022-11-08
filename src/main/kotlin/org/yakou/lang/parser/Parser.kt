@@ -63,7 +63,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                     reportIllegalModifiersInPlace(modifiers)
                 }
 
-                Item.Package(pkg, identifier, openBrace, innerItems, closeBrace)
+                Package(pkg, identifier, openBrace, innerItems, closeBrace)
             }
 
             optExpectKeyword(Keyword.CONST) -> parseConst(modifiers)
@@ -78,7 +78,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun parseConst(modifiers: Modifiers): Item.Const {
+    private fun parseConst(modifiers: Modifiers): Const {
         val const = next()!! // Should be asserted when called
         val identifier = expect(TokenType.Identifier)
         val colon = expect(TokenType.Colon)
@@ -87,7 +87,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val equal = expect(TokenType.Equal)
         val expression = parseExpression()
 
-        return Item.Const(
+        return Const(
             modifiers,
             const,
             identifier,
@@ -98,7 +98,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         )
     }
 
-    private fun parseStaticField(modifiers: Modifiers): Item.StaticField {
+    private fun parseStaticField(modifiers: Modifiers): StaticField {
         val static = next()!! // Should be asserted when called
         val identifier = expect(TokenType.Identifier)
         val colon = expect(TokenType.Colon)
@@ -106,7 +106,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val equal = expect(TokenType.Equal)
         val expression = parseExpression()
 
-        return Item.StaticField(
+        return StaticField(
             modifiers,
             static,
             identifier,
@@ -117,7 +117,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         )
     }
 
-    private fun parseClass(modifiers: Modifiers): Item.Class {
+    private fun parseClass(modifiers: Modifiers): Class {
         val `class` = next()!! // Should be asserted when called
         val name = expect(TokenType.Identifier)
         val genericParameters =
@@ -140,7 +140,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 null
             }
         val colon: Token?
-        val superClassConstructorCall: Item.Class.SuperClassConstructorCall?
+        val superClassConstructorCall: Class.SuperClassConstructorCall?
 
         if (optExpectType(TokenType.Colon)) {
             colon = next()!!
@@ -164,7 +164,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
             closeBrace = null
         }
 
-        return Item.Class(
+        return Class(
             modifiers,
             `class`,
             name,
@@ -176,6 +176,49 @@ class Parser(private val compilationUnit: CompilationUnit) {
             classItems,
             closeBrace
         )
+    }
+
+    private fun parseImpl(modifiers: Modifiers): Impl {
+        val impl = next()!!
+        val genericDeclarationParameters = parseGenericDeclarationParameters()
+        val identifier = expect(TokenType.Identifier)
+        val openBrace: Token?
+        val implItems: List<ImplItem>?
+        val closeBrace: Token?
+
+        if (optExpectType(TokenType.OpenBrace)) {
+            openBrace = next()!!
+            implItems = parseImplItems()
+            closeBrace = expect(TokenType.CloseBrace)
+        } else {
+            openBrace = null
+            implItems = null
+            closeBrace = null
+        }
+
+        return Impl(modifiers, impl, genericDeclarationParameters, identifier, openBrace, implItems, closeBrace)
+    }
+
+    private fun parseImplItems(): List<ImplItem> {
+        val implItems = mutableListOf<ImplItem>()
+
+        while (pos < tokens.size && !optExpectType(TokenType.CloseBrace))
+            parseImplItem()?.let(implItems::add)
+
+        return implItems
+    }
+
+    private fun parseImplItem(): ImplItem? {
+        val modifiers = parseModifiers()
+
+        return when {
+            optExpectKeyword(Keyword.CONST) -> {
+                TODO()
+            }
+            else -> {
+                TODO()
+            }
+        }
     }
 
     private fun parsePrimaryConstructor(modifiers: Modifiers): PrimaryConstructor {
@@ -221,13 +264,13 @@ class Parser(private val compilationUnit: CompilationUnit) {
         return parameters
     }
 
-    private fun parseSuperClassConstructorCall(): Item.Class.SuperClassConstructorCall {
+    private fun parseSuperClassConstructorCall(): Class.SuperClassConstructorCall {
         val superClass = parseType()
         val openParenthesis = expect(TokenType.OpenParenthesis)
         val arguments = parseArguments()
         val closeParenthesis = expect(TokenType.CloseParenthesis)
 
-        return Item.Class.SuperClassConstructorCall(superClass, openParenthesis, arguments, closeParenthesis)
+        return Class.SuperClassConstructorCall(superClass, openParenthesis, arguments, closeParenthesis)
     }
 
     private fun parseClassItems(): List<ClassItem> {
@@ -271,7 +314,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         return ClassItem.Field(modifiers, name, colon, explicitType, equal, expression)
     }
 
-    private fun parseFunction(modifiers: Modifiers): Item.Function {
+    private fun parseFunction(modifiers: Modifiers): Func {
         val fn = next()!! // Should be asserted when called
         val name = expect(TokenType.Identifier)
         val genericDeclarationParameters =
@@ -308,7 +351,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
         val functionBody = parseFunctionBody()
 
-        return Item.Function(
+        return Func(
             modifiers,
             fn,
             name,

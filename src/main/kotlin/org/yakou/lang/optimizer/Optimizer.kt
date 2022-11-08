@@ -19,21 +19,21 @@ class Optimizer(val compilationUnit: CompilationUnit) {
 
     private fun optimizeItem(item: Item) {
         when (item) {
-            is Item.Class -> optimizeClass(item)
-            is Item.Const -> optimizeConst(item)
-            is Item.Function -> optimizeFunction(item)
-            is Item.Package -> {
+            is Class -> optimizeClass(item)
+            is Const -> optimizeConst(item)
+            is Package -> {
                 if (item.items != null) {
                     for (innerItem in item.items)
                         optimizeItem(innerItem)
                 }
             }
-
-            is Item.StaticField -> optimizeStaticField(item)
+            is StaticField -> optimizeStaticField(item)
+            is Func -> optimizeFunction(item)
+            is Impl -> TODO()
         }
     }
 
-    private fun optimizeClass(clazz: Item.Class) {
+    private fun optimizeClass(clazz: Class) {
         if (clazz.classItems != null) {
             for (classItem in clazz.classItems)
                 optimizeClassItem(classItem)
@@ -52,11 +52,11 @@ class Optimizer(val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun optimizeConst(const: Item.Const) {
+    private fun optimizeConst(const: Const) {
         const.expression = optimizeExpression(const.expression)
     }
 
-    private fun optimizeFunction(function: Item.Function) {
+    private fun optimizeFunction(function: Func) {
         if (function.body != null) {
             optimizeFunctionBody(function.body)
         }
@@ -75,7 +75,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun optimizeStaticField(staticField: Item.StaticField) {
+    private fun optimizeStaticField(staticField: StaticField) {
         staticField.expression = optimizeExpression(staticField.expression)
     }
 

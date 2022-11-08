@@ -33,7 +33,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindItemDeclaration(item: Item) {
         when (item) {
-            is Item.Package -> {
+            is Package -> {
                 val previousPackagePath = currentPackagePath
                 currentPackagePath = currentPackagePath.append(item.identifier)
 
@@ -48,14 +48,15 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 currentPackagePath = previousPackagePath
             }
 
-            is Item.Const -> bindConstDeclaration(item)
-            is Item.StaticField -> bindStaticFieldDeclaration(item)
-            is Item.Class -> bindClassDeclaration(item)
-            is Item.Function -> bindFunctionDeclaration(item)
+            is Const -> bindConstDeclaration(item)
+            is StaticField -> bindStaticFieldDeclaration(item)
+            is Class -> bindClassDeclaration(item)
+            is Func -> bindFunctionDeclaration(item)
+            is Impl -> TODO()
         }
     }
 
-    private fun bindConstDeclaration(const: Item.Const) {
+    private fun bindConstDeclaration(const: Const) {
         const.typeInfo = bindType(const.explicitType)
 
         val field = ClassMember.Field.fromConst(
@@ -74,7 +75,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun bindStaticFieldDeclaration(staticField: Item.StaticField) {
+    private fun bindStaticFieldDeclaration(staticField: StaticField) {
         staticField.typeInfo = bindType(staticField.explicitType)
 
         val field = ClassMember.Field.fromField(
@@ -92,7 +93,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun bindClassDeclaration(clazz: Item.Class) {
+    private fun bindClassDeclaration(clazz: Class) {
         val previousClassPath = currentClassPath
         currentClassPath = currentClassPath.append(clazz.identifier)
 
@@ -228,7 +229,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun bindFunctionDeclaration(function: Item.Function) {
+    private fun bindFunctionDeclaration(function: Func) {
         for (parameter in function.parameters) {
             val typeInfo = bindType(parameter.type)
 
@@ -270,7 +271,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindItem(item: Item) {
         when (item) {
-            is Item.Package -> {
+            is Package -> {
                 val previousPackagePath = currentPackagePath
                 currentPackagePath = currentPackagePath.append(item.identifier)
 
@@ -283,22 +284,23 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 currentPackagePath = previousPackagePath
             }
 
-            is Item.Const -> bindConst(item)
-            is Item.StaticField -> bindStaticField(item)
-            is Item.Class -> bindClass(item)
-            is Item.Function -> bindFunction(item)
+            is Const -> bindConst(item)
+            is StaticField -> bindStaticField(item)
+            is Class -> bindClass(item)
+            is Func -> bindFunction(item)
+            is Impl -> TODO()
         }
     }
 
-    private fun bindConst(const: Item.Const) {
+    private fun bindConst(const: Const) {
         bindExpression(const.expression)
     }
 
-    private fun bindStaticField(staticField: Item.StaticField) {
+    private fun bindStaticField(staticField: StaticField) {
         bindExpression(staticField.expression)
     }
 
-    private fun bindClass(clazz: Item.Class) {
+    private fun bindClass(clazz: Class) {
         val previousClassPath = currentClassPath
         currentClassPath = currentClassPath.append(clazz.identifier)
         currentScope = Scope(table, clazz.classTypeInfo)
@@ -373,7 +375,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             )
     }
 
-    private fun bindSuperClassConstructorCall(superClassConstructorCall: Item.Class.SuperClassConstructorCall): TypeInfo.Class? {
+    private fun bindSuperClassConstructorCall(superClassConstructorCall: Class.SuperClassConstructorCall): TypeInfo.Class? {
         for (argument in superClassConstructorCall.arguments)
             bindExpression(argument)
 
@@ -481,7 +483,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun bindFunction(function: Item.Function) {
+    private fun bindFunction(function: Func) {
         currentFunctionInstance = function.functionInstance
 
         // Initialize scope
@@ -871,7 +873,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             .build().build()
     }
 
-    private fun reportConstAlreadyDefined(field: ClassMember.Field, const: Item.Const) {
+    private fun reportConstAlreadyDefined(field: ClassMember.Field, const: Const) {
         val span = const.span
         val coloredConstLiteral = colorize(field.constToString(), compilationUnit, Attribute.CYAN_TEXT())
 
@@ -885,7 +887,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             .build().build()
     }
 
-    private fun reportStaticFieldAlreadyDefined(field: ClassMember.Field, staticField: Item.StaticField) {
+    private fun reportStaticFieldAlreadyDefined(field: ClassMember.Field, staticField: StaticField) {
         val span = staticField.span
         val coloredStaticFieldLiteral = colorize(field.staticFieldToString(), compilationUnit, Attribute.CYAN_TEXT())
 
@@ -899,7 +901,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             .build().build()
     }
 
-    private fun reportClassAlreadyDefined(clazz: Item.Class) {
+    private fun reportClassAlreadyDefined(clazz: Class) {
         val span = clazz.span
         val coloredPackageLiteral = colorize(currentPackagePath.toString(), compilationUnit, Attribute.CYAN_TEXT())
         val coloredClassLiteral = colorize(currentClassPath.toString(), compilationUnit, Attribute.CYAN_TEXT())
@@ -928,7 +930,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             .build().build()
     }
 
-    private fun reportFunctionAlreadyDefined(fn: ClassMember.Fn, function: Item.Function) {
+    private fun reportFunctionAlreadyDefined(fn: ClassMember.Fn, function: Func) {
         val span = function.fn.span.expand(function.span)
         val coloredFnLiteral = colorize(fn.toString(), compilationUnit, Attribute.CYAN_TEXT())
 

@@ -62,21 +62,22 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
     private fun genItem(item: Item) {
         when (item) {
-            is Item.Package -> {
+            is Package -> {
                 if (item.items != null) {
                     for (innerItem in item.items)
                         genItem(innerItem)
                 }
             }
 
-            is Item.Const -> genConst(item)
-            is Item.StaticField -> genStaticField(item)
-            is Item.Class -> genClass(item)
-            is Item.Function -> genFunction(item)
+            is Const -> genConst(item)
+            is StaticField -> genStaticField(item)
+            is Class -> genClass(item)
+            is Func -> genFunction(item)
+            is Impl -> TODO()
         }
     }
 
-    private fun genConst(const: Item.Const) {
+    private fun genConst(const: Const) {
         val classWriter = getClassWriter(const.fieldInstance.ownerTypeInfo)
         val expression = const.expression
 
@@ -99,7 +100,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         }
     }
 
-    private fun genStaticField(staticField: Item.StaticField) {
+    private fun genStaticField(staticField: StaticField) {
         val classWriter = getClassWriter(staticField.fieldInstance.ownerTypeInfo)
         val expression = staticField.expression
 
@@ -143,7 +144,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         )
     }
 
-    private fun genClass(clazz: Item.Class) {
+    private fun genClass(clazz: Class) {
         getClassWriter(clazz.classTypeInfo)
 
         if (clazz.primaryConstructor != null) {
@@ -169,7 +170,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
     private fun genPrimaryConstructor(
         primaryConstructor: PrimaryConstructor,
-        superClassConstructorCall: Item.Class.SuperClassConstructorCall?
+        superClassConstructorCall: Class.SuperClassConstructorCall?
     ) {
         val classWriter = getClassWriter(primaryConstructor.constructorInstance.ownerTypeInfo)
         val methodVisitor = classWriter.visitMethod(
@@ -268,7 +269,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         }
     }
 
-    private fun genFunction(function: Item.Function) {
+    private fun genFunction(function: Func) {
         val classWriter = getClassWriter(function.functionInstance.ownerTypeInfo)
         val methodVisitor = classWriter.visitMethod(
             function.functionInstance.access,
