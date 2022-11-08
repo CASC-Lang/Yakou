@@ -129,11 +129,14 @@ data class Impl(
     val openBrace: Token?,
     val implItems: List<ImplItem>?,
     val closeBrace: Token?
-): Item, ImplItem {
+) : Item, ImplItem {
     override val span: Span by lazy {
         var finalSpan =
-            if (!modifiers.isEmpty()) modifiers.span!!
-            else impl.span
+            if (!modifiers.isEmpty()) {
+                modifiers.span!!
+            } else {
+                impl.span
+            }
 
         finalSpan = finalSpan.expand(identifier.span)
 
