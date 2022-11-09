@@ -190,6 +190,12 @@ class Parser(private val compilationUnit: CompilationUnit) {
                 null
             }
         val identifier = expect(TokenType.Identifier)
+        val genericParameters =
+            if (optExpectType(TokenType.OpenBracket)) {
+                parseGenericParameters()
+            } else {
+                null
+            }
         val openBrace: Token?
         val implItems: List<ImplItem>?
         val closeBrace: Token?
@@ -204,7 +210,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
             closeBrace = null
         }
 
-        return Impl(modifiers, impl, genericDeclarationParameters, identifier, openBrace, implItems, closeBrace)
+        return Impl(modifiers, impl, genericDeclarationParameters, identifier, genericParameters, openBrace, implItems, closeBrace)
     }
 
     private fun parseImplItems(): List<ImplItem> {

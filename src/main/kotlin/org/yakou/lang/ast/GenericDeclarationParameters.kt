@@ -34,10 +34,10 @@ data class GenericDeclarationParameters(
                 else -> TypeInfo.GenericConstraint.BoundType.NONE
             },
             TypeInfo.GenericConstraint.VarianceType.INVARIANCE
-
         )
     }
 
+    @Deprecated("Wildcard is not allowed in declaration context")
     data class WildcardConstraintGenericDeclarationParameter(
         val boundIndicator: Token,
         val type: Type

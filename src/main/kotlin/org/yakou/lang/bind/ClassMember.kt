@@ -120,7 +120,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                 table: Table,
                 packageSimplePath: Path.SimplePath,
                 classSimplePath: Path.SimplePath,
-                const: Item.Const,
+                const: Const,
                 vararg additionalAccessFlags: Int
             ): Field {
                 val field = Field(
@@ -144,7 +144,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                 table: Table,
                 packageSimplePath: Path.SimplePath,
                 classSimplePath: Path.SimplePath,
-                staticField: Item.StaticField
+                staticField: StaticField
             ): Field {
                 val field = Field(
                     staticField.modifiers.sum(Opcodes.ACC_STATIC),
@@ -253,7 +253,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                 table: Table,
                 packageSimplePath: Path.SimplePath,
                 classSimplePath: Path.SimplePath,
-                function: Item.Function,
+                function: Func,
                 vararg additionalAccessFlags: Int
             ): Fn {
                 val fn = Fn(

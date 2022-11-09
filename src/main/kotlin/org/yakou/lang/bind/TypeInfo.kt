@@ -289,7 +289,7 @@ sealed class TypeInfo {
         }
     }
 
-    class GenericConstraint(
+    data class GenericConstraint(
         val genericParameterName: String,
         val boundType: BoundType,
         val varianceType: VarianceType,
@@ -334,21 +334,46 @@ sealed class TypeInfo {
         override val loadOpcode: Int = Opcodes.ALOAD
         override val returnOpcode: Int = Opcodes.ARETURN
 
-        enum class BoundType {
-            UPPER,
-            LOWER,
-            NONE
+        override fun toString(): String =
+            buildString {
+                if (varianceType != VarianceType.INVARIANCE) {
+                    append(varianceType.literal)
+
+                    if (genericParameterName == "_") {
+                        append(':')
+                    }
+
+                    append(' ')
+                }
+
+                append(genericParameterName)
+                append(' ')
+
+                if (boundType != BoundType.NONE) {
+                    append(boundType.literal)
+                    append(' ')
+                }
+
+                append(bounds.joinToString("+ ", transform = TypeInfoVariable::toString))
+            }
+
+        enum class BoundType(val literal: String) {
+            UPPER("<:"),
+            LOWER(">:"),
+            NONE("")
         }
 
-        enum class VarianceType {
-            COVARIANCE,
-            CONTRAVARIANCE,
-            INVARIANCE
+        enum class VarianceType(val literal: String) {
+            COVARIANCE("+"),
+            CONTRAVARIANCE("-"),
+            INVARIANCE("")
         }
     }
 
     interface TypeInfoVariable {
         val internalName: String
         val descriptor: String
+
+        override fun toString(): String
     }
 }

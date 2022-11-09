@@ -3,7 +3,24 @@ package org.yakou.lang.bind
 import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Attribute
 import org.objectweb.asm.Opcodes
-import org.yakou.lang.ast.*
+import org.yakou.lang.ast.Class
+import org.yakou.lang.ast.ClassItem
+import org.yakou.lang.ast.Const
+import org.yakou.lang.ast.Expression
+import org.yakou.lang.ast.Func
+import org.yakou.lang.ast.FunctionBody
+import org.yakou.lang.ast.GenericDeclarationParameters
+import org.yakou.lang.ast.Impl
+import org.yakou.lang.ast.ImplItem
+import org.yakou.lang.ast.Item
+import org.yakou.lang.ast.Keyword
+import org.yakou.lang.ast.Package
+import org.yakou.lang.ast.Path
+import org.yakou.lang.ast.PrimaryConstructor
+import org.yakou.lang.ast.Statement
+import org.yakou.lang.ast.StaticField
+import org.yakou.lang.ast.Type
+import org.yakou.lang.ast.YkFile
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
 import org.yakou.lang.util.colorize
@@ -18,7 +35,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private var currentPackagePath: Path.SimplePath = Path.SimplePath(listOf())
     private var currentClassPath: Path.SimplePath = Path.SimplePath(listOf())
     private var currentFunctionInstance: ClassMember.Fn? = null
-    private var currentScope: Scope? = null
+    private var currentScope: Scope = Scope(table)
     private var topLevel: Boolean = true
 
     fun bind() {
@@ -33,27 +50,28 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindItemDeclaration(item: Item) {
         when (item) {
-            is Package -> {
-                val previousPackagePath = currentPackagePath
-                currentPackagePath = currentPackagePath.append(item.identifier)
-
-                table.registerPackageClass(currentPackagePath.toString())
-
-                if (item.items != null) {
-                    for (innerItem in item.items) {
-                        bindItemDeclaration(innerItem)
-                    }
-                }
-
-                currentPackagePath = previousPackagePath
-            }
-
+            is Package -> bindPackageDeclaration(item)
             is Const -> bindConstDeclaration(item)
             is StaticField -> bindStaticFieldDeclaration(item)
             is Class -> bindClassDeclaration(item)
             is Func -> bindFunctionDeclaration(item)
-            is Impl -> TODO()
+            is Impl -> bindImplDeclaration(item)
         }
+    }
+
+    private fun bindPackageDeclaration(packageItem: Package) {
+        val previousPackagePath = currentPackagePath
+        currentPackagePath = currentPackagePath.append(packageItem.identifier)
+
+        table.registerPackageClass(currentPackagePath.toString())
+
+        if (packageItem.items != null) {
+            for (innerItem in packageItem.items) {
+                bindItemDeclaration(innerItem)
+            }
+        }
+
+        currentPackagePath = previousPackagePath
     }
 
     private fun bindConstDeclaration(const: Const) {
@@ -104,7 +122,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
             clazz.genericDeclarationParameters?.parameters ?: listOf()
         )
 
-        currentScope = Scope(table, classType)
+        val previousScope = currentScope
+        currentScope = Scope(currentScope, classType)
 
         if (clazz.genericDeclarationParameters != null) {
             for (parameter in clazz.genericDeclarationParameters.parameters) {
@@ -140,7 +159,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             }
         }
 
-        currentScope = null
+        currentScope = previousScope
         currentClassPath = previousClassPath
     }
 
@@ -158,7 +177,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 .color(Attribute.CYAN_TEXT())
                 .build().build()
         } else {
-            currentScope!!.addTypeVariable(genericDeclarationParameter.genericConstraint)
+            currentScope.addTypeVariable(genericDeclarationParameter.genericConstraint)
         }
     }
 
@@ -259,6 +278,53 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
     }
 
+    private fun bindImplDeclaration(impl: Impl) {
+        val classType = currentPackagePath.append(impl.identifier).toString()
+        val classTypeInfo = table.findType(classType)
+
+        if (classTypeInfo == null) {
+            reportUnresolvedType(classType, impl.identifier.span)
+        } else {
+            val previousScope = currentScope
+            val previousClassPath = currentClassPath
+
+            currentScope = Scope(currentScope, classTypeInfo)
+            currentClassPath = currentClassPath.append(impl.identifier)
+
+            if (impl.genericDeclarationParameters != null) {
+                for (genericDeclarationParameter in impl.genericDeclarationParameters.parameters) {
+                    bindGenericParameterDeclaration(genericDeclarationParameter)
+                }
+            }
+
+            if (impl.genericParameters != null) {
+                for (genericParameter in impl.genericParameters.genericParameters) {
+                    bindType(genericParameter)
+                }
+            }
+
+            if (impl.implItems != null) {
+                for (item in impl.implItems) {
+                    bindImplItemDeclaration(item)
+                }
+            }
+
+            impl.ownerClass = classTypeInfo
+            currentScope = previousScope
+            currentClassPath = previousClassPath
+        }
+    }
+
+    private fun bindImplItemDeclaration(item: ImplItem) {
+        when (item) {
+            is Class -> bindClassDeclaration(item)
+            is Const -> bindConstDeclaration(item)
+            is Func -> bindFunctionDeclaration(item)
+            is Impl -> bindImplDeclaration(item)
+            is StaticField -> bindStaticFieldDeclaration(item)
+        }
+    }
+
     fun bindSecondary() {
         bindYkFilePost(compilationUnit.ykFile!!)
     }
@@ -271,25 +337,26 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindItem(item: Item) {
         when (item) {
-            is Package -> {
-                val previousPackagePath = currentPackagePath
-                currentPackagePath = currentPackagePath.append(item.identifier)
-
-                if (item.items != null) {
-                    for (innerItem in item.items) {
-                        bindItem(innerItem)
-                    }
-                }
-
-                currentPackagePath = previousPackagePath
-            }
-
+            is Package -> bindPackage(item)
             is Const -> bindConst(item)
             is StaticField -> bindStaticField(item)
             is Class -> bindClass(item)
             is Func -> bindFunction(item)
-            is Impl -> TODO()
+            is Impl -> bindImpl(item)
         }
+    }
+
+    private fun bindPackage(packageItem: Package) {
+        val previousPackagePath = currentPackagePath
+        currentPackagePath = currentPackagePath.append(packageItem.identifier)
+
+        if (packageItem.items != null) {
+            for (innerItem in packageItem.items) {
+                bindItem(innerItem)
+            }
+        }
+
+        currentPackagePath = previousPackagePath
     }
 
     private fun bindConst(const: Const) {
@@ -302,8 +369,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindClass(clazz: Class) {
         val previousClassPath = currentClassPath
+        val previousScope = currentScope
+
         currentClassPath = currentClassPath.append(clazz.identifier)
-        currentScope = Scope(table, clazz.classTypeInfo)
+        currentScope = Scope(currentScope, clazz.classTypeInfo)
 
         if (clazz.genericDeclarationParameters != null) {
             for (parameter in clazz.genericDeclarationParameters.parameters) {
@@ -329,7 +398,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
 
         currentClassPath = previousClassPath
-        currentScope = null
+        currentScope = previousScope
     }
 
     private fun bindGenericDeclarationParameter(genericDeclarationParameter: GenericDeclarationParameters.GenericDeclarationParameter) {
@@ -349,7 +418,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 } else {
                     genericDeclarationParameter.genericConstraint.bounds += boundType
 
-                    currentScope!!.setConstraint(
+                    currentScope.setConstraint(
                         genericDeclarationParameter.genericConstraint.genericParameterName,
                         boundType
                     )
@@ -360,7 +429,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindPrimaryConstructor(primaryConstructor: PrimaryConstructor) {
         if (primaryConstructor.self != null) {
-            currentScope!!.addVariable(
+            currentScope.addVariable(
                 primaryConstructor.self,
                 primaryConstructor.self,
                 primaryConstructor.constructorInstance.ownerTypeInfo
@@ -368,7 +437,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
 
         for (parameter in primaryConstructor.parameters)
-            currentScope!!.addValueParameter(
+            currentScope.addValueParameter(
                 parameter.name,
                 parameter.typeInfo,
                 selfSkipped = primaryConstructor.self == null
@@ -380,7 +449,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             bindExpression(argument)
 
         return when (
-            val superType = SymbolResolver(currentScope!!).resolveType(
+            val superType = SymbolResolver(currentScope).resolveType(
                 currentPackagePath,
                 currentClassPath,
                 superClassConstructorCall.superClassType
@@ -487,7 +556,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         currentFunctionInstance = function.functionInstance
 
         // Initialize scope
-        val functionScope = Scope(table)
+        val functionScope = Scope(currentScope)
 
         // Add function parameters as variables
         if (function.self != null) {
@@ -498,6 +567,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             functionScope.addValueParameter(parameter.name, parameter.typeInfo)
 
         // Bind scope
+        val previousScope = currentScope
         currentScope = functionScope
 
         if (function.genericDeclarationParameters != null) {
@@ -516,11 +586,44 @@ class Binder(private val compilationUnit: CompilationUnit) {
             null -> return
         }
 
-        checkVariableUnused(currentScope!!)
+        checkVariableUnused(currentScope)
 
         // Unbind scope
-        currentScope = null
+        currentScope = previousScope
         currentFunctionInstance = null
+    }
+
+    private fun bindImpl(impl: Impl) {
+        val previousClassPath = currentClassPath
+        val previousScope = currentScope
+
+        currentClassPath = currentClassPath.append(impl.identifier)
+        currentScope = Scope(currentScope, impl.ownerClass)
+
+        if (impl.genericDeclarationParameters != null) {
+            for (parameter in impl.genericDeclarationParameters.parameters) {
+                bindGenericDeclarationParameter(parameter)
+            }
+        }
+
+        if (impl.implItems != null) {
+            for (item in impl.implItems) {
+                bindImplItem(item)
+            }
+        }
+
+        currentScope = previousScope
+        currentClassPath = previousClassPath
+    }
+
+    private fun bindImplItem(item: ImplItem) {
+        when (item) {
+            is Class -> bindClass(item)
+            is Const -> bindConst(item)
+            is Func -> bindFunction(item)
+            is Impl -> bindImpl(item)
+            is StaticField -> bindStaticField(item)
+        }
     }
 
     private fun bindStatement(statement: Statement) {
@@ -543,20 +646,18 @@ class Binder(private val compilationUnit: CompilationUnit) {
             return
         }
 
-        if (currentScope != null) {
-            val variable = currentScope!!.addVariable(
-                variableDeclaration.mut,
-                variableDeclaration.name,
-                variableDeclaration.expression.finalType
-            )
+        val variable = currentScope.addVariable(
+            variableDeclaration.mut,
+            variableDeclaration.name,
+            variableDeclaration.expression.finalType
+        )
 
-            if (variable != null) {
-                variableDeclaration.variableInstance = variable
-            } else {
-                val originalVariable = currentScope!!.getVariable(variableDeclaration.name.literal)!!
+        if (variable != null) {
+            variableDeclaration.variableInstance = variable
+        } else {
+            val originalVariable = currentScope.getVariable(variableDeclaration.name.literal)!!
 
-                reportVariableAlreadyDeclared(originalVariable, variableDeclaration.name.span)
-            }
+            reportVariableAlreadyDeclared(originalVariable, variableDeclaration.name.span)
         }
     }
 
@@ -567,7 +668,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindBlock(block: Statement.Block) {
         val outerScope = currentScope
-        currentScope = Scope(outerScope!!)
+        currentScope = Scope(outerScope)
 
         for (statement in block.statements) {
             bindStatement(statement)
@@ -791,7 +892,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindIdentifier(identifier: Expression.Identifier) {
-        val resolver = SymbolResolver(currentScope!!)
+        val resolver = SymbolResolver(currentScope)
         val resolvedSymbol =
             resolver.resolveIdentifier(currentPackagePath, currentClassPath, identifier.identifier.literal)
 

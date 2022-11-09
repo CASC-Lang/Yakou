@@ -76,7 +76,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             is StaticField -> genStaticField(item)
             is Class -> genClass(item)
             is Func -> genFunction(item)
-            is Impl -> TODO()
+            is Impl -> genImpl(item)
         }
     }
 
@@ -304,6 +304,24 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
         methodVisitor.visitMaxs(-1, -1)
         methodVisitor.visitEnd()
+    }
+
+    private fun genImpl(impl: Impl) {
+        if (impl.implItems != null) {
+            for (item in impl.implItems) {
+                genImplItem(item)
+            }
+        }
+    }
+
+    private fun genImplItem(item: ImplItem) {
+        when (item) {
+            is Class -> genClass(item)
+            is Const -> genConst(item)
+            is Func -> genFunction(item)
+            is Impl -> genImpl(item)
+            is StaticField -> genStaticField(item)
+        }
     }
 
     private fun genFunctionBody(methodVisitor: MethodVisitor, functionBody: FunctionBody) {

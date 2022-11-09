@@ -135,6 +135,7 @@ data class Impl(
     val impl: Token,
     val genericDeclarationParameters: GenericDeclarationParameters?,
     val identifier: Token,
+    val genericParameters: GenericParameters?,
     val openBrace: Token?,
     val implItems: List<ImplItem>?,
     val closeBrace: Token?

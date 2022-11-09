@@ -1,12 +1,5 @@
 pkg chaos {
     pkg unity {
-        fn main(args: [str]) {
-            let a = 1
-
-            for a > 1 {
-                let b = 1
-            }
-        }
     }
 }
 

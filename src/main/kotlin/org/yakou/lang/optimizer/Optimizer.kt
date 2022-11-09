@@ -29,7 +29,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
             }
             is StaticField -> optimizeStaticField(item)
             is Func -> optimizeFunction(item)
-            is Impl -> TODO()
+            is Impl -> optimizeImpl(item)
         }
     }
 
@@ -59,6 +59,24 @@ class Optimizer(val compilationUnit: CompilationUnit) {
     private fun optimizeFunction(function: Func) {
         if (function.body != null) {
             optimizeFunctionBody(function.body)
+        }
+    }
+
+    private fun optimizeImpl(impl: Impl) {
+        if (impl.implItems != null) {
+            for (item in impl.implItems) {
+                optimizeImplItem(item)
+            }
+        }
+    }
+
+    private fun optimizeImplItem(item: ImplItem) {
+        when (item) {
+            is Class -> optimizeClass(item)
+            is Const -> optimizeConst(item)
+            is Func -> optimizeFunction(item)
+            is Impl -> optimizeImpl(item)
+            is StaticField -> optimizeStaticField(item)
         }
     }
 

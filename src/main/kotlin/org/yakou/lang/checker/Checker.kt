@@ -2,15 +2,35 @@ package org.yakou.lang.checker
 
 import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Attribute
-import org.yakou.lang.ast.*
-import org.yakou.lang.bind.*
+import org.yakou.lang.ast.Class
+import org.yakou.lang.ast.ClassItem
+import org.yakou.lang.ast.Const
+import org.yakou.lang.ast.Expression
+import org.yakou.lang.ast.Func
+import org.yakou.lang.ast.FunctionBody
+import org.yakou.lang.ast.GenericDeclarationParameters
+import org.yakou.lang.ast.Impl
+import org.yakou.lang.ast.ImplItem
+import org.yakou.lang.ast.Item
+import org.yakou.lang.ast.Modifier
+import org.yakou.lang.ast.Package
+import org.yakou.lang.ast.PrimaryConstructor
+import org.yakou.lang.ast.Statement
+import org.yakou.lang.ast.StaticField
+import org.yakou.lang.ast.Token
+import org.yakou.lang.ast.Type
+import org.yakou.lang.ast.YkFile
+import org.yakou.lang.bind.PrimitiveType
+import org.yakou.lang.bind.Table
+import org.yakou.lang.bind.TypeChecker
+import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
 import org.yakou.lang.util.colorize
 
 class Checker(private val compilationUnit: CompilationUnit) {
     private val table: Table = compilationUnit.session.table
-    private var currentFunction: Item.Function? = null
+    private var currentFunction: Func? = null
 
     fun check() {
         checkYkFile(compilationUnit.ykFile!!)
@@ -24,7 +44,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
     private fun checkItem(item: Item) {
         when (item) {
-            is Item.Package -> {
+            is Package -> {
                 if (item.items != null) {
                     for (innerItem in item.items) {
                         checkItem(innerItem)
@@ -32,14 +52,15 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 }
             }
 
-            is Item.Const -> checkConst(item)
-            is Item.StaticField -> checkStaticField(item)
-            is Item.Class -> checkClass(item)
-            is Item.Function -> checkFunction(item)
+            is Const -> checkConst(item)
+            is StaticField -> checkStaticField(item)
+            is Class -> checkClass(item)
+            is Func -> checkFunction(item)
+            is Impl -> checkImpl(item)
         }
     }
 
-    private fun checkConst(const: Item.Const) {
+    private fun checkConst(const: Const) {
         // Check constant has illegal modifiers
         if (const.modifiers.hasModifier(Modifier.Mut)) {
             reportIllegalMut(const.modifiers[Modifier.Mut]!!, "Constant cannot be mutable")
@@ -64,7 +85,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun checkStaticField(staticField: Item.StaticField) {
+    private fun checkStaticField(staticField: StaticField) {
         // Check expression
         checkExpression(staticField.expression)
         // Check if expression is not castable to explicit type
@@ -94,7 +115,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun checkClass(clazz: Item.Class) {
+    private fun checkClass(clazz: Class) {
         if (clazz.classItems != null) {
             for (classItem in clazz.classItems) {
                 checkClassItem(classItem)
@@ -137,7 +158,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun checkSuperClassConstructorCall(superClassConstructorCall: Item.Class.SuperClassConstructorCall) {
+    private fun checkSuperClassConstructorCall(superClassConstructorCall: Class.SuperClassConstructorCall) {
         if (java.lang.reflect.Modifier.isFinal(superClassConstructorCall.superClassTypeInfo.access)) {
             reportInheritsFromImmutableClass(superClassConstructorCall)
         }
@@ -165,7 +186,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun checkFunction(function: Item.Function) {
+    private fun checkFunction(function: Func) {
         currentFunction = function
 
         // Check top-level function has illegal modifiers
@@ -193,7 +214,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
         currentFunction = null
     }
 
-    private fun checkControlFlow(function: Item.Function) {
+    private fun checkControlFlow(function: Func) {
         if (function.functionInstance.returnTypeInfo != TypeInfo.Primitive.UNIT_TYPE_INFO) {
             // Expected last statement should be return statement
             when (val body = function.body) {
@@ -224,6 +245,56 @@ class Checker(private val compilationUnit: CompilationUnit) {
         }
     }
 
+    private fun checkImpl(impl: Impl) {
+        checkImplGenericSameAsOwnerClassGeneric(impl)
+
+        if (impl.implItems != null) {
+            for (item in impl.implItems) {
+                checkImplItem(item)
+            }
+        }
+    }
+
+    private fun checkImplGenericSameAsOwnerClassGeneric(impl: Impl) {
+        val genericDeclarationParameters = impl.genericDeclarationParameters
+        val genericConstraints = impl.ownerClass.genericParameters
+
+        // Check generic declaration parameters are same as target owner class'
+        if (genericDeclarationParameters?.parameters?.size != genericConstraints.size) {
+            // Unmatched generic declaration parameters
+            reportUnmatchedGenericDeclarationParameters(
+                impl.identifier.span,
+                genericDeclarationParameters,
+                genericConstraints
+            )
+            return
+        }
+
+        val zippedConstraints = genericDeclarationParameters.parameters
+            .map(GenericDeclarationParameters.GenericDeclarationParameter::genericConstraint)
+            .zip(genericConstraints)
+
+        for ((implGenericConstraint, classGenericConstraint) in zippedConstraints) {
+            if (implGenericConstraint != classGenericConstraint) {
+                reportUnmatchedGenericDeclarationParameters(
+                    impl.identifier.span,
+                    genericDeclarationParameters,
+                    genericConstraints
+                )
+            }
+        }
+    }
+
+    private fun checkImplItem(item: ImplItem) {
+        when (item) {
+            is Class -> checkClass(item)
+            is Const -> checkConst(item)
+            is Func -> checkFunction(item)
+            is Impl -> checkImpl(item)
+            is StaticField -> checkStaticField(item)
+        }
+    }
+
     private fun checkStatement(statement: Statement) {
         when (statement) {
             is Statement.VariableDeclaration -> checkVariableDeclaration(statement)
@@ -241,6 +312,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
                     // No effect variable declaration
                     reportIgnoredVariableHasNoEffect(variableDeclaration.name.span, variableDeclaration.expression.span)
                 }
+
                 Expression.Undefined -> TODO("UNREACHABLE")
                 else -> {}
             }
@@ -250,8 +322,15 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkFor(`for`: Statement.For) {
         checkExpression(`for`.conditionExpression)
 
-        if (`for`.conditionExpression !is Expression.Empty && !`for`.conditionExpression.finalType.canImplicitCast(TypeInfo.Primitive.BOOL_TYPE_INFO)) {
-            reportUnableToImplicitlyCast(`for`.conditionExpression.span, `for`.conditionExpression.finalType.toString(), TypeInfo.Primitive.BOOL_TYPE_INFO.toString())
+        if (`for`.conditionExpression !is Expression.Empty && !`for`.conditionExpression.finalType.canImplicitCast(
+                TypeInfo.Primitive.BOOL_TYPE_INFO
+            )
+        ) {
+            reportUnableToImplicitlyCast(
+                `for`.conditionExpression.span,
+                `for`.conditionExpression.finalType.toString(),
+                TypeInfo.Primitive.BOOL_TYPE_INFO.toString()
+            )
         }
 
         checkBlock(`for`.block)
@@ -322,14 +401,26 @@ class Checker(private val compilationUnit: CompilationUnit) {
         if (numberLiteral.dot != null && numberLiteral.floatPart != null && numberLiteral.specifiedType != null) {
             if (isIntegerValue) {
                 // Number literal represents a float number but specified with an integer type
-                reportNumberLiteralIllegalRepresentation(numberLiteral.specifiedType, numberLiteral, numberLiteral.floatPart)
+                reportNumberLiteralIllegalRepresentation(
+                    numberLiteral.specifiedType,
+                    numberLiteral,
+                    numberLiteral.floatPart
+                )
             } else if (originalType is TypeInfo.Primitive) {
                 if (numberLiteral.specifiedTypeInfo?.type == PrimitiveType.F64 && originalType.type == PrimitiveType.F64) {
                     // Redundant type suffix `f64` for float number literal
-                    reportNumberLiteralRedundantTypeSuffix(numberLiteral.specifiedType, numberLiteral, numberLiteral.floatPart)
+                    reportNumberLiteralRedundantTypeSuffix(
+                        numberLiteral.specifiedType,
+                        numberLiteral,
+                        numberLiteral.floatPart
+                    )
                 } else if (numberLiteral.specifiedTypeInfo?.type == PrimitiveType.I32 && originalType.type == PrimitiveType.I32) {
                     // Redundant type suffix `i32` for integer number literal
-                    reportNumberLiteralRedundantTypeSuffix(numberLiteral.specifiedType, numberLiteral, numberLiteral.floatPart)
+                    reportNumberLiteralRedundantTypeSuffix(
+                        numberLiteral.specifiedType,
+                        numberLiteral,
+                        numberLiteral.floatPart
+                    )
                 }
             }
         }
@@ -337,7 +428,30 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
     // REPORTS
 
-    private fun reportImplicitTypeConversionOnConstant(const: Item.Const) {
+    private fun reportUnmatchedGenericDeclarationParameters(
+        implIdentifierSpan: Span,
+        genericDeclarationParameters: GenericDeclarationParameters?,
+        classGenericConstraints: List<TypeInfo.GenericConstraint>
+    ) {
+        val innerImplGenericConstraintsLiteral = genericDeclarationParameters?.parameters
+            ?.map(GenericDeclarationParameters.GenericDeclarationParameter::genericConstraint)
+            ?.joinToString(transform = TypeInfo.GenericConstraint::toString) ?: ""
+        val implGenericConstraintsLiteral = colorize("[$innerImplGenericConstraintsLiteral]", compilationUnit, Attribute.RED_TEXT())
+        val innerClassGenericConstraintsLiteral =
+            classGenericConstraints.joinToString(transform = TypeInfo.GenericConstraint::toString)
+        val classGenericConstraintsLiteral = colorize("[$innerClassGenericConstraintsLiteral]", compilationUnit, Attribute.CYAN_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(
+                SpanHelper.expandView(implIdentifierSpan, compilationUnit.maxLineCount),
+                "Generic declaration parameters mismatched"
+            )
+            .label(implIdentifierSpan, "Expected: $classGenericConstraintsLiteral, Got: $implGenericConstraintsLiteral")
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportImplicitTypeConversionOnConstant(const: Const) {
         val explicitTypeLiteral = colorize(const.typeInfo.toString(), compilationUnit, Attribute.CYAN_TEXT())
         val expressionTypeLiteral =
             colorize(const.expression.finalType.toString(), compilationUnit, Attribute.RED_TEXT())
@@ -355,7 +469,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             .build().build()
     }
 
-    private fun reportStaticFieldAsConstant(staticField: Item.StaticField) {
+    private fun reportStaticFieldAsConstant(staticField: StaticField) {
         val staticLiteral = colorize("static", compilationUnit, Attribute.CYAN_TEXT())
         val constLiteral = colorize("const", compilationUnit, Attribute.CYAN_TEXT())
         val expressionTypeLiteral =
@@ -374,7 +488,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             .build().build()
     }
 
-    private fun reportMutableStaticFieldIsInlined(staticField: Item.StaticField) {
+    private fun reportMutableStaticFieldIsInlined(staticField: StaticField) {
         val inlineLiteral = colorize("inline", compilationUnit, Attribute.YELLOW_TEXT())
         val mutLiteral = colorize("mut", compilationUnit, Attribute.YELLOW_TEXT())
 
@@ -391,7 +505,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             .build().build()
     }
 
-    private fun reportInheritsFromImmutableClass(superClassConstructorCall: Item.Class.SuperClassConstructorCall) {
+    private fun reportInheritsFromImmutableClass(superClassConstructorCall: Class.SuperClassConstructorCall) {
         val typeLiteral = colorize(
             superClassConstructorCall.superClassType.standardizeType(),
             compilationUnit,
@@ -503,7 +617,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
     }
 
     private fun reportMissingReturn(
-        function: Item.Function,
+        function: Func,
         closeBrace: Token,
         returnTypeInfo: TypeInfo
     ) {
