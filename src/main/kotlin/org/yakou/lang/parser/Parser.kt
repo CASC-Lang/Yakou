@@ -22,8 +22,9 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun parseItems(): List<Item> {
         val items = mutableListOf<Item>()
 
-        while (pos < tokens.size)
+        while (pos < tokens.size) {
             parseItem()?.let(items::add)
+        }
 
         return items
     }
@@ -31,8 +32,9 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun parseScopedItems(): List<Item> {
         val items = mutableListOf<Item>()
 
-        while (pos < tokens.size && !optExpectType(TokenType.CloseBrace))
+        while (pos < tokens.size && !optExpectType(TokenType.CloseBrace)) {
             parseItem()?.let(items::add)
+        }
 
         return items
     }
@@ -41,41 +43,42 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val modifiers = parseModifiers()
 
         return when {
-            optExpectKeyword(Keyword.PKG) -> {
-                // Item.Package
-                val pkg = next()!!
-                val identifier = expect(TokenType.Identifier)
-                val openBrace: Token?
-                val innerItems: List<Item>?
-                val closeBrace: Token?
-
-                if (optExpectType(TokenType.OpenBrace)) {
-                    openBrace = next()
-                    innerItems = parseScopedItems()
-                    closeBrace = expect(TokenType.CloseBrace)
-                } else {
-                    openBrace = null
-                    innerItems = null
-                    closeBrace = null
-                }
-
-                if (!modifiers.isEmpty()) {
-                    reportIllegalModifiersInPlace(modifiers)
-                }
-
-                Package(pkg, identifier, openBrace, innerItems, closeBrace)
-            }
-
+            optExpectKeyword(Keyword.PKG) -> parsePackage(modifiers)
             optExpectKeyword(Keyword.CONST) -> parseConst(modifiers)
             optExpectKeyword(Keyword.STATIC) -> parseStaticField(modifiers)
             optExpectKeyword(Keyword.CLASS) -> parseClass(modifiers)
+            optExpectKeyword(Keyword.IMPL) -> parseImpl(modifiers)
             optExpectKeyword(Keyword.FN) -> parseFunction(modifiers)
             else -> {
-                reportUnexpectedToken(next()!!, Keyword.PKG, Keyword.CLASS, Keyword.IMPL, Keyword.FN)
+                reportUnexpectedToken(next()!!, Keyword.PKG, Keyword.CONST, Keyword.STATIC, Keyword.CLASS, Keyword.IMPL, Keyword.FN)
 
                 null
             }
         }
+    }
+
+    private fun parsePackage(modifiers: Modifiers): Package {
+        val pkg = next()!!
+        val identifier = expect(TokenType.Identifier)
+        val openBrace: Token?
+        val innerItems: List<Item>?
+        val closeBrace: Token?
+
+        if (optExpectType(TokenType.OpenBrace)) {
+            openBrace = next()
+            innerItems = parseScopedItems()
+            closeBrace = expect(TokenType.CloseBrace)
+        } else {
+            openBrace = null
+            innerItems = null
+            closeBrace = null
+        }
+
+        if (!modifiers.isEmpty()) {
+            reportIllegalModifiersInPlace(modifiers)
+        }
+
+        return Package(pkg, identifier, openBrace, innerItems, closeBrace)
     }
 
     private fun parseConst(modifiers: Modifiers): Const {
@@ -202,8 +205,9 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun parseImplItems(): List<ImplItem> {
         val implItems = mutableListOf<ImplItem>()
 
-        while (pos < tokens.size && !optExpectType(TokenType.CloseBrace))
+        while (pos < tokens.size && !optExpectType(TokenType.CloseBrace)) {
             parseImplItem()?.let(implItems::add)
+        }
 
         return implItems
     }
@@ -212,11 +216,15 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val modifiers = parseModifiers()
 
         return when {
-            optExpectKeyword(Keyword.CONST) -> {
-                TODO()
-            }
+            optExpectKeyword(Keyword.CONST) -> parseConst(modifiers)
+            optExpectKeyword(Keyword.STATIC) -> parseStaticField(modifiers)
+            optExpectKeyword(Keyword.CLASS) -> parseClass(modifiers)
+            optExpectKeyword(Keyword.IMPL) -> parseImpl(modifiers)
+            optExpectKeyword(Keyword.FN) -> parseFunction(modifiers)
             else -> {
-                TODO()
+                reportUnexpectedToken(next()!!, Keyword.CONST, Keyword.STATIC, Keyword.CLASS, Keyword.IMPL, Keyword.FN)
+
+                null
             }
         }
     }
