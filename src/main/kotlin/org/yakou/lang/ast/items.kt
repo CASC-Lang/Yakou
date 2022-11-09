@@ -4,6 +4,14 @@ import chaos.unity.nenggao.Span
 import org.yakou.lang.bind.ClassMember
 import org.yakou.lang.bind.TypeInfo
 
+sealed interface ImplItem : AstNode {
+    abstract override val span: Span
+}
+
+sealed interface Item : AstNode {
+    abstract override val span: Span
+}
+
 data class Package(
     val pkg: Token,
     val identifier: Token,
@@ -101,6 +109,7 @@ data class Class(
     }
 
     lateinit var classTypeInfo: TypeInfo.Class
+    var impl: Impl? = null
 
     data class SuperClassConstructorCall(
         val superClassType: Type,
