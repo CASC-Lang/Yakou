@@ -155,6 +155,8 @@ data class Impl(
 
         finalSpan
     }
+
+    lateinit var ownerClass: TypeInfo.Class
 }
 
 data class Func(
