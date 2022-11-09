@@ -183,7 +183,12 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
     private fun parseImpl(modifiers: Modifiers): Impl {
         val impl = next()!!
-        val genericDeclarationParameters = parseGenericDeclarationParameters()
+        val genericDeclarationParameters =
+            if (optExpectType(TokenType.OpenBracket)) {
+                parseGenericDeclarationParameters()
+            } else {
+                null
+            }
         val identifier = expect(TokenType.Identifier)
         val openBrace: Token?
         val implItems: List<ImplItem>?
