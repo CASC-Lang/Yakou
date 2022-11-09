@@ -138,7 +138,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         genExpression(methodVisitor, staticField.expression)
         methodVisitor.visitFieldInsn(
             Opcodes.PUTSTATIC,
-            staticField.fieldInstance.qualifiedOwnerPath,
+            staticField.fieldInstance.ownerTypeInfo.internalName,
             staticField.fieldInstance.name,
             staticField.fieldInstance.descriptor
         )
