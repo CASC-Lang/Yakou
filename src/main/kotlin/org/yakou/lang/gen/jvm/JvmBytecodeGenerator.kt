@@ -36,6 +36,9 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             methodWriter.visitEnd()
         }
 
+        // Delete output folder first
+        compilationSession.preference.outputFolder.walkBottomUp().forEach(File::delete)
+
         for ((classTypeInfo, classWriter) in classWriters) {
             val bytecode = classWriter.toByteArray()
             val classFile = File(
