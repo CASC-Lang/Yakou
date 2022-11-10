@@ -37,7 +37,7 @@ sealed class Type : AstNode {
 
                     is TokenType.Keyword -> {
                         // Self type
-                        typeBuilder.append(token.type.literal)
+                        typeBuilder.append(token.literal)
                     }
 
                     else -> {}
