@@ -109,7 +109,6 @@ data class Class(
     }
 
     lateinit var classTypeInfo: TypeInfo.Class
-    var impl: Impl? = null
 
     data class SuperClassConstructorCall(
         val superClassType: Type,
