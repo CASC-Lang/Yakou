@@ -317,10 +317,10 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private fun genImplItem(item: ImplItem) {
         when (item) {
             is Class -> genClass(item)
-            is Const -> genConst(item)
             is Func -> genFunction(item)
             is Impl -> genImpl(item)
             is StaticField -> genStaticField(item)
+            is Const -> genConst(item)
         }
     }
 
@@ -551,7 +551,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             }
 
             is ClassMember.Field -> {
-                if (symbolInstance.isStatic) {
+                if (symbolInstance.static) {
                     methodVisitor.visitFieldInsn(
                         Opcodes.GETSTATIC,
                         symbolInstance.ownerTypeInfo.internalName,
