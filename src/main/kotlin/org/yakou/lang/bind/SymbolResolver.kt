@@ -107,7 +107,7 @@ class SymbolResolver(private val scope: Scope) {
             name
         )
 
-        return if (field is ClassMember.Field && field.isStatic) field else null
+        return if (field is ClassMember.Field && field.static) field else null
     }
 
     private fun Path.SimplePath.appendPath(path: Path.SimplePath): String =

@@ -17,7 +17,9 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
 
     abstract val inline: Boolean
 
+    abstract override val static: Boolean
     abstract override val mutable: Boolean
+    abstract override val typeInfo: TypeInfo
 
     data class Constructor(
         override val access: Int,
@@ -54,6 +56,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
         override lateinit var typeInfo: TypeInfo
         override lateinit var ownerTypeInfo: TypeInfo.Class
         override val inline: Boolean = false
+        override val static: Boolean = true
         override val mutable: Boolean = false
 
         override val qualifiedOwnerPath: String by lazy {
@@ -70,7 +73,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
         override val classPath: String,
         override val name: String,
         override val typeInfo: TypeInfo,
-        val isStatic: Boolean,
+        override val static: Boolean,
         val isConst: Boolean,
         override val inline: Boolean,
         val propagateExpression: Expression? = null
@@ -105,7 +108,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     classSimplePath.toString(),
                     constructorParameter.name.literal,
                     constructorParameter.typeInfo,
-                    isStatic = false,
+                    static = false,
                     isConst = false,
                     inline = false,
                     propagateExpression = null
@@ -129,7 +132,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     classSimplePath.toString().ifBlank { "PackageYk" },
                     const.identifier.literal,
                     const.typeInfo,
-                    isStatic = true,
+                    static = true,
                     isConst = true,
                     const.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline),
                     const.expression
@@ -152,7 +155,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     classSimplePath.toString().ifBlank { "PackageYk" },
                     staticField.identifier.literal,
                     staticField.typeInfo,
-                    isStatic = true,
+                    static = true,
                     isConst = false,
                     staticField.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline),
                     staticField.expression
@@ -173,7 +176,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                 classSimplePath.toString().ifBlank { "PackageYk" },
                 field.identifier.literal,
                 field.typeInfo,
-                isStatic = false,
+                static = false,
                 isConst = false,
                 field.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline),
                 field.expression
@@ -277,6 +280,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
             "(${parameterTypeInfos.map(TypeInfo::descriptor).joinToString(separator = "")})${returnTypeInfo.descriptor}"
         override val typeInfo: TypeInfo = returnTypeInfo
         override lateinit var ownerTypeInfo: TypeInfo.Class
+        override val static: Boolean = Modifier.isStatic(access)
         override val mutable: Boolean = !Modifier.isFinal(access)
 
         override val qualifiedOwnerPath: String by lazy {

@@ -4,6 +4,7 @@ import org.yakou.lang.ast.Expression
 import org.yakou.lang.ast.Token
 
 open class Variable(val mutToken: Token?, val nameToken: Token, val index: Int, val name: String = nameToken.literal) : Symbol() {
+    override val static: Boolean = false
     override val mutable: Boolean = mutToken != null
     var propagatable: Boolean = false // Constant folding usage
     var referencedCount: Int = 0 // Constant folding usage

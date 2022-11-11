@@ -295,7 +295,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
             if (symbolInstance.isConst) {
                 // Inline value without side effect
                 symbolInstance.propagateExpression!!
-            } else if (symbolInstance.isStatic && (symbolInstance.inline || !symbolInstance.mutable)) {
+            } else if (symbolInstance.static && (symbolInstance.inline || !symbolInstance.mutable)) {
                 // Inline when conditions met
                 // - static final
                 // - or force inline
