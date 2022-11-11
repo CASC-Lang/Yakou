@@ -2,11 +2,11 @@ package org.yakou.lang.bind
 
 import org.yakou.lang.ast.Token
 
-class Scope(internal val table: Table, internal val ownerClass: TypeInfo.Class? = null) {
+class Scope(internal val table: Table, internal val ownerClass: TypeInfo.Class? = null, val isStaticScope: Boolean = true) {
     val typeVariables: MutableMap<String, TypeInfo.GenericConstraint> = mutableMapOf()
     val variables: VariableList = VariableList()
 
-    constructor(scope: Scope, ownerClass: TypeInfo.Class? = scope.ownerClass) : this(scope.table, ownerClass) {
+    constructor(scope: Scope, ownerClass: TypeInfo.Class? = scope.ownerClass, isStaticScope: Boolean = true) : this(scope.table, ownerClass, isStaticScope) {
         typeVariables += scope.typeVariables
         variables += scope.variables
     }
