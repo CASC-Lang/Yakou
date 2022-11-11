@@ -322,6 +322,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
             is Class -> bindClassDeclaration(item)
             is Func -> bindFunctionDeclaration(item)
             is Impl -> bindImplDeclaration(item)
+            is StaticField -> bindStaticFieldDeclaration(item)
+            is Const -> bindConstDeclaration(item)
         }
     }
 
@@ -621,6 +623,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
             is Class -> bindClass(item)
             is Func -> bindFunction(item, false)
             is Impl -> bindImpl(item)
+            is StaticField -> bindStaticField(item)
+            is Const -> bindConst(item)
         }
     }
 
