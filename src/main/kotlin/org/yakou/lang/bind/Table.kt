@@ -46,14 +46,6 @@ class Table {
         }
     }
 
-    @Deprecated("Due to ambiguity, this function has been seperated into different functions")
-    fun findClassMember(
-        qualifiedOwnerPath: String,
-        memberType: ClassMember.MemberType,
-        memberName: String
-    ): ClassMember? =
-        classMemberTable[qualifiedOwnerPath]?.get(memberType)?.find { it.name == memberName }
-
     fun findField(
         qualifiedOwnerPath: String,
         fieldName: String
