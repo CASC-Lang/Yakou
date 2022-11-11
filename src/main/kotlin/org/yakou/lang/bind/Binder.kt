@@ -250,6 +250,12 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindFunctionDeclaration(function: Func) {
+        if (function.genericDeclarationParameters != null) {
+            for (genericDeclarationParameter in function.genericDeclarationParameters.parameters) {
+                bindGenericParameterDeclaration(genericDeclarationParameter)
+            }
+        }
+
         for (parameter in function.parameters) {
             val typeInfo = bindType(parameter.type)
 
