@@ -14,8 +14,6 @@ import org.yakou.lang.ast.Impl
 import org.yakou.lang.ast.ImplItem
 import org.yakou.lang.ast.Item
 import org.yakou.lang.ast.Keyword
-import org.yakou.lang.ast.Modifier
-import org.yakou.lang.ast.Modifiers
 import org.yakou.lang.ast.Package
 import org.yakou.lang.ast.Path
 import org.yakou.lang.ast.PrimaryConstructor
