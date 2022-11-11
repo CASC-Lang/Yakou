@@ -3,7 +3,7 @@ package org.yakou.lang.bind
 import org.yakou.lang.ast.GenericDeclarationParameters
 import org.yakou.lang.ast.Type
 import org.yakou.lang.util.mapAs
-import java.util.*
+import java.util.EnumMap
 
 /**
  * Table class stores type infos and function infos in Yakou standard type format.
@@ -97,6 +97,15 @@ class Table {
         }
     }
 
+    // Query functions
+
+    fun getFields(
+        qualifiedOwnerPath: String
+    ): List<ClassMember.Field>? =
+        classMemberTable[qualifiedOwnerPath]
+            ?.get(ClassMember.MemberType.FIELD)
+            ?.mapAs()
+
     fun findField(
         qualifiedOwnerPath: String,
         fieldName: String
@@ -105,6 +114,13 @@ class Table {
             ?.get(ClassMember.MemberType.FIELD)
             ?.find { it.name == fieldName }
             ?.let { it as ClassMember.Field }
+
+    fun getFunctions(
+        qualifiedOwnerPath: String
+    ): List<ClassMember.Fn>? =
+        classMemberTable[qualifiedOwnerPath]
+            ?.get(ClassMember.MemberType.FUNCTION)
+            ?.mapAs()
 
     fun findFunction(
         qualifiedOwnerPath: String,
@@ -120,6 +136,13 @@ class Table {
                     from.canImplicitCast(to)
                 }
             }
+
+    fun getConstructors(
+        qualifiedOwnerPath: String
+    ): List<ClassMember.Constructor>? =
+        classMemberTable[qualifiedOwnerPath]
+            ?.get(ClassMember.MemberType.CONSTRUCTOR)
+            ?.mapAs()
 
     fun findConstructor(
         qualifiedOwnerPath: String,
