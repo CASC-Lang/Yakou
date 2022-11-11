@@ -621,7 +621,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun bindImplItem(item: ImplItem) {
         when (item) {
             is Class -> bindClass(item)
-            is Func -> bindFunction(item, false)
+            is Func -> bindFunction(item, item.self == null)
             is Impl -> bindImpl(item)
             is StaticField -> bindStaticField(item)
             is Const -> bindConst(item)
