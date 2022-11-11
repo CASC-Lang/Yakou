@@ -14,6 +14,8 @@ import org.yakou.lang.ast.Impl
 import org.yakou.lang.ast.ImplItem
 import org.yakou.lang.ast.Item
 import org.yakou.lang.ast.Keyword
+import org.yakou.lang.ast.Modifier
+import org.yakou.lang.ast.Modifiers
 import org.yakou.lang.ast.Package
 import org.yakou.lang.ast.Path
 import org.yakou.lang.ast.PrimaryConstructor
@@ -318,10 +320,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun bindImplItemDeclaration(item: ImplItem) {
         when (item) {
             is Class -> bindClassDeclaration(item)
-            is Const -> bindConstDeclaration(item)
             is Func -> bindFunctionDeclaration(item)
             is Impl -> bindImplDeclaration(item)
-            is StaticField -> bindStaticFieldDeclaration(item)
         }
     }
 
@@ -341,7 +341,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             is Const -> bindConst(item)
             is StaticField -> bindStaticField(item)
             is Class -> bindClass(item)
-            is Func -> bindFunction(item)
+            is Func -> bindFunction(item, true)
             is Impl -> bindImpl(item)
         }
     }
@@ -552,11 +552,11 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun bindFunction(function: Func) {
+    private fun bindFunction(function: Func, static: Boolean) {
         currentFunctionInstance = function.functionInstance
 
         // Initialize scope
-        val functionScope = Scope(currentScope)
+        val functionScope = Scope(currentScope, isStaticScope = static)
 
         // Add function parameters as variables
         if (function.self != null) {
@@ -619,10 +619,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private fun bindImplItem(item: ImplItem) {
         when (item) {
             is Class -> bindClass(item)
-            is Const -> bindConst(item)
-            is Func -> bindFunction(item)
+            is Func -> bindFunction(item, false)
             is Impl -> bindImpl(item)
-            is StaticField -> bindStaticField(item)
         }
     }
 

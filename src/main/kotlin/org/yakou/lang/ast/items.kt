@@ -41,7 +41,7 @@ data class Const(
     val explicitType: Type,
     val equal: Token,
     var expression: Expression
-) : Item, ImplItem {
+) : Item {
     override val span: Span by lazy {
         var finalSpan =
             if (!modifiers.isEmpty()) {
@@ -66,7 +66,7 @@ data class StaticField(
     val explicitType: Type,
     val equal: Token,
     var expression: Expression
-) : Item, ImplItem {
+) : Item {
     override val span: Span by lazy {
         var finalSpan =
             if (!modifiers.isEmpty()) {
