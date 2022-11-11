@@ -147,21 +147,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindGenericParameterDeclaration(genericDeclarationParameter: GenericDeclarationParameters.GenericDeclarationParameter) {
-        if (genericDeclarationParameter is GenericDeclarationParameters.WildcardConstraintGenericDeclarationParameter) {
-            compilationUnit.reportBuilder
-                .error(
-                    SpanHelper.expandView(genericDeclarationParameter.span, compilationUnit.maxLineCount),
-                    "Unable to use wildcard bound here"
-                )
-                .label(
-                    genericDeclarationParameter.span,
-                    "Wildcard bound cannot be used at generic parameter declaration"
-                )
-                .color(Attribute.CYAN_TEXT())
-                .build().build()
-        } else {
-            currentScope.addTypeVariable(genericDeclarationParameter.genericConstraint)
-        }
+        currentScope.addTypeVariable(genericDeclarationParameter.genericConstraint)
     }
 
     private fun bindPrimaryConstructorDeclaration(primaryConstructor: PrimaryConstructor) {

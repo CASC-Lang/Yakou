@@ -798,9 +798,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
             (
                 optExpectType(TokenType.Identifier) ||
                     optExpectType(TokenType.Plus) ||
-                    optExpectType(TokenType.Minus) ||
-                    optExpectType(TokenType.PlusColon) ||
-                    optExpectType(TokenType.MinusColon)
+                    optExpectType(TokenType.Minus)
                 )
         ) {
             parameters += parseGenericDeclarationParameter()
@@ -819,7 +817,6 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
     private fun parseGenericDeclarationParameter(): GenericDeclarationParameters.GenericDeclarationParameter = when {
         optExpectType(TokenType.Identifier) -> parseConstraintGenericParameter()
-        optExpectType(TokenType.PlusColon) || optExpectType(TokenType.MinusColon) -> parseWildCardConstraintGenericParameter()
         optExpectType(TokenType.Plus) || optExpectType(TokenType.Minus) -> parseVarianceGenericParameter()
         else -> TODO("UNREACHABLE")
     }
@@ -881,13 +878,6 @@ class Parser(private val compilationUnit: CompilationUnit) {
         }
 
         return constraints
-    }
-
-    private fun parseWildCardConstraintGenericParameter(): GenericDeclarationParameters.WildcardConstraintGenericDeclarationParameter {
-        val boundIndicator = next()!!
-        val type = parseType()
-
-        return GenericDeclarationParameters.WildcardConstraintGenericDeclarationParameter(boundIndicator, type)
     }
 
     private fun parseVarianceGenericParameter(): GenericDeclarationParameters.VarianceGenericDeclarationParameter {

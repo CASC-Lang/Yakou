@@ -37,27 +37,6 @@ data class GenericDeclarationParameters(
         )
     }
 
-    @Deprecated("Wildcard is not allowed in declaration context")
-    data class WildcardConstraintGenericDeclarationParameter(
-        val boundIndicator: Token,
-        val type: Type
-    ) : GenericDeclarationParameter() { // TODO: Constraints
-        override val span: Span by lazy {
-            boundIndicator.span.expand(type.span)
-        }
-
-        override val genericConstraint: TypeInfo.GenericConstraint = TypeInfo.GenericConstraint(
-            "_",
-            when (boundIndicator.type) {
-                TokenType.PlusColon -> TypeInfo.GenericConstraint.BoundType.UPPER
-                TokenType.MinusColon -> TypeInfo.GenericConstraint.BoundType.LOWER
-                else -> TypeInfo.GenericConstraint.BoundType.NONE
-            },
-            TypeInfo.GenericConstraint.VarianceType.INVARIANCE
-
-        )
-    }
-
     data class VarianceGenericDeclarationParameter(
         val varianceIndicator: Token,
         val identifier: Token
