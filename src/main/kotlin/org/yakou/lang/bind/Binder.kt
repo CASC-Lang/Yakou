@@ -21,6 +21,7 @@ import org.yakou.lang.ast.Path
 import org.yakou.lang.ast.PrimaryConstructor
 import org.yakou.lang.ast.Statement
 import org.yakou.lang.ast.StaticField
+import org.yakou.lang.ast.Token
 import org.yakou.lang.ast.Type
 import org.yakou.lang.ast.YkFile
 import org.yakou.lang.compilation.CompilationUnit
@@ -370,37 +371,30 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindClass(clazz: Class) {
-        val previousClassPath = currentClassPath
-        val previousScope = currentScope
+        bindScope(clazz.identifier, clazz.classTypeInfo) {
+            if (clazz.genericDeclarationParameters != null) {
+                for (parameter in clazz.genericDeclarationParameters.parameters) {
+                    bindGenericDeclarationParameter(parameter)
+                }
+            }
 
-        currentClassPath = currentClassPath.append(clazz.identifier)
-        currentScope = Scope(currentScope, clazz.classTypeInfo)
+            if (clazz.primaryConstructor != null) {
+                bindPrimaryConstructor(clazz.primaryConstructor)
+            }
 
-        if (clazz.genericDeclarationParameters != null) {
-            for (parameter in clazz.genericDeclarationParameters.parameters) {
-                bindGenericDeclarationParameter(parameter)
+            if (clazz.superClassConstructorCall != null) {
+                val superClassType = bindSuperClassConstructorCall(clazz.superClassConstructorCall)
+
+                if (superClassType != null) {
+                    table.registerSuperClassType(currentPackagePath.toString(), currentClassPath.toString(), superClassType)
+                }
+            }
+
+            if (clazz.classItems != null) {
+                for (clazzItem in clazz.classItems)
+                    bindClassItem(clazzItem)
             }
         }
-
-        if (clazz.primaryConstructor != null) {
-            bindPrimaryConstructor(clazz.primaryConstructor)
-        }
-
-        if (clazz.superClassConstructorCall != null) {
-            val superClassType = bindSuperClassConstructorCall(clazz.superClassConstructorCall)
-
-            if (superClassType != null) {
-                table.registerSuperClassType(currentPackagePath.toString(), currentClassPath.toString(), superClassType)
-            }
-        }
-
-        if (clazz.classItems != null) {
-            for (clazzItem in clazz.classItems)
-                bindClassItem(clazzItem)
-        }
-
-        currentClassPath = previousClassPath
-        currentScope = previousScope
     }
 
     private fun bindGenericDeclarationParameter(genericDeclarationParameter: GenericDeclarationParameters.GenericDeclarationParameter) {
@@ -596,26 +590,19 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindImpl(impl: Impl) {
-        val previousClassPath = currentClassPath
-        val previousScope = currentScope
+        bindScope(impl.identifier, impl.ownerClass) {
+            if (impl.genericDeclarationParameters != null) {
+                for (parameter in impl.genericDeclarationParameters.parameters) {
+                    bindGenericDeclarationParameter(parameter)
+                }
+            }
 
-        currentClassPath = currentClassPath.append(impl.identifier)
-        currentScope = Scope(currentScope, impl.ownerClass)
-
-        if (impl.genericDeclarationParameters != null) {
-            for (parameter in impl.genericDeclarationParameters.parameters) {
-                bindGenericDeclarationParameter(parameter)
+            if (impl.implItems != null) {
+                for (item in impl.implItems) {
+                    bindImplItem(item)
+                }
             }
         }
-
-        if (impl.implItems != null) {
-            for (item in impl.implItems) {
-                bindImplItem(item)
-            }
-        }
-
-        currentScope = previousScope
-        currentClassPath = previousClassPath
     }
 
     private fun bindImplItem(item: ImplItem) {
@@ -962,6 +949,21 @@ class Binder(private val compilationUnit: CompilationUnit) {
             }
         }
     }
+
+    private fun bindScope(classPath: Token, ownerClassTypeInfo: TypeInfo.Class? = null, functor: () -> Unit) {
+        val previousClassPath = currentClassPath
+        val previousScope = currentScope
+
+        currentClassPath = currentClassPath.append(classPath)
+        currentScope = Scope(currentScope, ownerClassTypeInfo)
+
+        functor()
+
+        currentClassPath = previousClassPath
+        currentScope = previousScope
+    }
+
+    // REPORTS
 
     private fun reportUnresolvedSymbol(name: String, span: Span) {
         val coloredName = colorize(name, compilationUnit, Attribute.CYAN_TEXT())
