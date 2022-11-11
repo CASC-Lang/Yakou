@@ -46,44 +46,6 @@ class Table {
         }
     }
 
-    fun findField(
-        qualifiedOwnerPath: String,
-        fieldName: String
-    ): ClassMember.Field? =
-        classMemberTable[qualifiedOwnerPath]
-            ?.get(ClassMember.MemberType.FIELD)
-            ?.find { it.name == fieldName }
-            ?.let { it as ClassMember.Field }
-
-    fun findFunction(
-        qualifiedOwnerPath: String,
-        functionName: String,
-        argumentTypes: List<TypeInfo>
-    ): ClassMember.Fn? =
-        classMemberTable[qualifiedOwnerPath]
-            ?.get(ClassMember.MemberType.FUNCTION)
-            ?.mapAs<ClassMember, ClassMember.Fn>()
-            ?.filter { it.name == functionName && it.parameterTypeInfos.size == argumentTypes.size }
-            ?.find {
-                it.parameterTypeInfos.zip(argumentTypes).all { (from, to) ->
-                    from.canImplicitCast(to)
-                }
-            }
-
-    fun findConstructor(
-        qualifiedOwnerPath: String,
-        argumentTypes: List<TypeInfo>
-    ): ClassMember.Constructor? =
-        classMemberTable[qualifiedOwnerPath]
-            ?.get(ClassMember.MemberType.CONSTRUCTOR)
-            ?.mapAs<ClassMember, ClassMember.Constructor>()
-            ?.filter { it.parameterTypeInfos.size == argumentTypes.size }
-            ?.find {
-                it.parameterTypeInfos.zip(argumentTypes).all { (from, to) ->
-                    from.canImplicitCast(to)
-                }
-            }
-
     fun registerPackageClass(packagePath: String) {
         val qualifiedClassPath = packagePath.appendPath("PackageYk")
 
@@ -134,6 +96,44 @@ class Table {
             true
         }
     }
+
+    fun findField(
+        qualifiedOwnerPath: String,
+        fieldName: String
+    ): ClassMember.Field? =
+        classMemberTable[qualifiedOwnerPath]
+            ?.get(ClassMember.MemberType.FIELD)
+            ?.find { it.name == fieldName }
+            ?.let { it as ClassMember.Field }
+
+    fun findFunction(
+        qualifiedOwnerPath: String,
+        functionName: String,
+        argumentTypes: List<TypeInfo>
+    ): ClassMember.Fn? =
+        classMemberTable[qualifiedOwnerPath]
+            ?.get(ClassMember.MemberType.FUNCTION)
+            ?.mapAs<ClassMember, ClassMember.Fn>()
+            ?.filter { it.name == functionName && it.parameterTypeInfos.size == argumentTypes.size }
+            ?.find {
+                it.parameterTypeInfos.zip(argumentTypes).all { (from, to) ->
+                    from.canImplicitCast(to)
+                }
+            }
+
+    fun findConstructor(
+        qualifiedOwnerPath: String,
+        argumentTypes: List<TypeInfo>
+    ): ClassMember.Constructor? =
+        classMemberTable[qualifiedOwnerPath]
+            ?.get(ClassMember.MemberType.CONSTRUCTOR)
+            ?.mapAs<ClassMember, ClassMember.Constructor>()
+            ?.filter { it.parameterTypeInfos.size == argumentTypes.size }
+            ?.find {
+                it.parameterTypeInfos.zip(argumentTypes).all { (from, to) ->
+                    from.canImplicitCast(to)
+                }
+            }
 
     fun findType(qualifiedPath: String): TypeInfo.Class? =
         typeTable[qualifiedPath]?.let { it as TypeInfo.Class }
