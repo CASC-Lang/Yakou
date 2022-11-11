@@ -17,7 +17,7 @@ dependencies {
     implementation("commons-cli:commons-cli:1.5.0")
     implementation("org.ow2.asm:asm:9.3")
 
-    implementation("com.github.ChAoSUnItY:Nenggao:1.2.1")
+    implementation("com.github.ChAoSUnItY:Nenggao:1.3.0")
 
     testImplementation(kotlin("test"))
 }
