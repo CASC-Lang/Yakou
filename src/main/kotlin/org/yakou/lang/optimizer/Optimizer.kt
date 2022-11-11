@@ -7,7 +7,7 @@ import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.bind.Variable
 import org.yakou.lang.compilation.CompilationUnit
 
-class Optimizer(val compilationUnit: CompilationUnit) {
+class Optimizer(private val compilationUnit: CompilationUnit) {
     fun optimize() {
         optimizeYkFile(compilationUnit.ykFile!!)
     }
@@ -44,7 +44,7 @@ class Optimizer(val compilationUnit: CompilationUnit) {
 
     private fun optimizeClassItem(classItem: ClassItem) {
         when (classItem) {
-            is ClassItem.Field -> {
+            is Field -> {
                 if (classItem.expression != null) {
                     classItem.expression = optimizeExpression(classItem.expression!!)
                 }
@@ -99,17 +99,17 @@ class Optimizer(val compilationUnit: CompilationUnit) {
 
     private fun optimizeStatement(statement: Statement) {
         when (statement) {
-            is Statement.VariableDeclaration -> optimizeVariableDeclaration(statement)
-            is Statement.For -> optimizeFor(statement)
-            is Statement.Block -> optimizeBlock(statement)
-            is Statement.Return -> optimizeReturn(statement)
-            is Statement.ExpressionStatement -> {
+            is VariableDeclaration -> optimizeVariableDeclaration(statement)
+            is For -> optimizeFor(statement)
+            is Block -> optimizeBlock(statement)
+            is Return -> optimizeReturn(statement)
+            is ExpressionStatement -> {
                 statement.expression = optimizeExpression(statement.expression)
             }
         }
     }
 
-    private fun optimizeVariableDeclaration(statement: Statement.VariableDeclaration) {
+    private fun optimizeVariableDeclaration(statement: VariableDeclaration) {
         statement.expression = optimizeExpression(statement.expression)
 
         if (statement.expression is Expression.LiteralExpression) {
@@ -119,18 +119,18 @@ class Optimizer(val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun optimizeFor(statement: Statement.For) {
+    private fun optimizeFor(statement: For) {
         statement.conditionExpression = optimizeExpression(statement.conditionExpression)
         optimizeBlock(statement.block)
     }
 
-    private fun optimizeBlock(statement: Statement.Block) {
+    private fun optimizeBlock(statement: Block) {
         for (innerStatement in statement.statements) {
             optimizeStatement(innerStatement)
         }
     }
 
-    private fun optimizeReturn(statement: Statement.Return) {
+    private fun optimizeReturn(statement: Return) {
         statement.expression = optimizeExpression(statement.expression)
     }
 

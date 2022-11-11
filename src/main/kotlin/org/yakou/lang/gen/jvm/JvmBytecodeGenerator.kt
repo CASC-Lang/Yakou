@@ -241,11 +241,11 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
     private fun genClassItem(classItem: ClassItem) {
         when (classItem) {
-            is ClassItem.Field -> genField(classItem)
+            is Field -> genField(classItem)
         }
     }
 
-    private fun genField(field: ClassItem.Field) {
+    private fun genField(field: Field) {
         val classWriter = getClassWriter(field.fieldInstance.ownerTypeInfo)
 
         classWriter.visitField(
@@ -297,7 +297,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         // 2. Function returns unit
         if (function.functionInstance.returnTypeInfo == TypeInfo.Primitive.UNIT_TYPE_INFO &&
             function.body is FunctionBody.BlockExpression &&
-            function.body.statements.lastOrNull() !is Statement.Return
+            function.body.statements.lastOrNull() !is Return
         ) {
             methodVisitor.visitInsn(Opcodes.RETURN)
         }
@@ -346,17 +346,17 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         methodVisitor.visitLineNumber(statement.span.startPosition.line, currentLineLabel)
 
         when (statement) {
-            is Statement.VariableDeclaration -> genVariableDeclaration(methodVisitor, statement)
-            is Statement.Return -> genReturn(methodVisitor, statement)
-            is Statement.For -> genFor(methodVisitor, statement)
-            is Statement.Block -> genBlock(methodVisitor, statement)
-            is Statement.ExpressionStatement -> genExpression(methodVisitor, statement.expression)
+            is VariableDeclaration -> genVariableDeclaration(methodVisitor, statement)
+            is Return -> genReturn(methodVisitor, statement)
+            is For -> genFor(methodVisitor, statement)
+            is Block -> genBlock(methodVisitor, statement)
+            is ExpressionStatement -> genExpression(methodVisitor, statement.expression)
         }
     }
 
     private fun genVariableDeclaration(
         methodVisitor: MethodVisitor,
-        variableDeclaration: Statement.VariableDeclaration
+        variableDeclaration: VariableDeclaration
     ) {
         if (variableDeclaration.variableInstance.propagatable && variableDeclaration.variableInstance.referencedCount == 0) {
             return
@@ -393,7 +393,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         }
     }
 
-    private fun genFor(methodVisitor: MethodVisitor, `for`: Statement.For) {
+    private fun genFor(methodVisitor: MethodVisitor, `for`: For) {
         val startLabel = Label()
         val endLabel = Label()
 
@@ -413,13 +413,13 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         methodVisitor.visitLabel(endLabel)
     }
 
-    private fun genBlock(methodVisitor: MethodVisitor, block: Statement.Block) {
+    private fun genBlock(methodVisitor: MethodVisitor, block: Block) {
         for (statement in block.statements) {
             genStatement(methodVisitor, statement)
         }
     }
 
-    private fun genReturn(methodVisitor: MethodVisitor, `return`: Statement.Return) {
+    private fun genReturn(methodVisitor: MethodVisitor, `return`: Return) {
         genExpression(methodVisitor, `return`.expression)
 
         methodVisitor.visitInsn(`return`.expression.finalType.returnOpcode)

@@ -3,25 +3,7 @@ package org.yakou.lang.bind
 import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Attribute
 import org.objectweb.asm.Opcodes
-import org.yakou.lang.ast.Class
-import org.yakou.lang.ast.ClassItem
-import org.yakou.lang.ast.Const
-import org.yakou.lang.ast.Expression
-import org.yakou.lang.ast.Func
-import org.yakou.lang.ast.FunctionBody
-import org.yakou.lang.ast.GenericDeclarationParameters
-import org.yakou.lang.ast.Impl
-import org.yakou.lang.ast.ImplItem
-import org.yakou.lang.ast.Item
-import org.yakou.lang.ast.Keyword
-import org.yakou.lang.ast.Package
-import org.yakou.lang.ast.Path
-import org.yakou.lang.ast.PrimaryConstructor
-import org.yakou.lang.ast.Statement
-import org.yakou.lang.ast.StaticField
-import org.yakou.lang.ast.Token
-import org.yakou.lang.ast.Type
-import org.yakou.lang.ast.YkFile
+import org.yakou.lang.ast.*
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
 import org.yakou.lang.util.colorize
@@ -228,11 +210,11 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindClassItemDeclaration(classItem: ClassItem) {
         when (classItem) {
-            is ClassItem.Field -> bindFieldDeclaration(classItem)
+            is Field -> bindFieldDeclaration(classItem)
         }
     }
 
-    private fun bindFieldDeclaration(field: ClassItem.Field) {
+    private fun bindFieldDeclaration(field: Field) {
         field.typeInfo = bindType(field.explicitType)
 
         val fieldInstance = ClassMember.Field.fromField(
@@ -542,11 +524,11 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindClassItem(classItem: ClassItem) {
         when (classItem) {
-            is ClassItem.Field -> bindField(classItem)
+            is Field -> bindField(classItem)
         }
     }
 
-    private fun bindField(field: ClassItem.Field) {
+    private fun bindField(field: Field) {
         if (field.expression != null) {
             bindExpression(field.expression!!)
         }
@@ -621,15 +603,15 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindStatement(statement: Statement) {
         when (statement) {
-            is Statement.VariableDeclaration -> bindVariableDeclaration(statement)
-            is Statement.For -> bindFor(statement)
-            is Statement.Block -> bindBlock(statement)
-            is Statement.Return -> bindReturn(statement)
-            is Statement.ExpressionStatement -> bindExpression(statement.expression)
+            is VariableDeclaration -> bindVariableDeclaration(statement)
+            is For -> bindFor(statement)
+            is Block -> bindBlock(statement)
+            is Return -> bindReturn(statement)
+            is ExpressionStatement -> bindExpression(statement.expression)
         }
     }
 
-    private fun bindVariableDeclaration(variableDeclaration: Statement.VariableDeclaration) {
+    private fun bindVariableDeclaration(variableDeclaration: VariableDeclaration) {
         bindExpression(variableDeclaration.expression)
 
         // TODO: Check expression type can be cast into specified type
@@ -654,12 +636,12 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun bindFor(`for`: Statement.For) {
+    private fun bindFor(`for`: For) {
         bindExpression(`for`.conditionExpression)
         bindBlock(`for`.block)
     }
 
-    private fun bindBlock(block: Statement.Block) {
+    private fun bindBlock(block: Block) {
         val outerScope = currentScope
         currentScope = Scope(outerScope)
 
@@ -670,7 +652,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         currentScope = outerScope
     }
 
-    private fun bindReturn(`return`: Statement.Return) {
+    private fun bindReturn(`return`: Return) {
         bindExpression(`return`.expression)
 
         // TODO: Check expression type can be cast into function's return type

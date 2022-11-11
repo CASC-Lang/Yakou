@@ -2,24 +2,7 @@ package org.yakou.lang.checker
 
 import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Attribute
-import org.yakou.lang.ast.Class
-import org.yakou.lang.ast.ClassItem
-import org.yakou.lang.ast.Const
-import org.yakou.lang.ast.Expression
-import org.yakou.lang.ast.Func
-import org.yakou.lang.ast.FunctionBody
-import org.yakou.lang.ast.GenericDeclarationParameters
-import org.yakou.lang.ast.Impl
-import org.yakou.lang.ast.ImplItem
-import org.yakou.lang.ast.Item
-import org.yakou.lang.ast.Modifier
-import org.yakou.lang.ast.Package
-import org.yakou.lang.ast.PrimaryConstructor
-import org.yakou.lang.ast.Statement
-import org.yakou.lang.ast.StaticField
-import org.yakou.lang.ast.Token
-import org.yakou.lang.ast.Type
-import org.yakou.lang.ast.YkFile
+import org.yakou.lang.ast.*
 import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.bind.Table
 import org.yakou.lang.bind.TypeChecker
@@ -166,11 +149,11 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
     private fun checkClassItem(classItem: ClassItem) {
         when (classItem) {
-            is ClassItem.Field -> checkField(classItem)
+            is Field -> checkField(classItem)
         }
     }
 
-    private fun checkField(field: ClassItem.Field) {
+    private fun checkField(field: Field) {
         if (field.expression != null) {
             checkExpression(field.expression!!)
 
@@ -219,7 +202,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             // Expected last statement should be return statement
             when (val body = function.body) {
                 is FunctionBody.BlockExpression -> {
-                    if (body.statements.lastOrNull() !is Statement.Return) {
+                    if (body.statements.lastOrNull() !is Return) {
                         reportMissingReturn(function, body.closeBrace, function.returnTypeInfo)
                     }
                 }
@@ -297,15 +280,15 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
     private fun checkStatement(statement: Statement) {
         when (statement) {
-            is Statement.VariableDeclaration -> checkVariableDeclaration(statement)
-            is Statement.For -> checkFor(statement)
-            is Statement.Block -> checkBlock(statement)
-            is Statement.Return -> checkReturn(statement)
-            is Statement.ExpressionStatement -> checkExpression(statement.expression)
+            is VariableDeclaration -> checkVariableDeclaration(statement)
+            is For -> checkFor(statement)
+            is Block -> checkBlock(statement)
+            is Return -> checkReturn(statement)
+            is ExpressionStatement -> checkExpression(statement.expression)
         }
     }
 
-    private fun checkVariableDeclaration(variableDeclaration: Statement.VariableDeclaration) {
+    private fun checkVariableDeclaration(variableDeclaration: VariableDeclaration) {
         if (variableDeclaration.name.literal == "_") {
             when (variableDeclaration.expression) {
                 is Expression.LiteralExpression -> {
@@ -319,7 +302,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun checkFor(`for`: Statement.For) {
+    private fun checkFor(`for`: For) {
         checkExpression(`for`.conditionExpression)
 
         if (`for`.conditionExpression !is Expression.Empty && !`for`.conditionExpression.finalType.canImplicitCast(
@@ -336,13 +319,13 @@ class Checker(private val compilationUnit: CompilationUnit) {
         checkBlock(`for`.block)
     }
 
-    private fun checkBlock(block: Statement.Block) {
+    private fun checkBlock(block: Block) {
         for (statement in block.statements) {
             checkStatement(statement)
         }
     }
 
-    private fun checkReturn(`return`: Statement.Return) {
+    private fun checkReturn(`return`: Return) {
         checkExpression(`return`.expression)
 
         if (!(`return`.expression.finalType.canImplicitCast(currentFunction!!.returnTypeInfo))) {

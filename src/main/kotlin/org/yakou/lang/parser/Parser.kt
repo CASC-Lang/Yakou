@@ -314,7 +314,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun parseField(modifiers: Modifiers): ClassItem.Field {
+    private fun parseField(modifiers: Modifiers): Field {
         val name = expect(TokenType.Identifier)
         val colon = expect(TokenType.Colon)
         val explicitType = parseType()
@@ -330,7 +330,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
             expression = null
         }
 
-        return ClassItem.Field(modifiers, name, colon, explicitType, equal, expression)
+        return Field(modifiers, name, colon, explicitType, equal, expression)
     }
 
     private fun parseFunction(modifiers: Modifiers): Func {
@@ -424,11 +424,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
         else -> {
             val expression = parseExpression()
 
-            Statement.ExpressionStatement(expression)
+            ExpressionStatement(expression)
         }
     }
 
-    private fun parseVariableDeclaration(): Statement.VariableDeclaration {
+    private fun parseVariableDeclaration(): VariableDeclaration {
         val let = next()!!
         val mut =
             if (optExpectKeyword(Keyword.MUT)) {
@@ -451,30 +451,30 @@ class Parser(private val compilationUnit: CompilationUnit) {
         val equal = expect(TokenType.Equal)
         val expression = parseExpression()
 
-        return Statement.VariableDeclaration(let, mut, name, colon, specifiedType, equal, expression)
+        return VariableDeclaration(let, mut, name, colon, specifiedType, equal, expression)
     }
 
-    private fun parseFor(): Statement.For {
+    private fun parseFor(): For {
         val `for` = next()!!
         val expression = parseExpression(true)
         val block = parseBlock()
 
-        return Statement.For(`for`, expression, block)
+        return For(`for`, expression, block)
     }
 
-    private fun parseBlock(): Statement.Block {
+    private fun parseBlock(): Block {
         val openBrace = expect(TokenType.OpenBrace)
         val statements = parseStatements()
         val closeBrace = expect(TokenType.CloseBrace)
 
-        return Statement.Block(openBrace, statements, closeBrace)
+        return Block(openBrace, statements, closeBrace)
     }
 
-    private fun parseReturn(): Statement.Return {
+    private fun parseReturn(): Return {
         val `return` = next()!!
         val expression = parseExpression(true)
 
-        return Statement.Return(`return`, expression)
+        return Return(`return`, expression)
     }
 
     private fun parseExpression(optional: Boolean = false): Expression {

@@ -169,7 +169,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
             fun fromField(
                 packageSimplePath: Path.SimplePath,
                 classSimplePath: Path.SimplePath,
-                field: ClassItem.Field
+                field: org.yakou.lang.ast.Field
             ): Field = Field(
                 field.modifiers.sum(),
                 packageSimplePath.toString(),
