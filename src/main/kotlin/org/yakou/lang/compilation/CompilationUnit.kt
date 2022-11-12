@@ -15,7 +15,7 @@ import java.io.File
 
 class CompilationUnit(val sourceFile: File, val session: CompilationSession) {
     val preference: AbstractPreference = session.preference
-    val maxLineCount = SourceCache.INSTANCE.getOrAdd(sourceFile).lines.size
+    val maxLineCount = SourceCache.INSTANCE.getOrAdd(sourceFile).size
     val reportBuilder: FileReportBuilder = FileReportBuilder.sourceFile(sourceFile)
         .enableColor(preference.enableColor)
         .characterSet(if (preference.useAscii) CharacterSet.ASCII else CharacterSet.UNICODE)
