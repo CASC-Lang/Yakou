@@ -13,7 +13,7 @@ import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.util.SpanHelper
 
 class Lexer(private val compilationUnit: CompilationUnit) {
-    private val lines: List<Line> = SourceCache.INSTANCE.getOrAdd(compilationUnit.sourceFile).lines
+    private val lines: List<Line> = SourceCache.INSTANCE.getOrAdd(compilationUnit.sourceFile)
     private lateinit var currentLine: String
     private val tokens: MutableList<Token> = mutableListOf()
     private var line: Int = 0
