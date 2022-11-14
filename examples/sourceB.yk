@@ -17,7 +17,8 @@ pkg chaos {
         mut static c: i32 = 1
         inline static d: i32 = 1
 
-        fn main() {
-        }
+        class K
+
+        impl K
     }
 }

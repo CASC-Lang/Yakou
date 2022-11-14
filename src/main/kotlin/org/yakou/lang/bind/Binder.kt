@@ -254,7 +254,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindImplDeclaration(impl: Impl) {
-        val classType = currentPackagePath.append(impl.identifier).toString()
+        val classType = currentPackagePath.append(currentClassPath).append(impl.identifier).toString()
         val classTypeInfo = table.findType(classType)
 
         if (classTypeInfo == null) {
