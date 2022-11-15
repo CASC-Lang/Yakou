@@ -277,7 +277,6 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 genericDeclarationParameters,
                 genericConstraints
             )
-            return
         }
     }
 
