@@ -243,28 +243,41 @@ class Checker(private val compilationUnit: CompilationUnit) {
         val genericConstraints = impl.ownerClass.genericParameters
 
         // Check generic declaration parameters are same as target owner class'
-        if (genericDeclarationParameters?.parameters?.size != genericConstraints.size) {
-            // Unmatched generic declaration parameters
-            reportUnmatchedGenericDeclarationParameters(
-                impl.identifier.span,
-                genericDeclarationParameters,
-                genericConstraints
-            )
-            return
-        }
+        if (genericDeclarationParameters != null) {
+            if (genericDeclarationParameters.parameters.size == genericConstraints.size) {
+                val zippedConstraints = genericDeclarationParameters.parameters
+                    .map(GenericDeclarationParameters.GenericDeclarationParameter::genericConstraint)
+                    .zip(genericConstraints)
 
-        val zippedConstraints = genericDeclarationParameters.parameters
-            .map(GenericDeclarationParameters.GenericDeclarationParameter::genericConstraint)
-            .zip(genericConstraints)
-
-        for ((implGenericConstraint, classGenericConstraint) in zippedConstraints) {
-            if (implGenericConstraint != classGenericConstraint) {
+                for ((implGenericConstraint, classGenericConstraint) in zippedConstraints) {
+                    if (implGenericConstraint != classGenericConstraint) {
+                        // Unmatched generic declaration parameters
+                        // Generic constraint bound does not match
+                        reportUnmatchedGenericDeclarationParameters(
+                            impl.identifier.span,
+                            genericDeclarationParameters,
+                            genericConstraints
+                        )
+                    }
+                }
+            } else {
+                // Unmatched generic declaration parameters
+                // Generic constraints size does not match
                 reportUnmatchedGenericDeclarationParameters(
                     impl.identifier.span,
                     genericDeclarationParameters,
                     genericConstraints
                 )
             }
+        } else if (genericConstraints.isNotEmpty()) {
+            // Unmatched generic declaration parameters
+            // Generic constraints size does not match
+            reportUnmatchedGenericDeclarationParameters(
+                impl.identifier.span,
+                genericDeclarationParameters,
+                genericConstraints
+            )
+            return
         }
     }
 
