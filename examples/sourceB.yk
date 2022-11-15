@@ -1,22 +1,7 @@
 pkg chaos {
-    const a: i32 = 1
-    static b: i32 = 1
-    mut static c: i32 = 1
-    inline static d: i32 = 1
+    class T
 
-    fn K[T](_: T) {
-    }
-
-    class T[S <: str](mut e: i32) {
-        z: i32 = 1
-    }
-
-    impl[S <: str] T[S] {
-        const a: i32 = 1
-        static b: i32 = 1
-        mut static c: i32 = 1
-        inline static d: i32 = 1
-
+    impl T {
         class K
 
         impl K

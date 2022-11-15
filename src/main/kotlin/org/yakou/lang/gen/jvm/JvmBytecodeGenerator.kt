@@ -1,11 +1,37 @@
 package org.yakou.lang.gen.jvm
 
-import org.objectweb.asm.*
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.Label
+import org.objectweb.asm.MethodVisitor
+import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
 import org.objectweb.asm.signature.SignatureVisitor
 import org.objectweb.asm.signature.SignatureWriter
-import org.yakou.lang.ast.*
-import org.yakou.lang.bind.*
+import org.yakou.lang.ast.Block
+import org.yakou.lang.ast.Class
+import org.yakou.lang.ast.ClassItem
+import org.yakou.lang.ast.Const
+import org.yakou.lang.ast.Expression
+import org.yakou.lang.ast.ExpressionStatement
+import org.yakou.lang.ast.Field
+import org.yakou.lang.ast.For
+import org.yakou.lang.ast.Func
+import org.yakou.lang.ast.FunctionBody
+import org.yakou.lang.ast.Impl
+import org.yakou.lang.ast.ImplItem
+import org.yakou.lang.ast.Item
+import org.yakou.lang.ast.Package
+import org.yakou.lang.ast.PrimaryConstructor
+import org.yakou.lang.ast.Return
+import org.yakou.lang.ast.Statement
+import org.yakou.lang.ast.StaticField
+import org.yakou.lang.ast.VariableDeclaration
+import org.yakou.lang.ast.YkFile
+import org.yakou.lang.bind.ClassMember
+import org.yakou.lang.bind.PrimitiveType
+import org.yakou.lang.bind.Table
+import org.yakou.lang.bind.TypeInfo
+import org.yakou.lang.bind.Variable
 import org.yakou.lang.compilation.CompilationSession
 import org.yakou.lang.compilation.CompilationUnit
 import java.io.File
@@ -148,7 +174,23 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genClass(clazz: Class) {
-        getClassWriter(clazz.classTypeInfo)
+        val classWriter = getClassWriter(clazz.classTypeInfo)
+        val classTypeInfo = clazz.classTypeInfo
+
+        if (classTypeInfo.outerClassType != null) {
+            val outerClassTypeInfo = classTypeInfo.outerClassType
+            val outerClassWriter = getClassWriter(outerClassTypeInfo)
+
+            outerClassWriter.visitInnerClass(
+                classTypeInfo.internalName,
+                outerClassTypeInfo.internalName,
+                classTypeInfo.canonicalName,
+                classTypeInfo.access
+            )
+
+            // FIXME: If class is declared inside the method, change last 2 args to method instance's props
+            classWriter.visitOuterClass(classTypeInfo.internalName, null, null)
+        }
 
         if (clazz.primaryConstructor != null) {
             genPrimaryConstructor(clazz.primaryConstructor, clazz.superClassConstructorCall)
@@ -538,7 +580,11 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 if (leftPrimitiveType.type.isIntType()) {
                     genIntegerComparison(methodVisitor, binaryExpression.operation.getFunctorOpcode(leftPrimitiveType))
                 } else {
-                    genComparison(methodVisitor, binaryExpression.operation, binaryExpression.operation.getFunctorOpcode(leftPrimitiveType))
+                    genComparison(
+                        methodVisitor,
+                        binaryExpression.operation,
+                        binaryExpression.operation.getFunctorOpcode(leftPrimitiveType)
+                    )
                 }
             }
         }
@@ -642,7 +688,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
         when {
             (leftType is TypeInfo.Class && rightType is TypeInfo.Class) ||
-                (leftType is TypeInfo.Array && rightType is TypeInfo.Array) -> {
+                    (leftType is TypeInfo.Array && rightType is TypeInfo.Array) -> {
                 genObjectReferentialEquality(methodVisitor, invert)
             }
 
@@ -712,7 +758,11 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         methodVisitor.visitLabel(endLabel)
     }
 
-    private fun genComparison(methodVisitor: MethodVisitor, operation: Expression.BinaryExpression.BinaryOperation, opcode: Int) {
+    private fun genComparison(
+        methodVisitor: MethodVisitor,
+        operation: Expression.BinaryExpression.BinaryOperation,
+        opcode: Int
+    ) {
         val trueLabel = Label()
         val endLabel = Label()
         val jmpOpcode = when (operation) {
@@ -888,7 +938,11 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         genGenericSignature(returnTypeSignatureVisitor, returnTypeInfo, true)
     }
 
-    private fun genGenericSignature(signatureVisitor: SignatureVisitor, typeInfo: TypeInfo, noVisitEnd: Boolean = false) {
+    private fun genGenericSignature(
+        signatureVisitor: SignatureVisitor,
+        typeInfo: TypeInfo,
+        noVisitEnd: Boolean = false
+    ) {
         when (typeInfo) {
             is TypeInfo.Primitive -> genGenericSignature(signatureVisitor, typeInfo)
             is TypeInfo.Class -> {
