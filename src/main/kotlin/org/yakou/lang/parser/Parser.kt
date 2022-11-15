@@ -747,13 +747,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
             val float = numberToken.floatLiteral?.let { Token(it, TokenType.Synthetic, numberToken.floatLiteralSpan!!) }
             val type = numberToken.typeAnnotation?.let {
                 Type.TypePath(
-                    Path.SimplePath(
-                        listOf(
-                            Token(
-                                it,
-                                TokenType.Identifier,
-                                numberToken.typeAnnotationSpan!!
-                            )
+                    Path.TokenPath(
+                        Token(
+                            it,
+                            TokenType.Identifier,
+                            numberToken.typeAnnotationSpan!!
                         )
                     ),
                     null
@@ -1059,7 +1057,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
             pathSegments += expect(TokenType.Identifier)
         }
 
-        return Path.SimplePath(pathSegments)
+        return Path.SimplePath(pathSegments.map(Path::TokenPath))
     }
 
     private fun expect(type: TokenType): Token {

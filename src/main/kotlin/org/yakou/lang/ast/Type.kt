@@ -22,35 +22,12 @@ sealed class Type : AstNode {
 
             typeBuilder.toString()
         }
-        is TypePath -> {
-            val typeBuilder = StringBuilder()
-
-            for (token in path.pathSegments) {
-                when (token.type) {
-                    is TokenType.Identifier -> {
-                        typeBuilder.append(token.literal)
-                    }
-
-                    is TokenType.DoubleColon -> {
-                        typeBuilder.append("::")
-                    }
-
-                    is TokenType.Keyword -> {
-                        // Self type
-                        typeBuilder.append(token.literal)
-                    }
-
-                    else -> {}
-                }
-            }
-
-            typeBuilder.toString()
-        }
+        is TypePath -> path.toString()
     }
 
-    data class TypePath(val path: Path.SimplePath, val genericParameters: GenericParameters?) : Type() {
+    data class TypePath(val path: Path, val genericParameters: GenericParameters?) : Type() {
         override val span: Span by lazy {
-            path.pathSegments.first().span.expand(path.pathSegments.last().span).expand(genericParameters?.span)
+            path.span!!.expand(genericParameters?.span)
         }
     }
 

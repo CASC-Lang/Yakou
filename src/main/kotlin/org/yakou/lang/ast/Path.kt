@@ -3,16 +3,27 @@ package org.yakou.lang.ast
 import chaos.unity.nenggao.Span
 
 sealed class Path : AstNode {
-    data class SimplePath(val pathSegments: List<Token>) : Path() {
-        override val span: Span?
-            get() = pathSegments.firstOrNull()?.span?.expand(pathSegments.lastOrNull()?.span)
+    abstract override fun toString(): String
 
-        constructor(vararg pathTokens: Token) : this(pathTokens.toList()) {}
+    class TokenPath(val token: Token) : Path() {
+        override val span: Span by lazy(token::span)
+
+        override fun toString(): String =
+            token.literal
+    }
+
+    data class SimplePath(val pathSegments: List<Path>, val separator: String = "::") : Path() {
+        override val span: Span? by lazy {
+            pathSegments.firstOrNull()?.span?.expand(pathSegments.lastOrNull()?.span)
+        }
+
+        constructor(vararg pathTokens: Token, separator: String = "::")
+                : this(pathTokens.map(::TokenPath), separator)
 
         fun append(token: Token): SimplePath {
             val pathSegments = pathSegments.toMutableList()
 
-            pathSegments += token
+            pathSegments += TokenPath(token)
 
             return SimplePath(pathSegments)
         }
@@ -26,8 +37,6 @@ sealed class Path : AstNode {
         }
 
         override fun toString(): String =
-            pathSegments.filter { it.type == TokenType.Identifier } // Ignore `::` since some situations won't have `::`
-                .map(Token::literal)
-                .joinToString(separator = "::")
+            pathSegments.joinToString(separator = separator, transform = Path::toString)
     }
 }

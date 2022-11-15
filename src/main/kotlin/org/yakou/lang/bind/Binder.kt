@@ -16,7 +16,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private val table = compilationUnit.session.table
 
     private var currentPackagePath: Path.SimplePath = Path.SimplePath(listOf())
-    private var currentClassPath: Path.SimplePath = Path.SimplePath(listOf())
+    private var currentClassPath: Path.SimplePath = Path.SimplePath(listOf(), "$")
     private var currentFunctionInstance: ClassMember.Fn? = null
     private var currentScope: Scope = Scope(table)
     private var topLevel: Boolean = true
