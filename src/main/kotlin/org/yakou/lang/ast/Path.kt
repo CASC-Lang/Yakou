@@ -25,15 +25,15 @@ sealed class Path : AstNode {
 
             pathSegments += TokenPath(token)
 
-            return SimplePath(pathSegments)
+            return SimplePath(pathSegments, separator)
         }
 
         fun append(path: SimplePath): SimplePath {
             val pathSegments = pathSegments.toMutableList()
 
-            pathSegments += path.pathSegments
+            pathSegments += path
 
-            return SimplePath(pathSegments)
+            return SimplePath(pathSegments, separator)
         }
 
         override fun toString(): String =
