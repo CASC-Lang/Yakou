@@ -1,6 +1,8 @@
 package org.yakou.lang.bind
 
 import org.objectweb.asm.Opcodes
+import org.yakou.lang.util.`as`
+import org.yakou.lang.util.mapAs
 import java.lang.reflect.Modifier
 import java.lang.reflect.TypeVariable
 
@@ -13,8 +15,9 @@ sealed class TypeInfo {
                 clazz.modifiers,
                 standardizeTypeName(clazz.typeName),
                 clazz.typeParameters.map { GenericConstraint.fromTypeVariable(clazz.typeParameters, it) },
-                clazz.superclass?.let { fromClass(it) as Class },
-                clazz.interfaces.map(::fromClass).map { it as Class }
+                clazz.enclosingClass?.let(::fromClass).`as`(),
+                clazz.superclass?.let(::fromClass).`as`(),
+                clazz.interfaces.map(::fromClass).mapAs()
             )
         }
 
@@ -213,6 +216,7 @@ sealed class TypeInfo {
         Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL,
         "$standardPackagePath::PackageYk",
         listOf(),
+        null,
         fromClass(Any::class.java) as Class,
         listOf()
     )
@@ -221,6 +225,7 @@ sealed class TypeInfo {
         val access: Int,
         val standardTypePath: String,
         val genericParameters: List<GenericConstraint>,
+        val outerClassType: Class?,
         var superClassType: Class?,
         val interfaceTypes: List<Class>
     ) : TypeInfo(), TypeInfoVariable {

@@ -2,6 +2,7 @@ package org.yakou.lang.bind
 
 import org.yakou.lang.ast.GenericDeclarationParameters
 import org.yakou.lang.ast.Type
+import org.yakou.lang.util.`as`
 import org.yakou.lang.util.mapAs
 import java.util.EnumMap
 
@@ -67,11 +68,22 @@ class Table {
         return if (typeTable.containsKey(qualifiedClassPath)) {
             null
         } else {
+            val outerClass =
+                if (classPath.contains('$')) {
+                    val outerClassPath = classPath.substringBeforeLast('$')
+                    val qualifiedOuterClassPath = packagePath.appendPath(outerClassPath)
+
+                    findType(qualifiedOuterClassPath)
+                } else {
+                    null
+                }
+
             val classType = TypeInfo.Class(
                 access,
                 qualifiedClassPath,
                 genericDeclarationParameters.map(GenericDeclarationParameters.GenericDeclarationParameter::genericConstraint),
-                TypeInfo.fromClass(Any::class.java) as TypeInfo.Class,
+                outerClass,
+                TypeInfo.fromClass(Any::class.java).`as`(),
                 listOf()
             )
 
@@ -113,7 +125,7 @@ class Table {
         classMemberTable[qualifiedOwnerPath]
             ?.get(ClassMember.MemberType.FIELD)
             ?.find { it.name == fieldName }
-            ?.let { it as ClassMember.Field }
+            ?.`as`()
 
     fun getFunctions(
         qualifiedOwnerPath: String
@@ -159,7 +171,7 @@ class Table {
             }
 
     fun findType(qualifiedPath: String): TypeInfo.Class? =
-        typeTable[qualifiedPath]?.let { it as TypeInfo.Class }
+        typeTable[qualifiedPath]?.`as`()
 
     fun findType(type: Type): TypeInfo? {
         val typeName = type.standardizeType()
@@ -197,7 +209,7 @@ class Table {
             classMemberTable[currentClassTypeInfo.standardTypePath]
                 ?.get(ClassMember.MemberType.FUNCTION)
                 ?.find { it.name == "equals" }
-                ?.let { return it as ClassMember.Fn }
+                ?.let { return it.`as`() }
 
             currentClassTypeInfo = currentClassTypeInfo.superClassType
         }
