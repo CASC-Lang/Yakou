@@ -235,6 +235,7 @@ sealed class TypeInfo {
 
         val isInterface: Boolean = Modifier.isInterface(access)
         val canonicalName: String = standardTypePath.replace("::", ".")
+        val simpleName: String = standardTypePath.split("$", "::").last()
         final override val internalName: String = standardTypePath.replace("::", "/")
         final override val descriptor: String = "L$internalName;"
         override val storeOpcode: Int = Opcodes.ASTORE

@@ -20,6 +20,7 @@ import org.yakou.lang.ast.FunctionBody
 import org.yakou.lang.ast.Impl
 import org.yakou.lang.ast.ImplItem
 import org.yakou.lang.ast.Item
+import org.yakou.lang.ast.Modifier
 import org.yakou.lang.ast.Package
 import org.yakou.lang.ast.PrimaryConstructor
 import org.yakou.lang.ast.Return
@@ -181,15 +182,18 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             val outerClassTypeInfo = classTypeInfo.outerClassType
             val outerClassWriter = getClassWriter(outerClassTypeInfo)
 
+            classWriter.visitInnerClass(
+                classTypeInfo.internalName,
+                outerClassTypeInfo.internalName,
+                classTypeInfo.simpleName,
+                classTypeInfo.access + Opcodes.ACC_STATIC // FIXME: Have some kind of way to distinguish inner class and static nested class
+            )
             outerClassWriter.visitInnerClass(
                 classTypeInfo.internalName,
                 outerClassTypeInfo.internalName,
-                classTypeInfo.canonicalName,
-                classTypeInfo.access
+                classTypeInfo.simpleName,
+                classTypeInfo.access + Opcodes.ACC_STATIC // FIXME: Have some kind of way to distinguish inner class and static nested class
             )
-
-            // FIXME: If class is declared inside the method, change last 2 args to method instance's props
-            classWriter.visitOuterClass(classTypeInfo.internalName, null, null)
         }
 
         if (clazz.primaryConstructor != null) {
