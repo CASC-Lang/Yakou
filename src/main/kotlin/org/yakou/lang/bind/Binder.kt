@@ -19,6 +19,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private var currentClassPath: Path.SimplePath = Path.SimplePath(listOf(), "$")
     private var currentFunctionInstance: ClassMember.Fn? = null
     private var currentScope: Scope = Scope(table)
+    private var insideImpl: Boolean = false
     private var topLevel: Boolean = true
 
     fun bind() {
@@ -260,33 +261,27 @@ class Binder(private val compilationUnit: CompilationUnit) {
         if (classTypeInfo == null) {
             reportUnresolvedType(classType, impl.identifier.span)
         } else {
-            val previousScope = currentScope
-            val previousClassPath = currentClassPath
-
-            currentScope = Scope(currentScope, classTypeInfo)
-            currentClassPath = currentClassPath.append(impl.identifier)
-
-            if (impl.genericDeclarationParameters != null) {
-                for (genericDeclarationParameter in impl.genericDeclarationParameters.parameters) {
-                    bindGenericParameterDeclaration(genericDeclarationParameter)
+            bindScope(impl.identifier, classTypeInfo, insideImpl = true) {
+                if (impl.genericDeclarationParameters != null) {
+                    for (genericDeclarationParameter in impl.genericDeclarationParameters.parameters) {
+                        bindGenericParameterDeclaration(genericDeclarationParameter)
+                    }
                 }
-            }
 
-            if (impl.genericParameters != null) {
-                for (genericParameter in impl.genericParameters.genericParameters) {
-                    bindType(genericParameter)
+                if (impl.genericParameters != null) {
+                    for (genericParameter in impl.genericParameters.genericParameters) {
+                        bindType(genericParameter)
+                    }
                 }
-            }
 
-            if (impl.implItems != null) {
-                for (item in impl.implItems) {
-                    bindImplItemDeclaration(item)
+                if (impl.implItems != null) {
+                    for (item in impl.implItems) {
+                        bindImplItemDeclaration(item)
+                    }
                 }
-            }
 
-            impl.ownerClass = classTypeInfo
-            currentScope = previousScope
-            currentClassPath = previousClassPath
+                impl.ownerClass = classTypeInfo
+            }
         }
     }
 
@@ -564,7 +559,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindImpl(impl: Impl) {
-        bindScope(impl.identifier, impl.ownerClass) {
+        bindScope(impl.identifier, impl.ownerClass, insideImpl = true) {
             if (impl.genericDeclarationParameters != null) {
                 for (parameter in impl.genericDeclarationParameters.parameters) {
                     bindGenericDeclarationParameter(parameter)
@@ -924,17 +919,20 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun bindScope(classPath: Token, ownerClassTypeInfo: TypeInfo.Class? = null, functor: () -> Unit) {
+    private inline fun bindScope(classPath: Token, ownerClassTypeInfo: TypeInfo.Class? = null, insideImpl: Boolean = false, crossinline functor: () -> Unit) {
         val previousClassPath = currentClassPath
         val previousScope = currentScope
+        val previousImplFlag = this.insideImpl
 
         currentClassPath = currentClassPath.append(classPath)
-        currentScope = Scope(currentScope, ownerClassTypeInfo)
+        currentScope = Scope(currentScope, ownerClassTypeInfo, insideImpl = this.insideImpl)
+        this.insideImpl = insideImpl
 
         functor()
 
         currentClassPath = previousClassPath
         currentScope = previousScope
+        this.insideImpl = previousImplFlag
     }
 
     // REPORTS

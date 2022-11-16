@@ -6,9 +6,11 @@ class Scope(internal val table: Table, internal val ownerClass: TypeInfo.Class? 
     val typeVariables: MutableMap<String, TypeInfo.GenericConstraint> = mutableMapOf()
     val variables: VariableList = VariableList()
 
-    constructor(scope: Scope, ownerClass: TypeInfo.Class? = scope.ownerClass, isStaticScope: Boolean = true) : this(scope.table, ownerClass, isStaticScope) {
-        typeVariables += scope.typeVariables
-        variables += scope.variables
+    constructor(scope: Scope, ownerClass: TypeInfo.Class? = scope.ownerClass, isStaticScope: Boolean = true, insideImpl: Boolean = false) : this(scope.table, ownerClass, isStaticScope) {
+        if (!insideImpl) {
+            typeVariables += scope.typeVariables
+            variables += scope.variables
+        }
     }
 
     fun addTypeVariable(typeVariable: TypeInfo.GenericConstraint) {
