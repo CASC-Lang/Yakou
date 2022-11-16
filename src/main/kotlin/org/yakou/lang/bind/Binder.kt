@@ -19,7 +19,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
     private var currentClassPath: Path.SimplePath = Path.SimplePath(listOf(), "$")
     private var currentFunctionInstance: ClassMember.Fn? = null
     private var currentScope: Scope = Scope(table)
-    private var insideImpl: Boolean = false
+    private var isStaticInnerScope: Boolean = false
     private var topLevel: Boolean = true
 
     fun bind() {
@@ -96,55 +96,48 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindClassDeclaration(clazz: Class) {
-        val previousClassPath = currentClassPath
-        currentClassPath = currentClassPath.append(clazz.identifier)
-
         val classType = table.registerClassType(
             clazz.modifiers.sum(),
             currentPackagePath.toString(),
-            currentClassPath.toString(),
+            currentClassPath.append(clazz.identifier).toString(),
             clazz.genericDeclarationParameters?.parameters ?: listOf()
         )
 
-        val previousScope = currentScope
-        currentScope = Scope(currentScope, classType)
-
-        if (clazz.genericDeclarationParameters != null) {
-            for (parameter in clazz.genericDeclarationParameters.parameters) {
-                bindGenericParameterDeclaration(parameter)
+        bindScope(clazz.identifier, classType, staticInnerScope = true) {
+            if (clazz.genericDeclarationParameters != null) {
+                for (parameter in clazz.genericDeclarationParameters.parameters) {
+                    bindGenericParameterDeclaration(parameter)
+                }
             }
-        }
 
-        if (classType == null) {
-            // Failed to register class type
-            reportClassAlreadyDefined(clazz)
-            return
-        } else {
-            clazz.classTypeInfo = classType
-        }
+            if (classType == null) {
+                // Failed to register class type
+                reportClassAlreadyDefined(clazz)
+                return@bindScope
+            } else {
+                clazz.classTypeInfo = classType
+            }
 
-        if (clazz.primaryConstructor != null) {
-            bindPrimaryConstructorDeclaration(clazz.primaryConstructor)
-        } else {
-            // Generate an empty constructor
-            table.registerClassMember(
-                ClassMember.Constructor(
-                    Opcodes.ACC_PUBLIC,
-                    currentPackagePath.toString(),
-                    currentClassPath.toString(),
-                    listOf()
+            if (clazz.primaryConstructor != null) {
+                bindPrimaryConstructorDeclaration(clazz.primaryConstructor)
+            } else {
+                // Generate an empty constructor
+                table.registerClassMember(
+                    ClassMember.Constructor(
+                        Opcodes.ACC_PUBLIC,
+                        currentPackagePath.toString(),
+                        currentClassPath.toString(),
+                        listOf()
+                    )
                 )
-            )
-        }
+            }
 
-        if (clazz.classItems != null) {
-            for (classItem in clazz.classItems) {
-                bindClassItemDeclaration(classItem)
+            if (clazz.classItems != null) {
+                for (classItem in clazz.classItems) {
+                    bindClassItemDeclaration(classItem)
+                }
             }
         }
-
-        currentScope = previousScope
-        currentClassPath = previousClassPath
     }
 
     private fun bindGenericParameterDeclaration(genericDeclarationParameter: GenericDeclarationParameters.GenericDeclarationParameter) {
@@ -261,7 +254,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         if (classTypeInfo == null) {
             reportUnresolvedType(classType, impl.identifier.span)
         } else {
-            bindScope(impl.identifier, classTypeInfo, insideImpl = true) {
+            bindScope(impl.identifier, classTypeInfo, staticInnerScope = true) {
                 if (impl.genericDeclarationParameters != null) {
                     for (genericDeclarationParameter in impl.genericDeclarationParameters.parameters) {
                         bindGenericParameterDeclaration(genericDeclarationParameter)
@@ -559,7 +552,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
     }
 
     private fun bindImpl(impl: Impl) {
-        bindScope(impl.identifier, impl.ownerClass, insideImpl = true) {
+        bindScope(impl.identifier, impl.ownerClass, staticInnerScope = true) {
             if (impl.genericDeclarationParameters != null) {
                 for (parameter in impl.genericDeclarationParameters.parameters) {
                     bindGenericDeclarationParameter(parameter)
@@ -864,7 +857,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 resolvedSymbol.reference()
             }
         } else {
-            TODO("Report error")
+            reportUnresolvedIdentifier(identifier.identifier)
         }
     }
 
@@ -919,20 +912,20 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private inline fun bindScope(classPath: Token, ownerClassTypeInfo: TypeInfo.Class? = null, insideImpl: Boolean = false, crossinline functor: () -> Unit) {
+    private inline fun bindScope(classPath: Token, ownerClassTypeInfo: TypeInfo.Class? = null, staticInnerScope: Boolean = false, crossinline functor: () -> Unit) {
         val previousClassPath = currentClassPath
         val previousScope = currentScope
-        val previousImplFlag = this.insideImpl
+        val previousStaticInnerScopeFlag = isStaticInnerScope
 
         currentClassPath = currentClassPath.append(classPath)
-        currentScope = Scope(currentScope, ownerClassTypeInfo, insideImpl = this.insideImpl)
-        this.insideImpl = insideImpl
+        currentScope = Scope(currentScope, ownerClassTypeInfo, isStaticInnerScope = isStaticInnerScope)
+        isStaticInnerScope = staticInnerScope
 
         functor()
 
         currentClassPath = previousClassPath
         currentScope = previousScope
-        this.insideImpl = previousImplFlag
+        isStaticInnerScope = previousStaticInnerScopeFlag
     }
 
     // REPORTS
@@ -1096,6 +1089,16 @@ class Binder(private val compilationUnit: CompilationUnit) {
         compilationUnit.reportBuilder
             .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Unknown type $colorizedTypeName")
             .label(span, "Unresolvable type here")
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportUnresolvedIdentifier(identifier: Token) {
+        val colorizedIdentifier = colorize(identifier.literal, compilationUnit, Attribute.RED_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(SpanHelper.expandView(identifier.span, compilationUnit.maxLineCount), "Unknown identifier $colorizedIdentifier")
+            .label(identifier.span, "Unresolved identifier here")
             .color(Attribute.RED_TEXT())
             .build().build()
     }

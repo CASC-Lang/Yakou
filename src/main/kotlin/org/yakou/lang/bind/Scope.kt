@@ -6,8 +6,8 @@ class Scope(internal val table: Table, internal val ownerClass: TypeInfo.Class? 
     val typeVariables: MutableMap<String, TypeInfo.GenericConstraint> = mutableMapOf()
     val variables: VariableList = VariableList()
 
-    constructor(scope: Scope, ownerClass: TypeInfo.Class? = scope.ownerClass, isStaticScope: Boolean = true, insideImpl: Boolean = false) : this(scope.table, ownerClass, isStaticScope) {
-        if (!insideImpl) {
+    constructor(scope: Scope, ownerClass: TypeInfo.Class? = scope.ownerClass, isStaticScope: Boolean = true, isStaticInnerScope: Boolean = false) : this(scope.table, ownerClass, isStaticScope) {
+        if (!isStaticInnerScope) {
             typeVariables += scope.typeVariables
             variables += scope.variables
         }
