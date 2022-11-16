@@ -25,7 +25,7 @@ sealed class Path : AstNode {
 
             pathSegments += TokenPath(token)
 
-            return SimplePath(pathSegments, separator)
+            return copy(pathSegments = pathSegments)
         }
 
         fun append(path: SimplePath): SimplePath {
@@ -33,7 +33,7 @@ sealed class Path : AstNode {
 
             pathSegments += path
 
-            return SimplePath(pathSegments, separator)
+            return copy(pathSegments = pathSegments)
         }
 
         override fun toString(): String =
