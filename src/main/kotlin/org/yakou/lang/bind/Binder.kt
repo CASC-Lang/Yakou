@@ -912,6 +912,23 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
     }
 
+    private fun bindType(type: Type): TypeInfo {
+        val resolver = TypeResolver(currentScope, table)
+        val typeInfo = resolver.resolveType(type)
+
+        return if (typeInfo == null) {
+            // Unknown type
+            val span = type.span
+            val typeName = type.standardizeType()
+
+            reportUnresolvedType(typeName, span)
+
+            TypeInfo.Primitive.UNIT_TYPE_INFO
+        } else {
+            typeInfo
+        }
+    }
+
     private inline fun bindScope(classPath: Token, ownerClassTypeInfo: TypeInfo.Class? = null, staticInnerScope: Boolean = false, crossinline functor: () -> Unit) {
         val previousClassPath = currentClassPath
         val previousScope = currentScope
@@ -1064,23 +1081,6 @@ class Binder(private val compilationUnit: CompilationUnit) {
             .label(duplicatedSpan, "Variable redeclared here")
             .color(Attribute.RED_TEXT())
             .build().build()
-    }
-
-    private fun bindType(type: Type): TypeInfo {
-        val resolver = TypeResolver(currentScope, table)
-        val typeInfo = resolver.resolveType(type)
-
-        return if (typeInfo == null) {
-            // Unknown type
-            val span = type.span
-            val typeName = type.standardizeType()
-
-            reportUnresolvedType(typeName, span)
-
-            TypeInfo.Primitive.UNIT_TYPE_INFO
-        } else {
-            typeInfo
-        }
     }
 
     private fun reportUnresolvedType(typeName: String, span: Span) {
