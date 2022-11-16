@@ -5,6 +5,7 @@ import org.objectweb.asm.Opcodes
 sealed class Modifier(val flag: Int) {
     object Inline : Modifier(0)
     object Mut : Modifier(-Opcodes.ACC_FINAL)
+    object Inner : Modifier(0)
 
     sealed class AccessModifier(flag: Int) : Modifier(flag)
 
