@@ -17,8 +17,8 @@ sealed class Path : AstNode {
             pathSegments.firstOrNull()?.span?.expand(pathSegments.lastOrNull()?.span)
         }
 
-        constructor(vararg pathTokens: Token, separator: String = "::")
-                : this(pathTokens.map(::TokenPath), separator)
+        constructor(vararg pathTokens: Token, separator: String = "::") :
+            this(pathTokens.map(::TokenPath), separator)
 
         fun append(token: Token): SimplePath {
             val pathSegments = pathSegments.toMutableList()

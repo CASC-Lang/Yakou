@@ -20,7 +20,6 @@ import org.yakou.lang.ast.FunctionBody
 import org.yakou.lang.ast.Impl
 import org.yakou.lang.ast.ImplItem
 import org.yakou.lang.ast.Item
-import org.yakou.lang.ast.Modifier
 import org.yakou.lang.ast.Package
 import org.yakou.lang.ast.PrimaryConstructor
 import org.yakou.lang.ast.Return
@@ -692,7 +691,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
         when {
             (leftType is TypeInfo.Class && rightType is TypeInfo.Class) ||
-                    (leftType is TypeInfo.Array && rightType is TypeInfo.Array) -> {
+                (leftType is TypeInfo.Array && rightType is TypeInfo.Array) -> {
                 genObjectReferentialEquality(methodVisitor, invert)
             }
 
