@@ -371,6 +371,8 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
     private fun bindGenericDeclarationParameter(genericDeclarationParameter: GenericDeclarationParameters.GenericDeclarationParameter) {
         if (genericDeclarationParameter is GenericDeclarationParameters.ConstraintGenericDeclarationParameter) {
+            currentScope.addTypeVariable(genericDeclarationParameter.genericConstraint)
+
             for (bound in genericDeclarationParameter.constraints) {
                 val boundType = bindType(bound)
 

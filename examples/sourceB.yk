@@ -1,9 +1,11 @@
 pkg chaos {
-    class T
+    class T[S]
 
-    impl T {
-        class K
+    impl[S] T[S] {
+        class K[T]
 
-        impl K
+        impl[T] K[T] {
+            fn test[KS <: S, KT <: T](_k: KS, _t: KT) {}
+        }
     }
 }
