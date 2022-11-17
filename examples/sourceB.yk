@@ -2,14 +2,10 @@ pkg chaos {
     class T[S]
 
     impl[S] T[S] {
-        const a: i32 = 1
+        class K[T]
 
-        class K[T] {
-            a: i32 = a
-        }
-
-        impl[T] K[T] {
-            fn test[KS <: S, KT <: T](_k: KS, _t: KT) {}
+        inner impl[T] K[T] {
+            fn test[KT <: T](_t: KT) {}
         }
     }
 }

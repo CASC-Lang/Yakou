@@ -2,7 +2,30 @@ package org.yakou.lang.checker
 
 import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Attribute
-import org.yakou.lang.ast.*
+import org.yakou.lang.ast.Block
+import org.yakou.lang.ast.Class
+import org.yakou.lang.ast.ClassItem
+import org.yakou.lang.ast.Const
+import org.yakou.lang.ast.Expression
+import org.yakou.lang.ast.ExpressionStatement
+import org.yakou.lang.ast.Field
+import org.yakou.lang.ast.For
+import org.yakou.lang.ast.Func
+import org.yakou.lang.ast.FunctionBody
+import org.yakou.lang.ast.GenericDeclarationParameters
+import org.yakou.lang.ast.Impl
+import org.yakou.lang.ast.ImplItem
+import org.yakou.lang.ast.Item
+import org.yakou.lang.ast.Modifier
+import org.yakou.lang.ast.Package
+import org.yakou.lang.ast.PrimaryConstructor
+import org.yakou.lang.ast.Return
+import org.yakou.lang.ast.Statement
+import org.yakou.lang.ast.StaticField
+import org.yakou.lang.ast.Token
+import org.yakou.lang.ast.Type
+import org.yakou.lang.ast.VariableDeclaration
+import org.yakou.lang.ast.YkFile
 import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.bind.Table
 import org.yakou.lang.bind.TypeChecker
@@ -229,6 +252,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
     }
 
     private fun checkImpl(impl: Impl) {
+        checkImplModifiers(impl)
         checkImplGenericSameAsOwnerClassGeneric(impl)
 
         if (impl.implItems != null) {
@@ -277,6 +301,28 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 genericDeclarationParameters,
                 genericConstraints
             )
+        }
+    }
+
+    private fun checkImplModifiers(impl: Impl) {
+        val modifiers = impl.modifiers
+
+        for ((modifier, span) in modifiers.modifierMap) {
+            when (modifier) {
+                Modifier.Inline -> reportIllegalInline(
+                    span,
+                    "Impl cannot be inlined"
+                )
+                Modifier.Mut -> reportIllegalMut(
+                    span,
+                    "Impl cannot be mutable"
+                )
+                Modifier.Inner -> reportIllegalInner(
+                    span,
+                    "Impl cannot be inner"
+                )
+                else -> {}
+            }
         }
     }
 
@@ -431,10 +477,12 @@ class Checker(private val compilationUnit: CompilationUnit) {
         val innerImplGenericConstraintsLiteral = genericDeclarationParameters?.parameters
             ?.map(GenericDeclarationParameters.GenericDeclarationParameter::genericConstraint)
             ?.joinToString(transform = TypeInfo.GenericConstraint::toString) ?: ""
-        val implGenericConstraintsLiteral = colorize("[$innerImplGenericConstraintsLiteral]", compilationUnit, Attribute.RED_TEXT())
+        val implGenericConstraintsLiteral =
+            colorize("[$innerImplGenericConstraintsLiteral]", compilationUnit, Attribute.RED_TEXT())
         val innerClassGenericConstraintsLiteral =
             classGenericConstraints.joinToString(transform = TypeInfo.GenericConstraint::toString)
-        val classGenericConstraintsLiteral = colorize("[$innerClassGenericConstraintsLiteral]", compilationUnit, Attribute.CYAN_TEXT())
+        val classGenericConstraintsLiteral =
+            colorize("[$innerClassGenericConstraintsLiteral]", compilationUnit, Attribute.CYAN_TEXT())
 
         compilationUnit.reportBuilder
             .error(
@@ -596,6 +644,16 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
         compilationUnit.reportBuilder
             .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Illegal modifier `$mutLiteral`")
+            .label(span, labelMessage)
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
+
+    private fun reportIllegalInner(span: Span, labelMessage: String) {
+        val innerLiteral = colorize("mut", compilationUnit, Attribute.RED_TEXT())
+
+        compilationUnit.reportBuilder
+            .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Illegal modifier `$innerLiteral`")
             .label(span, labelMessage)
             .color(Attribute.RED_TEXT())
             .build().build()
