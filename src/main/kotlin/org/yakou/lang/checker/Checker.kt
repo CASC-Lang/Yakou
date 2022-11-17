@@ -650,7 +650,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
     }
 
     private fun reportIllegalInner(span: Span, labelMessage: String) {
-        val innerLiteral = colorize("mut", compilationUnit, Attribute.RED_TEXT())
+        val innerLiteral = colorize("inner", compilationUnit, Attribute.RED_TEXT())
 
         compilationUnit.reportBuilder
             .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Illegal modifier `$innerLiteral`")
