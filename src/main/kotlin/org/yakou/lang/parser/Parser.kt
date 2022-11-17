@@ -10,6 +10,7 @@ import org.yakou.lang.util.colorize
 class Parser(private val compilationUnit: CompilationUnit) {
     private val tokens: List<Token> = compilationUnit.tokens ?: listOf()
     private var pos: Int = 0
+    private var lastRecoverSteps: Int = 0
 
     private var optionalExpression: Boolean = false
 
@@ -134,12 +135,9 @@ class Parser(private val compilationUnit: CompilationUnit) {
             if (optExpectType(TokenType.OpenParenthesis)) {
                 parsePrimaryConstructor(primaryConstructorModifiers)
             } else {
-                if (!primaryConstructorModifiers.isEmpty()) {
-                    reportUnusedModifiers(
-                        primaryConstructorModifiers,
-                        "Expected primary constructor after modifiers but got class block"
-                    )
-                }
+                // Recover modifiers
+                recover()
+
                 null
             }
         val colon: Token?
@@ -960,6 +958,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun parseModifiers(mute: Boolean = false): Modifiers {
+        var recoverStep = 0
         val modifiers = Modifiers()
 
         while (pos < tokens.size) {
@@ -976,7 +975,9 @@ class Parser(private val compilationUnit: CompilationUnit) {
                             // Duplication
                             reportModifierDuplication(modifiers[Modifier.PubPkg]!!, modifierSpan)
                         }
+
                         consume(4)
+                        recoverStep += 4
                     } else {
                         // `pub`
                         val span = next()!!.span
@@ -997,6 +998,8 @@ class Parser(private val compilationUnit: CompilationUnit) {
                                 .color(Attribute.CYAN_TEXT())
                                 .build().build()
                         }
+
+                        recoverStep += 1
                     }
                 }
 
@@ -1008,6 +1011,8 @@ class Parser(private val compilationUnit: CompilationUnit) {
                         // Duplication
                         reportModifierDuplication(modifiers[Modifier.Priv]!!, span)
                     }
+
+                    recoverStep += 1
                 }
 
                 optExpectKeyword(Keyword.PROT) -> {
@@ -1018,6 +1023,8 @@ class Parser(private val compilationUnit: CompilationUnit) {
                         // Duplication
                         reportModifierDuplication(modifiers[Modifier.Prot]!!, span)
                     }
+
+                    recoverStep += 1
                 }
 
                 optExpectKeyword(Keyword.INLINE) -> {
@@ -1028,6 +1035,8 @@ class Parser(private val compilationUnit: CompilationUnit) {
                         // Duplication
                         reportModifierDuplication(modifiers[Modifier.Inline]!!, span)
                     }
+
+                    recoverStep += 1
                 }
 
                 optExpectKeyword(Keyword.MUT) -> {
@@ -1038,11 +1047,27 @@ class Parser(private val compilationUnit: CompilationUnit) {
                         // Duplication
                         reportModifierDuplication(modifiers[Modifier.Mut]!!, span)
                     }
+
+                    recoverStep += 1
+                }
+
+                optExpectKeyword(Keyword.INNER) -> {
+                    // `inner`
+                    val span = next()!!.span
+
+                    if (!modifiers.set(Modifier.Inner, span)) {
+                        // Duplication
+                        reportModifierDuplication(modifiers[Modifier.Inner]!!, span)
+                    }
+
+                    recoverStep += 1
                 }
 
                 else -> break // Not a modifier
             }
         }
+
+        this.lastRecoverSteps = recoverStep
 
         return modifiers
     }
@@ -1113,6 +1138,11 @@ class Parser(private val compilationUnit: CompilationUnit) {
         } else {
             tokens.lastOrNull()
         }
+
+    private fun recover() {
+        pos -= lastRecoverSteps
+        lastRecoverSteps = 0
+    }
 
     private fun reportUnusedModifiers(modifiers: Modifiers, message: String) {
         compilationUnit.reportBuilder
