@@ -134,7 +134,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     const.typeInfo,
                     static = true,
                     isConst = true,
-                    const.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline),
+                    const.modifiers.containsKey(org.yakou.lang.ast.Modifier.Inline),
                     const.expression
                 )
 
@@ -157,7 +157,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     staticField.typeInfo,
                     static = true,
                     isConst = false,
-                    staticField.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline),
+                    staticField.modifiers.containsKey(org.yakou.lang.ast.Modifier.Inline),
                     staticField.expression
                 )
 
@@ -178,7 +178,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                 field.typeInfo,
                 static = false,
                 isConst = false,
-                field.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline),
+                field.modifiers.containsKey(org.yakou.lang.ast.Modifier.Inline),
                 field.expression
             )
         }
@@ -267,7 +267,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     function.genericDeclarationParameters?.parameters?.map(GenericDeclarationParameters.GenericDeclarationParameter::genericConstraint) ?: listOf(),
                     function.parameters.map(Parameter::typeInfo),
                     function.returnTypeInfo,
-                    function.modifiers.hasModifier(org.yakou.lang.ast.Modifier.Inline)
+                    function.modifiers.containsKey(org.yakou.lang.ast.Modifier.Inline)
                 )
 
                 fn.ownerTypeInfo = table.findType(fn.qualifiedOwnerPath)!!

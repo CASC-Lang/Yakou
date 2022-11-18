@@ -67,10 +67,8 @@ class Checker(private val compilationUnit: CompilationUnit) {
     }
 
     private fun checkConst(const: Const) {
-        // Check constant has illegal modifiers
-        if (const.modifiers.hasModifier(Modifier.Mut)) {
-            reportIllegalMut(const.modifiers[Modifier.Mut]!!, "Constant cannot be mutable")
-        }
+        // Check if constant has illegal modifiers
+        checkConstModifiers(const)
 
         // Check expression
         checkExpression(const.expression)
@@ -91,23 +89,42 @@ class Checker(private val compilationUnit: CompilationUnit) {
         }
     }
 
+    private fun checkConstModifiers(const: Const) {
+        val modifiers = const.modifiers
+
+        for ((modifier, span) in modifiers) {
+            when (modifier) {
+                Modifier.Mut -> reportIllegalMut(
+                    span,
+                    "Const cannot be mutable"
+                )
+
+                Modifier.Inner -> reportIllegalInner(
+                    span,
+                    "Const cannot be inner"
+                )
+
+                else -> {}
+            }
+        }
+    }
+
     private fun checkStaticField(staticField: StaticField) {
+        // Check if static field has illegal modifiers
+        checkStaticFieldModifiers(staticField)
+
         // Check expression
         checkExpression(staticField.expression)
+
         // Check if expression is not castable to explicit type
         if (staticField.expression.finalType is TypeInfo.Primitive) {
             // Check if it's applicable to convert static field into constant
             if (staticField.expression.finalType is TypeInfo.Primitive &&
                 staticField.expression is Expression.LiteralExpression &&
-                !staticField.modifiers.hasModifier(Modifier.Mut)
+                !staticField.modifiers.containsKey(Modifier.Mut)
             ) {
                 reportStaticFieldAsConstant(staticField)
             }
-        }
-
-        // Check if static field is both mutable and inline-able
-        if (staticField.modifiers.hasModifier(Modifier.Mut) && staticField.modifiers.hasModifier(Modifier.Inline)) {
-            reportMutableStaticFieldIsInlined(staticField)
         }
 
         if (!(staticField.expression.finalType.canImplicitCast(staticField.typeInfo))) {
@@ -121,46 +138,104 @@ class Checker(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun checkClass(clazz: Class) {
-        if (clazz.classItems != null) {
-            for (classItem in clazz.classItems) {
-                checkClassItem(classItem)
+    private fun checkStaticFieldModifiers(staticField: StaticField) {
+        val modifiers = staticField.modifiers
+
+        for ((modifier, span) in modifiers) {
+            when (modifier) {
+                Modifier.Inner -> reportIllegalInner(
+                    span,
+                    "Static field cannot be inner"
+                )
+
+                else -> {}
             }
         }
 
-        if (clazz.modifiers.hasModifier(Modifier.Inline)) {
-            reportIllegalInline(clazz.modifiers[Modifier.Inline]!!, "Class cannot be inlined")
+        // Check if static field is both mutable and inline-able
+        if (modifiers.containsKey(Modifier.Mut) && modifiers.containsKey(Modifier.Inline)) {
+            reportMutableStaticFieldIsInlined(staticField)
         }
+    }
 
-        if (clazz.primaryConstructor != null) {
-            checkPrimaryConstructor(clazz.primaryConstructor)
-        }
+    private fun checkClass(clazz: Class) {
+        // Check if class has illegal modifiers
+        checkClassModifiers(clazz)
 
-        if (clazz.superClassConstructorCall != null) {
-            checkSuperClassConstructorCall(clazz.superClassConstructorCall)
+        clazz.classItems?.forEach(::checkClassItem)
+        clazz.primaryConstructor?.let(::checkPrimaryConstructor)
+        clazz.superClassConstructorCall?.let(::checkSuperClassConstructorCall)
+    }
+
+    private fun checkClassModifiers(clazz: Class) {
+        val modifiers = clazz.modifiers
+
+        for ((modifier, span) in modifiers) {
+            when (modifier) {
+                Modifier.Inline -> reportIllegalInline(
+                    span,
+                    "Class cannot be inlined"
+                )
+
+                else -> {}
+            }
         }
     }
 
     private fun checkPrimaryConstructor(primaryConstructor: PrimaryConstructor) {
-        if (primaryConstructor.modifiers.hasModifier(Modifier.Inline)) {
-            reportIllegalInline(primaryConstructor.modifiers[Modifier.Inline]!!, "Constructor cannot be inlined")
-        }
-
-        if (primaryConstructor.modifiers.hasModifier(Modifier.Mut)) {
-            reportIllegalMut(primaryConstructor.modifiers[Modifier.Inline]!!, "Constructor cannot be mutable")
-        }
+        checkPrimaryConstructorModifiers(primaryConstructor)
 
         for (parameter in primaryConstructor.parameters) {
             checkConstructorParameter(parameter)
         }
     }
 
+    private fun checkPrimaryConstructorModifiers(primaryConstructor: PrimaryConstructor) {
+        val modifiers = primaryConstructor.modifiers
+
+        for ((modifier, span) in modifiers) {
+            when (modifier) {
+                Modifier.Inline -> reportIllegalInline(
+                    span,
+                    "Constructor cannot be inlined"
+                )
+
+                Modifier.Mut -> reportIllegalMut(
+                    span,
+                    "Constructor cannot be mutable"
+                )
+
+                Modifier.Inner -> reportIllegalInner(
+                    span,
+                    "Constructor cannot be inner"
+                )
+
+                else -> {}
+            }
+        }
+    }
+
     private fun checkConstructorParameter(constructorParameter: PrimaryConstructor.ConstructorParameter) {
-        if (constructorParameter.modifiers.hasModifier(Modifier.Inline)) {
-            reportIllegalInline(
-                constructorParameter.modifiers[Modifier.Inline]!!,
-                "Constructor field parameter cannot be inlined"
-            )
+        checkConstructorParameterModifiers(constructorParameter)
+    }
+
+    private fun checkConstructorParameterModifiers(constructorParameter: PrimaryConstructor.ConstructorParameter) {
+        val modifiers = constructorParameter.modifiers
+
+        for ((modifier, span) in modifiers) {
+            when (modifier) {
+                Modifier.Inline -> reportIllegalInline(
+                    span,
+                    "Constructor field parameter cannot be inlined"
+                )
+
+                Modifier.Inner -> reportIllegalInner(
+                    span,
+                    "Constructor field parameter cannot be inner"
+                )
+
+                else -> {}
+            }
         }
     }
 
@@ -195,11 +270,9 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkFunction(function: Func) {
         currentFunction = function
 
-        // Check top-level function has illegal modifiers
         if (function.functionInstance.ownerTypeInfo is TypeInfo.PackageClass) {
-            if (function.modifiers.hasModifier(Modifier.Mut)) {
-                reportIllegalMut(function.modifiers[Modifier.Mut]!!, "Top-level function cannot be mutable")
-            }
+            // Check if top-level function has illegal modifiers
+            checkPackageClassFunctionModifiers(function)
 
             if (function.self != null) {
                 val coloredSelf = colorize("self", compilationUnit, Attribute.CYAN_TEXT())
@@ -218,6 +291,21 @@ class Checker(private val compilationUnit: CompilationUnit) {
         checkControlFlow(function)
 
         currentFunction = null
+    }
+
+    private fun checkPackageClassFunctionModifiers(function: Func) {
+        val modifiers = function.modifiers
+
+        for ((modifier, span) in modifiers) {
+            when (modifier) {
+                Modifier.Mut -> reportIllegalMut(
+                    span,
+                    "Top-level function cannot be mutable"
+                )
+
+                else -> {}
+            }
+        }
     }
 
     private fun checkControlFlow(function: Func) {
@@ -252,7 +340,10 @@ class Checker(private val compilationUnit: CompilationUnit) {
     }
 
     private fun checkImpl(impl: Impl) {
+        // Check if impl has illegal modifiers
         checkImplModifiers(impl)
+
+        // Check if impl has same generic constraint bounds as the owner class does
         checkImplGenericSameAsOwnerClassGeneric(impl)
 
         if (impl.implItems != null) {
@@ -307,20 +398,23 @@ class Checker(private val compilationUnit: CompilationUnit) {
     private fun checkImplModifiers(impl: Impl) {
         val modifiers = impl.modifiers
 
-        for ((modifier, span) in modifiers.modifierMap) {
+        for ((modifier, span) in modifiers) {
             when (modifier) {
                 Modifier.Inline -> reportIllegalInline(
                     span,
                     "Impl cannot be inlined"
                 )
+
                 Modifier.Mut -> reportIllegalMut(
                     span,
                     "Impl cannot be mutable"
                 )
+
                 Modifier.Inner -> reportIllegalInner(
                     span,
                     "Impl cannot be inner"
                 )
+
                 else -> {}
             }
         }
