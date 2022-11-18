@@ -50,14 +50,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
     private fun checkItem(item: Item) {
         when (item) {
-            is Package -> {
-                if (item.items != null) {
-                    for (innerItem in item.items) {
-                        checkItem(innerItem)
-                    }
-                }
-            }
-
+            is Package -> item.items?.forEach(::checkItem)
             is Const -> checkConst(item)
             is StaticField -> checkStaticField(item)
             is Class -> checkClass(item)
@@ -284,9 +277,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             }
         }
 
-        if (function.body != null) {
-            checkFunctionBody(function.body)
-        }
+        function.body?.let(::checkFunctionBody)
 
         checkControlFlow(function)
 
@@ -346,11 +337,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
         // Check if impl has same generic constraint bounds as the owner class does
         checkImplGenericSameAsOwnerClassGeneric(impl)
 
-        if (impl.implItems != null) {
-            for (item in impl.implItems) {
-                checkImplItem(item)
-            }
-        }
+        impl.implItems?.forEach(::checkImplItem)
     }
 
     private fun checkImplGenericSameAsOwnerClassGeneric(impl: Impl) {
