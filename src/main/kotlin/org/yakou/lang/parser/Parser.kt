@@ -1171,7 +1171,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
     }
 
     private fun reportIllegalModifiersInPlace(modifiers: Modifiers) {
-        for ((_, span) in modifiers.modifierMap) {
+        for ((_, span) in modifiers) {
             compilationUnit.reportBuilder
                 .error(
                     SpanHelper.expandView(span, compilationUnit.maxLineCount),

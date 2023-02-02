@@ -19,7 +19,7 @@ data class Field(
     override val span: Span by lazy {
         var finalSpan =
             if (!modifiers.isEmpty()) {
-                modifiers.modifierMap.toList().first().second
+                modifiers.toList().first().second
             } else {
                 identifier.span
             }
