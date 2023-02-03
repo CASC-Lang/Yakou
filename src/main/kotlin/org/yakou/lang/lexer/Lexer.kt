@@ -3,16 +3,14 @@ package org.yakou.lang.lexer
 import chaos.unity.nenggao.Line
 import chaos.unity.nenggao.SourceCache
 import chaos.unity.nenggao.Span
-import com.diogonunes.jcolor.Ansi
-import com.diogonunes.jcolor.Attribute
 import org.yakou.lang.ast.Keyword
 import org.yakou.lang.ast.Token
 import org.yakou.lang.ast.TokenType
 import org.yakou.lang.bind.PrimitiveType
 import org.yakou.lang.compilation.CompilationUnit
-import org.yakou.lang.util.SpanHelper
+import org.yakou.lang.compilation.UnitReporter
 
-class Lexer(private val compilationUnit: CompilationUnit) {
+class Lexer(private val compilationUnit: CompilationUnit) : LeverReporter, UnitReporter by compilationUnit {
     private val lines: List<Line> = SourceCache.INSTANCE.getOrAdd(compilationUnit.sourceFile)
     private lateinit var currentLine: String
     private val tokens: MutableList<Token> = mutableListOf()
@@ -54,7 +52,12 @@ class Lexer(private val compilationUnit: CompilationUnit) {
                             null to null
                         }
 
-                    reportInvalidTypeAnnotation(typeAnnotation, typeAnnotationSpan)
+                    if (typeAnnotation != null && typeAnnotationSpan != null && !PrimitiveType.isNumberType(
+                            typeAnnotation
+                        )
+                    ) {
+                        reportInvalidTypeAnnotation(typeAnnotation, typeAnnotationSpan)
+                    }
 
                     tokens += Token.NumberLiteralToken(
                         null,
@@ -126,7 +129,9 @@ class Lexer(private val compilationUnit: CompilationUnit) {
                 null to null
             }
 
-        reportInvalidTypeAnnotation(typeAnnotation, typeAnnotationSpan)
+        if (typeAnnotation != null && typeAnnotationSpan != null && !PrimitiveType.isNumberType(typeAnnotation)) {
+            reportInvalidTypeAnnotation(typeAnnotation, typeAnnotationSpan)
+        }
 
         tokens += Token.NumberLiteralToken(
             integerLiteral,
@@ -176,6 +181,7 @@ class Lexer(private val compilationUnit: CompilationUnit) {
                 '=' -> stringToken(TokenType.ColonEqual)
                 else -> charToken(TokenType.Colon)
             }
+
             ';' -> charToken(TokenType.SemiColon)
             ',' -> charToken(TokenType.Comma)
             '.' -> charToken(TokenType.Dot)
@@ -184,38 +190,47 @@ class Lexer(private val compilationUnit: CompilationUnit) {
                     '=' -> stringToken(TokenType.BangDoubleEqual)
                     else -> stringToken(TokenType.BangEqual)
                 }
+
                 else -> charToken(TokenType.Bang)
             }
+
             '=' -> when (peek(1)) {
                 '=' -> when (peek(2)) {
                     '=' -> stringToken(TokenType.TripleEqual)
                     else -> stringToken(TokenType.DoubleEqual)
                 }
+
                 else -> charToken(TokenType.Equal)
             }
+
             '|' -> when (peek(1)) {
                 '|' -> stringToken(TokenType.DoublePipe)
                 else -> charToken(TokenType.Pipe)
             }
+
             '&' -> when (peek(1)) {
                 '&' -> stringToken(TokenType.DoubleAmpersand)
                 else -> charToken(TokenType.Ampersand)
             }
+
             '>' -> when (peek(1)) {
                 '>' -> when (peek(2)) {
                     '>' -> stringToken(TokenType.TripleGreater)
                     else -> stringToken(TokenType.DoubleGreater)
                 }
+
                 ':' -> stringToken(TokenType.GreaterColon)
                 '=' -> stringToken(TokenType.GreaterEqual)
                 else -> charToken(TokenType.Greater)
             }
+
             '<' -> when (peek(1)) {
                 '<' -> stringToken(TokenType.DoubleLesser)
                 ':' -> stringToken(TokenType.LesserColon)
                 '=' -> stringToken(TokenType.LesserEqual)
                 else -> charToken(TokenType.Lesser)
             }
+
             '~' -> charToken(TokenType.Tilde)
             '^' -> charToken(TokenType.Hat)
             '+' -> when (peek(1)) {
@@ -223,34 +238,19 @@ class Lexer(private val compilationUnit: CompilationUnit) {
                 ':' -> stringToken(TokenType.PlusColon)
                 else -> charToken(TokenType.Plus)
             }
+
             '-' -> when (peek(1)) {
                 '-' -> stringToken(TokenType.DoubleMinus)
                 ':' -> stringToken(TokenType.MinusColon)
                 '>' -> stringToken(TokenType.Arrow)
                 else -> charToken(TokenType.Minus)
             }
+
             '*' -> charToken(TokenType.Star)
             '/' -> charToken(TokenType.Slash)
             '%' -> charToken(TokenType.Percentage)
             else -> {
-                val currentSpan = currentSpan()
-                val colorizedCharacter =
-                    if (compilationUnit.preference.enableColor) {
-                        Ansi.colorize(
-                            currentLine[pos++].toString(),
-                            Attribute.CYAN_TEXT()
-                        )
-                    } else {
-                        currentLine[pos++].toString()
-                    }
-
-                compilationUnit.reportBuilder.error(
-                    SpanHelper.expandView(currentSpan, lines.size),
-                    "Unknown character `$colorizedCharacter`"
-                )
-                    .label(currentSpan, "This character is unable to be lexical analyzed")
-                    .color(Attribute.RED_TEXT())
-                    .build().build()
+                reportUnexpectedCharacter(currentLine[pos++].toString(), currentSpan())
             }
         }
     }
@@ -266,18 +266,6 @@ class Lexer(private val compilationUnit: CompilationUnit) {
             Span.singleLine(line + 1, pos, pos + type.size())
         )
         pos += type.size()
-    }
-
-    private fun reportInvalidTypeAnnotation(typeAnnotation: String?, typeAnnotationSpan: Span?) {
-        if (typeAnnotation != null && typeAnnotationSpan != null && !PrimitiveType.isNumberType(typeAnnotation)) {
-            compilationUnit.reportBuilder.error(
-                SpanHelper.expandView(typeAnnotationSpan, lines.size),
-                "Unknown type annotation $typeAnnotation"
-            )
-                .label(typeAnnotationSpan, "Only `i8`, `i16`, `i32`, `i64`, `f32` and `f64` are allowed.")
-                .color(Attribute.RED_TEXT())
-                .build().build()
-        }
     }
 
     private fun peek(offset: Int = 0): Char? =

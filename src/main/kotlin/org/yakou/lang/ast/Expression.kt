@@ -113,6 +113,18 @@ sealed class Expression : AstNode {
             leftParenthesis.span.expand(rightParenthesis.span)
         }
     }
+    
+    class New(
+        val new: Token,
+        val className: Type,
+        val leftParenthesis: Token,
+        val arguments: List<Argument>,
+        val rightParenthesis: Token
+    ) : Expression() {
+        override val span: Span by lazy {
+            new.span.expand(rightParenthesis.span)
+        }
+    }
 
     sealed class LiteralExpression : Expression()
 

@@ -13,16 +13,23 @@ import org.yakou.lang.optimizer.Optimizer
 import org.yakou.lang.parser.Parser
 import java.io.File
 
-class CompilationUnit(val sourceFile: File, val session: CompilationSession) {
-    val preference: AbstractPreference = session.preference
-    val maxLineCount = SourceCache.INSTANCE.getOrAdd(sourceFile).size
+class CompilationUnit(val sourceFile: File, val session: CompilationSession): UnitReporter {
     val reportBuilder: FileReportBuilder = FileReportBuilder.sourceFile(sourceFile)
-        .enableColor(preference.enableColor)
-        .characterSet(if (preference.useAscii) CharacterSet.ASCII else CharacterSet.UNICODE)
-        .relativePath(preference.sourceFile!!.toPath())
+        .enableColor(preference().enableColor)
+        .characterSet(if (preference().useAscii) CharacterSet.ASCII else CharacterSet.UNICODE)
+        .relativePath(preference().sourceFile!!.toPath())
     var tokens: List<Token>? = null
     var ykFile: YkFile? = null
     private lateinit var binder: Binder
+
+    override fun preference(): AbstractPreference =
+        session.preference
+    
+    override fun reporter(): FileReportBuilder =
+        reportBuilder
+    
+    override fun maxLineCount(): Int =
+        SourceCache.INSTANCE.getOrAdd(sourceFile).size
 
     fun lex(): Boolean {
         tokens = Lexer(this).lex()
@@ -57,7 +64,7 @@ class CompilationUnit(val sourceFile: File, val session: CompilationSession) {
 
     private fun dumpReportStatus(): Boolean {
         val hasError = reportBuilder.containsError()
-        reportBuilder.dump(preference.outputStream)
+        reportBuilder.dump(preference().outputStream)
         return !hasError
     }
 }

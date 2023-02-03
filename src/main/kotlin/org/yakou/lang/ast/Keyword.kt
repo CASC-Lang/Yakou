@@ -17,6 +17,7 @@ enum class Keyword(val literal: String) {
     SELF_TYPE("Self"),
     LET("let"),
     AS("as"),
+    NEW("new"),
     TRUE("true"),
     FALSE("false"),
     RETURN("return"),

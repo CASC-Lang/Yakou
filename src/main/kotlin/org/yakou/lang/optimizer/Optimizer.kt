@@ -139,6 +139,7 @@ class Optimizer(private val compilationUnit: CompilationUnit) {
         is Expression.Identifier -> optimizeIdentifier(expression)
         is Expression.As -> optimizeAs(expression)
         is Expression.Parenthesized -> optimizeParenthesized(expression)
+        is Expression.New -> optimizeNew(expression)
         is Expression.BoolLiteral -> expression
         is Expression.NumberLiteral -> expression
         is Expression.Empty -> expression
@@ -335,6 +336,10 @@ class Optimizer(private val compilationUnit: CompilationUnit) {
     private fun optimizeParenthesized(expression: Expression.Parenthesized): Expression {
         expression.expression = optimizeExpression(expression.expression)
 
+        return expression
+    }
+    
+    private fun optimizeNew(expression: Expression.New): Expression.New {
         return expression
     }
 

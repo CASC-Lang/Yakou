@@ -1,13 +1,42 @@
 package org.yakou.lang.parser
 
-import chaos.unity.nenggao.Span
-import com.diogonunes.jcolor.Attribute
-import org.yakou.lang.ast.*
+import org.yakou.lang.ast.Argument
+import org.yakou.lang.ast.Block
+import org.yakou.lang.ast.Class
+import org.yakou.lang.ast.ClassItem
+import org.yakou.lang.ast.Const
+import org.yakou.lang.ast.Expression
+import org.yakou.lang.ast.ExpressionStatement
+import org.yakou.lang.ast.Field
+import org.yakou.lang.ast.For
+import org.yakou.lang.ast.Func
+import org.yakou.lang.ast.FunctionBody
+import org.yakou.lang.ast.GenericDeclarationParameters
+import org.yakou.lang.ast.GenericParameter
+import org.yakou.lang.ast.GenericParameters
+import org.yakou.lang.ast.Impl
+import org.yakou.lang.ast.ImplItem
+import org.yakou.lang.ast.Item
+import org.yakou.lang.ast.Keyword
+import org.yakou.lang.ast.Modifier
+import org.yakou.lang.ast.Modifiers
+import org.yakou.lang.ast.Package
+import org.yakou.lang.ast.Parameter
+import org.yakou.lang.ast.Path
+import org.yakou.lang.ast.PrimaryConstructor
+import org.yakou.lang.ast.Return
+import org.yakou.lang.ast.Statement
+import org.yakou.lang.ast.StaticField
+import org.yakou.lang.ast.Token
+import org.yakou.lang.ast.TokenType
+import org.yakou.lang.ast.Type
+import org.yakou.lang.ast.VariableDeclaration
+import org.yakou.lang.ast.YkFile
 import org.yakou.lang.compilation.CompilationUnit
-import org.yakou.lang.util.SpanHelper
-import org.yakou.lang.util.colorize
+import org.yakou.lang.compilation.UnitReporter
 
-class Parser(private val compilationUnit: CompilationUnit) {
+class Parser(private val compilationUnit: CompilationUnit) : ParserReporter,
+    UnitReporter by compilationUnit {
     private val tokens: List<Token> = compilationUnit.tokens ?: listOf()
     private var pos: Int = 0
     private var lastRecoverSteps: Int = 0
@@ -51,7 +80,15 @@ class Parser(private val compilationUnit: CompilationUnit) {
             optExpectKeyword(Keyword.IMPL) -> parseImpl(modifiers)
             optExpectKeyword(Keyword.FN) -> parseFunction(modifiers)
             else -> {
-                reportUnexpectedToken(next()!!, Keyword.PKG, Keyword.CONST, Keyword.STATIC, Keyword.CLASS, Keyword.IMPL, Keyword.FN)
+                reportUnexpectedToken(
+                    next()!!,
+                    Keyword.PKG,
+                    Keyword.CONST,
+                    Keyword.STATIC,
+                    Keyword.CLASS,
+                    Keyword.IMPL,
+                    Keyword.FN
+                )
 
                 null
             }
@@ -208,7 +245,16 @@ class Parser(private val compilationUnit: CompilationUnit) {
             closeBrace = null
         }
 
-        return Impl(modifiers, impl, genericDeclarationParameters, identifier, genericParameters, openBrace, implItems, closeBrace)
+        return Impl(
+            modifiers,
+            impl,
+            genericDeclarationParameters,
+            identifier,
+            genericParameters,
+            openBrace,
+            implItems,
+            closeBrace
+        )
     }
 
     private fun parseImplItems(): List<ImplItem> {
@@ -727,6 +773,22 @@ class Parser(private val compilationUnit: CompilationUnit) {
             )
         }
 
+        optExpectKeyword(Keyword.NEW) -> {
+            val new = next()!!
+            val classType = parseType()
+            val leftParenthesis = next()!!
+            val arguments = parseArguments()
+            val rightParenthesis = expect(TokenType.CloseParenthesis)
+
+            Expression.New(
+                new,
+                classType,
+                leftParenthesis,
+                arguments,
+                rightParenthesis
+            )
+        }
+
         else -> parseLiteralExpression()
     }
 
@@ -792,10 +854,10 @@ class Parser(private val compilationUnit: CompilationUnit) {
 
         while (pos < tokens.size &&
             (
-                optExpectType(TokenType.Identifier) ||
-                    optExpectType(TokenType.Plus) ||
-                    optExpectType(TokenType.Minus)
-                )
+                    optExpectType(TokenType.Identifier) ||
+                            optExpectType(TokenType.Plus) ||
+                            optExpectType(TokenType.Minus)
+                    )
         ) {
             parameters += parseGenericDeclarationParameter()
 
@@ -987,16 +1049,7 @@ class Parser(private val compilationUnit: CompilationUnit) {
                             reportModifierDuplication(modifiers[Modifier.Pub]!!, span)
                         } else if (!mute) {
                             // Warning about modifiers contains `pub` access modifier by default (it's hidden though)
-                            val pubLiteral = colorize("pub", compilationUnit, Attribute.CYAN_TEXT())
-
-                            compilationUnit.reportBuilder
-                                .warning(
-                                    SpanHelper.expandView(span, compilationUnit.maxLineCount),
-                                    "Redundant `$pubLiteral` access modifier"
-                                )
-                                .label(span, "Access modifier is `$pubLiteral` by default")
-                                .color(Attribute.CYAN_TEXT())
-                                .build().build()
+                            reportRedundantModifier(Modifier.Pub, modifiers[Modifier.Pub]!!)
                         }
 
                         recoverStep += 1
@@ -1142,124 +1195,5 @@ class Parser(private val compilationUnit: CompilationUnit) {
     private fun recover() {
         pos -= lastRecoverSteps
         lastRecoverSteps = 0
-    }
-
-    private fun reportUnusedModifiers(modifiers: Modifiers, message: String) {
-        compilationUnit.reportBuilder
-            .warning(
-                SpanHelper.expandView(modifiers.span!!, compilationUnit.maxLineCount),
-                "Unused modifiers in current context"
-            )
-            .label(modifiers.span!!, message)
-            .color(Attribute.CYAN_TEXT())
-            .hint("It's safe to remove")
-            .build().build()
-    }
-
-    private fun reportModifierDuplication(firstSpan: Span, duplicatedSpan: Span) {
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(firstSpan.expand(duplicatedSpan), compilationUnit.maxLineCount),
-                "Modifier duplicated"
-            )
-            .label(firstSpan, "First encountered here")
-            .color(Attribute.CYAN_TEXT())
-            .build()
-            .label(duplicatedSpan, "Duplicated here")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportIllegalModifiersInPlace(modifiers: Modifiers) {
-        for ((_, span) in modifiers) {
-            compilationUnit.reportBuilder
-                .error(
-                    SpanHelper.expandView(span, compilationUnit.maxLineCount),
-                    "Illegal modifier in current context"
-                )
-                .label(span, "Illegal modifier")
-                .color(Attribute.RED_TEXT())
-                .build().build()
-        }
-    }
-
-    private fun reportUnexpectedToken(originalToken: Token) {
-        val originalTokenLiteral = originalToken.colorizeTokenType(compilationUnit.preference, Attribute.RED_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(originalToken.span, compilationUnit.maxLineCount),
-                "Unexpected token $originalTokenLiteral"
-            )
-            .label(originalToken.span, "Unexpected token here")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportUnexpectedToken(originalToken: Token?, syntheticToken: Token): Token {
-        val originalTokenLiteral = originalToken?.colorizeTokenType(compilationUnit.preference, Attribute.RED_TEXT())
-        val syntheticTokenLiteral = syntheticToken.colorizeTokenType(compilationUnit.preference, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(syntheticToken.span, compilationUnit.maxLineCount),
-                "Unexpected token%s",
-                originalToken?.let { " $originalTokenLiteral" }.orEmpty()
-            )
-            .label(syntheticToken.span, "Expected $syntheticTokenLiteral")
-            .color(Attribute.CYAN_TEXT())
-            .build().build()
-
-        return syntheticToken
-    }
-
-    /**
-     * Consume current token and report it, this does not generate a synthetic token since there's more than 1 choices.
-     */
-    private fun reportUnexpectedToken(
-        originalToken: Token,
-        acceptableType: TokenType,
-        vararg additionalTypes: TokenType
-    ) {
-        val originalTokenLiteral = originalToken.colorizeTokenType(compilationUnit.preference, Attribute.RED_TEXT())
-        val acceptableTokenLiteral = arrayOf(acceptableType, *additionalTypes)
-            .joinToString(prefix = "Expected ") {
-                it.colorizeLiteral(
-                    compilationUnit.preference,
-                    Attribute.CYAN_TEXT()
-                )
-            }
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(originalToken.span, compilationUnit.maxLineCount),
-                "Unexpected token %s",
-                originalTokenLiteral
-            )
-            .label(originalToken.span, acceptableTokenLiteral)
-            .color(Attribute.CYAN_TEXT())
-            .build().build()
-    }
-
-    private fun reportUnexpectedToken(
-        originalToken: Token,
-        acceptableKeyword: Keyword,
-        vararg additionalKeyword: Keyword
-    ) {
-        val originalTokenLiteral = originalToken.colorizeTokenType(compilationUnit.preference, Attribute.RED_TEXT())
-        val acceptableTokenLiteral = arrayOf(acceptableKeyword, *additionalKeyword)
-            .joinToString(prefix = "Expected ") {
-                "`${colorize(it.literal, compilationUnit, Attribute.CYAN_TEXT())}`"
-            }
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(originalToken.span, compilationUnit.maxLineCount),
-                "Unexpected token %s",
-                originalTokenLiteral
-            )
-            .label(originalToken.span, acceptableTokenLiteral)
-            .color(Attribute.CYAN_TEXT())
-            .build().build()
     }
 }

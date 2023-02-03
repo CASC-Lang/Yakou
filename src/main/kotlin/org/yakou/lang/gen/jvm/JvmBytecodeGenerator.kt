@@ -476,6 +476,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             is Expression.Identifier -> genIdentifier(methodVisitor, expression)
             is Expression.As -> genAs(methodVisitor, expression)
             is Expression.Parenthesized -> genExpression(methodVisitor, expression.expression)
+            is Expression.New -> genNew(methodVisitor, expression)
             is Expression.BoolLiteral -> genBoolLiteral(methodVisitor, expression)
             is Expression.NumberLiteral -> genNumberLiteral(methodVisitor, expression)
             is Expression.Empty -> {}
@@ -818,6 +819,10 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         } else if (originalType is TypeInfo.Class && finalType is TypeInfo.Class) {
             methodVisitor.visitTypeInsn(Opcodes.CHECKCAST, finalType.internalName)
         }
+    }
+    
+    private fun genNew(methodVisitor: MethodVisitor, new: Expression.New) {
+        TODO()
     }
 
     private fun genBoolLiteral(methodVisitor: MethodVisitor, boolLiteral: Expression.BoolLiteral) {

@@ -1,6 +1,5 @@
 package org.yakou.lang.checker
 
-import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Attribute
 import org.yakou.lang.ast.Block
 import org.yakou.lang.ast.Class
@@ -22,8 +21,6 @@ import org.yakou.lang.ast.PrimaryConstructor
 import org.yakou.lang.ast.Return
 import org.yakou.lang.ast.Statement
 import org.yakou.lang.ast.StaticField
-import org.yakou.lang.ast.Token
-import org.yakou.lang.ast.Type
 import org.yakou.lang.ast.VariableDeclaration
 import org.yakou.lang.ast.YkFile
 import org.yakou.lang.bind.PrimitiveType
@@ -31,10 +28,9 @@ import org.yakou.lang.bind.Table
 import org.yakou.lang.bind.TypeChecker
 import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.compilation.CompilationUnit
-import org.yakou.lang.util.SpanHelper
-import org.yakou.lang.util.colorize
+import org.yakou.lang.compilation.UnitReporter
 
-class Checker(private val compilationUnit: CompilationUnit) {
+class Checker(private val compilationUnit: CompilationUnit) : CheckerReporter, UnitReporter by compilationUnit {
     private val table: Table = compilationUnit.session.table
     private var currentFunction: Func? = null
 
@@ -268,7 +264,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             checkPackageClassFunctionModifiers(function)
 
             if (function.self != null) {
-                val coloredSelf = colorize("self", compilationUnit, Attribute.CYAN_TEXT())
+                val coloredSelf = colorize("self", Attribute.CYAN_TEXT())
 
                 reportIllegalSelf(
                     function.self.span.expand(function.selfComma?.span),
@@ -484,6 +480,7 @@ class Checker(private val compilationUnit: CompilationUnit) {
             is Expression.Identifier -> checkIdentifier(expression)
             is Expression.As -> checkAs(expression)
             is Expression.Parenthesized -> checkExpression(expression.expression)
+            is Expression.New -> checkNew(expression)
             is Expression.BoolLiteral -> {}
             is Expression.NumberLiteral -> checkNumberLiteral(expression)
             is Expression.Empty -> {}
@@ -514,6 +511,10 @@ class Checker(private val compilationUnit: CompilationUnit) {
 
             else -> {}
         }
+    }
+    
+    private fun checkNew(new: Expression.New) {
+        TODO()
     }
 
     private fun checkNumberLiteral(numberLiteral: Expression.NumberLiteral) {
@@ -546,293 +547,5 @@ class Checker(private val compilationUnit: CompilationUnit) {
                 }
             }
         }
-    }
-
-    // REPORTS
-
-    private fun reportUnmatchedGenericDeclarationParameters(
-        implIdentifierSpan: Span,
-        genericDeclarationParameters: GenericDeclarationParameters?,
-        classGenericConstraints: List<TypeInfo.GenericConstraint>
-    ) {
-        val innerImplGenericConstraintsLiteral = genericDeclarationParameters?.parameters
-            ?.map(GenericDeclarationParameters.GenericDeclarationParameter::genericConstraint)
-            ?.joinToString(transform = TypeInfo.GenericConstraint::toString) ?: ""
-        val implGenericConstraintsLiteral =
-            colorize("[$innerImplGenericConstraintsLiteral]", compilationUnit, Attribute.RED_TEXT())
-        val innerClassGenericConstraintsLiteral =
-            classGenericConstraints.joinToString(transform = TypeInfo.GenericConstraint::toString)
-        val classGenericConstraintsLiteral =
-            colorize("[$innerClassGenericConstraintsLiteral]", compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(implIdentifierSpan, compilationUnit.maxLineCount),
-                "Generic declaration parameters mismatched"
-            )
-            .label(implIdentifierSpan, "Expected: $classGenericConstraintsLiteral, Got: $implGenericConstraintsLiteral")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportImplicitTypeConversionOnConstant(const: Const) {
-        val explicitTypeLiteral = colorize(const.typeInfo.toString(), compilationUnit, Attribute.CYAN_TEXT())
-        val expressionTypeLiteral =
-            colorize(const.expression.finalType.toString(), compilationUnit, Attribute.RED_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(const.span, compilationUnit.maxLineCount),
-                "Cannot implicitly cast constant's expression"
-            )
-            .label(const.explicitType.span, "Expression type should explicitly be `$explicitTypeLiteral`")
-            .color(Attribute.CYAN_TEXT())
-            .build()
-            .label(const.expression.span, "Expression has type `$expressionTypeLiteral`")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportStaticFieldAsConstant(staticField: StaticField) {
-        val staticLiteral = colorize("static", compilationUnit, Attribute.CYAN_TEXT())
-        val constLiteral = colorize("const", compilationUnit, Attribute.CYAN_TEXT())
-        val expressionTypeLiteral =
-            colorize(staticField.expression.finalType.toString(), compilationUnit, Attribute.GREEN_TEXT())
-
-        compilationUnit.reportBuilder
-            .warning(
-                SpanHelper.expandView(staticField.span, compilationUnit.maxLineCount),
-                "Static field is sufficient to convert into constant"
-            )
-            .label(staticField.static.span, "Consider replace `$staticLiteral` with `$constLiteral`")
-            .color(Attribute.YELLOW_TEXT())
-            .build()
-            .label(staticField.expression.span, "Expression has primitive type `$expressionTypeLiteral`")
-            .color(Attribute.CYAN_TEXT())
-            .build().build()
-    }
-
-    private fun reportMutableStaticFieldIsInlined(staticField: StaticField) {
-        val inlineLiteral = colorize("inline", compilationUnit, Attribute.YELLOW_TEXT())
-        val mutLiteral = colorize("mut", compilationUnit, Attribute.YELLOW_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(staticField.span, compilationUnit.maxLineCount),
-                "Static field cannot be mutable and inline-able at the same time"
-            )
-            .label(staticField.modifiers[Modifier.Inline]!!, "`$inlineLiteral` modifier here")
-            .color(Attribute.RED_TEXT())
-            .build()
-            .label(staticField.modifiers[Modifier.Mut]!!, "`$mutLiteral` modifier here")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportInheritsFromImmutableClass(superClassConstructorCall: Class.SuperClassConstructorCall) {
-        val typeLiteral = colorize(
-            superClassConstructorCall.superClassType.standardizeType(),
-            compilationUnit,
-            Attribute.CYAN_TEXT()
-        )
-        val mutKeyword = colorize("mut", compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(
-                    superClassConstructorCall.superClassType.span,
-                    compilationUnit.maxLineCount
-                ),
-                "Unable to inherit immutable class"
-            )
-            .label(
-                superClassConstructorCall.superClassType.span,
-                "Consider make class `$typeLiteral` mutable with keyword `$mutKeyword`"
-            )
-            .color(Attribute.CYAN_TEXT())
-            .build().build()
-    }
-
-    private fun reportNumberLiteralRedundantTypeSuffix(
-        specifiedType: Type,
-        numberLiteral: Expression.NumberLiteral,
-        floatPart: Token
-    ) {
-        val specifiedTypeLiteral =
-            colorize(specifiedType.standardizeType(), compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .warning(
-                SpanHelper.expandView(numberLiteral.span, compilationUnit.maxLineCount),
-                "Redundant type suffix `$specifiedTypeLiteral` for float number literal"
-            )
-            .label(floatPart.span, "Float number literal here")
-            .color(Attribute.CYAN_TEXT())
-            .build()
-            .label(specifiedType.span, "Redundant type suffix here")
-            .color(Attribute.YELLOW_TEXT())
-            .build().build()
-    }
-
-    private fun reportNumberLiteralIllegalRepresentation(
-        specifiedType: Type,
-        numberLiteral: Expression.NumberLiteral,
-        floatPart: Token
-    ) {
-        val specifiedTypeLiteral =
-            colorize(specifiedType.standardizeType(), compilationUnit, Attribute.RED_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(numberLiteral.span, compilationUnit.maxLineCount),
-                "Illegal type suffix `$specifiedTypeLiteral` for float number literal"
-            )
-            .label(floatPart.span, "Float number literal here")
-            .color(Attribute.CYAN_TEXT())
-            .build()
-            .label(specifiedType.span, "Illegal type suffix here")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportIgnoredVariableHasNoEffect(variableSpan: Span, expressionSpan: Span) {
-        compilationUnit.reportBuilder
-            .warning(
-                SpanHelper.expandView(variableSpan.expand(expressionSpan), compilationUnit.maxLineCount),
-                "Expression of ignored variable has no side effect"
-            )
-            .label(variableSpan, "Variable ignored here")
-            .hint("It's safe to remove this variable declaration")
-            .color(Attribute.CYAN_TEXT())
-            .build()
-            .label(expressionSpan, "Expression has no side effect")
-            .color(Attribute.YELLOW_TEXT())
-            .build().build()
-    }
-
-    private fun reportIllegalInline(span: Span, labelMessage: String) {
-        val inlineLiteral = colorize("inline", compilationUnit, Attribute.RED_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Illegal modifier `$inlineLiteral`")
-            .label(span, labelMessage)
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportIllegalMut(span: Span, labelMessage: String) {
-        val mutLiteral = colorize("mut", compilationUnit, Attribute.RED_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Illegal modifier `$mutLiteral`")
-            .label(span, labelMessage)
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportIllegalInner(span: Span, labelMessage: String) {
-        val innerLiteral = colorize("inner", compilationUnit, Attribute.RED_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Illegal modifier `$innerLiteral`")
-            .label(span, labelMessage)
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportIllegalSelf(span: Span, labelMessage: String) {
-        val selfLiteral = colorize("self", compilationUnit, Attribute.RED_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Illegal value-parameter `$selfLiteral`")
-            .label(span, labelMessage)
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportMissingReturn(
-        function: Func,
-        closeBrace: Token,
-        returnTypeInfo: TypeInfo
-    ) {
-        val functionString = colorize(function.functionInstance.toString(), compilationUnit, Attribute.CYAN_TEXT())
-        val returnLiteral = colorize("return", compilationUnit, Attribute.CYAN_TEXT())
-        val returnType = colorize(returnTypeInfo.toString(), compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(function.span, compilationUnit.maxLineCount),
-                "Missing `$returnLiteral` statement at the end of function `$functionString`"
-            )
-            .label(function.returnType!!.span, "Function needs to return `$returnType`")
-            .color(Attribute.CYAN_TEXT())
-            .build()
-            .label(closeBrace.span, "Missing `$returnLiteral` statement at the end of function")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportUnableToImplicitlyCast(
-        commonSpan: Span,
-        fromTypeSpan: Span,
-        fromTypeLiteral: String,
-        toTypeSpan: Span,
-        toTypeLiteral: String
-    ) {
-        val fromType = colorize(fromTypeLiteral, compilationUnit, Attribute.RED_TEXT())
-        val toType = colorize(toTypeLiteral, compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(commonSpan, compilationUnit.maxLineCount),
-                "Unable to implicitly cast `$fromType` into `$toType`"
-            )
-            .label(toTypeSpan, "Expected `$toType`")
-            .color(Attribute.CYAN_TEXT())
-            .build()
-            .label(fromTypeSpan, "Got `$fromType`")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportUnableToImplicitlyCast(
-        fromTypeSpan: Span,
-        fromTypeLiteral: String,
-        toTypeLiteral: String
-    ) {
-        val fromType = colorize(fromTypeLiteral, compilationUnit, Attribute.RED_TEXT())
-        val toType = colorize(toTypeLiteral, compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(fromTypeSpan, compilationUnit.maxLineCount),
-                "Unable to implicitly cast `$fromType` into `$toType`"
-            )
-            .label(fromTypeSpan, "Expected `$toType`, Got `$fromType`")
-            .color(Attribute.CYAN_TEXT())
-            .build().build()
-    }
-
-    private fun reportUnableToExplicitlyCast(
-        commonSpan: Span,
-        fromTypeSpan: Span,
-        fromTypeLiteral: String,
-        toTypeSpan: Span,
-        toTypeLiteral: String
-    ) {
-        val fromType = colorize(fromTypeLiteral, compilationUnit, Attribute.RED_TEXT())
-        val toType = colorize(toTypeLiteral, compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(commonSpan, compilationUnit.maxLineCount),
-                "Unable to explicitly cast `$fromType` into `$toType`"
-            )
-            .label(toTypeSpan, "Cast into `$toType` is impossible")
-            .color(Attribute.CYAN_TEXT())
-            .build()
-            .label(fromTypeSpan, "Got `$fromType`")
-            .color(Attribute.RED_TEXT())
-            .build().build()
     }
 }

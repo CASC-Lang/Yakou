@@ -1,14 +1,12 @@
 package org.yakou.lang.bind
 
-import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Attribute
 import org.objectweb.asm.Opcodes
 import org.yakou.lang.ast.*
 import org.yakou.lang.compilation.CompilationUnit
-import org.yakou.lang.util.SpanHelper
-import org.yakou.lang.util.colorize
+import org.yakou.lang.compilation.UnitReporter
 
-class Binder(private val compilationUnit: CompilationUnit) {
+class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, UnitReporter by compilationUnit {
     companion object {
         val PACKAGE_LEVEL_FUNCTION_ADDITIONAL_FLAGS: IntArray = intArrayOf(Opcodes.ACC_STATIC)
     }
@@ -112,7 +110,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
             if (classType == null) {
                 // Failed to register class type
-                reportClassAlreadyDefined(clazz)
+                reportClassAlreadyDefined(currentPackagePath, currentClassPath, clazz)
                 return@bindScope
             } else {
                 clazz.classTypeInfo = classType
@@ -346,7 +344,11 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 val superClassType = bindSuperClassConstructorCall(clazz.superClassConstructorCall)
 
                 if (superClassType != null) {
-                    table.registerSuperClassType(currentPackagePath.toString(), currentClassPath.toString(), superClassType)
+                    table.registerSuperClassType(
+                        currentPackagePath.toString(),
+                        currentClassPath.toString(),
+                        superClassType
+                    )
                 }
             }
 
@@ -365,14 +367,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
                 val boundType = bindType(bound)
 
                 if (boundType !is TypeInfo.TypeInfoVariable) {
-                    compilationUnit.reportBuilder
-                        .error(
-                            SpanHelper.expandView(genericDeclarationParameter.span, compilationUnit.maxLineCount),
-                            "Unable to set bound to non-class type or non-type-parameter"
-                        )
-                        .label(genericDeclarationParameter.span, "Bound type can only be class type or type parameter")
-                        .color(Attribute.CYAN_TEXT())
-                        .build().build()
+                    reportUnableToSetGenericBound(genericDeclarationParameter)
                 } else {
                     genericDeclarationParameter.genericConstraint.bounds += boundType
 
@@ -414,72 +409,31 @@ class Binder(private val compilationUnit: CompilationUnit) {
             )
         ) {
             is TypeInfo.Array, is TypeInfo.Primitive -> {
-                val typeLiteral =
-                    colorize(
-                        superClassConstructorCall.superClassType.standardizeType(),
-                        compilationUnit,
-                        Attribute.CYAN_TEXT()
-                    )
-
-                compilationUnit.reportBuilder
-                    .error(
-                        SpanHelper.expandView(
-                            superClassConstructorCall.superClassType.span,
-                            compilationUnit.maxLineCount
-                        ),
-                        "Unable to inherit from non-class type"
-                    )
-                    .label(superClassConstructorCall.superClassType.span, "Type $typeLiteral is not a class type")
-                    .color(Attribute.RED_TEXT())
-                    .build().build()
-
+                reportIllegalNonClassInheritance(superClassConstructorCall)
                 null
             }
 
             is TypeInfo.GenericConstraint -> {
-                compilationUnit.reportBuilder
-                    .error(
-                        SpanHelper.expandView(
-                            superClassConstructorCall.superClassType.span,
-                            compilationUnit.maxLineCount
-                        ),
-                        "Unable to inherit from generic type"
-                    )
-                    .label(
-                        superClassConstructorCall.superClassType.span,
-                        "Generic type constraint cannot be inherited from"
-                    )
-                    .color(Attribute.RED_TEXT())
-                    .build().build()
+                reportIllegalGenericInheritance(superClassConstructorCall)
+                null
+            }
 
+            is TypeInfo.PackageClass -> {
+                reportIllegalPackageInheritance(superClassConstructorCall)
                 null
             }
 
             is TypeInfo.Class -> {
-                if (superType is TypeInfo.PackageClass) {
-                    compilationUnit.reportBuilder
-                        .error(
-                            SpanHelper.expandView(
-                                superClassConstructorCall.superClassType.span,
-                                compilationUnit.maxLineCount
-                            ),
-                            "Unable to inherit from package"
-                        )
-                        .label(superClassConstructorCall.superClassType.span, "Package is not inheritable")
-                        .color(Attribute.RED_TEXT())
-                        .build().build()
-                } else {
-                    val superConstructor =
-                        table.findConstructor(superType.standardTypePath, superClassConstructorCall.argumentTypeInfos)
+                val superConstructor =
+                    table.findConstructor(superType.standardTypePath, superClassConstructorCall.argumentTypeInfos)
 
-                    if (superConstructor == null) {
-                        reportUnresolvedSymbol(
-                            "self(${superClassConstructorCall.arguments.joinToString { it.finalType.toString() }}) -> ${superClassConstructorCall.superClassType.standardizeType()}",
-                            superClassConstructorCall.span
-                        )
-                    } else {
-                        superClassConstructorCall.constructorInstance = superConstructor
-                    }
+                if (superConstructor == null) {
+                    reportUnresolvedSymbol(
+                        "self(${superClassConstructorCall.arguments.joinToString { it.finalType.toString() }}) -> ${superClassConstructorCall.superClassType.standardizeType()}",
+                        superClassConstructorCall.span
+                    )
+                } else {
+                    superClassConstructorCall.constructorInstance = superConstructor
                 }
 
                 superClassConstructorCall.superClassTypeInfo = superType
@@ -640,6 +594,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
             is Expression.As -> bindAs(expression)
             is Expression.Identifier -> bindIdentifier(expression)
             is Expression.Parenthesized -> bindParenthesized(expression)
+            is Expression.New -> bindNew(expression)
             is Expression.BoolLiteral -> bindBoolLiteral(expression)
             is Expression.NumberLiteral -> bindNumberLiteral(expression)
             is Expression.Empty -> {}
@@ -738,109 +693,7 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private fun reportNonIntegerShiftOperation(binaryExpression: Expression.BinaryExpression) {
-        val coloredOperator = colorize(
-            binaryExpression.operator.literal,
-            compilationUnit,
-            Attribute.CYAN_TEXT()
-        )
-        val coloredLeftTypeLiteral = colorize(
-            binaryExpression.leftExpression.finalType.toString(),
-            compilationUnit,
-            Attribute.CYAN_TEXT()
-        )
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(binaryExpression.span, compilationUnit.maxLineCount),
-                "Unable to shift type `$coloredLeftTypeLiteral` with `$coloredOperator`"
-            )
-            .label(
-                binaryExpression.leftExpression.span,
-                "Expression has non-integer type `$coloredLeftTypeLiteral`"
-            )
-            .color(Attribute.CYAN_TEXT())
-            .build()
-            .label(
-                binaryExpression.operator.span,
-                "Inapplicable operator `$coloredOperator`"
-            )
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportNonI32ShiftOperation(binaryExpression: Expression.BinaryExpression) {
-        val coloredOperator = colorize(
-            binaryExpression.operator.literal,
-            compilationUnit,
-            Attribute.CYAN_TEXT()
-        )
-        val coloredRightTypeLiteral = colorize(
-            binaryExpression.rightExpression.finalType.toString(),
-            compilationUnit,
-            Attribute.CYAN_TEXT()
-        )
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(binaryExpression.span, compilationUnit.maxLineCount),
-                "Unable to shift type `$coloredRightTypeLiteral` with `$coloredOperator`"
-            )
-            .label(
-                binaryExpression.rightExpression.span,
-                "Expression has non-i32 type `$coloredRightTypeLiteral`"
-            )
-            .color(Attribute.CYAN_TEXT())
-            .build()
-            .label(
-                binaryExpression.operator.span,
-                "Inapplicable operator `$coloredOperator`"
-            )
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportInapplicableOperator(
-        binaryExpression: Expression.BinaryExpression,
-        leftType: TypeInfo,
-        rightType: TypeInfo,
-        expectedType: TypeInfo? = TypeInfo.Primitive.BOOL_TYPE_INFO
-    ) {
-        val coloredOperator = colorize(
-            binaryExpression.operator.literal,
-            compilationUnit,
-            Attribute.CYAN_TEXT()
-        )
-        val coloredLeftTypeLiteral = colorize(leftType.toString(), compilationUnit, Attribute.CYAN_TEXT())
-        val coloredRightTypeLiteral = colorize(rightType.toString(), compilationUnit, Attribute.CYAN_TEXT())
-        val coloredBoolLiteral = colorize(expectedType.toString(), compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(binaryExpression.span, compilationUnit.maxLineCount),
-                "Unable to apply `$coloredOperator` on `$coloredLeftTypeLiteral` and `$coloredRightTypeLiteral`"
-            )
-            .label(
-                binaryExpression.leftExpression.span,
-                "Left expression has type `$coloredLeftTypeLiteral`"
-            )
-            .color(Attribute.CYAN_TEXT())
-            .build()
-            .label(binaryExpression.operator.span, "Inapplicable operator `$coloredOperator`")
-            .color(Attribute.RED_TEXT())
-            .apply {
-                if (expectedType != null) {
-                    hint("Only type `$coloredBoolLiteral` is applicable")
-                }
-            }
-            .build()
-            .label(
-                binaryExpression.rightExpression.span,
-                "Right expression has type `$coloredRightTypeLiteral`"
-            )
-            .color(Attribute.CYAN_TEXT())
-            .build().build()
-    }
+    
 
     private fun bindIdentifier(identifier: Expression.Identifier) {
         val resolver = SymbolResolver(currentScope)
@@ -873,6 +726,10 @@ class Binder(private val compilationUnit: CompilationUnit) {
 
         parenthesized.originalType = parenthesized.expression.finalType
         parenthesized.finalType = parenthesized.originalType
+    }
+    
+    private fun bindNew(new: Expression.New) {
+        TODO()
     }
 
     private fun bindBoolLiteral(boolLiteral: Expression.BoolLiteral) {
@@ -929,7 +786,12 @@ class Binder(private val compilationUnit: CompilationUnit) {
         }
     }
 
-    private inline fun bindScope(classPath: Token, ownerClassTypeInfo: TypeInfo.Class? = null, staticInnerScope: Boolean = false, crossinline functor: () -> Unit) {
+    private inline fun bindScope(
+        classPath: Token,
+        ownerClassTypeInfo: TypeInfo.Class? = null,
+        staticInnerScope: Boolean = false,
+        crossinline functor: () -> Unit
+    ) {
         val previousClassPath = currentClassPath
         val previousScope = currentScope
         val previousStaticInnerScopeFlag = isStaticInnerScope
@@ -943,163 +805,5 @@ class Binder(private val compilationUnit: CompilationUnit) {
         currentClassPath = previousClassPath
         currentScope = previousScope
         isStaticInnerScope = previousStaticInnerScopeFlag
-    }
-
-    // REPORTS
-
-    private fun reportUnresolvedSymbol(name: String, span: Span) {
-        val coloredName = colorize(name, compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(span, compilationUnit.maxLineCount),
-                "Unresolved symbol"
-            )
-            .label(span, "Unable to find symbol `$coloredName` in current context")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportConstAlreadyDefined(field: ClassMember.Field, const: Const) {
-        val span = const.span
-        val coloredConstLiteral = colorize(field.constToString(), compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(span, compilationUnit.maxLineCount),
-                "Constant $coloredConstLiteral is already defined at `${field.qualifiedOwnerPath}`"
-            )
-            .label(span, "Already defined")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportStaticFieldAlreadyDefined(field: ClassMember.Field, staticField: StaticField) {
-        val span = staticField.span
-        val coloredStaticFieldLiteral = colorize(field.staticFieldToString(), compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(span, compilationUnit.maxLineCount),
-                "Static field $coloredStaticFieldLiteral is already defined at `${field.qualifiedOwnerPath}`"
-            )
-            .label(span, "Already defined")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportClassAlreadyDefined(clazz: Class) {
-        val span = clazz.span
-        val coloredPackageLiteral = colorize(currentPackagePath.toString(), compilationUnit, Attribute.CYAN_TEXT())
-        val coloredClassLiteral = colorize(currentClassPath.toString(), compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(span, compilationUnit.maxLineCount),
-                "Class $coloredClassLiteral is already defined at `$coloredPackageLiteral`"
-            )
-            .label(span, "Already defined")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportFieldAlreadyDefined(fieldInstance: ClassMember.Field, span: Span) {
-        val coloredStaticFieldLiteral =
-            colorize(fieldInstance.staticFieldToString(), compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(span, compilationUnit.maxLineCount),
-                "Static field $coloredStaticFieldLiteral is already defined at `${fieldInstance.qualifiedOwnerPath}`"
-            )
-            .label(span, "Already defined")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportFunctionAlreadyDefined(fn: ClassMember.Fn, function: Func) {
-        val span = function.fn.span.expand(function.span)
-        val coloredFnLiteral = colorize(fn.toString(), compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(span, compilationUnit.maxLineCount),
-                "Function $coloredFnLiteral is already defined at `${fn.qualifiedOwnerPath}`"
-            )
-            .label(span, "Already defined")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportConstructorAlreadyDefined(constructor: ClassMember.Constructor, span: Span) {
-        val coloredCtorLiteral = colorize(constructor.toString(), compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(span, compilationUnit.maxLineCount),
-                "Constructor $coloredCtorLiteral is already defined at `${constructor.qualifiedOwnerPath}`"
-            )
-            .label(span, "Already defined")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun checkVariableUnused(scope: Scope) {
-        for (variable in scope.variables) {
-            if (!variable.isUsed) {
-                reportVariableUnused(variable)
-            }
-        }
-    }
-
-    private fun reportVariableUnused(variable: Variable) {
-        val variableType = if (variable is Variable.ValueParameter) "Value-parameter" else "Variable"
-        val coloredVariableName = colorize(variable.name, compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .warning(
-                SpanHelper.expandView(variable.nameToken.span, compilationUnit.maxLineCount),
-                "$variableType `$coloredVariableName` is never used"
-            )
-            .label(variable.nameToken.span, "Unused ${variableType.lowercase()} here")
-            .color(Attribute.YELLOW_TEXT())
-            .build().build()
-    }
-
-    private fun reportVariableAlreadyDeclared(originalVariable: Variable, duplicatedSpan: Span) {
-        val originalSpan = originalVariable.nameToken.span
-        val coloredVariableName = colorize(originalVariable.name, compilationUnit, Attribute.CYAN_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(
-                SpanHelper.expandView(originalSpan.expand(duplicatedSpan), compilationUnit.maxLineCount),
-                "Variable `$coloredVariableName` is already declared"
-            )
-            .label(originalSpan, "Variable `$coloredVariableName` was declared here first")
-            .color(Attribute.CYAN_TEXT())
-            .build()
-            .label(duplicatedSpan, "Variable redeclared here")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportUnresolvedType(typeName: String, span: Span) {
-        val colorizedTypeName = colorize(typeName, compilationUnit, Attribute.RED_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(SpanHelper.expandView(span, compilationUnit.maxLineCount), "Unknown type $colorizedTypeName")
-            .label(span, "Unresolvable type here")
-            .color(Attribute.RED_TEXT())
-            .build().build()
-    }
-
-    private fun reportUnresolvedIdentifier(identifier: Token) {
-        val colorizedIdentifier = colorize(identifier.literal, compilationUnit, Attribute.RED_TEXT())
-
-        compilationUnit.reportBuilder
-            .error(SpanHelper.expandView(identifier.span, compilationUnit.maxLineCount), "Unknown identifier $colorizedIdentifier")
-            .label(identifier.span, "Unresolved identifier here")
-            .color(Attribute.RED_TEXT())
-            .build().build()
     }
 }
