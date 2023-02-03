@@ -4,11 +4,11 @@ import chaos.unity.nenggao.FileReportBuilder
 import chaos.unity.nenggao.Span
 import com.diogonunes.jcolor.Ansi
 import com.diogonunes.jcolor.Attribute
+import java.io.File
 import org.apache.commons.cli.Option
 import org.apache.commons.cli.Options
 import org.yakou.lang.api.AbstractPreference
 import org.yakou.lang.api.DefaultPreference
-import java.io.File
 
 class ArgumentProcessor {
     companion object {

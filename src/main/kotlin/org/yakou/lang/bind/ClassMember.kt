@@ -1,5 +1,7 @@
 package org.yakou.lang.bind
 
+import java.lang.reflect.Method
+import java.lang.reflect.Modifier
 import org.objectweb.asm.Opcodes
 import org.yakou.lang.ast.Const
 import org.yakou.lang.ast.Expression
@@ -10,8 +12,6 @@ import org.yakou.lang.ast.Parameter
 import org.yakou.lang.ast.Path
 import org.yakou.lang.ast.PrimaryConstructor
 import org.yakou.lang.ast.StaticField
-import java.lang.reflect.Method
-import java.lang.reflect.Modifier
 
 sealed class ClassMember(val memberType: MemberType) : Symbol() {
     abstract val descriptor: String

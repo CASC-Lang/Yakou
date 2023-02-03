@@ -1,10 +1,10 @@
 package org.yakou.lang.bind
 
+import java.util.EnumMap
 import org.yakou.lang.ast.GenericDeclarationParameters
 import org.yakou.lang.ast.Type
 import org.yakou.lang.util.`as`
 import org.yakou.lang.util.mapAs
-import java.util.EnumMap
 
 /**
  * Table class stores type infos and function infos in Yakou standard type format.

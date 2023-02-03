@@ -1,10 +1,10 @@
 package org.yakou.lang.bind
 
+import java.lang.reflect.Modifier
+import java.lang.reflect.TypeVariable
 import org.objectweb.asm.Opcodes
 import org.yakou.lang.util.`as`
 import org.yakou.lang.util.mapAs
-import java.lang.reflect.Modifier
-import java.lang.reflect.TypeVariable
 
 sealed class TypeInfo {
     companion object {

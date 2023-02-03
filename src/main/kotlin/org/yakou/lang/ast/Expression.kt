@@ -1,10 +1,10 @@
 package org.yakou.lang.ast
 
 import chaos.unity.nenggao.Span
+import kotlin.properties.Delegates
 import org.yakou.lang.bind.ClassMember
 import org.yakou.lang.bind.Symbol
 import org.yakou.lang.bind.TypeInfo
-import kotlin.properties.Delegates
 
 sealed class Expression : AstNode {
     abstract override val span: Span

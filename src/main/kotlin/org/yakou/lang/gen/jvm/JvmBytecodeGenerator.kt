@@ -1,5 +1,6 @@
 package org.yakou.lang.gen.jvm
 
+import java.io.File
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
@@ -34,7 +35,6 @@ import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.bind.Variable
 import org.yakou.lang.compilation.CompilationSession
 import org.yakou.lang.compilation.CompilationUnit
-import java.io.File
 
 class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private val table: Table = compilationSession.table

@@ -3,6 +3,7 @@ package org.yakou.lang.compilation
 import chaos.unity.nenggao.CharacterSet
 import chaos.unity.nenggao.FileReportBuilder
 import chaos.unity.nenggao.SourceCache
+import java.io.File
 import org.yakou.lang.api.AbstractPreference
 import org.yakou.lang.ast.Token
 import org.yakou.lang.ast.YkFile
@@ -11,7 +12,6 @@ import org.yakou.lang.checker.Checker
 import org.yakou.lang.lexer.Lexer
 import org.yakou.lang.optimizer.Optimizer
 import org.yakou.lang.parser.Parser
-import java.io.File
 
 class CompilationUnit(val sourceFile: File, val session: CompilationSession) : UnitReporter {
     val reportBuilder: FileReportBuilder = FileReportBuilder.sourceFile(sourceFile)
