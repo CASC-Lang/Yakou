@@ -1,6 +1,7 @@
 package org.yakou.lang.ast
 
 import chaos.unity.nenggao.Span
+import org.yakou.lang.bind.ClassMember
 import org.yakou.lang.bind.Symbol
 import org.yakou.lang.bind.TypeInfo
 import kotlin.properties.Delegates
@@ -116,7 +117,7 @@ sealed class Expression : AstNode {
 
     class New(
         val new: Token,
-        val className: Type,
+        val classType: Type,
         val leftParenthesis: Token,
         val arguments: List<Argument>,
         val rightParenthesis: Token
@@ -124,6 +125,8 @@ sealed class Expression : AstNode {
         override val span: Span by lazy {
             new.span.expand(rightParenthesis.span)
         }
+
+        lateinit var referenceConstructor: ClassMember.Constructor
     }
 
     sealed class LiteralExpression : Expression()

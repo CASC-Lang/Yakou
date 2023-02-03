@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.7.0"
-    id("org.jmailen.kotlinter") version "3.12.0"
+    id("org.jlleitschuh.gradle.ktlint") version "11.1.0"
 }
 
 group = "org.yakou.lang"
@@ -28,8 +28,4 @@ tasks.test {
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "17"
-}
-
-kotlinter {
-    disabledRules = arrayOf("no-wildcard-imports", "filename")
 }

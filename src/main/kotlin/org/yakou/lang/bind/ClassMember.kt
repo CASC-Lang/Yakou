@@ -1,7 +1,15 @@
 package org.yakou.lang.bind
 
 import org.objectweb.asm.Opcodes
-import org.yakou.lang.ast.*
+import org.yakou.lang.ast.Const
+import org.yakou.lang.ast.Expression
+import org.yakou.lang.ast.Field
+import org.yakou.lang.ast.Func
+import org.yakou.lang.ast.GenericDeclarationParameters
+import org.yakou.lang.ast.Parameter
+import org.yakou.lang.ast.Path
+import org.yakou.lang.ast.PrimaryConstructor
+import org.yakou.lang.ast.StaticField
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
@@ -49,6 +57,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                 return constructor
             }
         }
+
         override val descriptor: String =
             "(${parameterTypeInfos.map(TypeInfo::descriptor).joinToString(separator = "")})V"
 
@@ -241,7 +250,12 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     method.declaringClass.packageName.replace(".", "::"),
                     method.declaringClass.typeName.split('.').last().replace("$", "::"),
                     method.name,
-                    method.typeParameters.map { TypeInfo.GenericConstraint.fromTypeVariable(method.typeParameters, it) },
+                    method.typeParameters.map {
+                        TypeInfo.GenericConstraint.fromTypeVariable(
+                            method.typeParameters,
+                            it
+                        )
+                    },
                     method.parameters.map { TypeInfo.fromClass(it.type) },
                     TypeInfo.fromClass(method.returnType),
                     false
@@ -264,7 +278,8 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     packageSimplePath.toString(),
                     classSimplePath.toString().ifBlank { "PackageYk" },
                     function.identifier.literal,
-                    function.genericDeclarationParameters?.parameters?.map(GenericDeclarationParameters.GenericDeclarationParameter::genericConstraint) ?: listOf(),
+                    function.genericDeclarationParameters?.parameters?.map(GenericDeclarationParameters.GenericDeclarationParameter::genericConstraint)
+                        ?: listOf(),
                     function.parameters.map(Parameter::typeInfo),
                     function.returnTypeInfo,
                     function.modifiers.containsKey(org.yakou.lang.ast.Modifier.Inline)

@@ -1,7 +1,25 @@
 package org.yakou.lang.optimizer
 
 import chaos.unity.nenggao.Span
-import org.yakou.lang.ast.*
+import org.yakou.lang.ast.Block
+import org.yakou.lang.ast.Class
+import org.yakou.lang.ast.ClassItem
+import org.yakou.lang.ast.Const
+import org.yakou.lang.ast.Expression
+import org.yakou.lang.ast.ExpressionStatement
+import org.yakou.lang.ast.Field
+import org.yakou.lang.ast.For
+import org.yakou.lang.ast.Func
+import org.yakou.lang.ast.FunctionBody
+import org.yakou.lang.ast.Impl
+import org.yakou.lang.ast.ImplItem
+import org.yakou.lang.ast.Item
+import org.yakou.lang.ast.Package
+import org.yakou.lang.ast.Return
+import org.yakou.lang.ast.Statement
+import org.yakou.lang.ast.StaticField
+import org.yakou.lang.ast.VariableDeclaration
+import org.yakou.lang.ast.YkFile
 import org.yakou.lang.bind.ClassMember
 import org.yakou.lang.bind.TypeInfo
 import org.yakou.lang.bind.Variable
