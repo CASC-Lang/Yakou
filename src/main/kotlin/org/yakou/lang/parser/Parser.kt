@@ -35,7 +35,8 @@ import org.yakou.lang.ast.YkFile
 import org.yakou.lang.compilation.CompilationUnit
 import org.yakou.lang.compilation.UnitReporter
 
-class Parser(private val compilationUnit: CompilationUnit) : ParserReporter,
+class Parser(private val compilationUnit: CompilationUnit) :
+    ParserReporter,
     UnitReporter by compilationUnit {
     private val tokens: List<Token> = compilationUnit.tokens ?: listOf()
     private var pos: Int = 0
@@ -854,10 +855,10 @@ class Parser(private val compilationUnit: CompilationUnit) : ParserReporter,
 
         while (pos < tokens.size &&
             (
-                    optExpectType(TokenType.Identifier) ||
-                            optExpectType(TokenType.Plus) ||
-                            optExpectType(TokenType.Minus)
-                    )
+                optExpectType(TokenType.Identifier) ||
+                    optExpectType(TokenType.Plus) ||
+                    optExpectType(TokenType.Minus)
+                )
         ) {
             parameters += parseGenericDeclarationParameter()
 

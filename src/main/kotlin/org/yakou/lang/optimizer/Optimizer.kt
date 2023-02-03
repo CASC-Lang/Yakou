@@ -338,7 +338,7 @@ class Optimizer(private val compilationUnit: CompilationUnit) {
 
         return expression
     }
-    
+
     private fun optimizeNew(expression: Expression.New): Expression.New {
         return expression
     }

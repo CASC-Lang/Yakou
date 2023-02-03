@@ -113,7 +113,7 @@ sealed class Expression : AstNode {
             leftParenthesis.span.expand(rightParenthesis.span)
         }
     }
-    
+
     class New(
         val new: Token,
         val className: Type,

@@ -13,7 +13,7 @@ import org.yakou.lang.optimizer.Optimizer
 import org.yakou.lang.parser.Parser
 import java.io.File
 
-class CompilationUnit(val sourceFile: File, val session: CompilationSession): UnitReporter {
+class CompilationUnit(val sourceFile: File, val session: CompilationSession) : UnitReporter {
     val reportBuilder: FileReportBuilder = FileReportBuilder.sourceFile(sourceFile)
         .enableColor(preference().enableColor)
         .characterSet(if (preference().useAscii) CharacterSet.ASCII else CharacterSet.UNICODE)
@@ -24,10 +24,10 @@ class CompilationUnit(val sourceFile: File, val session: CompilationSession): Un
 
     override fun preference(): AbstractPreference =
         session.preference
-    
+
     override fun reporter(): FileReportBuilder =
         reportBuilder
-    
+
     override fun maxLineCount(): Int =
         SourceCache.INSTANCE.getOrAdd(sourceFile).size
 

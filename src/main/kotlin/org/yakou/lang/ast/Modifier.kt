@@ -5,7 +5,7 @@ import org.objectweb.asm.Opcodes
 sealed class Modifier(val flag: Int, val keywordLiteral: String) {
     override fun toString(): String =
         keywordLiteral
-    
+
     object Inline : Modifier(0, Keyword.INLINE.literal)
     object Mut : Modifier(-Opcodes.ACC_FINAL, Keyword.MUT.literal)
     object Inner : Modifier(0, Keyword.INNER.literal)

@@ -512,7 +512,7 @@ class Checker(private val compilationUnit: CompilationUnit) : CheckerReporter, U
             else -> {}
         }
     }
-    
+
     private fun checkNew(new: Expression.New) {
         TODO()
     }

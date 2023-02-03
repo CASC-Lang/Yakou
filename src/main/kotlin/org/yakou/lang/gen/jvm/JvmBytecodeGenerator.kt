@@ -820,7 +820,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             methodVisitor.visitTypeInsn(Opcodes.CHECKCAST, finalType.internalName)
         }
     }
-    
+
     private fun genNew(methodVisitor: MethodVisitor, new: Expression.New) {
         TODO()
     }

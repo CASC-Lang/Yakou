@@ -203,10 +203,8 @@ internal interface BinderReporter : UnitReporter {
             binaryExpression.operator.literal,
             Attribute.CYAN_TEXT()
         )
-        val coloredRightTypeLiteral = colorize(
-            binaryExpression.rightExpression.finalType.toString(), 
-            Attribute.CYAN_TEXT()
-        )
+        val coloredRightTypeLiteral =
+            colorize(binaryExpression.rightExpression.finalType.toString(), Attribute.CYAN_TEXT())
 
         reporter()
             .error(

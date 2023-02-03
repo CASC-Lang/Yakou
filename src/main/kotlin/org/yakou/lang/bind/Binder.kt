@@ -1,6 +1,5 @@
 package org.yakou.lang.bind
 
-import com.diogonunes.jcolor.Attribute
 import org.objectweb.asm.Opcodes
 import org.yakou.lang.ast.*
 import org.yakou.lang.compilation.CompilationUnit
@@ -693,8 +692,6 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
         }
     }
 
-    
-
     private fun bindIdentifier(identifier: Expression.Identifier) {
         val resolver = SymbolResolver(currentScope)
         val resolvedSymbol =
@@ -727,7 +724,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
         parenthesized.originalType = parenthesized.expression.finalType
         parenthesized.finalType = parenthesized.originalType
     }
-    
+
     private fun bindNew(new: Expression.New) {
         TODO()
     }
