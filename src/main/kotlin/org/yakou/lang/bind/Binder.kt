@@ -88,7 +88,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
             currentPackagePath,
             currentClassPath,
             const,
-            Opcodes.ACC_STATIC
+            Opcodes.ACC_STATIC,
         )
 
         if (!table.registerClassMember(field)) {
@@ -106,7 +106,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
             table,
             currentPackagePath,
             currentClassPath,
-            staticField
+            staticField,
         )
 
         if (!table.registerClassMember(field)) {
@@ -122,7 +122,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
             clazz.modifiers.sum(),
             currentPackagePath.toString(),
             currentClassPath.append(clazz.identifier).toString(),
-            clazz.genericDeclarationParameters?.parameters ?: listOf()
+            clazz.genericDeclarationParameters?.parameters ?: listOf(),
         )
 
         bindScope(clazz.identifier, classType, staticInnerScope = true) {
@@ -149,8 +149,8 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
                         Opcodes.ACC_PUBLIC,
                         currentPackagePath.toString(),
                         currentClassPath.toString(),
-                        listOf()
-                    )
+                        listOf(),
+                    ),
                 )
             }
 
@@ -177,7 +177,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
             table,
             currentPackagePath,
             currentClassPath,
-            primaryConstructor
+            primaryConstructor,
         )
 
         if (!table.registerClassMember(constructor)) {
@@ -197,7 +197,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
                     table,
                     currentPackagePath,
                     currentClassPath,
-                    parameter
+                    parameter,
                 )
 
                 if (!table.registerClassMember(fieldInstance)) {
@@ -222,7 +222,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
         val fieldInstance = ClassMember.Field.fromField(
             currentPackagePath,
             currentClassPath,
-            field
+            field,
         )
 
         if (!table.registerClassMember(fieldInstance)) {
@@ -258,7 +258,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
             currentPackagePath,
             currentClassPath,
             function,
-            *(if (topLevel) PACKAGE_LEVEL_FUNCTION_ADDITIONAL_FLAGS else intArrayOf())
+            *(if (topLevel) PACKAGE_LEVEL_FUNCTION_ADDITIONAL_FLAGS else intArrayOf()),
         )
 
         if (!table.registerClassMember(fn)) {
@@ -371,7 +371,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
                     table.registerSuperClassType(
                         currentPackagePath.toString(),
                         currentClassPath.toString(),
-                        superClassType
+                        superClassType,
                     )
                 }
             }
@@ -397,7 +397,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
 
                     currentScope.setConstraint(
                         genericDeclarationParameter.genericConstraint.genericParameterName,
-                        boundType
+                        boundType,
                     )
                 }
             }
@@ -409,7 +409,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
             currentScope.addVariable(
                 primaryConstructor.self,
                 primaryConstructor.self,
-                primaryConstructor.constructorInstance.ownerTypeInfo
+                primaryConstructor.constructorInstance.ownerTypeInfo,
             )
         }
 
@@ -417,7 +417,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
             currentScope.addValueParameter(
                 parameter.name,
                 parameter.typeInfo,
-                selfSkipped = primaryConstructor.self == null
+                selfSkipped = primaryConstructor.self == null,
             )
     }
 
@@ -429,7 +429,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
             val superType = SymbolResolver(currentScope).resolveType(
                 currentPackagePath,
                 currentClassPath,
-                superClassConstructorCall.superClassType
+                superClassConstructorCall.superClassType,
             )
         ) {
             is TypeInfo.Array, is TypeInfo.Primitive -> {
@@ -454,7 +454,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
                 if (superConstructor == null) {
                     reportUnresolvedSymbol(
                         "self(${superClassConstructorCall.arguments.joinToString { it.finalType.toString() }}) -> ${superClassConstructorCall.superClassType.standardizeType()}",
-                        superClassConstructorCall.span
+                        superClassConstructorCall.span,
                     )
                 } else {
                     superClassConstructorCall.constructorInstance = superConstructor
@@ -468,7 +468,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
             null -> {
                 reportUnresolvedType(
                     superClassConstructorCall.superClassType.standardizeType(),
-                    superClassConstructorCall.superClassType.span
+                    superClassConstructorCall.superClassType.span,
                 )
 
                 null
@@ -578,7 +578,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
         val variable = currentScope.addVariable(
             variableDeclaration.mut,
             variableDeclaration.name,
-            variableDeclaration.expression.finalType
+            variableDeclaration.expression.finalType,
         )
 
         if (variable != null) {
@@ -635,7 +635,8 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
             Expression.BinaryExpression.BinaryOperation.Subtraction,
             Expression.BinaryExpression.BinaryOperation.Multiplication,
             Expression.BinaryExpression.BinaryOperation.Division,
-            Expression.BinaryExpression.BinaryOperation.Modulo -> {
+            Expression.BinaryExpression.BinaryOperation.Modulo,
+            -> {
                 val leftType = binaryExpression.leftExpression.finalType
                 val rightType = binaryExpression.rightExpression.finalType
                 val promotedType = leftType promote rightType
@@ -652,7 +653,8 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
 
             Expression.BinaryExpression.BinaryOperation.UnsignedRightShift,
             Expression.BinaryExpression.BinaryOperation.RightShift,
-            Expression.BinaryExpression.BinaryOperation.LeftShift -> {
+            Expression.BinaryExpression.BinaryOperation.LeftShift,
+            -> {
                 val leftType = binaryExpression.leftExpression.finalType.asPrimitive()
                 val rightType = binaryExpression.rightExpression.finalType.asPrimitive()
 
@@ -673,7 +675,8 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
             }
 
             Expression.BinaryExpression.BinaryOperation.LogicalAnd,
-            Expression.BinaryExpression.BinaryOperation.LogicalOr -> {
+            Expression.BinaryExpression.BinaryOperation.LogicalOr,
+            -> {
                 val leftType = binaryExpression.leftExpression.finalType
                 val rightType = binaryExpression.rightExpression.finalType
 
@@ -692,7 +695,8 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
             Expression.BinaryExpression.BinaryOperation.Equal,
             Expression.BinaryExpression.BinaryOperation.NotEqual,
             Expression.BinaryExpression.BinaryOperation.ExactEqual,
-            Expression.BinaryExpression.BinaryOperation.ExactNotEqual -> {
+            Expression.BinaryExpression.BinaryOperation.ExactNotEqual,
+            -> {
                 binaryExpression.originalType = TypeInfo.Primitive.BOOL_TYPE_INFO
                 binaryExpression.finalType = TypeInfo.Primitive.BOOL_TYPE_INFO
             }
@@ -700,7 +704,8 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
             Expression.BinaryExpression.BinaryOperation.Greater,
             Expression.BinaryExpression.BinaryOperation.GreaterEqual,
             Expression.BinaryExpression.BinaryOperation.Lesser,
-            Expression.BinaryExpression.BinaryOperation.LesserEqual -> {
+            Expression.BinaryExpression.BinaryOperation.LesserEqual,
+            -> {
                 val leftType = binaryExpression.leftExpression.finalType
                 val rightType = binaryExpression.rightExpression.finalType
                 val promotedType = leftType promote rightType
@@ -756,14 +761,17 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
         for (expression in constructorCall.arguments) {
             bindExpression(expression)
         }
-        
-        val constructor = table.findConstructor(constructorCall.referenceClassTypeInfo.toString(), constructorCall.arguments.map(Argument::finalType))
-        
+
+        val constructor = table.findConstructor(
+            constructorCall.referenceClassTypeInfo.toString(),
+            constructorCall.arguments.map(Argument::finalType),
+        )
+
         if (constructor == null) {
             reportUnresolvableConstructorCall(constructorCall.span)
         } else {
             constructorCall.referenceConstructor = constructor
-            
+
             constructorCall.originalType = constructorCall.referenceClassTypeInfo
             constructorCall.finalType = constructorCall.referenceClassTypeInfo
         }
@@ -810,24 +818,45 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
         val resolver = TypeResolver(currentScope, table)
         val typeInfo = resolver.resolveType(type)
 
-        return if (typeInfo == null) {
+        if (typeInfo == null) {
             // Unknown type
             val span = type.span
             val typeName = type.standardizeType()
 
             reportUnresolvedType(typeName, span)
 
-            TypeInfo.Primitive.UNIT_TYPE_INFO
-        } else {
-            typeInfo
+            return TypeInfo.Primitive.UNIT_TYPE_INFO
         }
+
+        if (typeInfo is TypeInfo.Class) {
+            // Check if generic type is empty
+            // if it's empty, then we ignore 
+            // the following type fill in process
+            val classType = type as Type.TypePath // It must be a TypePath
+            val genericParameters = classType.genericParameters?.genericParameters
+
+            if (typeInfo.genericParameters.isNotEmpty() || genericParameters?.isNotEmpty() == true) {
+                if (genericParameters?.size != typeInfo.genericParameters.size) {
+                    // Generic argument size mismatch
+                    reportGenericArgumentSizeMismatch(
+                        type.span,
+                        typeInfo.genericParameters.size,
+                        genericParameters?.size ?: 0,
+                    )
+                } else {
+                    typeInfo.genericArguments = genericParameters.map(::bindType)
+                }
+            }
+        }
+
+        return typeInfo
     }
 
     private inline fun bindScope(
         classPath: Token,
         ownerClassTypeInfo: TypeInfo.Class? = null,
         staticInnerScope: Boolean = false,
-        crossinline functor: () -> Unit
+        crossinline functor: () -> Unit,
     ) {
         val previousClassPath = currentClassPath
         val previousScope = currentScope

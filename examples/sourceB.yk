@@ -1,7 +1,7 @@
 pkg chaos {
-    class Foo(a: i32, b: f32)
+    class Foo[T](a: i32, b: f32)
 
     fn test() {
-        let a = new chaos::Foo(1, 1f32)
+        let a = new chaos::Foo[i32](1, 1f32)
     }
 }

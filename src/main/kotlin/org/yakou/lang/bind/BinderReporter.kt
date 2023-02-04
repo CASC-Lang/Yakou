@@ -307,4 +307,12 @@ internal interface BinderReporter : UnitReporter {
             .color(Attribute.RED_TEXT())
             .build().build()
     }
+    
+    fun reportGenericArgumentSizeMismatch(span: Span, expectedSize: Int, actualSize: Int) {
+        reporter()
+            .error(adjustSpan(span), "Generic argument size mismatch")
+            .label(span, "Expected $expectedSize but got $actualSize type arguments")
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
 }

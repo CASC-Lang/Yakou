@@ -17,7 +17,7 @@ sealed class TypeInfo {
                 clazz.typeParameters.map { GenericConstraint.fromTypeVariable(clazz.typeParameters, it) },
                 clazz.enclosingClass?.let(::fromClass).`as`(),
                 clazz.superclass?.let(::fromClass).`as`(),
-                clazz.interfaces.map(::fromClass).mapAs()
+                clazz.interfaces.map(::fromClass).mapAs(),
             )
         }
 
@@ -211,14 +211,14 @@ sealed class TypeInfo {
     }
 
     class PackageClass(
-        standardPackagePath: String
+        standardPackagePath: String,
     ) : Class(
         Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL,
         "$standardPackagePath::PackageYk",
         listOf(),
         null,
         fromClass(Any::class.java) as Class,
-        listOf()
+        listOf(),
     )
 
     open class Class(
@@ -227,7 +227,7 @@ sealed class TypeInfo {
         val genericParameters: List<GenericConstraint>,
         val outerClassType: Class?,
         var superClassType: Class?,
-        val interfaceTypes: List<Class>
+        val interfaceTypes: List<Class>,
     ) : TypeInfo(), TypeInfoVariable {
         companion object {
             val OBJECT_TYPE_INFO: Class = fromClass(Any::class.java) as Class
@@ -238,6 +238,7 @@ sealed class TypeInfo {
         val simpleName: String = standardTypePath.split("$", "::").last()
         final override val internalName: String = standardTypePath.replace("::", "/")
         final override val descriptor: String = "L$internalName;"
+        lateinit var genericArguments: List<TypeInfo> // This will be only used when genericParameters are not empty
         override val storeOpcode: Int = Opcodes.ASTORE
         override val loadOpcode: Int = Opcodes.ALOAD
         override val returnOpcode: Int = Opcodes.ARETURN
@@ -299,12 +300,12 @@ sealed class TypeInfo {
         val genericParameterName: String,
         val boundType: BoundType,
         val varianceType: VarianceType,
-        var bounds: MutableList<TypeInfoVariable> = mutableListOf()
+        var bounds: MutableList<TypeInfoVariable> = mutableListOf(),
     ) : TypeInfo(), TypeInfoVariable {
         companion object {
             fun fromTypeVariable(
                 declaredTypeVariables: kotlin.Array<out TypeVariable<*>>,
-                typeVariable: TypeVariable<*>
+                typeVariable: TypeVariable<*>,
             ): GenericConstraint =
                 GenericConstraint(
                     typeVariable.name,
@@ -321,12 +322,12 @@ sealed class TypeInfo {
                                     typeVariable.bounds.isNotEmpty() -> BoundType.UPPER
                                     else -> BoundType.NONE
                                 },
-                                VarianceType.INVARIANCE
+                                VarianceType.INVARIANCE,
                             )
                         } else {
                             fromClass(java.lang.Class.forName(it.typeName)) as Class
                         }
-                    }.toMutableList()
+                    }.toMutableList(),
                 )
         }
 
