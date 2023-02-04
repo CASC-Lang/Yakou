@@ -299,4 +299,12 @@ internal interface BinderReporter : UnitReporter {
             .color(Attribute.RED_TEXT())
             .build().build()
     }
+    
+    fun reportUnresolvableConstructorCall(span: Span) {
+        reporter()
+            .error(adjustSpan(span), "Unresolvable constructor call")
+            .label(span, "Unable to infer the constructor to call")
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
 }

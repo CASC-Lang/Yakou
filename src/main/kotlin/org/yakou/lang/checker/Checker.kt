@@ -480,7 +480,7 @@ class Checker(private val compilationUnit: CompilationUnit) : CheckerReporter, U
             is Expression.Identifier -> checkIdentifier(expression)
             is Expression.As -> checkAs(expression)
             is Expression.Parenthesized -> checkExpression(expression.expression)
-            is Expression.New -> checkNew(expression)
+            is Expression.ConstructorCall -> checkConstructorCall(expression)
             is Expression.BoolLiteral -> {}
             is Expression.NumberLiteral -> checkNumberLiteral(expression)
             is Expression.Empty -> {}
@@ -513,8 +513,9 @@ class Checker(private val compilationUnit: CompilationUnit) : CheckerReporter, U
         }
     }
 
-    private fun checkNew(new: Expression.New) {
-        TODO()
+    private fun checkConstructorCall(constructorCall: Expression.ConstructorCall) {
+        // TODO: Check if constructor call's all generic parameters are being filled in by inference in binder
+        // TODO: Some more checks here are required to make error more explicit
     }
 
     private fun checkNumberLiteral(numberLiteral: Expression.NumberLiteral) {

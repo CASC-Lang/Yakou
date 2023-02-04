@@ -69,7 +69,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             val bytecode = classWriter.toByteArray()
             val classFile = File(
                 compilationSession.preference.outputFolder,
-                "${classTypeInfo.standardTypePath.replace("::", "/")}.class"
+                "${classTypeInfo.standardTypePath.replace("::", "/")}.class",
             )
 
             if (!classFile.parentFile.exists()) {
@@ -122,9 +122,9 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                     is Expression.BoolLiteral -> expression.value
                     is Expression.NumberLiteral -> castNumber(
                         expression.value,
-                        (expression.finalType as TypeInfo.Primitive).type
+                        (expression.finalType as TypeInfo.Primitive).type,
                     )
-                }
+                },
             ).visitEnd()
         }
     }
@@ -144,9 +144,9 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                     is Expression.BoolLiteral -> expression.value
                     is Expression.NumberLiteral -> castNumber(
                         expression.value,
-                        (expression.finalType as TypeInfo.Primitive).type
+                        (expression.finalType as TypeInfo.Primitive).type,
                     )
-                }
+                },
             ).visitEnd()
             return
         }
@@ -156,7 +156,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             staticField.fieldInstance.name,
             staticField.fieldInstance.descriptor,
             null,
-            null
+            null,
         )
 
         fieldVisitor.visitEnd()
@@ -169,7 +169,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             Opcodes.PUTSTATIC,
             staticField.fieldInstance.ownerTypeInfo.internalName,
             staticField.fieldInstance.name,
-            staticField.fieldInstance.descriptor
+            staticField.fieldInstance.descriptor,
         )
     }
 
@@ -185,13 +185,13 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 classTypeInfo.internalName,
                 outerClassTypeInfo.internalName,
                 classTypeInfo.simpleName,
-                classTypeInfo.access + Opcodes.ACC_STATIC // FIXME: Have some kind of way to distinguish inner class and static nested class
+                classTypeInfo.access + Opcodes.ACC_STATIC, // FIXME: Have some kind of way to distinguish inner class and static nested class
             )
             outerClassWriter.visitInnerClass(
                 classTypeInfo.internalName,
                 outerClassTypeInfo.internalName,
                 classTypeInfo.simpleName,
-                classTypeInfo.access + Opcodes.ACC_STATIC // FIXME: Have some kind of way to distinguish inner class and static nested class
+                classTypeInfo.access + Opcodes.ACC_STATIC, // FIXME: Have some kind of way to distinguish inner class and static nested class
             )
         }
 
@@ -206,7 +206,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 TypeInfo.Class.OBJECT_TYPE_INFO.internalName,
                 "<init>",
                 "()V",
-                false
+                false,
             )
         }
 
@@ -218,7 +218,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
     private fun genPrimaryConstructor(
         primaryConstructor: PrimaryConstructor,
-        superClassConstructorCall: Class.SuperClassConstructorCall?
+        superClassConstructorCall: Class.SuperClassConstructorCall?,
     ) {
         val classWriter = getClassWriter(primaryConstructor.constructorInstance.ownerTypeInfo)
         val methodVisitor = classWriter.visitMethod(
@@ -228,9 +228,9 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             genGenericFunctionSignature(
                 listOf(),
                 primaryConstructor.constructorInstance.parameterTypeInfos,
-                TypeInfo.Primitive.UNIT_TYPE_INFO
+                TypeInfo.Primitive.UNIT_TYPE_INFO,
             ),
-            null
+            null,
         )
 
         methodVisitor.visitCode()
@@ -248,7 +248,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             superClassConstructorCall?.superClassTypeInfo?.internalName ?: TypeInfo.Class.OBJECT_TYPE_INFO.internalName,
             "<init>",
             superClassConstructorCall?.constructorInstance?.descriptor ?: "()V",
-            false
+            false,
         )
 
         for ((i, parameter) in primaryConstructor.parameters.withIndex()) {
@@ -264,14 +264,14 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         classWriter: ClassWriter,
         methodVisitor: MethodVisitor,
         constructorParameter: PrimaryConstructor.ConstructorParameter,
-        offset: Int
+        offset: Int,
     ) {
         classWriter.visitField(
             constructorParameter.fieldInstance!!.access,
             constructorParameter.fieldInstance!!.name,
             constructorParameter.fieldInstance!!.descriptor,
             genGenericFieldSignature(constructorParameter.typeInfo),
-            null
+            null,
         ).visitEnd()
 
         methodVisitor.visitVarInsn(Opcodes.ALOAD, 0)
@@ -280,7 +280,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             Opcodes.PUTFIELD,
             constructorParameter.fieldInstance!!.ownerTypeInfo.internalName,
             constructorParameter.fieldInstance!!.name,
-            constructorParameter.fieldInstance!!.descriptor
+            constructorParameter.fieldInstance!!.descriptor,
         )
     }
 
@@ -298,7 +298,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             field.fieldInstance.name,
             field.fieldInstance.descriptor,
             genGenericFieldSignature(field.typeInfo),
-            null
+            null,
         ).visitEnd()
 
         if (field.expression != null) {
@@ -312,7 +312,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 Opcodes.PUTFIELD,
                 field.fieldInstance.ownerTypeInfo.internalName,
                 field.fieldInstance.name,
-                field.fieldInstance.descriptor
+                field.fieldInstance.descriptor,
             )
         }
     }
@@ -326,9 +326,9 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             genGenericFunctionSignature(
                 function.functionInstance.genericParameters,
                 function.functionInstance.parameterTypeInfos,
-                function.functionInstance.returnTypeInfo
+                function.functionInstance.returnTypeInfo,
             ),
-            null
+            null,
         )
 
         methodVisitor.visitCode()
@@ -401,7 +401,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
     private fun genVariableDeclaration(
         methodVisitor: MethodVisitor,
-        variableDeclaration: VariableDeclaration
+        variableDeclaration: VariableDeclaration,
     ) {
         if (variableDeclaration.variableInstance.propagatable && variableDeclaration.variableInstance.referencedCount == 0) {
             return
@@ -412,7 +412,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         if (!variableDeclaration.ignore) {
             methodVisitor.visitVarInsn(
                 variableDeclaration.expression.finalType.storeOpcode,
-                variableDeclaration.variableInstance.index
+                variableDeclaration.variableInstance.index,
             )
         } else {
             // Discard return value if need
@@ -476,7 +476,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             is Expression.Identifier -> genIdentifier(methodVisitor, expression)
             is Expression.As -> genAs(methodVisitor, expression)
             is Expression.Parenthesized -> genExpression(methodVisitor, expression.expression)
-            is Expression.New -> genNew(methodVisitor, expression)
+            is Expression.ConstructorCall -> genConstructorCall(methodVisitor, expression)
             is Expression.BoolLiteral -> genBoolLiteral(methodVisitor, expression)
             is Expression.NumberLiteral -> genNumberLiteral(methodVisitor, expression)
             is Expression.Empty -> {}
@@ -497,7 +497,8 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             Expression.BinaryExpression.BinaryOperation.Modulo,
             Expression.BinaryExpression.BinaryOperation.UnsignedRightShift,
             Expression.BinaryExpression.BinaryOperation.RightShift,
-            Expression.BinaryExpression.BinaryOperation.LeftShift -> {
+            Expression.BinaryExpression.BinaryOperation.LeftShift,
+            -> {
                 genExpression(methodVisitor, binaryExpression.leftExpression)
                 genExpression(methodVisitor, binaryExpression.rightExpression)
 
@@ -575,7 +576,8 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             Expression.BinaryExpression.BinaryOperation.Greater,
             Expression.BinaryExpression.BinaryOperation.GreaterEqual,
             Expression.BinaryExpression.BinaryOperation.Lesser,
-            Expression.BinaryExpression.BinaryOperation.LesserEqual -> {
+            Expression.BinaryExpression.BinaryOperation.LesserEqual,
+            -> {
                 genExpression(methodVisitor, binaryExpression.leftExpression)
                 genExpression(methodVisitor, binaryExpression.rightExpression)
 
@@ -587,7 +589,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                     genComparison(
                         methodVisitor,
                         binaryExpression.operation,
-                        binaryExpression.operation.getFunctorOpcode(leftPrimitiveType)
+                        binaryExpression.operation.getFunctorOpcode(leftPrimitiveType),
                     )
                 }
             }
@@ -606,14 +608,14 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                         Opcodes.GETSTATIC,
                         symbolInstance.ownerTypeInfo.internalName,
                         symbolInstance.name,
-                        symbolInstance.descriptor
+                        symbolInstance.descriptor,
                     )
                 } else {
                     methodVisitor.visitFieldInsn(
                         Opcodes.GETFIELD,
                         symbolInstance.ownerTypeInfo.internalName,
                         symbolInstance.name,
-                        symbolInstance.descriptor
+                        symbolInstance.descriptor,
                     )
                 }
             }
@@ -626,7 +628,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         methodVisitor: MethodVisitor,
         leftType: TypeInfo,
         rightType: TypeInfo,
-        invert: Boolean
+        invert: Boolean,
     ) {
         // lhs -> i1
         // rhs -> i2
@@ -656,7 +658,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                     eqMethod.ownerTypeInfo.internalName,
                     "equals",
                     "(Ljava/lang/Object;)Z",
-                    false
+                    false,
                 ) // stack: - Z
                 methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel) // stack: - Z
                 methodVisitor.visitLabel(nullLabel1) // stack: - i1 - i2
@@ -684,7 +686,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         methodVisitor: MethodVisitor,
         leftType: TypeInfo,
         rightType: TypeInfo,
-        invert: Boolean
+        invert: Boolean,
     ) {
         // lhs -> i1
         // rhs -> i2
@@ -720,7 +722,8 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
             PrimitiveType.Char,
             PrimitiveType.I8,
             PrimitiveType.I16,
-            PrimitiveType.I32 -> {
+            PrimitiveType.I32,
+            -> {
                 val trueLabel = Label()
                 val endLabel = Label()
                 methodVisitor.visitJumpInsn(if (invert) leftType.neOpcode else leftType.eqOpcode, trueLabel)
@@ -733,7 +736,8 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
             PrimitiveType.I64,
             PrimitiveType.F32,
-            PrimitiveType.F64 -> {
+            PrimitiveType.F64,
+            -> {
                 val falseLabel = Label()
                 val endLabel = Label()
                 methodVisitor.visitInsn(leftType.eqOpcode) // Opcodes.LCMP, Opcodes.FCMPG or Opcodes.DCMPG
@@ -765,7 +769,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private fun genComparison(
         methodVisitor: MethodVisitor,
         operation: Expression.BinaryExpression.BinaryOperation,
-        opcode: Int
+        opcode: Int,
     ) {
         val trueLabel = Label()
         val endLabel = Label()
@@ -801,7 +805,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 Type.getInternalName(wrappedClazz),
                 "valueOf",
                 "(${originalType.descriptor})${wrappedClazz.descriptorString()}",
-                false
+                false,
             )
         } else if (originalType is TypeInfo.Class && finalType is TypeInfo.Primitive) {
             // Unbox
@@ -812,7 +816,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 Type.getInternalName(wrappedClazz),
                 "${finalType.type.originalName}Value",
                 "()${finalType.descriptor}",
-                false
+                false,
             )
         } else if (originalType is TypeInfo.Primitive && finalType is TypeInfo.Primitive) {
             methodVisitor.visitInsn(getCastOpcode(originalType.type, finalType.type))
@@ -821,8 +825,21 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         }
     }
 
-    private fun genNew(methodVisitor: MethodVisitor, new: Expression.New) {
-        TODO()
+    private fun genConstructorCall(methodVisitor: MethodVisitor, constructorCall: Expression.ConstructorCall) {
+        methodVisitor.visitTypeInsn(Opcodes.NEW, constructorCall.referenceClassTypeInfo.internalName)
+        methodVisitor.visitInsn(Opcodes.DUP)
+        
+        for (argument in constructorCall.arguments) {
+            genExpression(methodVisitor, argument)
+        }
+
+        methodVisitor.visitMethodInsn(
+            Opcodes.INVOKESPECIAL,
+            constructorCall.referenceClassTypeInfo.internalName,
+            "<init>",
+            constructorCall.referenceConstructor.descriptor,
+            false,
+        )
     }
 
     private fun genBoolLiteral(methodVisitor: MethodVisitor, boolLiteral: Expression.BoolLiteral) {
@@ -833,15 +850,15 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         methodVisitor.visitLdcInsn(
             castNumber(
                 numberLiteral.value,
-                (numberLiteral.finalType as TypeInfo.Primitive).type
-            )
+                (numberLiteral.finalType as TypeInfo.Primitive).type,
+            ),
         )
     }
 
     private fun genGenericClassSignature(
         genericConstraints: List<TypeInfo.GenericConstraint>,
         superTypeInfo: TypeInfo.Class,
-        interfaceTypeInfos: List<TypeInfo.Class>
+        interfaceTypeInfos: List<TypeInfo.Class>,
     ): String {
         val signatureWriter = SignatureWriter()
 
@@ -861,7 +878,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     }
 
     private fun genGenericFieldSignature(
-        genericConstraint: TypeInfo
+        genericConstraint: TypeInfo,
     ): String? =
         if (genericConstraint is TypeInfo.GenericConstraint &&
             genericConstraint.varianceType == TypeInfo.GenericConstraint.VarianceType.INVARIANCE
@@ -873,7 +890,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
     private fun genGenericBoundSignature(
         signatureWriter: SignatureWriter,
-        genericConstraint: TypeInfo.GenericConstraint
+        genericConstraint: TypeInfo.GenericConstraint,
     ) {
         if (genericConstraint.varianceType == TypeInfo.GenericConstraint.VarianceType.INVARIANCE) {
             signatureWriter.visitFormalTypeParameter(genericConstraint.genericParameterName)
@@ -914,7 +931,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private fun genGenericFunctionSignature(
         genericConstraints: List<TypeInfo.GenericConstraint>,
         parameterTypeInfos: List<TypeInfo>,
-        returnTypeInfo: TypeInfo
+        returnTypeInfo: TypeInfo,
     ): String {
         val signatureWriter = SignatureWriter()
 
@@ -929,7 +946,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
         signatureWriter: SignatureWriter,
         genericConstraints: List<TypeInfo.GenericConstraint>,
         parameterTypeInfos: List<TypeInfo>,
-        returnTypeInfo: TypeInfo
+        returnTypeInfo: TypeInfo,
     ) {
         for (genericConstraint in genericConstraints) {
             genGenericBoundSignature(signatureWriter, genericConstraint)
@@ -949,7 +966,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
     private fun genGenericSignature(
         signatureVisitor: SignatureVisitor,
         typeInfo: TypeInfo,
-        noVisitEnd: Boolean = false
+        noVisitEnd: Boolean = false,
     ) {
         when (typeInfo) {
             is TypeInfo.Primitive -> genGenericSignature(signatureVisitor, typeInfo)
@@ -984,7 +1001,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
 
     private fun genGenericSignature(
         signatureVisitor: SignatureVisitor,
-        genericConstraint: TypeInfo.GenericConstraint
+        genericConstraint: TypeInfo.GenericConstraint,
     ) {
         if (genericConstraint.varianceType == TypeInfo.GenericConstraint.VarianceType.INVARIANCE) {
             signatureVisitor.visitTypeVariable(genericConstraint.genericParameterName)
@@ -1007,10 +1024,10 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 genGenericClassSignature(
                     clazz.genericParameters,
                     clazz.superClassType ?: TypeInfo.Class.OBJECT_TYPE_INFO,
-                    clazz.interfaceTypes
+                    clazz.interfaceTypes,
                 ),
                 clazz.superClassType?.internalName.orEmpty(),
-                clazz.interfaceTypes.map(TypeInfo.Class::internalName).toTypedArray()
+                clazz.interfaceTypes.map(TypeInfo.Class::internalName).toTypedArray(),
             )
 
             classWriter
@@ -1024,7 +1041,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 "<clinit>",
                 "()V",
                 null,
-                null
+                null,
             )
 
             staticBlockWriters[clazz] = methodVisitor
@@ -1042,7 +1059,7 @@ class JvmBytecodeGenerator(private val compilationSession: CompilationSession) {
                 "<init>",
                 "()V",
                 null,
-                null
+                null,
             )
 
             primaryConstructorWriters[clazz] = methodVisitor

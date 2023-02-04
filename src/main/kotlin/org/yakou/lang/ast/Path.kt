@@ -37,6 +37,12 @@ sealed class Path : AstNode {
         }
 
         override fun toString(): String =
-            pathSegments.joinToString(separator = separator, transform = Path::toString)
+            pathSegments.joinToString("") {
+                if (it is TokenPath && it.token.type is TokenType.DoubleColon) {
+                    separator
+                } else {
+                    it.toString()
+                }
+            }
     }
 }

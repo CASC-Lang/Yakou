@@ -115,17 +115,18 @@ sealed class Expression : AstNode {
         }
     }
 
-    class New(
+    class ConstructorCall(
         val new: Token,
         val classType: Type,
         val leftParenthesis: Token,
-        val arguments: List<Argument>,
+        var arguments: List<Argument>,
         val rightParenthesis: Token
     ) : Expression() {
         override val span: Span by lazy {
             new.span.expand(rightParenthesis.span)
         }
 
+        lateinit var referenceClassTypeInfo: TypeInfo
         lateinit var referenceConstructor: ClassMember.Constructor
     }
 

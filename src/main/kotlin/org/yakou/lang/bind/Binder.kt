@@ -1,6 +1,7 @@
 package org.yakou.lang.bind
 
 import org.objectweb.asm.Opcodes
+import org.yakou.lang.ast.Argument
 import org.yakou.lang.ast.Block
 import org.yakou.lang.ast.Class
 import org.yakou.lang.ast.ClassItem
@@ -617,7 +618,7 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
             is Expression.As -> bindAs(expression)
             is Expression.Identifier -> bindIdentifier(expression)
             is Expression.Parenthesized -> bindParenthesized(expression)
-            is Expression.New -> bindNew(expression)
+            is Expression.ConstructorCall -> bindConstructorCall(expression)
             is Expression.BoolLiteral -> bindBoolLiteral(expression)
             is Expression.NumberLiteral -> bindNumberLiteral(expression)
             is Expression.Empty -> {}
@@ -749,8 +750,23 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
         parenthesized.finalType = parenthesized.originalType
     }
 
-    private fun bindNew(new: Expression.New) {
-        bindType(new.classType)
+    private fun bindConstructorCall(constructorCall: Expression.ConstructorCall) {
+        constructorCall.referenceClassTypeInfo = bindType(constructorCall.classType)
+
+        for (expression in constructorCall.arguments) {
+            bindExpression(expression)
+        }
+        
+        val constructor = table.findConstructor(constructorCall.referenceClassTypeInfo.toString(), constructorCall.arguments.map(Argument::finalType))
+        
+        if (constructor == null) {
+            reportUnresolvableConstructorCall(constructorCall.span)
+        } else {
+            constructorCall.referenceConstructor = constructor
+            
+            constructorCall.originalType = constructorCall.referenceClassTypeInfo
+            constructorCall.finalType = constructorCall.referenceClassTypeInfo
+        }
     }
 
     private fun bindBoolLiteral(boolLiteral: Expression.BoolLiteral) {

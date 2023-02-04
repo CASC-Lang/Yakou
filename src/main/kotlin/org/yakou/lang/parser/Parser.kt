@@ -781,7 +781,7 @@ class Parser(private val compilationUnit: CompilationUnit) :
             val arguments = parseArguments()
             val rightParenthesis = expect(TokenType.CloseParenthesis)
 
-            Expression.New(
+            Expression.ConstructorCall(
                 new,
                 classType,
                 leftParenthesis,
@@ -973,7 +973,7 @@ class Parser(private val compilationUnit: CompilationUnit) :
     private fun parseArguments(): List<Argument> {
         val arguments = mutableListOf<Argument>()
 
-        while (pos < tokens.size && optExpectType(TokenType.Identifier)) {
+        while (pos < tokens.size && !optExpectType(TokenType.CloseParenthesis)) {
             arguments += parseArgument()
 
             if (optExpectType(TokenType.Comma)) {

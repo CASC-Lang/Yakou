@@ -157,7 +157,7 @@ class Optimizer(private val compilationUnit: CompilationUnit) {
         is Expression.Identifier -> optimizeIdentifier(expression)
         is Expression.As -> optimizeAs(expression)
         is Expression.Parenthesized -> optimizeParenthesized(expression)
-        is Expression.New -> optimizeNew(expression)
+        is Expression.ConstructorCall -> optimizeConstructorCall(expression)
         is Expression.BoolLiteral -> expression
         is Expression.NumberLiteral -> expression
         is Expression.Empty -> expression
@@ -357,7 +357,9 @@ class Optimizer(private val compilationUnit: CompilationUnit) {
         return expression
     }
 
-    private fun optimizeNew(expression: Expression.New): Expression.New {
+    private fun optimizeConstructorCall(expression: Expression.ConstructorCall): Expression.ConstructorCall {
+        expression.arguments = expression.arguments.map(::optimizeExpression)
+        
         return expression
     }
 

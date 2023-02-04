@@ -123,7 +123,7 @@ class Lexer(private val compilationUnit: CompilationUnit) : LeverReporter, UnitR
                 null to null
             }
         val (typeAnnotation, typeAnnotationSpan) =
-            if (!currentLine[pos].isWhitespace()) {
+            if (currentLine[pos].isLetter()) {
                 lexLiteralTypeAnnotation()
             } else {
                 null to null
@@ -153,9 +153,8 @@ class Lexer(private val compilationUnit: CompilationUnit) : LeverReporter, UnitR
     private fun lexFloatLiteral(): Pair<String, Span> =
         lexSegment(Char::isDigit)
 
-    private fun lexLiteralTypeAnnotation(): Pair<String, Span> {
-        return lexSegment { !it.isWhitespace() }
-    }
+    private fun lexLiteralTypeAnnotation(): Pair<String, Span> = 
+        lexSegment(Char::isLetterOrDigit)
 
     private inline fun lexSegment(predicate: (Char) -> Boolean): Pair<String, Span> {
         val startPos = pos
@@ -261,7 +260,7 @@ class Lexer(private val compilationUnit: CompilationUnit) : LeverReporter, UnitR
 
     private fun stringToken(type: TokenType.SizedTokenType) {
         tokens += Token(
-            currentLine.substring(pos..pos + type.size()),
+            currentLine.substring(pos until pos + type.size()),
             type,
             Span.singleLine(line + 1, pos, pos + type.size())
         )
