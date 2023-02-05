@@ -144,7 +144,7 @@ class Table {
             ?.mapAs<ClassMember, ClassMember.Fn>()
             ?.filter { it.name == functionName && it.parameterTypeInfos.size == argumentTypes.size }
             ?.find {
-                it.parameterTypeInfos.zip(argumentTypes).all { (from, to) ->
+                argumentTypes.zip(it.parameterTypeInfos).all { (from, to) ->
                     from.canImplicitCast(to)
                 }
             }
@@ -165,7 +165,7 @@ class Table {
             ?.mapAs<ClassMember, ClassMember.Constructor>()
             ?.filter { it.parameterTypeInfos.size == argumentTypes.size }
             ?.find {
-                it.parameterTypeInfos.zip(argumentTypes).all { (from, to) ->
+                argumentTypes.zip(it.parameterTypeInfos).all { (from, to) ->
                     from.canImplicitCast(to)
                 }
             }
