@@ -52,7 +52,7 @@ class Table {
 
         if (!typeTable.containsKey(packagePath)) {
             typeTable[qualifiedClassPath] = TypeInfo.PackageClass(
-                packagePath
+                packagePath,
             )
         }
     }
@@ -61,7 +61,7 @@ class Table {
         access: Int,
         packagePath: String,
         classPath: String,
-        genericDeclarationParameters: List<GenericDeclarationParameters.GenericDeclarationParameter>
+        genericDeclarationParameters: List<GenericDeclarationParameters.GenericDeclarationParameter>,
     ): TypeInfo.Class? {
         val qualifiedClassPath = packagePath.appendPath(classPath)
 
@@ -84,7 +84,7 @@ class Table {
                 genericDeclarationParameters.map(GenericDeclarationParameters.GenericDeclarationParameter::genericConstraint),
                 outerClass,
                 TypeInfo.fromClass(Any::class.java).`as`(),
-                listOf()
+                listOf(),
             )
 
             typeTable[qualifiedClassPath] = classType
@@ -96,7 +96,7 @@ class Table {
     fun registerSuperClassType(
         packagePath: String,
         classPath: String,
-        superClassType: TypeInfo.Class
+        superClassType: TypeInfo.Class,
     ): Boolean {
         val qualifiedOwnerPath = packagePath.appendPath(classPath)
 
@@ -112,7 +112,7 @@ class Table {
     // Query functions
 
     fun getFields(
-        qualifiedOwnerPath: String
+        qualifiedOwnerPath: String,
     ): List<ClassMember.Field>? =
         classMemberTable[qualifiedOwnerPath]
             ?.get(ClassMember.MemberType.FIELD)
@@ -120,7 +120,7 @@ class Table {
 
     fun findField(
         qualifiedOwnerPath: String,
-        fieldName: String
+        fieldName: String,
     ): ClassMember.Field? =
         classMemberTable[qualifiedOwnerPath]
             ?.get(ClassMember.MemberType.FIELD)
@@ -128,7 +128,7 @@ class Table {
             ?.`as`()
 
     fun getFunctions(
-        qualifiedOwnerPath: String
+        qualifiedOwnerPath: String,
     ): List<ClassMember.Fn>? =
         classMemberTable[qualifiedOwnerPath]
             ?.get(ClassMember.MemberType.FUNCTION)
@@ -137,7 +137,7 @@ class Table {
     fun findFunction(
         qualifiedOwnerPath: String,
         functionName: String,
-        argumentTypes: List<TypeInfo>
+        argumentTypes: List<TypeInfo>,
     ): ClassMember.Fn? =
         classMemberTable[qualifiedOwnerPath]
             ?.get(ClassMember.MemberType.FUNCTION)
@@ -150,7 +150,7 @@ class Table {
             }
 
     fun getConstructors(
-        qualifiedOwnerPath: String
+        qualifiedOwnerPath: String,
     ): List<ClassMember.Constructor>? =
         classMemberTable[qualifiedOwnerPath]
             ?.get(ClassMember.MemberType.CONSTRUCTOR)
@@ -158,7 +158,7 @@ class Table {
 
     fun findConstructor(
         qualifiedOwnerPath: String,
-        argumentTypes: List<TypeInfo>
+        argumentTypes: List<TypeInfo>,
     ): ClassMember.Constructor? =
         classMemberTable[qualifiedOwnerPath]
             ?.get(ClassMember.MemberType.CONSTRUCTOR)
@@ -259,21 +259,7 @@ class Table {
                     typeTable[typeName] = typeInfo
 
                     if (!classMemberTable.containsKey(typeName)) {
-                        classMemberTable[typeName] = EnumMap(ClassMember.MemberType::class.java)
-                        classMemberTable[typeName]!![ClassMember.MemberType.FIELD] = mutableListOf()
-                        classMemberTable[typeName]!![ClassMember.MemberType.FUNCTION] = mutableListOf()
-
-                        for (field in clazz.declaredFields) {
-                            classMemberTable[typeName]!![ClassMember.MemberType.FIELD]!! += ClassMember.Field.fromField(
-                                field
-                            )
-                        }
-
-                        for (method in clazz.declaredMethods) {
-                            classMemberTable[typeName]!![ClassMember.MemberType.FUNCTION]!! += ClassMember.Fn.fromMethod(
-                                method
-                            )
-                        }
+                        initMembers(typeName, clazz)
                     }
 
                     return@run typeInfo
@@ -286,38 +272,24 @@ class Table {
         }
     }
 
-    private fun collectBfsInheritanceTree(entryClass: TypeInfo.Class): Set<TypeInfo.Class> {
-        var index = 0
-        var previousSize = 0
-        val result = mutableListOf(entryClass)
+    private fun getMembers(typeName: String): EnumMap<ClassMember.MemberType, MutableList<ClassMember>>? =
+        classMemberTable[typeName]
 
-        while (true) {
-            val currentSize = result.size
+    private fun getMemberList(typeName: String, memberType: ClassMember.MemberType): MutableList<ClassMember>? =
+        getMembers(typeName)?.get(memberType)
 
-            for (i in index until currentSize) {
-                val parentClass = result[i].superClassType
+    private fun appendMember(typeName: String, memberInstance: ClassMember) {
+        getMemberList(typeName, memberInstance.memberType)?.add(memberInstance)
+    }
 
-                if (parentClass != TypeInfo.Class.OBJECT_TYPE_INFO) {
-                    result.add(parentClass!!)
-                }
-
-                val interfaceClasses = result[i].interfaceTypes
-
-                result += interfaceClasses
-            }
-
-            if (previousSize == result.size) {
-                // No append in current iteration
-                break
-            } else {
-                index = previousSize - 1
-                previousSize = result.size
-            }
-        }
-
-        result += TypeInfo.Class.OBJECT_TYPE_INFO
-
-        return result.toSet()
+    private fun initMembers(typeName: String, clazz: Class<*>) {
+        classMemberTable[typeName] = EnumMap(ClassMember.MemberType.values.associateWith { mutableListOf() })
+        
+        buildList {
+            addAll(clazz.declaredFields.map(ClassMember.Field::fromField))
+            addAll(clazz.declaredConstructors.map(ClassMember.Constructor::fromConstructor))
+            addAll(clazz.declaredMethods.map(ClassMember.Fn::fromMethod))
+        }.forEach { appendMember(typeName, it) }
     }
 
     private fun String.appendPath(path: String): String =
