@@ -19,7 +19,7 @@ internal interface BinderReporter : UnitReporter {
         reporter()
             .error(
                 adjustSpan(span),
-                "Unresolved symbol"
+                "Unresolved symbol",
             )
             .label(span, "Unable to find symbol `$coloredName` in current context")
             .color(Attribute.RED_TEXT())
@@ -28,12 +28,12 @@ internal interface BinderReporter : UnitReporter {
 
     fun reportConstAlreadyDefined(field: ClassMember.Field, const: Const) {
         val span = const.span
-        val coloredConstLiteral = colorize(field.constToString(), Attribute.CYAN_TEXT())
+        val coloredConstLiteral = colorize(field.toString(), Attribute.CYAN_TEXT())
 
         reporter()
             .error(
                 adjustSpan(span),
-                "Constant $coloredConstLiteral is already defined at `${field.qualifiedOwnerPath}`"
+                "Constant $coloredConstLiteral is already defined at `${field.qualifiedOwnerPath}`",
             )
             .label(span, "Already defined")
             .color(Attribute.RED_TEXT())
@@ -42,12 +42,12 @@ internal interface BinderReporter : UnitReporter {
 
     fun reportStaticFieldAlreadyDefined(field: ClassMember.Field, staticField: StaticField) {
         val span = staticField.span
-        val coloredStaticFieldLiteral = colorize(field.staticFieldToString(), Attribute.CYAN_TEXT())
+        val coloredStaticFieldLiteral = colorize(field.toString(), Attribute.CYAN_TEXT())
 
         reporter()
             .error(
                 adjustSpan(span),
-                "Static field $coloredStaticFieldLiteral is already defined at `${field.qualifiedOwnerPath}`"
+                "Static field $coloredStaticFieldLiteral is already defined at `${field.qualifiedOwnerPath}`",
             )
             .label(span, "Already defined")
             .color(Attribute.RED_TEXT())
@@ -62,7 +62,7 @@ internal interface BinderReporter : UnitReporter {
         reporter()
             .error(
                 adjustSpan(span),
-                "Class $coloredClassLiteral is already defined at `$coloredPackageLiteral`"
+                "Class $coloredClassLiteral is already defined at `$coloredPackageLiteral`",
             )
             .label(span, "Already defined")
             .color(Attribute.RED_TEXT())
@@ -70,13 +70,12 @@ internal interface BinderReporter : UnitReporter {
     }
 
     fun reportFieldAlreadyDefined(fieldInstance: ClassMember.Field, span: Span) {
-        val coloredStaticFieldLiteral =
-            colorize(fieldInstance.staticFieldToString(), Attribute.CYAN_TEXT())
+        val coloredFieldLiteral = colorize(fieldInstance.toString(), Attribute.CYAN_TEXT())
 
         reporter()
             .error(
                 adjustSpan(span),
-                "Static field $coloredStaticFieldLiteral is already defined at `${fieldInstance.qualifiedOwnerPath}`"
+                "Field $coloredFieldLiteral is already defined at `${fieldInstance.qualifiedOwnerPath}`",
             )
             .label(span, "Already defined")
             .color(Attribute.RED_TEXT())
@@ -90,7 +89,7 @@ internal interface BinderReporter : UnitReporter {
         reporter()
             .error(
                 adjustSpan(span),
-                "Function $coloredFnLiteral is already defined at `${fn.qualifiedOwnerPath}`"
+                "Function $coloredFnLiteral is already defined at `${fn.qualifiedOwnerPath}`",
             )
             .label(span, "Already defined")
             .color(Attribute.RED_TEXT())
@@ -103,7 +102,7 @@ internal interface BinderReporter : UnitReporter {
         reporter()
             .error(
                 adjustSpan(span),
-                "Constructor $coloredCtorLiteral is already defined at `${constructor.qualifiedOwnerPath}`"
+                "Constructor $coloredCtorLiteral is already defined at `${constructor.qualifiedOwnerPath}`",
             )
             .label(span, "Already defined")
             .color(Attribute.RED_TEXT())
@@ -125,7 +124,7 @@ internal interface BinderReporter : UnitReporter {
         reporter()
             .warning(
                 adjustSpan(variable.nameToken.span),
-                "$variableType `$coloredVariableName` is never used"
+                "$variableType `$coloredVariableName` is never used",
             )
             .label(variable.nameToken.span, "Unused ${variableType.lowercase()} here")
             .color(Attribute.YELLOW_TEXT())
@@ -139,7 +138,7 @@ internal interface BinderReporter : UnitReporter {
         reporter()
             .error(
                 adjustSpan(originalSpan.expand(duplicatedSpan)),
-                "Variable `$coloredVariableName` is already declared"
+                "Variable `$coloredVariableName` is already declared",
             )
             .label(originalSpan, "Variable `$coloredVariableName` was declared here first")
             .color(Attribute.CYAN_TEXT())
@@ -172,27 +171,27 @@ internal interface BinderReporter : UnitReporter {
     fun reportNonIntegerShiftOperation(binaryExpression: Expression.BinaryExpression) {
         val coloredOperator = colorize(
             binaryExpression.operator.literal,
-            Attribute.CYAN_TEXT()
+            Attribute.CYAN_TEXT(),
         )
         val coloredLeftTypeLiteral = colorize(
             binaryExpression.leftExpression.finalType.toString(),
-            Attribute.CYAN_TEXT()
+            Attribute.CYAN_TEXT(),
         )
 
         reporter()
             .error(
                 adjustSpan(binaryExpression.span),
-                "Unable to shift type `$coloredLeftTypeLiteral` with `$coloredOperator`"
+                "Unable to shift type `$coloredLeftTypeLiteral` with `$coloredOperator`",
             )
             .label(
                 binaryExpression.leftExpression.span,
-                "Expression has non-integer type `$coloredLeftTypeLiteral`"
+                "Expression has non-integer type `$coloredLeftTypeLiteral`",
             )
             .color(Attribute.CYAN_TEXT())
             .build()
             .label(
                 binaryExpression.operator.span,
-                "Inapplicable operator `$coloredOperator`"
+                "Inapplicable operator `$coloredOperator`",
             )
             .color(Attribute.RED_TEXT())
             .build().build()
@@ -201,7 +200,7 @@ internal interface BinderReporter : UnitReporter {
     fun reportNonI32ShiftOperation(binaryExpression: Expression.BinaryExpression) {
         val coloredOperator = colorize(
             binaryExpression.operator.literal,
-            Attribute.CYAN_TEXT()
+            Attribute.CYAN_TEXT(),
         )
         val coloredRightTypeLiteral =
             colorize(binaryExpression.rightExpression.finalType.toString(), Attribute.CYAN_TEXT())
@@ -209,17 +208,17 @@ internal interface BinderReporter : UnitReporter {
         reporter()
             .error(
                 adjustSpan(binaryExpression.span),
-                "Unable to shift type `$coloredRightTypeLiteral` with `$coloredOperator`"
+                "Unable to shift type `$coloredRightTypeLiteral` with `$coloredOperator`",
             )
             .label(
                 binaryExpression.rightExpression.span,
-                "Expression has non-i32 type `$coloredRightTypeLiteral`"
+                "Expression has non-i32 type `$coloredRightTypeLiteral`",
             )
             .color(Attribute.CYAN_TEXT())
             .build()
             .label(
                 binaryExpression.operator.span,
-                "Inapplicable operator `$coloredOperator`"
+                "Inapplicable operator `$coloredOperator`",
             )
             .color(Attribute.RED_TEXT())
             .build().build()
@@ -229,7 +228,7 @@ internal interface BinderReporter : UnitReporter {
         binaryExpression: Expression.BinaryExpression,
         leftType: TypeInfo,
         rightType: TypeInfo,
-        expectedType: TypeInfo? = TypeInfo.Primitive.BOOL_TYPE_INFO
+        expectedType: TypeInfo? = TypeInfo.Primitive.BOOL_TYPE_INFO,
     ) {
         val coloredOperator = colorize(binaryExpression.operator.literal, Attribute.CYAN_TEXT())
         val coloredLeftTypeLiteral = colorize(leftType.toString(), Attribute.CYAN_TEXT())
@@ -239,11 +238,11 @@ internal interface BinderReporter : UnitReporter {
         reporter()
             .error(
                 adjustSpan(binaryExpression.span),
-                "Unable to apply `$coloredOperator` on `$coloredLeftTypeLiteral` and `$coloredRightTypeLiteral`"
+                "Unable to apply `$coloredOperator` on `$coloredLeftTypeLiteral` and `$coloredRightTypeLiteral`",
             )
             .label(
                 binaryExpression.leftExpression.span,
-                "Left expression has type `$coloredLeftTypeLiteral`"
+                "Left expression has type `$coloredLeftTypeLiteral`",
             )
             .color(Attribute.CYAN_TEXT())
             .build()
@@ -257,7 +256,7 @@ internal interface BinderReporter : UnitReporter {
             .build()
             .label(
                 binaryExpression.rightExpression.span,
-                "Right expression has type `$coloredRightTypeLiteral`"
+                "Right expression has type `$coloredRightTypeLiteral`",
             )
             .color(Attribute.CYAN_TEXT())
             .build().build()
@@ -267,7 +266,7 @@ internal interface BinderReporter : UnitReporter {
         reporter()
             .error(
                 adjustSpan(genericDeclarationParameter.span),
-                "Unable to set bound to non-class type or non-type-parameter"
+                "Unable to set bound to non-class type or non-type-parameter",
             )
             .label(genericDeclarationParameter.span, "Bound type can only be class type or type parameter")
             .color(Attribute.CYAN_TEXT())
@@ -299,7 +298,7 @@ internal interface BinderReporter : UnitReporter {
             .color(Attribute.RED_TEXT())
             .build().build()
     }
-    
+
     fun reportUnresolvableConstructorCall(span: Span) {
         reporter()
             .error(adjustSpan(span), "Unresolvable constructor call")
@@ -307,7 +306,7 @@ internal interface BinderReporter : UnitReporter {
             .color(Attribute.RED_TEXT())
             .build().build()
     }
-    
+
     fun reportGenericArgumentSizeMismatch(span: Span, expectedSize: Int, actualSize: Int) {
         reporter()
             .error(adjustSpan(span), "Generic argument size mismatch")
@@ -315,10 +314,13 @@ internal interface BinderReporter : UnitReporter {
             .color(Attribute.RED_TEXT())
             .build().build()
     }
-    
+
     fun reportGenericArgumentOutOfBound(span: Span, givenType: TypeInfo, expectedBound: TypeInfo.GenericConstraint) {
         reporter()
-            .error(adjustSpan(span), "Type $givenType cannot be converted into ${expectedBound.bounds.joinToString(", ")}")
+            .error(
+                adjustSpan(span),
+                "Type $givenType cannot be converted into ${expectedBound.bounds.joinToString(", ")}",
+            )
             .label(span, "Expected bound is $expectedBound")
             .color(Attribute.RED_TEXT())
             .build().build()
