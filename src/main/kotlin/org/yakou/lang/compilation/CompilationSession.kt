@@ -14,7 +14,7 @@ import org.yakou.lang.util.Constants
 class CompilationSession(val preference: AbstractPreference) {
     val table: Table = Table()
     private val sourceFile: File? = preference.sourceFile
-    private val unitProcessResult: MutableMap<String, Pair<Boolean, Long>> = mutableMapOf()
+    private val unitProcessResult: MutableMap<String, Pair<UnitProcessResult, Long>> = mutableMapOf()
 
     fun compile() {
         if (sourceFile == null || !sourceFile.exists()) {
@@ -32,10 +32,7 @@ class CompilationSession(val preference: AbstractPreference) {
             val statusPadding = if (preference.enableColor) 10 else 1
 
             for ((unitName, result) in unitProcessResult) {
-                val status = when (result.first) {
-                    true -> if (preference.useAscii) "V" else "✔"
-                    false -> if (preference.useAscii) "X" else "✖"
-                }
+                val status = result.first.stateLiteral
 
                 println(
                     "%-${unitNamePadding}s %s status: %-${statusPadding}s | elapsed time: %d ms".format(
@@ -44,14 +41,18 @@ class CompilationSession(val preference: AbstractPreference) {
                         if (preference.enableColor) {
                             Ansi.colorize(
                                 status,
-                                if (result.first) Attribute.GREEN_BACK() else Attribute.RED_BACK(),
-                                Attribute.BLACK_TEXT()
+                                when (result.first) {
+                                    UnitProcessResult.PASSED -> Attribute.GREEN_BACK()
+                                    UnitProcessResult.FAILED -> Attribute.RED_BACK()
+                                    UnitProcessResult.SKIPPED -> Attribute.BRIGHT_BLACK_BACK()
+                                },
+                                Attribute.BLACK_TEXT(),
                             )
                         } else {
                             status
                         },
-                        result.second
-                    )
+                        result.second,
+                    ),
                 )
             }
         }
@@ -65,52 +66,63 @@ class CompilationSession(val preference: AbstractPreference) {
 
         // PHASE I: LEXICAL ANALYSIS
         unitProcessResult["lexical analysis"] = measureTime {
-            compilationUnits.all(CompilationUnit::lex)
+            compilationUnits.processAll(CompilationUnit::lex)
         }
 
-        if (!unitProcessResult["lexical analysis"]!!.first) {
+        if (!unitProcessResult["lexical analysis"]!!.first.ok()) {
             return
         }
 
         // PHASE II: SYNTACTIC ANALYSIS
         unitProcessResult["syntactic analysis"] = measureTime {
-            compilationUnits.all(CompilationUnit::parse)
+            compilationUnits.processAll(CompilationUnit::parse)
         }
 
-        if (!unitProcessResult["syntactic analysis"]!!.first) {
+        if (!unitProcessResult["syntactic analysis"]!!.first.ok()) {
             return
         }
 
-        // PHASE III: TYPE BINDING
+        // PHASE III: DECLARATION BINDING
+        unitProcessResult["declaration binding"] = measureTime {
+            compilationUnits.processAll(CompilationUnit::bind)
+        }
+
+        if (!unitProcessResult["declaration binding"]!!.first.ok()) {
+            return
+        }
+
+        // PHASE IV: TYPE BINDING
         unitProcessResult["type binding"] = measureTime {
-            val declarationBinding = compilationUnits.all(CompilationUnit::bind)
-
-            declarationBinding && compilationUnits.all(CompilationUnit::postBind)
+            compilationUnits.processAll(CompilationUnit::postBind)
         }
 
-        if (!unitProcessResult["type binding"]!!.first) {
+        if (!unitProcessResult["type binding"]!!.first.ok()) {
             return
         }
 
-        // PHASE III: SEMANTIC CHECKING
+        // PHASE V: SEMANTIC CHECKING
         unitProcessResult["semantic checking"] = measureTime {
-            compilationUnits.all(CompilationUnit::check)
+            compilationUnits.processAll(CompilationUnit::check)
         }
 
-        if (!unitProcessResult["semantic checking"]!!.first) {
+        if (!unitProcessResult["semantic checking"]!!.first.ok()) {
             return
         }
 
-        // PHASE IV: CODE OPTIMIZATION
-        unitProcessResult["code optimization"] = measureTime {
-            compilationUnits.all(CompilationUnit::optimize)
+        // PHASE VI: CODE OPTIMIZATION
+        if (!preference.noOpt) {
+            unitProcessResult["code optimization"] = measureTime {
+                compilationUnits.processAll(CompilationUnit::optimize)
+            }
+
+            if (!unitProcessResult["code optimization"]!!.first.ok()) {
+                return
+            }
+        } else {
+            unitProcessResult["code optimization"] = UnitProcessResult.SKIPPED to 0
         }
 
-        if (!unitProcessResult["code optimization"]!!.first) {
-            return
-        }
-
-        // PHASE V: CODE GENERATION
+        // PHASE VII: CODE GENERATION
         unitProcessResult["code generation"] = measureTime {
             val generator = JvmBytecodeGenerator(this)
 
@@ -119,7 +131,7 @@ class CompilationSession(val preference: AbstractPreference) {
 
             generator.finalize()
 
-            true
+            UnitProcessResult.PASSED
         }
     }
 
@@ -129,54 +141,70 @@ class CompilationSession(val preference: AbstractPreference) {
         // PHASE I: LEXICAL ANALYZE
         unitProcessResult["lexical analysis"] = measureTime(compilationUnit::lex)
 
-        if (!unitProcessResult["lexical analysis"]!!.first) {
+        if (!unitProcessResult["lexical analysis"]!!.first.ok()) {
             return
         }
 
         // PHASE II: SYNTACTIC ANALYSIS
         unitProcessResult["syntactic analysis"] = measureTime(compilationUnit::parse)
 
-        if (!unitProcessResult["syntactic analysis"]!!.first) {
+        if (!unitProcessResult["syntactic analysis"]!!.first.ok()) {
             return
         }
 
-        // PHASE III: TYPE BINDING
-        unitProcessResult["type binding"] = measureTime {
-            compilationUnit.bind() && compilationUnit.postBind()
-        }
+        // PHASE III: DECLARATION BINDING
+        unitProcessResult["declaration binding"] = measureTime(compilationUnit::bind)
 
-        if (!unitProcessResult["type binding"]!!.first) {
+        if (!unitProcessResult["declaration binding"]!!.first.ok()) {
             return
         }
 
-        // PHASE III: SEMANTIC CHECKING
+        // PHASE IV: TYPE BINDING
+        unitProcessResult["type binding"] = measureTime(compilationUnit::postBind)
+
+        if (!unitProcessResult["type binding"]!!.first.ok()) {
+            return
+        }
+
+        // PHASE V: SEMANTIC CHECKING
         unitProcessResult["semantic checking"] = measureTime(compilationUnit::check)
 
-        if (!unitProcessResult["semantic checking"]!!.first) {
+        if (!unitProcessResult["semantic checking"]!!.first.ok()) {
             return
         }
 
-        // PHASE IV: SEMANTIC CHECKING
-        unitProcessResult["code optimization"] = measureTime(compilationUnit::optimize)
+        // PHASE VI: CODE OPTIMIZATION
+        if (!preference.noOpt) {
+            unitProcessResult["code optimization"] = measureTime(compilationUnit::optimize)
 
-        if (!unitProcessResult["code optimization"]!!.first) {
-            return
+            if (!unitProcessResult["code optimization"]!!.first.ok()) {
+                return
+            }
+        } else {
+            unitProcessResult["code optimization"] = UnitProcessResult.SKIPPED to 0
         }
 
-        // PHASE V: CODE GENERATION
+        // PHASE VII: CODE GENERATION
         unitProcessResult["code generation"] = measureTime {
             val generator = JvmBytecodeGenerator(this)
             generator.gen(compilationUnit)
             generator.finalize()
 
-            true
+            UnitProcessResult.PASSED
         }
     }
 
-    private inline fun measureTime(crossinline process: () -> Boolean): Pair<Boolean, Long> {
+    private inline fun measureTime(crossinline process: () -> UnitProcessResult): Pair<UnitProcessResult, Long> {
         val before = Instant.now()
         val result = process()
         val after = Instant.now()
         return result to Duration.between(before, after).toMillis()
     }
+
+    private inline fun List<CompilationUnit>.processAll(crossinline process: CompilationUnit.() -> UnitProcessResult): UnitProcessResult =
+        if (map(process).any { it == UnitProcessResult.FAILED }) {
+            UnitProcessResult.FAILED
+        } else {
+            UnitProcessResult.PASSED
+        }
 }

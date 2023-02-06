@@ -31,40 +31,40 @@ class CompilationUnit(val sourceFile: File, val session: CompilationSession) : U
     override fun maxLineCount(): Int =
         SourceCache.INSTANCE.getOrAdd(sourceFile).size
 
-    fun lex(): Boolean {
+    fun lex(): UnitProcessResult {
         tokens = Lexer(this).lex()
         return dumpReportStatus()
     }
 
-    fun parse(): Boolean {
+    fun parse(): UnitProcessResult {
         ykFile = Parser(this).parse()
         return dumpReportStatus()
     }
 
-    fun bind(): Boolean {
+    fun bind(): UnitProcessResult {
         binder = Binder(this)
         binder.bind()
         return dumpReportStatus()
     }
 
-    fun postBind(): Boolean {
+    fun postBind(): UnitProcessResult {
         binder.bindSecondary()
         return dumpReportStatus()
     }
 
-    fun check(): Boolean {
+    fun check(): UnitProcessResult {
         Checker(this).check()
         return dumpReportStatus()
     }
 
-    fun optimize(): Boolean {
+    fun optimize(): UnitProcessResult {
         Optimizer(this).optimize()
         return dumpReportStatus()
     }
 
-    private fun dumpReportStatus(): Boolean {
+    private fun dumpReportStatus(): UnitProcessResult {
         val hasError = reportBuilder.containsError()
         reportBuilder.dump(preference().outputStream)
-        return !hasError
+        return if (!hasError) UnitProcessResult.PASSED else UnitProcessResult.FAILED
     }
 }
