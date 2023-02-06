@@ -17,10 +17,6 @@ class Scope(internal val table: Table, internal val ownerClass: TypeInfo.Class? 
         typeVariables[typeVariable.genericParameterName] = typeVariable
     }
 
-    fun setConstraint(typeParameterName: String, typeInfoVariable: TypeInfo.TypeInfoVariable) {
-        typeVariables[typeParameterName]?.bounds?.add(typeInfoVariable)
-    }
-
     private fun currentVariableIndex(): Int =
         variables.currentIndex
 

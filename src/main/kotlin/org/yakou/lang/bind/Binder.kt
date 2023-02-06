@@ -394,11 +394,6 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
                     reportUnableToSetGenericBound(genericDeclarationParameter)
                 } else {
                     genericDeclarationParameter.genericConstraint.bounds += boundType
-
-                    currentScope.setConstraint(
-                        genericDeclarationParameter.genericConstraint.genericParameterName,
-                        boundType,
-                    )
                 }
             }
         }
@@ -833,18 +828,27 @@ class Binder(private val compilationUnit: CompilationUnit) : BinderReporter, Uni
             // if it's empty, then we ignore 
             // the following type fill in process
             val classType = type as Type.TypePath // It must be a TypePath
-            val genericParameters = classType.genericParameters?.genericParameters
+            val genericArguments = classType.genericParameters?.genericParameters
 
-            if (typeInfo.genericParameters.isNotEmpty() || genericParameters?.isNotEmpty() == true) {
-                if (genericParameters?.size != typeInfo.genericParameters.size) {
+            if (typeInfo.genericParameters.isNotEmpty() || genericArguments?.isNotEmpty() == true) {
+                if (genericArguments?.size != typeInfo.genericParameters.size) {
                     // Generic argument size mismatch
                     reportGenericArgumentSizeMismatch(
                         type.span,
                         typeInfo.genericParameters.size,
-                        genericParameters?.size ?: 0,
+                        genericArguments?.size ?: 0,
                     )
                 } else {
-                    typeInfo.genericArguments = genericParameters.map(::bindType)
+                    typeInfo.genericArguments = genericArguments.map(::bindType)
+                    
+                    // check if generic arguments are in bound
+                    for ((i, genericEntry) in typeInfo.genericArguments.zip(typeInfo.genericParameters).withIndex()) {
+                        val (genericArgument, genericParameter) = genericEntry
+                        
+                        if (!genericArgument.canImplicitCast(genericParameter)) {
+                            reportGenericArgumentOutOfBound(genericArguments[i].span, genericArgument, genericParameter)
+                        }
+                    }
                 }
             }
         }

@@ -315,4 +315,12 @@ internal interface BinderReporter : UnitReporter {
             .color(Attribute.RED_TEXT())
             .build().build()
     }
+    
+    fun reportGenericArgumentOutOfBound(span: Span, givenType: TypeInfo, expectedBound: TypeInfo.GenericConstraint) {
+        reporter()
+            .error(adjustSpan(span), "Type $givenType cannot be converted into ${expectedBound.bounds.joinToString(", ")}")
+            .label(span, "Expected bound is $expectedBound")
+            .color(Attribute.RED_TEXT())
+            .build().build()
+    }
 }
