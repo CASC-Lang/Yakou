@@ -9,6 +9,7 @@ abstract class AbstractPreference {
     var outputStream = System.out
     var enableColor = false
     var useAscii = false
+    var noOpt = true
     var enableTiming = false
     abstract fun reportBuilder(currentFile: File): FileReportBuilder?
 }

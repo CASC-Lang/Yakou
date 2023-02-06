@@ -70,6 +70,13 @@ class ArgumentProcessor {
 
                 preference.enableColor = true
                 markedFlags["color"] = flagSpan
+            } else if (flag == "-opt") {
+                if (checkReassignment("opt", flag, flagSpan)) {
+                    continue
+                }
+                
+                preference.noOpt = true
+                markedFlags["opt"] = flagSpan
             } else if (preference.sourceFile == null) {
                 val sourceFile = File(flag)
 
