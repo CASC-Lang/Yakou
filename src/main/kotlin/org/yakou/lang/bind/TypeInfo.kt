@@ -57,7 +57,7 @@ sealed class TypeInfo {
     fun canImplicitCast(otherTypeInfo: TypeInfo): Boolean {
         val boundResult = TypeChecker.canImplicitCast(this, otherTypeInfo)
 
-        return boundResult == TypeChecker.BoundResult.SAME || boundResult == TypeChecker.BoundResult.SUBCLASS
+        return boundResult.implicitCastable()
     }
 
     fun canExplicitCast(otherTypeInfo: TypeInfo): Boolean =
@@ -361,7 +361,7 @@ sealed class TypeInfo {
                     append(' ')
                 }
 
-                append(bounds.joinToString("+ ", transform = TypeInfoVariable::toString))
+                append(bounds.joinToString(" + ", transform = TypeInfoVariable::toString))
             }
 
         enum class BoundType(val literal: String) {
@@ -377,7 +377,7 @@ sealed class TypeInfo {
         }
     }
 
-    interface TypeInfoVariable {
+    sealed interface TypeInfoVariable {
         val internalName: String
         val descriptor: String
 
