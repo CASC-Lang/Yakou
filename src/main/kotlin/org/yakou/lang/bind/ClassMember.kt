@@ -5,7 +5,6 @@ import java.lang.reflect.Modifier
 import org.objectweb.asm.Opcodes
 import org.yakou.lang.ast.Const
 import org.yakou.lang.ast.Expression
-import org.yakou.lang.ast.Field
 import org.yakou.lang.ast.Func
 import org.yakou.lang.ast.GenericDeclarationParameters
 import org.yakou.lang.ast.Parameter
@@ -33,20 +32,35 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
         override val access: Int,
         override val packagePath: String,
         override val classPath: String,
-        val parameterTypeInfos: List<TypeInfo>
+        val parameterTypeInfos: List<TypeInfo>,
     ) : ClassMember(MemberType.CONSTRUCTOR) {
         companion object {
+            fun fromConstructor(
+                constructor: java.lang.reflect.Constructor<*>,
+            ): Constructor {
+                val ctor = Constructor(
+                    constructor.modifiers,
+                    constructor.declaringClass.packageName.replace(".", "::"),
+                    constructor.declaringClass.typeName.split('.').last().replace("$", "::"),
+                    constructor.parameterTypes.map(TypeInfo.Companion::fromClass),
+                )
+
+                ctor.ownerTypeInfo = TypeInfo.fromClass(constructor.declaringClass) as TypeInfo.Class
+
+                return ctor
+            }
+
             fun fromPrimaryConstructor(
                 table: Table,
                 packageSimplePath: Path.SimplePath,
                 classSimplePath: Path.SimplePath,
-                primaryConstructor: PrimaryConstructor
+                primaryConstructor: PrimaryConstructor,
             ): Constructor {
                 val constructor = Constructor(
                     primaryConstructor.modifiers.sum(-Opcodes.ACC_FINAL),
                     packageSimplePath.toString(),
                     classSimplePath.toString(),
-                    primaryConstructor.parameters.map(Parameter::typeInfo)
+                    primaryConstructor.parameters.map(Parameter::typeInfo),
                 )
 
                 val ownerType = table.findType(constructor.qualifiedOwnerPath)!!
@@ -85,7 +99,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
         override val static: Boolean,
         val isConst: Boolean,
         override val inline: Boolean,
-        val propagateExpression: Expression? = null
+        val propagateExpression: Expression? = null,
     ) : ClassMember(MemberType.FIELD) {
         companion object {
             fun fromField(field: java.lang.reflect.Field): Field {
@@ -97,7 +111,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     TypeInfo.fromClass(field.type),
                     Modifier.isStatic(field.modifiers),
                     isConst = false,
-                    inline = false
+                    inline = false,
                 )
 
                 fieldMember.ownerTypeInfo = TypeInfo.fromClass(field.declaringClass) as TypeInfo.Class
@@ -109,7 +123,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                 table: Table,
                 packageSimplePath: Path.SimplePath,
                 classSimplePath: Path.SimplePath,
-                constructorParameter: PrimaryConstructor.ConstructorParameter
+                constructorParameter: PrimaryConstructor.ConstructorParameter,
             ): Field {
                 val field = Field(
                     constructorParameter.modifiers.sum(),
@@ -120,7 +134,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     static = false,
                     isConst = false,
                     inline = false,
-                    propagateExpression = null
+                    propagateExpression = null,
                 )
 
                 field.ownerTypeInfo = table.findType(field.qualifiedOwnerPath)!!
@@ -133,7 +147,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                 packageSimplePath: Path.SimplePath,
                 classSimplePath: Path.SimplePath,
                 const: Const,
-                vararg additionalAccessFlags: Int
+                vararg additionalAccessFlags: Int,
             ): Field {
                 val field = Field(
                     const.modifiers.sum(*additionalAccessFlags),
@@ -144,7 +158,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     static = true,
                     isConst = true,
                     const.modifiers.containsKey(org.yakou.lang.ast.Modifier.Inline),
-                    const.expression
+                    const.expression,
                 )
 
                 field.ownerTypeInfo = table.findType(field.qualifiedOwnerPath)!!
@@ -156,7 +170,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                 table: Table,
                 packageSimplePath: Path.SimplePath,
                 classSimplePath: Path.SimplePath,
-                staticField: StaticField
+                staticField: StaticField,
             ): Field {
                 val field = Field(
                     staticField.modifiers.sum(Opcodes.ACC_STATIC),
@@ -167,7 +181,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     static = true,
                     isConst = false,
                     staticField.modifiers.containsKey(org.yakou.lang.ast.Modifier.Inline),
-                    staticField.expression
+                    staticField.expression,
                 )
 
                 field.ownerTypeInfo = table.findType(field.qualifiedOwnerPath)!!
@@ -178,7 +192,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
             fun fromField(
                 packageSimplePath: Path.SimplePath,
                 classSimplePath: Path.SimplePath,
-                field: org.yakou.lang.ast.Field
+                field: org.yakou.lang.ast.Field,
             ): Field = Field(
                 field.modifiers.sum(),
                 packageSimplePath.toString(),
@@ -188,7 +202,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                 static = false,
                 isConst = false,
                 field.modifiers.containsKey(org.yakou.lang.ast.Modifier.Inline),
-                field.expression
+                field.expression,
             )
         }
 
@@ -241,7 +255,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
         val genericParameters: List<TypeInfo.GenericConstraint>,
         val parameterTypeInfos: List<TypeInfo>,
         val returnTypeInfo: TypeInfo,
-        override val inline: Boolean
+        override val inline: Boolean,
     ) : ClassMember(MemberType.FUNCTION) {
         companion object {
             fun fromMethod(method: Method): Fn {
@@ -253,12 +267,12 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     method.typeParameters.map {
                         TypeInfo.GenericConstraint.fromTypeVariable(
                             method.typeParameters,
-                            it
+                            it,
                         )
                     },
-                    method.parameters.map { TypeInfo.fromClass(it.type) },
+                    method.parameterTypes.map(TypeInfo.Companion::fromClass),
                     TypeInfo.fromClass(method.returnType),
-                    false
+                    false,
                 )
 
                 fn.ownerTypeInfo = TypeInfo.fromClass(method.declaringClass) as TypeInfo.Class
@@ -271,7 +285,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                 packageSimplePath: Path.SimplePath,
                 classSimplePath: Path.SimplePath,
                 function: Func,
-                vararg additionalAccessFlags: Int
+                vararg additionalAccessFlags: Int,
             ): Fn {
                 val fn = Fn(
                     function.modifiers.sum(*additionalAccessFlags),
@@ -282,7 +296,7 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                         ?: listOf(),
                     function.parameters.map(Parameter::typeInfo),
                     function.returnTypeInfo,
-                    function.modifiers.containsKey(org.yakou.lang.ast.Modifier.Inline)
+                    function.modifiers.containsKey(org.yakou.lang.ast.Modifier.Inline),
                 )
 
                 fn.ownerTypeInfo = table.findType(fn.qualifiedOwnerPath)!!
