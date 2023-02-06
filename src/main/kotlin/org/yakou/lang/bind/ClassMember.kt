@@ -214,17 +214,20 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
             (if (packagePath.isBlank()) "" else "$packagePath::") + classPath
         }
 
-        fun constToString(): String =
-            "const ${toString()}"
+        private fun constToString(): String =
+            "const ${fieldToString()}"
 
-        fun staticFieldToString(): String =
-            "static ${toString()}"
+        private fun staticFieldToString(): String =
+            "static ${fieldToString()}"
 
-        fun fieldToString(): String =
-            toString()
-
-        override fun toString(): String =
+        private fun fieldToString(): String =
             "$name: $typeInfo"
+
+        override fun toString(): String = when {
+            isConst -> constToString()
+            static -> staticFieldToString()
+            else -> fieldToString()
+        }
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
