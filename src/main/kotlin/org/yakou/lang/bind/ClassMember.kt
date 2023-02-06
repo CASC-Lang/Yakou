@@ -44,8 +44,11 @@ sealed class ClassMember(val memberType: MemberType) : Symbol() {
                     constructor.declaringClass.typeName.split('.').last().replace("$", "::"),
                     constructor.parameterTypes.map(TypeInfo.Companion::fromClass),
                 )
+                
+                val ownerType = TypeInfo.fromClass(constructor.declaringClass) as TypeInfo.Class
 
-                ctor.ownerTypeInfo = TypeInfo.fromClass(constructor.declaringClass) as TypeInfo.Class
+                ctor.typeInfo = ownerType
+                ctor.ownerTypeInfo = ownerType
 
                 return ctor
             }

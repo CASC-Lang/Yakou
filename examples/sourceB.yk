@@ -2,6 +2,6 @@ pkg chaos {
     class Foo[T <: str](a: i32, b: T)
 
     fn test() {
-        let a = new chaos::Foo[i32](1, 1f32)
+        let a = new java::util::ArrayList[str]()
     }
 }
