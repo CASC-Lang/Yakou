@@ -36,26 +36,28 @@ object TypeChecker {
 
         return BoundResult.FAIL
     }
-    
+
     private fun isInBound(from: TypeInfo, to: TypeInfo.GenericConstraint): BoundResult {
         return when (to.boundType) {
             TypeInfo.GenericConstraint.BoundType.NONE -> {
                 // No bound limit
                 BoundResult.INBOUND
             }
+
             TypeInfo.GenericConstraint.BoundType.UPPER -> {
                 // Subclass bound check
                 val boundCheckResult = to.bounds.map {
                     // It's always a TypeInfo
                     from.canImplicitCast(it as TypeInfo)
                 }.all { it }
-                
+
                 if (boundCheckResult) {
                     BoundResult.INBOUND
                 } else {
                     BoundResult.FAIL
                 }
             }
+
             TypeInfo.GenericConstraint.BoundType.LOWER -> TODO()
         }
     }
@@ -114,10 +116,11 @@ object TypeChecker {
         BOX, // types are related, target type is source type's boxed class variant, box source type into target type
         UNBOX, // types are related, target type is source type's boxed class variant, unbox source type from target type
         FAIL; // types are unrelated, one of types is primitive type meanwhile the other type is not primitive
-        
+
         fun implicitCastable(): Boolean = when (this) {
             SAME, SUBCLASS, INBOUND -> true
             else -> false
         }
+
     }
 }
