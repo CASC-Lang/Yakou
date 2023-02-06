@@ -1,7 +1,5 @@
 package org.yakou.lang.bind
 
-import kotlin.collections.LinkedHashSet
-
 // Yakou permits no implicit type conversion, only lower-bound implicit type conversion is allowed by default
 object TypeChecker {
     fun canImplicitCast(from: TypeInfo, to: TypeInfo): BoundResult =
@@ -9,6 +7,8 @@ object TypeChecker {
             BoundResult.SAME
         } else if (from is TypeInfo.Class && to is TypeInfo.Class) {
             isSubClass(from, to)
+        } else if (to is TypeInfo.GenericConstraint) {
+            isInBound(from, to)
         } else {
             BoundResult.FAIL
         }
@@ -35,6 +35,29 @@ object TypeChecker {
         }
 
         return BoundResult.FAIL
+    }
+    
+    private fun isInBound(from: TypeInfo, to: TypeInfo.GenericConstraint): BoundResult {
+        return when (to.boundType) {
+            TypeInfo.GenericConstraint.BoundType.NONE -> {
+                // No bound limit
+                BoundResult.INBOUND
+            }
+            TypeInfo.GenericConstraint.BoundType.UPPER -> {
+                // Subclass bound check
+                val boundCheckResult = to.bounds.map {
+                    // It's always a TypeInfo
+                    from.canImplicitCast(it as TypeInfo)
+                }.all { it }
+                
+                if (boundCheckResult) {
+                    BoundResult.INBOUND
+                } else {
+                    BoundResult.FAIL
+                }
+            }
+            TypeInfo.GenericConstraint.BoundType.LOWER -> TODO()
+        }
     }
 
     private fun isSubClass(from: TypeInfo.Class, to: TypeInfo.Class): BoundResult {
@@ -86,9 +109,15 @@ object TypeChecker {
         SAME, // types are same
         IMPOSSIBLE, // types are unrelated, but we still allowed it exists anyway
         SUBCLASS, // types are related, source type is able to cast into target type
+        INBOUND, // type is inside a type constraint
         CAST, // types are related, source type is able to promote into target type (primitive class only)
         BOX, // types are related, target type is source type's boxed class variant, box source type into target type
         UNBOX, // types are related, target type is source type's boxed class variant, unbox source type from target type
-        FAIL // types are unrelated, one of types is primitive type meanwhile the other type is not primitive
+        FAIL; // types are unrelated, one of types is primitive type meanwhile the other type is not primitive
+        
+        fun implicitCastable(): Boolean = when (this) {
+            SAME, SUBCLASS, INBOUND -> true
+            else -> false
+        }
     }
 }
